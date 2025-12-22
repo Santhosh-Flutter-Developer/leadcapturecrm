@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+import '/constants/constants.dart';
+import '/utils/utils.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+
+class DesignationService {
+  static final FirebaseConfig firebase = FirebaseConfig();
+
+  static Future<void> createDesignation({
+    required DesignationModel designation,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.designations.name}',
+        designation.toMap(),
+        activity: '${designation.name} has been added as a designation',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating designation: $e';
+    }
+  }
+
+  static Future<void> editDesignation({
+    required String uid,
+    required DesignationModel designation,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.update(
+        '${Collections.users.name}/$cid/${Collections.designations.name}',
+        uid,
+        designation.toUpdateMap(),
+        activity: '${designation.name} has been updated',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error updating designation: $e';
+    }
+  }
+
+  static Future<DesignationModel> getDesignation({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var designationDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.designations.name)
+          .doc(uid)
+          .get();
+
+      if (designationDoc.exists) {
+        var designationData = designationDoc.data();
+        if (designationData != null) {
+          var designation = DesignationModel.fromMap(
+            designationDoc.id,
+            designationData,
+          );
+          return designation;
+        } else {
+          throw 'Designation data is empty';
+        }
+      } else {
+        throw 'Designation not found';
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating designation: $e';
+    }
+  }
+
+  static Future<List<DesignationModel>> getAllDesignations() async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.designations.name)
+          .get();
+
+      List<DesignationModel> designations = querySnapshot.docs.map((doc) {
+        return DesignationModel.fromMap(doc.id, doc.data());
+      }).toList();
+
+      return designations;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error fetching designations: $e';
+    }
+  }
+
+  static Future<void> deleteDesignation({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var employeeAssignedDocs = await firebase.users
+          .doc(cid)
+          .collection(Collections.employees.name)
+          .where('designation', isEqualTo: uid)
+          .get();
+
+      if (employeeAssignedDocs.docs.isNotEmpty) {
+        throw 'This designation is assigned to a employee. Please delete the employee first.';
+      }
+
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.designations.name)
+          .doc(uid)
+          .get();
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+      docRef.reference.delete();
+      var user = await Spdb.getUser();
+      ActivityLogModel activityLogModel = ActivityLogModel(
+        userData: user,
+        activity: '${data['name'].toString().decrypt} has been deleted',
+        description:
+            'User has deleted an entry in ${Collections.designations.name}',
+        collection:
+            '${Collections.users.name}/$cid/${Collections.designations.name}',
+        docId: docRef.id,
+      );
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+        activityLogModel.toMap(),
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw e.toString();
+    }
+  }
+
+  static Future<String> getDesignationByNameOrCreateDesignation({
+    required String name,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.designations.name)
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data();
+        if (data['name'].toString().decrypt.toLowerCase() ==
+            name.toLowerCase()) {
+          return doc.id;
+        }
+      }
+
+      var designation = DesignationModel(
+        name: name,
+        description: '',
+        createdBy: await Spdb.getUser(),
+      );
+      var newDoc = await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.designations.name}',
+        designation.toMap(),
+        activity: '${designation.name} has been added as a designation',
+      );
+
+      return newDoc.id;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw e.toString();
+    }
+  }
+}

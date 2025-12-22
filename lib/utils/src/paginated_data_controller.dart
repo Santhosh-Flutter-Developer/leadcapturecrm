@@ -1,0 +1,132 @@
+// controllers/paginated_data_controller.dart
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
+
+// Type definitions for the logic you will pass in
+typedef FilterLogic<T> = bool Function(T item, String query);
+typedef SortLogic<T> = int Function(
+    T a, T b, int sortColumn, bool sortAscending);
+typedef ItemIdLogic<T> = String Function(T item);
+
+class PaginatedDataController<T> extends ChangeNotifier {
+  // --- Configuration (passed in constructor) ---
+  final FilterLogic<T> filterLogic;
+  final SortLogic<T> sortLogic;
+  final ItemIdLogic<T> getItemId;
+
+  // --- Internal State ---
+  List<T> _allItems = [];
+  List<T> _filteredItems = [];
+  List<T> _paginatedItems = [];
+
+  int _sortColumnIndex = 1;
+  bool _sortAscending = true;
+  int _currentPage = 1;
+  int _rowsPerPage;
+  String _searchQuery = '';
+  final Set<String> _selectedIds = {};
+
+  PaginatedDataController({
+    required this.filterLogic,
+    required this.sortLogic,
+    required this.getItemId,
+    int initialRowsPerPage = 10,
+    int initialSortColumnIndex = 1,
+  })  : _rowsPerPage = initialRowsPerPage,
+        _sortColumnIndex = initialSortColumnIndex;
+
+  // --- Getters for the UI ---
+  List<T> get paginatedItems => _paginatedItems;
+  int get sortColumnIndex => _sortColumnIndex;
+  bool get sortAscending => _sortAscending;
+  int get rowsPerPage => _rowsPerPage;
+  int get currentPage => _currentPage;
+  Set<String> get selectedIds => _selectedIds;
+
+  // --- Getters for Pagination Controls ---
+  int get totalEntries => _filteredItems.length;
+  int get totalPages => (totalEntries / _rowsPerPage).ceil();
+  int get startEntry =>
+      totalEntries == 0 ? 0 : (_currentPage - 1) * _rowsPerPage + 1;
+  int get endEntry => math.min(_currentPage * _rowsPerPage, totalEntries);
+
+  // --- Public Methods (to be called by UI) ---
+
+  /// Sets the master list of data and triggers the first sort/filter.
+  void setData(List<T> allItems) {
+    _allItems = allItems;
+    _filteredItems = List.from(_allItems);
+    _sortAndPaginate();
+  }
+
+  void setSearch(String query) {
+    _searchQuery = query;
+    _currentPage = 1; // Reset to first page
+    _sortAndPaginate();
+  }
+
+  void setSort(int columnIndex, bool ascending) {
+    _sortColumnIndex = columnIndex;
+    _sortAscending = ascending;
+    _currentPage = 1; // Reset to first page
+    _sortAndPaginate();
+  }
+
+  void setRowsPerPage(int? newRowsPerPage) {
+    if (newRowsPerPage != null && newRowsPerPage != _rowsPerPage) {
+      _rowsPerPage = newRowsPerPage;
+      _currentPage = 1; // Reset to first page
+      _sortAndPaginate();
+    }
+  }
+
+  void goToPage(int page) {
+    _currentPage = page;
+    _sortAndPaginate();
+  }
+
+  void previousPage() {
+    if (_currentPage > 1) {
+      _currentPage--;
+      _sortAndPaginate();
+    }
+  }
+
+  void nextPage() {
+    if (_currentPage < totalPages) {
+      _currentPage++;
+      _sortAndPaginate();
+    }
+  }
+
+  void onSelected(String id, bool? selected) {
+    if (selected ?? false) {
+      _selectedIds.add(id);
+    } else {
+      _selectedIds.remove(id);
+    }
+    notifyListeners();
+  }
+
+  // --- Private Logic ---
+  void _sortAndPaginate() {
+    // 1. Apply Search Filter
+    _filteredItems = _allItems.where((item) {
+      return filterLogic(item, _searchQuery);
+    }).toList();
+
+    // 2. Apply Sorting
+    _filteredItems.sort((a, b) {
+      return sortLogic(a, b, _sortColumnIndex, _sortAscending);
+    });
+
+    // 3. Apply Pagination
+    final int startIndex = (_currentPage - 1) * _rowsPerPage;
+    final int endIndex =
+        math.min(startIndex + _rowsPerPage, _filteredItems.length);
+    _paginatedItems = _filteredItems.sublist(startIndex, endIndex);
+
+    // 4. Notify UI
+    notifyListeners();
+  }
+}

@@ -1,0 +1,157 @@
+import 'package:flutter/material.dart';
+import '/constants/constants.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+import '/utils/utils.dart';
+
+class LeadCategoryService {
+  static final FirebaseConfig firebase = FirebaseConfig();
+
+  static Future<void> createLeadCategory({
+    required LeadCategoryModel leadCategory,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.leadCategory.name}',
+        leadCategory.toMap(),
+        activity: '${leadCategory.name} has been added as a lead category',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating leadCategory: $e';
+    }
+  }
+
+  static Future<void> editLeadCategory({
+    required String uid,
+    required LeadCategoryModel leadCategory,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.update(
+        '${Collections.users.name}/$cid/${Collections.leadCategory.name}',
+        uid,
+        leadCategory.toUpdateMap(),
+        activity: '${leadCategory.name} has been updated',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error updating leadCategory: $e';
+    }
+  }
+
+  static Future<LeadCategoryModel> getLeadCategory({
+    required String uid,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      var leadCategoryDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadCategory.name)
+          .doc(uid)
+          .get();
+
+      if (leadCategoryDoc.exists) {
+        var leadCategoryData = leadCategoryDoc.data();
+        if (leadCategoryData != null) {
+          var leadCategory = LeadCategoryModel.fromMap(
+            leadCategoryDoc.id,
+            leadCategoryData,
+          );
+          return leadCategory;
+        } else {
+          throw 'Lead Source data is empty';
+        }
+      } else {
+        throw 'Lead Source not found';
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating leadCategory: $e';
+    }
+  }
+
+  static Future<List<LeadCategoryModel>> getAllLeadCategories() async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadCategory.name)
+          .get();
+
+      List<LeadCategoryModel> leadCategory = querySnapshot.docs.map((doc) {
+        return LeadCategoryModel.fromMap(doc.id, doc.data());
+      }).toList();
+
+      return leadCategory;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error fetching leadCategory: $e';
+    }
+  }
+
+  static Future<bool> isLeadCategoryAssigned(String categoryUid) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .where('leadCategory', isEqualTo: categoryUid)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error checking lead category assignment: $e\n$st");
+      return false;
+    }
+  }
+
+  static Future<void> deleteLeadCategory({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadCategory.name)
+          .doc(uid)
+          .get();
+
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+
+      docRef.reference.delete();
+      var user = await Spdb.getUser();
+      ActivityLogModel activityLogModel = ActivityLogModel(
+        userData: user,
+        activity: '${data['name'].toString().decrypt} has been deleted',
+        description:
+            'User has deleted an entry in ${Collections.leadCategory.name}',
+        collection:
+            '${Collections.users.name}/$cid/${Collections.leadCategory.name}',
+        docId: docRef.id,
+      );
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+        activityLogModel.toMap(),
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error deleting lead category: $e';
+    }
+  }
+}

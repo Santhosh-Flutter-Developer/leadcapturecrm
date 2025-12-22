@@ -1,0 +1,321 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '/constants/constants.dart';
+import '/services/services.dart';
+import '/models/models.dart';
+
+class DealService {
+  static final FirebaseConfig firebase = FirebaseConfig();
+  static final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  static Future<void> createDeal({required DealModel deal}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var uid = await Spdb.getUid();
+      // Ensure the creator is in workflow
+      if (uid != null && !deal.workFlow.contains(uid)) {
+        deal.workFlow.add(uid);
+      }
+
+      // Save deal to Firestore
+      final userDoc = firebase.users.doc(cid);
+      final dealsRef = userDoc.collection(Collections.deals.name);
+
+      // Generate deal number if not provided
+      int dealNumber = deal.dealNumber ?? 1;
+      var lastDealSnapshot = await dealsRef
+          .orderBy('dealNumber', descending: true)
+          .limit(1)
+          .get();
+      if (lastDealSnapshot.docs.isNotEmpty) {
+        dealNumber =
+            (lastDealSnapshot.docs.first.data()['dealNumber'] ?? 0) + 1;
+      }
+
+      var dealData = deal.toMap();
+      dealData['dealNumber'] = dealNumber;
+      var dealDoc = await dealsRef.add(dealData);
+      // Collect workflow users for notifications
+      List<String> users = deal.workFlow.toSet().toList();
+
+      List<String> fcmIds = [];
+      List<String> toUids = [];
+
+      for (var i in users) {
+        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
+
+        if (userFcmIds.isNotEmpty) {
+          fcmIds.addAll(userFcmIds);
+          toUids.add(i);
+        }
+      }
+
+      var user = await Spdb.getUser();
+
+      var notif = NotificationModel(
+        title: 'Deal : ${deal.dealName}',
+        message: 'New deal created by ${user.name}',
+        toFcms: fcmIds,
+        toUids: users,
+        senderId: await Spdb.getUid(),
+        type: 'Deal',
+        payload: {'dealId': dealDoc.id},
+      );
+
+      await PostNotificationService.sendNotification(model: notif);
+    } catch (e, st) {
+      debugPrint("Error creating deal: $e\n$st");
+      await ErrorService.recordError(e, st);
+      throw 'Error creating deal: $e';
+    }
+  }
+
+  static Future<void> updateDeal({
+    required String uid,
+    required DealModel deal,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      // Update deal in Firestore
+      await CommonService.update(
+        '${Collections.users.name}/$cid/${Collections.deals.name}',
+        uid,
+        deal.toUpdateMap(),
+        activity: '${deal.dealName} has been updated',
+      );
+
+      List<String> users = deal.workFlow.toSet().toList();
+
+      List<String> fcmIds = [];
+      List<String> toUids = [];
+
+      for (var i in users) {
+        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
+        if (userFcmIds.isNotEmpty) {
+          fcmIds.addAll(userFcmIds);
+          toUids.add(i);
+        }
+      }
+
+      var user = await Spdb.getUser();
+
+      var notif = NotificationModel(
+        title: 'Deal : ${deal.dealName}',
+        message: 'Deal has been updated by ${user.name}',
+        toFcms: fcmIds,
+        toUids: users,
+        senderId: await Spdb.getUid(),
+        type: 'Deal',
+        payload: {},
+      );
+
+      PostNotificationService.sendNotification(model: notif);
+    } catch (e, st) {
+      debugPrint("Error updating deal: $e\n$st");
+      await ErrorService.recordError(e, st);
+      throw 'Error updating deal: $e';
+    }
+  }
+
+  static Future<DealModel> getDeal({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var dealDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(uid)
+          .get();
+
+      if (dealDoc.exists) {
+        var dealData = dealDoc.data();
+        if (dealData != null) {
+          var deal = DealModel.fromMap(dealDoc.id, dealData);
+          return deal;
+        } else {
+          throw 'Deal data is empty';
+        }
+      } else {
+        throw 'Deal not found';
+      }
+    } catch (e, st) {
+      debugPrint("Error fetching deal: $e\n$st");
+      await ErrorService.recordError(e, st);
+      throw 'Error fetching deal: $e';
+    }
+  }
+
+  static Future<Map<DealStatusModel, List<DealModel>>> getDealByGroup({
+    required List<DealModel> dealList,
+  }) async {
+    try {
+      List<DealStatusModel> dealStatusList =
+          await DealStatusService.getAllDealStatus();
+
+      Map<DealStatusModel, List<DealModel>> groupedDeals = {
+        for (var status in dealStatusList) status: [],
+      };
+
+      for (var deal in dealList) {
+        final matchingStatus = dealStatusList.firstWhere(
+          (status) => status.uid == deal.dealStatus,
+          orElse: () => dealStatusList.first,
+        );
+        groupedDeals[matchingStatus]!.add(deal);
+      }
+
+      return groupedDeals;
+    } catch (e, st) {
+      debugPrint("Error grouping deals: $e\n$st");
+      await ErrorService.recordError(e, st);
+      throw 'Error grouping deals: $e';
+    }
+  }
+
+  static Future<void> updateDealStatus({
+    required String uid,
+    required String dealStatus,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(uid)
+          .update({'dealStatus': dealStatus});
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error updating deal status: $e\n$st");
+      throw 'Error updating deal status: $e';
+    }
+  }
+
+  static Future<void> deleteDeal({required String uid}) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(uid)
+          .get();
+
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+      docRef.reference.delete();
+
+      var user = await Spdb.getUser();
+      ActivityLogModel activityLogModel = ActivityLogModel(
+        userData: user,
+        activity: '${data['dealName'] ?? 'N/A'} has been deleted',
+        description: 'User has deleted an entry in ${Collections.deals.name}',
+        collection: '${Collections.users.name}/$cid/${Collections.deals.name}',
+        docId: docRef.id,
+      );
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+        activityLogModel.toMap(),
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint('Error deleting deal: $e\n$st');
+      rethrow;
+    }
+  }
+
+  static Future isDealStatusAssigned(String s) async {}
+
+  static Future<void> addDealComment({
+    required String dealUid,
+    required String commentText,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
+
+      if (cid == null || uid == null) {
+        throw "Missing cid or uid";
+      }
+
+      final commentsRef = firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(dealUid)
+          .collection('comments');
+
+      final commentData = {
+        'comment': commentText,
+        'createdBy': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await commentsRef.add(commentData);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error adding deal comment: $e\n$st");
+      rethrow;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getDealComments({
+    required String dealUid,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      if (cid == null) throw "Missing cid";
+
+      final commentsRef = firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(dealUid)
+          .collection('comments');
+
+      final querySnapshot = await commentsRef
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['uid'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error fetching deal comments: $e\n$st");
+      rethrow;
+    }
+  }
+
+  static Future<void> deleteDealComment({
+    required String dealUid,
+    required String commentUid,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      if (cid == null) throw "Missing cid";
+
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(dealUid)
+          .collection('comments')
+          .doc(commentUid)
+          .get();
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+      docRef.reference.delete();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error deleting deal comment: $e\n$st");
+      rethrow;
+    }
+  }
+}

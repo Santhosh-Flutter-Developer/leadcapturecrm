@@ -1,0 +1,150 @@
+import 'package:flutter/material.dart';
+import '/constants/constants.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+
+class EventService {
+  static final FirebaseConfig firebase = FirebaseConfig();
+
+  static Future<void> createEvent({required EventModel event}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.events.name}',
+        event.toMap(),
+        activity: '${event.eventName} has been added as a event',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating event: $e';
+    }
+  }
+
+  static Future<void> editEvent({
+    required String uid,
+    required EventModel event,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.update(
+        '${Collections.users.name}/$cid/${Collections.events.name}',
+        uid,
+        event.toUpdateMap(),
+        activity: '${event.eventName} has been updated',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error updating event: $e';
+    }
+  }
+
+  static Future<EventModel> getEvent({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var eventDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.events.name)
+          .doc(uid)
+          .get();
+
+      if (eventDoc.exists) {
+        var eventData = eventDoc.data();
+        if (eventData != null) {
+          var event = EventModel.fromMap(eventDoc.id, eventData);
+          return event;
+        } else {
+          throw 'Event data is empty';
+        }
+      } else {
+        throw 'Event not found';
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error creating event: $e';
+    }
+  }
+
+  static Future<List<EventModel>> getAllEvents() async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.events.name)
+          .get();
+
+      List<EventModel> events = querySnapshot.docs.map((doc) {
+        return EventModel.fromMap(doc.id, doc.data());
+      }).toList();
+
+      events.sort((a, b) => a.eventName.compareTo(b.eventName));
+
+      return events;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error fetching events: $e';
+    }
+  }
+
+  static Future<bool> isEventAssigned(String uid) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .where('event', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error checking event assignment: $e\n$st");
+      return false;
+    }
+  }
+
+  static Future<void> deleteEvent({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.events.name)
+          .doc(uid)
+          .get();
+
+      final data = docRef.data() as Map<String, dynamic>;
+
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+
+      await docRef.reference.delete();
+      var user = await Spdb.getUser();
+      ActivityLogModel activityLogModel = ActivityLogModel(
+        userData: user,
+        activity: '${data['eventName'] ?? 'N/A'} has been deleted',
+        description: 'User has deleted an entry in ${Collections.events.name}',
+        collection: '${Collections.users.name}/$cid/${Collections.events.name}',
+        docId: docRef.id,
+      );
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+        activityLogModel.toMap(),
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error deleting event: $e\n$st");
+      throw 'Error deleting event: $e';
+    }
+  }
+}

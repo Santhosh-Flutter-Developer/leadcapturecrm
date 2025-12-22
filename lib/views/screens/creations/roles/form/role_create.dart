@@ -1,0 +1,398 @@
+import 'package:flutter/material.dart';
+import '/constants/constants.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+import '/theme/theme.dart';
+import '/views/views.dart';
+
+class RoleCreate extends StatefulWidget {
+  const RoleCreate({super.key});
+
+  @override
+  State<RoleCreate> createState() => _RoleCreateState();
+}
+
+class _RoleCreateState extends State<RoleCreate> {
+  final TextEditingController _roleNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  List<PermissionModel> _rows = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _rows = AppStrings.accessPagesList
+        .map((page) => PermissionModel(page: page))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _roleNameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.grey50,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FormWidgets.buildHeader(context: context, title: "Create Role"),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    Card(
+                      color: AppColors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.grey200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0,
+                          vertical: 20.0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Role Information",
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                            ),
+                            const SizedBox(height: 10),
+                            Divider(color: AppColors.grey300, thickness: 1),
+                            const SizedBox(height: 20),
+                            LayoutBuilder(
+                              builder: (context, constraints) =>
+                                  _buildFormFields(constraints),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+                    // Text(
+                    //   "Permissions",
+                    //   style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    //         fontWeight: FontWeight.w600,
+                    //         color: AppColors.black,
+                    //       ),
+                    // ),
+                    const SizedBox(height: 15),
+
+                    Card(
+                      color: AppColors.white,
+                      elevation: 0, // No elevation for the main card now
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.grey200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Permissions",
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                            ),
+                            const SizedBox(height: 10),
+                            Divider(color: AppColors.grey300, thickness: 1),
+                            const SizedBox(height: 20),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: DataTable(
+                                columnSpacing: 24,
+                                headingRowHeight: 40,
+                                dataRowMinHeight: 40,
+                                dataRowMaxHeight: 48,
+                                columns: [
+                                  DataColumn(
+                                    label: Text(
+                                      'Page',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Select All',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'View',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Create',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Edit',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Delete',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                ],
+                                rows: List.generate(_rows.length, (index) {
+                                  final row = _rows[index];
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(
+                                        Text(
+                                          row.page,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.selectAll,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.selectAll = val;
+                                              row.canCreate = val;
+                                              row.canEdit = val;
+                                              row.canView = val;
+                                              row.canDelete = val;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canView,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canView = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canCreate,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canCreate = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canEdit,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canEdit = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canDelete,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canDelete = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: FormWidgets.buildBottomBar(
+          context: context,
+          onSubmit: _submitForm,
+          isEdit: false,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormFields(BoxConstraints constraints) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >= (minColumnWidth * 3 + horizontalSpacing * (3 - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (3 - 1)) / 3
+        : currentWidth;
+
+    return Form(
+      key: _formKey,
+      child: Wrap(
+        spacing: horizontalSpacing,
+        runSpacing: verticalSpacing,
+        children: [
+          SizedBox(
+            width: itemWidth,
+            child: FormFields(
+              label: 'Role Name',
+              controller: _roleNameController,
+              hintText: 'Enter Role Name',
+              isRequired: true,
+              valid: (val) =>
+                  val == null || val.isEmpty ? 'Role name is required' : null,
+            ),
+          ),
+          SizedBox(
+            width: itemWidth,
+            child: FormFields(
+              label: 'Description',
+              controller: _descriptionController,
+              hintText: 'Enter Description',
+              maxLines: 3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        futureLoading(context);
+        var reducedRows = _rows
+            .where(
+              (row) =>
+                  row.canView || row.canCreate || row.canEdit || row.canDelete,
+            )
+            .toList();
+        RoleModel roleModel = RoleModel(
+          name: _roleNameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          permissions: reducedRows,
+          createdBy: await Spdb.getUser(),
+        );
+
+        await RoleService.createRole(role: roleModel);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        Navigator.pop(context, true);
+
+        FlushBar.show(context, 'Role created successfully', isSuccess: true);
+      } catch (e, st) {
+        await ErrorService.recordError(e, st);
+        debugPrint("${e.toString()}, ${st.toString()}");
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        FlushBar.show(
+          context,
+          e.toString(),
+          isSuccess: false,
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+  }
+}

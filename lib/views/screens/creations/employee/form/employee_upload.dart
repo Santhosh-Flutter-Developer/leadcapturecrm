@@ -1,0 +1,721 @@
+import 'dart:io';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+import '/theme/theme.dart';
+import '/utils/utils.dart';
+import '/views/views.dart';
+
+class EmployeeUploadPage extends StatefulWidget {
+  const EmployeeUploadPage({super.key});
+
+  @override
+  State<EmployeeUploadPage> createState() => _EmployeeUploadPageState();
+}
+
+class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
+  String? _fileName;
+  int _fileSize = 0;
+  List<List<String>> _rows = [];
+  bool _loading = false;
+
+  Future<void> _pickAndParse() async {
+    setState(() => _loading = true);
+
+    try {
+      // Picking file
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv', 'xlsx'],
+        allowMultiple: false,
+      );
+
+      if (result == null) {
+        setState(() => _loading = false);
+        return;
+      }
+
+      final file = result.files.first;
+      final ext = file.extension?.toLowerCase();
+
+      // Mocking the read logic so the UI works without your local files.
+      // UNCOMMENT your actual logic below to use real readers.
+
+      final path = file.path;
+      if (path == null) throw Exception('Platform returned no file path.');
+      final bytes = await File(path).readAsBytes();
+      List<List<String>> rows = [];
+      if (ext == 'csv') {
+        final str = String.fromCharCodes(bytes);
+        rows = CsvReader().parse(str);
+      } else if (ext == 'xlsx') {
+        rows = await XlsxReader().readFromBytes(bytes);
+      }
+
+      setState(() {
+        _fileName = file.name;
+        _fileSize = file.size;
+        _rows = rows;
+      });
+    } catch (e) {
+      debugPrint('Error parsing file: $e');
+      FlushBar.show(context, 'Error: ${e.toString()}', isSuccess: false);
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _resetFile() {
+    setState(() {
+      _fileName = null;
+      _fileSize = 0;
+      _rows = [];
+    });
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (log(bytes) / log(1024)).floor();
+    return '${(bytes / pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.scaffoldBackgroundColor,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Iconsax.close_circle, color: AppColors.text),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Close',
+          ),
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          title: Text(
+            'Import Employees',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppColors.text,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: AppColors.border, height: 1),
+          ),
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Iconsax.more, color: AppColors.textLight),
+              onPressed: () {
+                showCustomMenu(context);
+              },
+              tooltip: "Options",
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Page Header
+                  Text(
+                    'Upload Employee List',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Upload a CSV or Excel file to bulk import employees. \nEnsure the file follows the required template format.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textLight,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Upload Zone or File Info
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _fileName == null
+                        ? _buildUploadZone()
+                        : _buildFileInfoCard(),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Preview Section (Only visible if data exists)
+                  if (_rows.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Data Preview (${_rows.length - 1} entries)',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.text,
+                              ),
+                        ),
+                        if (_rows.length > 50)
+                          Chip(
+                            label: Text(
+                              'Showing first 50',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.textLight),
+                            ),
+                            backgroundColor: AppColors.scaffoldBackgroundColor,
+                            side: const BorderSide(color: AppColors.border),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPreviewTable(),
+                    const SizedBox(height: 32),
+                    _buildActionButtons(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadZone() {
+    return GestureDetector(
+      onTap: _loading ? null : _pickAndParse,
+      child: Container(
+        height: 250,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Soft background tint
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.primaryLight.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+
+            // Content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(strokeWidth: 3),
+                          )
+                        : const Icon(
+                            Icons.cloud_upload_outlined,
+                            size: 32,
+                            color: AppColors.primary,
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  RichText(
+                    text: TextSpan(
+                      text: 'Click to upload',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: ' or drag and drop',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppColors.textLight,
+                                fontWeight: FontWeight.normal,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Supported formats: .CSV, .XLSX',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textLight,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFF217346,
+              ).withValues(alpha: 0.1), // Green tint
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.table_view,
+              color: Color(0xFF217346),
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _fileName ?? 'Unknown file',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatFileSize(_fileSize),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _resetFile,
+            icon: const Icon(Icons.close, color: AppColors.textLight),
+            tooltip: 'Remove file',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewTable() {
+    if (_rows.isEmpty) return const SizedBox.shrink();
+
+    final headers = _rows.first;
+    final body = _rows.length > 1 ? _rows.sublist(1) : <List<String>>[];
+    final maxCols = headers.length > 10 ? 10 : headers.length; // Limit columns
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(
+              AppColors.scaffoldBackgroundColor,
+            ),
+            columnSpacing: 24,
+            horizontalMargin: 24,
+            columns: List.generate(
+              maxCols,
+              (i) => DataColumn(
+                label: Text(
+                  headers[i].toUpperCase(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textLight,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+            rows: List.generate(body.length > 50 ? 50 : body.length, (index) {
+              final row = body[index];
+              return DataRow(
+                cells: List.generate(maxCols, (cIdx) {
+                  final val = cIdx < row.length ? row[cIdx] : '';
+                  return DataCell(
+                    Text(
+                      val,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.text),
+                    ),
+                  );
+                }),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _uploadEmployeeData() async {
+    try {
+      if (_rows.isEmpty) return;
+
+      if (_rows.first.length < 19) {
+        FlushBar.show(
+          context,
+          "Error: The uploaded file does not have the required columns.",
+          isSuccess: false,
+        );
+        return;
+      }
+
+      futureLoading(context);
+
+      int uploadedCount = 0;
+      int skippedCount = 0;
+
+      // assuming row 0 is header
+      final totalRows = _rows.length - 1;
+
+      for (var i = 1; i < _rows.length; i++) {
+        final row = _rows[i];
+
+        try {
+          final hasRequiredFields =
+              row[0].trim().isNotEmpty && // employeeId
+              row[1].trim().isNotEmpty && // name
+              row[3].trim().isNotEmpty && // password
+              row[4].trim().isNotEmpty && // designation
+              row[5].trim().isNotEmpty && // department
+              row[11].trim().isNotEmpty; // role
+
+          if (!hasRequiredFields) {
+            skippedCount++;
+            continue;
+          }
+
+          final designation =
+              await DesignationService.getDesignationByNameOrCreateDesignation(
+                name: row[4].trim(),
+              );
+
+          final departmentNames = row[5]
+              .split(',')
+              .map((d) => d.trim())
+              .where((d) => d.isNotEmpty)
+              .toList();
+
+          final department = await Future.wait(
+            departmentNames.map(
+              (d) => DepartmentService.getDepartmentByNameOrCreateDepartment(
+                name: d,
+              ),
+            ),
+          );
+
+          String? subDepartment;
+          if (row[6].trim().isNotEmpty) {
+            subDepartment =
+                await SubDepartmentService.getSubDepartmentByNameOrCreateSubDepartment(
+                  name: row[6].trim(),
+                  department: department.first,
+                );
+          }
+
+          final genderValue = row[8].trim().toLowerCase();
+          var gender = 'Male';
+          if (genderValue == 'female') gender = 'Female';
+
+          final role = await RoleService.getRoleByNameOrCreateRole(
+            name: row[11].trim(),
+          );
+
+          final reportingToVal = row[12]
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+
+          List<String> reportingTo = [];
+          for (var i in reportingToVal) {
+            if (i.isNotEmpty) {
+              var uid = await EmployeeService.getEmployeeById(employeeId: i);
+              if (uid != null) {
+                reportingTo.add(uid);
+              }
+            }
+          }
+
+          final maritalStatusValue = row[17].trim().toLowerCase();
+          var maritalStatus = 'Single';
+          if (maritalStatusValue == 'married') {
+            maritalStatus = 'Married';
+          }
+
+          final employeeTypeValue = row[18].trim().toLowerCase();
+          var employeeType = 'Full Time';
+          if (employeeTypeValue == 'part time') {
+            employeeType = 'Part Time';
+          } else if (employeeTypeValue == 'on contact') {
+            employeeType = 'On Contact';
+          } else if (employeeTypeValue == 'internship') {
+            employeeType = 'Internship';
+          } else if (employeeTypeValue == 'trainee') {
+            employeeType = 'Trainee';
+          }
+
+          final employeeModel = EmployeeModel(
+            employeeId: row[0].trim(),
+            name: row[1].trim(),
+            email: row[2].trim(),
+            password: row[3].trim(),
+            designation: designation,
+            department: department,
+            mobileNumber: row[7].trim(),
+            gender: gender,
+            subDepartment: subDepartment,
+            dateOfJoining: DateFormat("dd-MM-yyyy").parse(row[9].trim()),
+            dateOfBirth: DateFormat("dd-MM-yyyy").parse(row[10].trim()),
+            role: role,
+            reportingTo: reportingTo,
+            address: row[13].trim(),
+            about: row[14].trim(),
+            loginAllowed: row[15].trim().toLowerCase() == 'yes',
+            receiveEmailNotifications: row[16].trim().toLowerCase() == 'yes',
+            maritalStatus: maritalStatus,
+            skills: '',
+            employeeType: employeeType,
+            createdBy: await Spdb.getUser(),
+          );
+
+          await EmployeeService.createEmployee(employee: employeeModel);
+          uploadedCount++;
+        } catch (e, st) {
+          skippedCount++;
+          debugPrint('Error uploading row ${i + 1}: $e, $st');
+        }
+      }
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      Navigator.pop(context, true);
+      FlushBar.show(
+        context,
+        "Upload completed.\n"
+        "Total rows: $totalRows\n"
+        "Uploaded: $uploadedCount\n"
+        "Skipped: $skippedCount",
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      FlushBar.show(
+        context,
+        "Error uploading data: ${e.toString()}",
+        isSuccess: false,
+      );
+    }
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _uploadEmployeeData,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            elevation: 0,
+          ),
+          icon: const Icon(Icons.check, size: 18),
+          label: Text(
+            'Complete Import',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void showCustomMenu(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: AppColors.black12, // light dim background
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (_, _, _) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (context, animation, secAnimation, child) {
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - animation.value)), // slide up
+          child: Opacity(
+            opacity: animation.value,
+            child: Stack(
+              children: [
+                Positioned(right: 16, top: 70, child: _CustomMenuCard()),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CustomMenuCard extends StatelessWidget {
+  const _CustomMenuCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.transparent,
+      child: Container(
+        width: 180,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.grey900,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _menuItem(
+              context,
+              icon: Icons.downloading_rounded,
+              iconColor: AppColors.success,
+              label: "Template",
+              onTap: () async {
+                await Download.downloadFromUrl(
+                  context,
+                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_employee_upload_template.xlsx?alt=media&token=85108573-f509-4d5a-baf7-460f16945598",
+                  "Employee Template.xlsx",
+                );
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            _menuItem(
+              context,
+              icon: Icons.downloading_rounded,
+              iconColor: AppColors.success,
+              label: "Template + Data",
+              onTap: () async {
+                await Download.downloadFromUrl(
+                  context,
+                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_employee_upload_template_with_data.xlsx?alt=media&token=4cc3bb15-dddc-49e1-931c-34bd17b559b3",
+                  "Employee Template.xlsx",
+                );
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _menuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    Color? iconColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor ?? AppColors.white),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

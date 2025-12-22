@@ -1,0 +1,46 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "srisoftwarez-crm",
+          "appId": "1:249357070035:android:bceadab9dbcac9b86e2e26",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "srisoftwarez-crm",
+          "configurations": {
+            "macos": "1:249357070035:ios:7f8ed6d597e36a1d6e2e26"
+          }
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "srisoftwarez-crm",
+          "appId": "1:249357070035:ios:7f8ed6d597e36a1d6e2e26",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

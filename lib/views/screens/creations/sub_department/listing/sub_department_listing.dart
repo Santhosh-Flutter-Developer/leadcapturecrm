@@ -1,0 +1,548 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
+import '/models/models.dart';
+import '/views/views.dart';
+import '/utils/utils.dart';
+import '/theme/theme.dart';
+import '/services/services.dart';
+import 'bloc/sub_department_bloc.dart';
+
+const String _pageTitle = "Sub Department";
+
+class SubDepartmentListing extends StatelessWidget {
+  const SubDepartmentListing({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => SubDepartmentBloc()..add(StreamSubDepartment()),
+      child: ChangeNotifierProvider(
+        create: (context) => PaginatedDataController<SubDepartmentModel>(
+          initialSortColumnIndex: 1,
+          filterLogic: (subDepartment, query) {
+            final q = query.toLowerCase();
+            return subDepartment.name.toLowerCase().contains(q) ||
+                subDepartment.name.toLowerCase().contains(q);
+          },
+          sortLogic: (a, b, col, asc) {
+            int compare;
+            switch (col) {
+              case 2:
+                compare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+                break;
+
+              default:
+                compare = (a.uid ?? '').compareTo(b.uid ?? '');
+                break;
+            }
+            return asc ? compare : -compare;
+          },
+          getItemId: (subDepartment) => subDepartment.uid ?? '',
+        ),
+        child: const SubDepartmentListingView(),
+      ),
+    );
+  }
+}
+
+class SubDepartmentListingView extends StatefulWidget {
+  const SubDepartmentListingView({super.key});
+
+  @override
+  State<SubDepartmentListingView> createState() =>
+      _SubDepartmentListingViewState();
+}
+
+class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
+  final List<SubDepartmentModel> _selectedSubDepartments = [];
+  PermissionModel? permissions;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    permissions = await PermissionService.getPermissions(_pageTitle);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controllerRead = context
+        .read<PaginatedDataController<SubDepartmentModel>>();
+    final controllerWatch = context
+        .watch<PaginatedDataController<SubDepartmentModel>>();
+
+    return Scaffold(
+      appBar: kIsMobile
+          ? AppBar(leading: Back(), title: Text(_pageTitle))
+          : null,
+      body: BlocListener<SubDepartmentBloc, SubDepartmentState>(
+        listenWhen: (previous, current) => current is SubDepartmentLoaded,
+        listener: (context, state) {
+          if (state is SubDepartmentLoaded) {
+            controllerRead.setData(state.subDepartments);
+          }
+        },
+        child: BlocBuilder<SubDepartmentBloc, SubDepartmentState>(
+          builder: (context, state) {
+            if (state is SubDepartmentLoading) {
+              return const WaitingLoading();
+            }
+
+            if (state is SubDepartmentLoaded) {
+              if (!(permissions?.canView ?? false)) {
+                return buildNoPermissionView(context);
+              }
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      _buildFilterRow(
+                        onSearchChanged: controllerRead.setSearch,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildActionRow(context),
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.grey.withValues(alpha: 0.1),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
+                                      ),
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
+                                          ),
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Name",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Department",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Created",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (subDepartment) => _buildDataRow(
+                                              context,
+                                              subDepartment,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 12.0,
+                              ),
+                              child: PaginationControls<SubDepartmentModel>(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (state is SubDepartmentError) {
+              return Center(
+                child: Text(
+                  state.message,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _searchBox(onSearchChanged: onSearchChanged),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.filter_list, size: 18),
+              label: Text(
+                "Filters",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.grey200,
+                foregroundColor: AppColors.black,
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionRow(context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            (permissions?.canCreate ?? false)
+                ? ElevatedButton.icon(
+                    onPressed: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(
+                          context,
+                          widget: const SubDepartmentCreate(),
+                        );
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const SubDepartmentCreate(),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      "Add $_pageTitle",
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: AppColors.white,
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: null,
+                    icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
+                    label: Text(
+                      "Add $_pageTitle",
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.grey300,
+                      foregroundColor: AppColors.grey600,
+                    ),
+                  ),
+            const SizedBox(width: 10),
+            if (_selectedSubDepartments.isNotEmpty) ...[
+              (permissions?.canDelete ?? false)
+                  ? ElevatedButton.icon(
+                      label: Text(
+                        "Delete",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      ),
+                      icon: Icon(Iconsax.trash),
+                      onPressed: () async {
+                        var result = await showDialog(
+                          context: context,
+                          builder: (context) => ConfirmDialog(
+                            title: 'Delete',
+                            content:
+                                'Are you sure want to delete this $_pageTitle?',
+                          ),
+                          barrierDismissible: false,
+                        );
+                        if (result != null && result) {
+                          try {
+                            futureLoading(context);
+                            for (var i in _selectedSubDepartments) {
+                              await SubDepartmentService.deleteSubDepartment(
+                                uid: i.uid ?? '',
+                              );
+                            }
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                            FlushBar.show(
+                              context,
+                              '$_pageTitle deleted successfully',
+                            );
+                            _selectedSubDepartments.clear();
+                            setState(() {});
+                          } catch (e) {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                            FlushBar.show(
+                              context,
+                              e.toString(),
+                              isSuccess: false,
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.danger,
+                        foregroundColor: AppColors.white,
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      label: Text(
+                        "Delete",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      ),
+                      icon: Icon(Iconsax.trash),
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.grey400,
+                        foregroundColor: AppColors.white,
+                      ),
+                    ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  DataRow _buildDataRow(
+    BuildContext context,
+    SubDepartmentModel subDepartment,
+    PaginatedDataController<SubDepartmentModel> controllerWatch,
+    PaginatedDataController<SubDepartmentModel> controllerRead,
+  ) {
+    bool isSelected = controllerWatch.selectedIds.contains(subDepartment.uid);
+    return DataRow(
+      selected: isSelected,
+      onSelectChanged: (selected) {
+        controllerRead.onSelected(subDepartment.uid ?? '', selected);
+        if (selected ?? false) {
+          _selectedSubDepartments.add(subDepartment);
+        } else {
+          _selectedSubDepartments.remove(subDepartment);
+        }
+        setState(() {});
+      },
+      cells: [
+        DataCell(
+          Text(
+            subDepartment.name,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ),
+        DataCell(
+          Text(
+            CacheService.departmentByUid(subDepartment.department)?.name ?? '',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        DataCell(
+          Text(
+            subDepartment.createdAt.listingDateTime,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        DataCell(CreatedByWidget(userData: subDepartment.createdBy)),
+        DataCell(
+          Row(
+            children: [
+              (permissions?.canEdit ?? false)
+                  ? IconButton(
+                      icon: const Icon(Iconsax.edit),
+                      onPressed: () {
+                        if (kIsMobile) {
+                          Sheet.showSheet(
+                            context,
+                            widget: SubDepartmentEdit(
+                              uid: subDepartment.uid ?? '',
+                            ),
+                          );
+                        } else {
+                          GeneralDialog.showRTLSheet(
+                            context,
+                            SubDepartmentEdit(uid: subDepartment.uid ?? ''),
+                          );
+                        }
+                      },
+                      color: AppColors.info,
+                      splashRadius: 20,
+                    )
+                  : IconButton(
+                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      onPressed: null,
+                    ),
+              (permissions?.canDelete ?? false)
+                  ? IconButton(
+                      icon: const Icon(Iconsax.trash),
+                      onPressed: () async {
+                        var result = await showDialog(
+                          context: context,
+                          builder: (context) {
+                            return const ConfirmDialog(
+                              title: 'Delete $_pageTitle',
+                              content:
+                                  'Are you sure want to delete this $_pageTitle',
+                            );
+                          },
+                        );
+                        if (result != null && result) {
+                          try {
+                            await SubDepartmentService.deleteSubDepartment(
+                              uid: subDepartment.uid ?? '',
+                            );
+                            FlushBar.show(
+                              context,
+                              '$_pageTitle deleted successfully',
+                            );
+                          } catch (e, st) {
+                            await ErrorService.recordError(e, st);
+                            debugPrint("${e.toString()}, ${st.toString()}");
+                            FlushBar.show(
+                              context,
+                              e.toString(),
+                              isSuccess: false,
+                              error: e,
+                              stackTrace: st,
+                            );
+                          }
+                        }
+                      },
+                      color: AppColors.danger,
+                      splashRadius: 20,
+                    )
+                  : IconButton(
+                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                      onPressed: null,
+                    ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _searchBox({required ValueChanged<String> onSearchChanged}) {
+    return SizedBox(
+      width: 200,
+      child: ListingSearchField(
+        onChanged: onSearchChanged,
+        pageTitle: _pageTitle,
+      ),
+    );
+  }
+}

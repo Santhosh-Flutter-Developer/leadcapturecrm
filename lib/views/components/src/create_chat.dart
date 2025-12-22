@@ -1,0 +1,470 @@
+import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
+import '/views/views.dart';
+import '/theme/theme.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+
+class CreateChat extends StatefulWidget {
+  final dynamic employee;
+  final List<dynamic>? employees;
+
+  const CreateChat({super.key, this.employee, this.employees});
+
+  @override
+  State<CreateChat> createState() => _CreateChatState();
+}
+
+class _CreateChatState extends State<CreateChat>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  final TextEditingController _groupName = TextEditingController();
+  final TextEditingController _description = TextEditingController();
+  final List<dynamic> _members = [];
+  final List<dynamic> _selectedMembers = [];
+  final List<dynamic> _employees = [];
+  final List<dynamic> _admins = [];
+
+  late Future _future;
+
+  // Replaced two specific selections with a single selected user id
+  String? _selectedUserId;
+  dynamic
+  _selectedUser; // optional — holds the selected object if you want to show details
+
+  @override
+  void initState() {
+    _future = _init();
+    _tabController = TabController(length: 2, vsync: this);
+    super.initState();
+  }
+
+  Future<void> _init() async {
+    try {
+      _members.clear();
+      _employees.clear();
+      _admins.clear();
+
+      var employees = await EmployeeService.getAllEmployees();
+      var admins = await AdminService.getAllAdmins();
+
+      _members.addAll(employees);
+      _members.addAll(admins);
+
+      _employees.addAll(employees); // employees only
+      _admins.addAll(admins); // admins only
+
+      setState(() {});
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      FlushBar.show(
+        context,
+        e.toString(),
+        isSuccess: false,
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(30),
+        topRight: Radius.circular(30),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: FutureBuilder(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const WaitingLoading();
+            } else if (snapshot.hasError) {
+              return ErrorDisplay(error: snapshot.error.toString());
+            } else {
+              return Column(
+                children: [
+                  PreferredSize(
+                    preferredSize: const Size(double.infinity, 50),
+                    child: Container(
+                      alignment: Alignment.centerLeft,
+                      child: TabBar(
+                        padding: EdgeInsets.zero,
+                        controller: _tabController,
+                        labelColor: AppColors.black,
+                        indicatorColor: AppColors.primary,
+                        unselectedLabelColor: AppColors.grey600,
+                        tabs: [
+                          Tab(
+                            child: Text(
+                              "Individual",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          Tab(
+                            child: Text(
+                              "Group",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // -------------------- Individual Chat Tab --------------------
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Create Chat",
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              const Divider(),
+
+                              // --- SINGLE combined dropdown for employees + admins ---
+                              FormDropdownSearch(
+                                label: 'Select User',
+                                // show both employee and admin names
+                                items: _members.map((e) => e.name).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    // find selected object in members by name
+                                    var selected = _members.firstWhere(
+                                      (m) => m.name == value,
+                                    );
+                                    // store id and the object
+                                    setState(() {
+                                      _selectedUserId =
+                                          selected.uid ?? selected.id ?? "";
+                                      _selectedUser = selected;
+                                    });
+                                  } else {
+                                    setState(() {
+                                      _selectedUserId = null;
+                                      _selectedUser = null;
+                                    });
+                                  }
+                                },
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              // Optional: show role/badge below the dropdown
+                              if (_selectedUser != null)
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _selectedUser is AdminModel
+                                          ? Icons.shield
+                                          : Icons.person,
+                                      size: 16,
+                                      color: AppColors.grey600,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _selectedUser is AdminModel
+                                          ? "Admin"
+                                          : "Employee",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: AppColors.grey600),
+                                    ),
+                                  ],
+                                ),
+
+                              const SizedBox(height: 40),
+
+                              // --- Create Button ---
+                              Center(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 50,
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    // Use single selected user id
+                                    final selectedUser = _selectedUserId;
+
+                                    // Check if user is selected
+                                    if (selectedUser == null ||
+                                        selectedUser.isEmpty) {
+                                      FlushBar.show(
+                                        context,
+                                        "Please select a user to chat with.",
+                                        isSuccess: false,
+                                      );
+                                      return;
+                                    }
+
+                                    try {
+                                      futureLoading(context);
+
+                                      // Call API with non-null String
+                                      await ChatService.createIndividualChat(
+                                        userId: selectedUser,
+                                      );
+
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                      Navigator.pop(context, true);
+                                      FlushBar.show(context, "Chat created");
+                                    } catch (e, st) {
+                                      await ErrorService.recordError(e, st);
+                                      debugPrint(
+                                        "${e.toString()}, ${st.toString()}",
+                                      );
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                      FlushBar.show(
+                                        context,
+                                        e.toString(),
+                                        isSuccess: false,
+                                        error: e,
+                                        stackTrace: st,
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(
+                                    Iconsax.message,
+                                    color: AppColors.white,
+                                  ),
+                                  label: Text(
+                                    "Create Chat",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // -------------------- Group Chat Tab (unchanged) --------------------
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Create Group",
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              const Divider(),
+                              // --- Group Name ---
+                              Text(
+                                "Group Name",
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.black,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              FormFields(
+                                controller: _groupName,
+                                hintText: "Enter group name",
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // --- Description ---
+                              Text(
+                                "Description",
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.black,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              FormFields(
+                                controller: _description,
+                                hintText: "Enter group description",
+                                maxLines: 3,
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // --- Members Dropdown ---
+                              Text(
+                                "Add Members",
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.black,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              FormMultiDropdowns(
+                                isRequired: true,
+                                items: _members
+                                    .map<Object>((e) => e.name)
+                                    .toList(),
+                                onListChanged: (selectedList) {
+                                  // Example: update selected members
+                                  setState(() {
+                                    _selectedMembers.clear();
+                                    _selectedMembers.addAll(
+                                      _members
+                                          .where(
+                                            (m) =>
+                                                selectedList.contains(m.name),
+                                          )
+                                          .toList(),
+                                    );
+                                  });
+                                },
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              // --- Create Button ---
+                              Center(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 50,
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    // Handle group creation logic here
+                                    if (_groupName.text.isEmpty ||
+                                        _selectedMembers.isEmpty) {
+                                      FlushBar.show(
+                                        context,
+                                        "Please fill all required fields.",
+                                        isSuccess: false,
+                                      );
+
+                                      return;
+                                    }
+
+                                    try {
+                                      futureLoading(context);
+                                      var sessionUser =
+                                          await Spdb.getUser(); // the logged in user
+
+                                      final creatorName = sessionUser.name;
+                                      final creatorUid = sessionUser.uid;
+
+                                      ChatModel chatModel = ChatModel(
+                                        createdBy: creatorUid,
+                                        participants: _selectedMembers
+                                            .map<String>(
+                                              (e) => e.uid ?? e.id ?? '',
+                                            )
+                                            .toList(),
+                                        participantsKey: _selectedMembers
+                                            .map<String>(
+                                              (e) => e.uid ?? e.id ?? '',
+                                            )
+                                            .toList()
+                                            .join('_'),
+                                        title: _groupName.text,
+                                        description: _description.text,
+                                        isGroupChat: true,
+                                        isPinned: false,
+                                        isFavorite: false,
+                                        lastMessage: LastMessageModel(
+                                          message: "$creatorName created group",
+                                          timestamp: DateTime.now(),
+                                          senderId: creatorUid,
+                                        ),
+                                      );
+
+                                      await ChatService.createGroupChat(
+                                        model: chatModel,
+                                      );
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                      Navigator.pop(context, true);
+                                      FlushBar.show(
+                                        context,
+                                        "Group chat created",
+                                      );
+                                    } catch (e, st) {
+                                      await ErrorService.recordError(e, st);
+                                      debugPrint(
+                                        "${e.toString()}, ${st.toString()}",
+                                      );
+                                      if (Navigator.canPop(context)) {
+                                        Navigator.pop(context);
+                                      }
+                                      FlushBar.show(
+                                        context,
+                                        e.toString(),
+                                        isSuccess: false,
+                                        error: e,
+                                        stackTrace: st,
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(
+                                    Iconsax.messages_2,
+                                    color: AppColors.white,
+                                  ),
+                                  label: Text(
+                                    "Create Group",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+        ),
+      ),
+    );
+  }
+}

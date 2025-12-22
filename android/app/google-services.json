@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "249357070035",
+    "project_id": "srisoftwarez-crm",
+    "storage_bucket": "srisoftwarez-crm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:249357070035:android:bceadab9dbcac9b86e2e26",
+        "android_client_info": {
+          "package_name": "com.srisoftwarez.aaatp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN9KCExYnJkUGcMgvxr3KnvmJDY4PiPZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:249357070035:android:3348ac44513bf3cd6e2e26",
+        "android_client_info": {
+          "package_name": "com.srisoftwarez.crm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN9KCExYnJkUGcMgvxr3KnvmJDY4PiPZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

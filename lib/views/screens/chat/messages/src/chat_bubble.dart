@@ -1,0 +1,785 @@
+part of 'chat_messages.dart';
+
+/// The main chat bubble widget.
+/// Refined for better UX:
+/// 1. Uses [OverlayPortal] for the hover menu so it floats above all other UI elements
+///    and ensures clicks (hit-testing) work reliably even outside widget bounds.
+/// 2. Implements a "Keep Alive" timer logic for smooth hovering.
+/// 3. Compact layout with pills for existing reactions.
+class ChatBubble extends StatefulWidget {
+  final String chatUid;
+  final MessagesModel message;
+  final bool isSender;
+  final bool isLast;
+  final bool isPinned;
+
+  const ChatBubble({
+    super.key,
+    required this.chatUid,
+    required this.message,
+    required this.isSender,
+    this.isLast = false,
+    this.isPinned = false,
+  });
+
+  @override
+  State<ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<ChatBubble>
+    with SingleTickerProviderStateMixin {
+  Offset _slideOffset = Offset.zero;
+  bool _showSlideIcon = false;
+
+  // Overlay & Hover Logic
+  final OverlayPortalController _overlayController = OverlayPortalController();
+  final LayerLink _layerLink = LayerLink();
+  Timer? _hoverTimer;
+  bool _isMenuHovered = false;
+  bool _isBubbleHovered = false;
+  bool _isPopupOpen = false; // FIX: Track if the popup menu is open
+
+  late bool _isPinned;
+  late MessagesModel _msg;
+  MessagesModel? _replyChat;
+
+  @override
+  void initState() {
+    super.initState();
+    _msg = widget.message;
+    _isPinned = _msg.isPinned;
+    _initReplyMessage();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) {
+      _msg = widget.message;
+      _isPinned = _msg.isPinned;
+    }
+  }
+
+  @override
+  void dispose() {
+    _hoverTimer?.cancel();
+    super.dispose();
+  }
+
+  void _initReplyMessage() async {
+    if (_msg.replyFor != null) {
+      final message = await ChatService.getChatMessage(
+        chatId: widget.chatUid,
+        messageId: _msg.replyFor!,
+      );
+      if (mounted) setState(() => _replyChat = message);
+    }
+  }
+
+  // --- Hover Logic with Delay ---
+
+  void _onEnterBubble() {
+    _isBubbleHovered = true;
+    _showMenu();
+  }
+
+  void _onExitBubble() {
+    _isBubbleHovered = false;
+    _startHideTimer();
+  }
+
+  void _onEnterMenu() {
+    _isMenuHovered = true;
+    _showMenu(); // Cancel any hide timer
+  }
+
+  void _onExitMenu() {
+    _isMenuHovered = false;
+    _startHideTimer();
+  }
+
+  void _showMenu() {
+    _hoverTimer?.cancel();
+    if (!_overlayController.isShowing) {
+      _overlayController.show();
+    }
+  }
+
+  void _startHideTimer() {
+    _hoverTimer?.cancel();
+    _hoverTimer = Timer(const Duration(milliseconds: 150), () {
+      // FIX: Don't hide if the popup menu is currently open
+      if (!_isBubbleHovered && !_isMenuHovered && !_isPopupOpen && mounted) {
+        _overlayController.hide();
+      }
+    });
+  }
+
+  // --- Gestures ---
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    double dx = details.primaryDelta!;
+    setState(() {
+      if (widget.isSender && dx < 0) {
+        _slideOffset = Offset((_slideOffset.dx + dx).clamp(-60, 0), 0);
+        _showSlideIcon = true;
+      } else if (!widget.isSender && dx > 0) {
+        _slideOffset = Offset((_slideOffset.dx + dx).clamp(0, 60), 0);
+        _showSlideIcon = true;
+      }
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final threshold = widget.isSender
+        ? _slideOffset.dx <= -40
+        : _slideOffset.dx >= 40;
+    if (threshold) _triggerSwipeAction();
+    setState(() {
+      _slideOffset = Offset.zero;
+      _showSlideIcon = false;
+    });
+  }
+
+  void _triggerSwipeAction() {
+    Provider.of<MessageProvider>(context, listen: false).replyMessage(_msg);
+  }
+
+  void _onDoubleTap() {
+    _addReaction("❤️");
+  }
+
+  // --- Actions ---
+
+  void _addReaction(String emoji) async {
+    // Optimistic UI update could be added here
+    final uid = await Spdb.getUid();
+    if (uid == null) return;
+
+    // Close menu after selection
+    if (mounted) {
+      _isMenuHovered = false;
+      _overlayController.hide();
+    }
+
+    await ChatService.toggleReaction(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+      emoji: emoji,
+      userId: uid,
+    );
+
+    final updated = await ChatService.getChatMessage(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+    );
+    if (mounted) setState(() => _msg = updated);
+  }
+
+  void _pinMessage() async {
+    await ChatService.togglePin(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+      value: !_isPinned,
+    );
+    final updated = await ChatService.getChatMessage(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+    );
+    if (mounted) {
+      setState(() {
+        _msg = updated;
+        _isPinned = updated.isPinned;
+      });
+    }
+    _overlayController.hide();
+  }
+
+  void _handleDeleteMessage() async {
+    _overlayController.hide();
+    final confirm = await showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) =>
+          const ConfirmDialog(title: "Delete", content: "Delete this message?"),
+    );
+    if (confirm != true) return;
+    await ChatService.deleteChatMessage(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+    );
+  }
+
+  void _showMobileChatOptions() async {
+    if (!kIsMobile) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final result = await Sheet.showSheet(
+      context,
+      widget: ChatOptions(delete: widget.isSender, edit: widget.isSender),
+      size: 0.4,
+    );
+
+    if (result != null && mounted) {
+      final provider = Provider.of<MessageProvider>(context, listen: false);
+      if (result == 1) provider.editMessage(_msg);
+      if (result == 2) _handleDeleteMessage();
+      if (result == 3) provider.replyMessage(_msg);
+      if (result == 4) Clipboard.setData(ClipboardData(text: _msg.message));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // FIX: Capture the Provider instance here while the context is stable.
+    final messageProvider = Provider.of<MessageProvider>(
+      context,
+      listen: false,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: CompositedTransformTarget(
+        link: _layerLink,
+        child: OverlayPortal(
+          controller: _overlayController,
+          overlayChildBuilder: (BuildContext context) {
+            return CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              targetAnchor: widget.isSender
+                  ? Alignment.topRight
+                  : Alignment.topLeft,
+              followerAnchor: widget.isSender
+                  ? Alignment.bottomRight
+                  : Alignment.bottomLeft,
+              offset: const Offset(0, -6),
+              child: Align(
+                alignment: widget.isSender
+                    ? Alignment.bottomRight
+                    : Alignment.bottomLeft,
+                child: MouseRegion(
+                  onEnter: (_) => _onEnterMenu(),
+                  onExit: (_) => _onExitMenu(),
+                  child: _ChatBubbleHoverMenu(
+                    isSender: widget.isSender,
+                    onReaction: _addReaction,
+                    // FIX: Pass callback to handle popup state
+                    onMenuStateChanged: (isOpen) {
+                      _isPopupOpen = isOpen;
+                      // If closing, check if we need to hide the overlay
+                      if (!isOpen) {
+                        _startHideTimer();
+                      }
+                    },
+                    actions: {
+                      "reply": () {
+                        _overlayController.hide();
+                        messageProvider.replyMessage(_msg);
+                      },
+                      "copy": () {
+                        _overlayController.hide();
+                        Clipboard.setData(ClipboardData(text: _msg.message));
+                      },
+                      "pin": _pinMessage,
+                      "edit": () {
+                        _overlayController.hide();
+                        messageProvider.editMessage(_msg);
+                      },
+                      "delete": _handleDeleteMessage,
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+          child: MouseRegion(
+            onEnter: (_) {
+              if (!kIsMobile) _onEnterBubble();
+            },
+            onExit: (_) {
+              if (!kIsMobile) _onExitBubble();
+            },
+            child: GestureDetector(
+              onDoubleTap: _onDoubleTap,
+              onLongPress: () {
+                if (kIsMobile) {
+                  _onEnterMenu();
+                }
+              },
+              onLongPressCancel: () {
+                if (kIsMobile) {
+                  _onExitMenu();
+                }
+              },
+              child: _ChatBubbleCore(
+                slideOffset: _slideOffset,
+                showSlideIcon: _showSlideIcon,
+                isSender: widget.isSender,
+                message: _msg,
+                replyChat: _replyChat,
+                isLast: widget.isLast,
+                isPinned: _isPinned,
+                onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                onHorizontalDragEnd: _onHorizontalDragEnd,
+                onLongPress: _showMobileChatOptions,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- CORE WIDGETS ---
+
+class _ChatBubbleCore extends StatelessWidget {
+  final Offset slideOffset;
+  final bool showSlideIcon;
+  final bool isSender;
+  final MessagesModel message;
+  final MessagesModel? replyChat;
+  final bool isLast;
+  final bool isPinned;
+  final ValueChanged<DragUpdateDetails> onHorizontalDragUpdate;
+  final ValueChanged<DragEndDetails> onHorizontalDragEnd;
+  final VoidCallback onLongPress;
+
+  const _ChatBubbleCore({
+    required this.slideOffset,
+    required this.showSlideIcon,
+    required this.isSender,
+    required this.message,
+    required this.replyChat,
+    required this.isLast,
+    required this.isPinned,
+    required this.onHorizontalDragUpdate,
+    required this.onHorizontalDragEnd,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: slideOffset,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+        children: [
+          if (showSlideIcon)
+            Positioned.fill(
+              child: Align(
+                alignment: isSender
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Icon(Icons.reply, color: AppColors.grey400),
+                ),
+              ),
+            ),
+          Column(
+            crossAxisAlignment: isSender
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              if (isPinned)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.push_pin, size: 12, color: AppColors.orange),
+                      SizedBox(width: 4),
+                      Text(
+                        "Pinned",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              if (!isSender && isLast) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 2),
+                  child: Text(
+                    CacheService.getUserByUid(message.senderId)?.name ?? 'User',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.grey700,
+                    ),
+                  ),
+                ),
+              ],
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (!isSender) ...[
+                    _ChatBubbleSenderAvatar(senderId: message.senderId),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: isSender
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        _ChatBubbleMessageBox(
+                          isSender: isSender,
+                          message: message,
+                          replyChat: replyChat,
+                        ),
+                        if (message.reactions.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: _ReactionChips(
+                              reactions: message.reactions,
+                              isSender: isSender,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      message.timestamp != null
+                          ? DateFormat('hh:mm a').format(message.timestamp!)
+                          : 'Just now',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                    ),
+                    if (isSender) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        message.seenBy.isNotEmpty ? Icons.done_all : Icons.done,
+                        size: 14,
+                        color: message.seenBy.isNotEmpty
+                            ? AppColors.blue
+                            : AppColors.grey,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatBubbleMessageBox extends StatelessWidget {
+  final bool isSender;
+  final MessagesModel message;
+  final MessagesModel? replyChat;
+
+  const _ChatBubbleMessageBox({
+    required this.isSender,
+    required this.message,
+    required this.replyChat,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final urlRegex = RegExp(r'(https?:\/\/[^\s\)\]\}]+)');
+    final match = urlRegex.firstMatch(message.message);
+    final url = match?.group(0);
+    return Column(
+      crossAxisAlignment: isSender
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        if (message.message.isNotEmpty)
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSender
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : AppColors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: isSender
+                    ? const Radius.circular(16)
+                    : const Radius.circular(4),
+                bottomRight: isSender
+                    ? const Radius.circular(4)
+                    : const Radius.circular(16),
+              ),
+              boxShadow: [
+                if (!isSender)
+                  BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.05),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (replyChat != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.black.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        left: BorderSide(color: AppColors.primary, width: 3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          CacheService.getUserByUid(
+                                replyChat!.senderId,
+                              )?.name ??
+                              'User',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          replyChat!.message,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                MarkdownText(message: message.message),
+              ],
+            ),
+          ),
+
+        // --- Attachment / URL Preview ---
+        if (url != null && message.attachments.isEmpty) ...[
+          UrlPreview(url: url, isSender: isSender),
+        ] else if (message.attachments.isNotEmpty) ...[
+          AttachmentPreview(attachments: message.attachments),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReactionChips extends StatelessWidget {
+  final Map<String, List<String>> reactions;
+  final bool isSender;
+
+  const _ReactionChips({required this.reactions, required this.isSender});
+
+  @override
+  Widget build(BuildContext context) {
+    // reactions = { "😂": ["u1","u2"], "❤️": ["u3"] }
+    final counts = <String, int>{};
+
+    for (var entry in reactions.entries) {
+      final emoji = entry.key;
+      final users = entry.value;
+      counts[emoji] = users.length; // number of reactions for that emoji
+    }
+
+    return Wrap(
+      alignment: isSender ? WrapAlignment.end : WrapAlignment.start,
+      spacing: 4,
+      runSpacing: 4,
+      children: counts.entries.map((entry) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.grey200,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.white, width: 2),
+          ),
+          child: Text(
+            "${entry.key} ${entry.value > 1 ? entry.value : ''}",
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _ChatBubbleHoverMenu extends StatefulWidget {
+  final bool isSender;
+  final Function(String) onReaction;
+  final Map<String, VoidCallback> actions;
+  final ValueChanged<bool>? onMenuStateChanged; // FIX: New callback
+
+  const _ChatBubbleHoverMenu({
+    required this.isSender,
+    required this.onReaction,
+    required this.actions,
+    this.onMenuStateChanged, // FIX: New callback
+  });
+
+  @override
+  State<_ChatBubbleHoverMenu> createState() => _ChatBubbleHoverMenuState();
+}
+
+class _ChatBubbleHoverMenuState extends State<_ChatBubbleHoverMenu> {
+  @override
+  Widget build(BuildContext context) {
+    final emojis = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...emojis.map(
+            (e) => _HoverEmoji(emoji: e, onTap: () => widget.onReaction(e)),
+          ),
+          Container(
+            height: 20,
+            width: 1,
+            color: AppColors.grey300,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          _HoverIcon(icon: Icons.reply, onTap: widget.actions['reply']),
+          _HoverIcon(
+            icon: Icons.more_horiz,
+            onTap: () {
+              final RenderBox button = context.findRenderObject() as RenderBox;
+              final RenderBox overlay =
+                  Overlay.of(context).context.findRenderObject() as RenderBox;
+
+              final RelativeRect position = RelativeRect.fromRect(
+                Rect.fromPoints(
+                  button.localToGlobal(Offset.zero, ancestor: overlay),
+                  button.localToGlobal(
+                    button.size.bottomRight(Offset.zero),
+                    ancestor: overlay,
+                  ),
+                ),
+                Offset.zero & overlay.size,
+              );
+
+              // FIX: Notify parent that menu is open (prevents hide)
+              widget.onMenuStateChanged?.call(true);
+
+              showMenu(
+                context: context,
+                position: position,
+                items: [
+                  for (var i in widget.actions.keys)
+                    PopupMenuItem(
+                      value: i,
+                      child: Text(
+                        i.capitalizeFirst,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                ],
+              ).then((value) {
+                // FIX: Notify parent that menu is closed
+                widget.onMenuStateChanged?.call(false);
+
+                if (!mounted) return;
+                if (value != null) {
+                  widget.actions[value]!();
+                }
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoverEmoji extends StatefulWidget {
+  final String emoji;
+  final VoidCallback onTap;
+  const _HoverEmoji({required this.emoji, required this.onTap});
+
+  @override
+  State<_HoverEmoji> createState() => _HoverEmojiState();
+}
+
+class _HoverEmojiState extends State<_HoverEmoji> {
+  bool _hover = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          // ignore: deprecated_member_use
+          transform: Matrix4.identity()..scale(_hover ? 1.2 : 1.0),
+          child: Text(
+            widget.emoji,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverIcon extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _HoverIcon({required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 18, color: AppColors.grey700),
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(),
+      splashRadius: 16,
+      onPressed: onTap,
+    );
+  }
+}
+
+class _ChatBubbleSenderAvatar extends StatelessWidget {
+  final String senderId;
+  const _ChatBubbleSenderAvatar({required this.senderId});
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 12,
+      backgroundColor: AppColors.grey300,
+      child: const Icon(Icons.person, size: 14, color: AppColors.white),
+    );
+  }
+}

@@ -1,0 +1,152 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '/models/models.dart';
+import '/constants/constants.dart';
+import '/services/services.dart';
+import '/utils/utils.dart';
+
+class AdminService {
+  static final FirebaseConfig firebase = FirebaseConfig();
+
+  static Future<void> createAdmin({required AdminModel admin}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.admins.name}',
+        admin.toMap(),
+        activity: '${admin.name} has been added as an admin',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error creating admin: $e";
+    }
+  }
+
+  static Future<void> updateAdmin({
+    required String id,
+    required AdminModel data,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      await CommonService.update(
+        '${Collections.users.name}/$cid/${Collections.admins.name}',
+        id,
+        data.toUpdateMap(),
+        activity: '${data.name} has been updated',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error updating admin: $e";
+    }
+  }
+
+  static Future<AdminModel> getAdmin({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var snap = await firebase.users
+          .doc(cid)
+          .collection(Collections.admins.name)
+          .doc(uid)
+          .get();
+
+      if (snap.data() == null) throw "Admin data is empty";
+
+      return AdminModel.fromMap(snap.id, snap.data()!);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error fetching admin: $e";
+    }
+  }
+
+  static Future<List<AdminModel>> getAllAdmins({
+    bool? excludeCurrentUser,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      Query<Map<String, dynamic>> query = firebase.users
+          .doc(cid)
+          .collection(Collections.admins.name);
+
+      if (excludeCurrentUser ?? false) {
+        var uid = await Spdb.getUid();
+        query = query.where(FieldPath.documentId, isNotEqualTo: uid);
+      }
+
+      var querySnapshot = await query.get();
+
+      return querySnapshot.docs.map((e) {
+        return AdminModel.fromMap(e.id, e.data());
+      }).toList();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error fetching admin list: $e";
+    }
+  }
+
+  static Future<void> _deleteAdminProfileImage({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      var doc = await firebase.users
+          .doc(cid)
+          .collection(Collections.admins.name)
+          .doc(uid)
+          .get();
+
+      var url = doc.data()?["profilePictureUrl"];
+
+      if (url != null) await StorageService.deleteImage(url);
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.admins.name)
+          .doc(uid)
+          .update({"profilePictureUrl": null});
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error deleting admin profile image: $e";
+    }
+  }
+
+  static Future<void> deleteAdmin({required String uid}) async {
+    try {
+      var cid = await Spdb.getCid();
+      await _deleteAdminProfileImage(uid: uid);
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.admins.name)
+          .doc(uid)
+          .get();
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+
+      var user = await Spdb.getUser();
+      ActivityLogModel activityLogModel = ActivityLogModel(
+        userData: user,
+        activity: '${(data['name']).toString().decrypt} has been deleted',
+        description: 'User has deleted an entry in ${Collections.admins.name}',
+        collection: '${Collections.users.name}/$cid/${Collections.admins.name}',
+        docId: docRef.id,
+      );
+      await CommonService.add(
+        '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+        activityLogModel.toMap(),
+      );
+
+      docRef.reference.delete();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("$e, $st");
+      throw "Error deleting admin: $e";
+    }
+  }
+}

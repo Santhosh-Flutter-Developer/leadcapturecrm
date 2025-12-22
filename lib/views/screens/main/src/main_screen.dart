@@ -1,0 +1,28 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iconsax/iconsax.dart';
+import '/constants/constants.dart';
+import '/models/models.dart';
+import '/theme/theme.dart';
+import '/utils/utils.dart';
+import '/views/views.dart';
+import '/services/services.dart';
+part 'mobile_main_screen.dart';
+part 'desktop_main_screen.dart';
+
+class MainScreen extends StatelessWidget {
+  final bool isAdmin;
+  final String? selectedMenu;
+  const MainScreen({super.key, required this.isAdmin, this.selectedMenu});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsMobile) {
+      return MobileMainScreen(isAdmin: isAdmin);
+    } else {
+      return DesktopMainScreen(isAdmin: isAdmin, selectedMenu: selectedMenu);
+    }
+  }
+}
