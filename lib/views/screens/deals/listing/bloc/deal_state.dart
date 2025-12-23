@@ -22,25 +22,48 @@ class DealLoaded extends DealState {
   List<Object> get props => [deals, allStatuses];
 }
 
-class DealCommentsLoading extends DealState {}
-
-class DealCommentsLoaded extends DealState {
-  final List<Map<String, dynamic>> comments;
-  DealCommentsLoaded(this.comments);
-}
-
-class DealCommentsError extends DealState {
-  final String message;
-  DealCommentsError(this.message);
-}
-
-class DealCommentAdded extends DealState {}
-
 class DealError extends DealState {
   final String message;
-
   DealError(this.message);
 
   @override
   List<Object> get props => [message];
 }
+
+class DealDetailLoaded extends DealState {
+  final List<Map<String, dynamic>> comments;
+  final List<DealHistoryModel> history;
+
+  DealDetailLoaded({required this.comments, required this.history});
+
+  @override
+  List<Object> get props => [comments, history];
+}
+
+class DealDetailError extends DealState {
+  final String message;
+  DealDetailError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class DealCommentsLoading extends DealState {}
+
+class DealCommentsLoaded extends DealState {
+  final List<Map<String, dynamic>> comments;
+  DealCommentsLoaded(this.comments);
+
+  @override
+  List<Object> get props => [comments];
+}
+
+class DealCommentsError extends DealState {
+  final String message;
+  DealCommentsError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class DealCommentAdded extends DealState {}

@@ -35,6 +35,9 @@ class DealService {
       var dealData = deal.toMap();
       dealData['dealNumber'] = dealNumber;
       var dealDoc = await dealsRef.add(dealData);
+
+      await addDealHistory(dealUid: dealDoc.id, action: 'Deal Created');
+
       // Collect workflow users for notifications
       List<String> users = deal.workFlow.toSet().toList();
 
@@ -99,6 +102,8 @@ class DealService {
       }
 
       var user = await Spdb.getUser();
+
+      await addDealHistory(dealUid: uid, action: 'Deal Updated');
 
       var notif = NotificationModel(
         title: 'Deal : ${deal.dealName}',
@@ -229,6 +234,35 @@ class DealService {
 
   static Future isDealStatusAssigned(String s) async {}
 
+  static Future<void> deleteDealComment({
+    required String dealUid,
+    required String commentUid,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      if (cid == null) throw "Missing cid";
+
+      var docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(dealUid)
+          .collection('comments')
+          .doc(commentUid)
+          .get();
+      final data = docRef.data() as Map<String, dynamic>;
+      await TrashService.moveToTrash(
+        docRef: docRef.reference,
+        docData: data,
+        reason: 'user_deleted',
+      );
+      docRef.reference.delete();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error deleting deal comment: $e\n$st");
+      rethrow;
+    }
+  }
+
   static Future<void> addDealComment({
     required String dealUid,
     required String commentText,
@@ -236,10 +270,7 @@ class DealService {
     try {
       final cid = await Spdb.getCid();
       final uid = await Spdb.getUid();
-
-      if (cid == null || uid == null) {
-        throw "Missing cid or uid";
-      }
+      if (cid == null || uid == null) throw "Missing cid or uid";
 
       final commentsRef = firebase.users
           .doc(cid)
@@ -249,11 +280,16 @@ class DealService {
 
       final commentData = {
         'comment': commentText,
-        'createdBy': uid,
+        'createdBy': {'uid': uid, 'name': (await Spdb.getUser()).name},
         'createdAt': FieldValue.serverTimestamp(),
       };
 
       await commentsRef.add(commentData);
+
+      await addDealHistory(
+        dealUid: dealUid,
+        action: 'Comment Added: $commentText',
+      );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("Error adding deal comment: $e\n$st");
@@ -290,31 +326,29 @@ class DealService {
     }
   }
 
-  static Future<void> deleteDealComment({
+  static Future<void> addDealHistory({
     required String dealUid,
-    required String commentUid,
+    required String action,
   }) async {
     try {
       final cid = await Spdb.getCid();
-      if (cid == null) throw "Missing cid";
+      final user = await Spdb.getUser();
 
-      var docRef = await firebase.users
+      final historyRef = firebase.users
           .doc(cid)
           .collection(Collections.deals.name)
           .doc(dealUid)
-          .collection('comments')
-          .doc(commentUid)
-          .get();
-      final data = docRef.data() as Map<String, dynamic>;
-      await TrashService.moveToTrash(
-        docRef: docRef.reference,
-        docData: data,
-        reason: 'user_deleted',
+          .collection('history');
+
+      final history = DealHistoryModel(
+        userId: user.uid,
+        updateDisposition: action,
       );
-      docRef.reference.delete();
+
+      await historyRef.add(history.toMap());
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("Error deleting deal comment: $e\n$st");
+      debugPrint("Error adding deal history: $e\n$st");
       rethrow;
     }
   }

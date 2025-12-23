@@ -30,7 +30,9 @@ class DealsViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => DealBloc()..add(StreamDealComments(deal.uid!)),
+      create: (_) => DealBloc()
+        ..add(StreamDealComments(deal.uid!))
+        ..add(StreamDealHistory(deal.uid!)),
       child: DealsView(deal: deal),
     );
   }
@@ -51,8 +53,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    context.read<DealBloc>().add(StreamDealComments(widget.deal.uid!));
+    _tabController = TabController(length: 3, vsync: this);
+    // context.read<DealBloc>().add(StreamDealComments(widget.deal.uid!));
   }
 
   @override
@@ -191,6 +193,16 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                   ],
                 ),
               ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Iconsax.activity, size: 18),
+                    SizedBox(width: 8),
+                    Text("History"),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -203,6 +215,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               children: [
                 _buildDetailsTab(context),
                 _buildNotesAndAttachments(context),
+                _buildHistorySection(context),
               ],
             );
           },
@@ -253,126 +266,248 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader("Comments", Iconsax.message),
-            const Divider(
-              height: 28,
-              thickness: 1,
-              color: DealsViewAppColors.grey200,
-            ),
-            TextField(
-              controller: _commentController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: "Write a comment...",
-                filled: true,
-                fillColor: DealsViewAppColors.grey50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader("Comments", Iconsax.message),
+          const Divider(
+            height: 28,
+            thickness: 1,
+            color: LeadsViewAppColors.grey200,
+          ),
+          TextField(
+            controller: _commentController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: "Write a comment...",
+              filled: true,
+              fillColor: LeadsViewAppColors.grey50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: _addComment,
+          ),
+          const SizedBox(height: 12),
+          ValueListenableBuilder(
+            valueListenable: _commentController,
+            builder: (context, TextEditingValue value, _) {
+              return ElevatedButton.icon(
+                onPressed: value.text.trim().isEmpty ? null : _addComment,
                 icon: const Icon(Iconsax.save_2, size: 18),
-                label: Text(
-                  "Save",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            BlocBuilder<DealBloc, DealState>(
+                label: const Text("Save"),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+
+          /// Comments list
+          Expanded(
+            child: BlocBuilder<DealBloc, DealState>(
               builder: (context, state) {
-                if (state is DealCommentsLoading) {
-                  return WaitingLoading();
-                } else if (state is DealCommentsError) {
-                  return Text(
-                    state.message,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
-                  );
-                } else if (state is DealCommentsLoaded) {
-                  if (state.comments.isEmpty) {
+                if (state is DealDetailLoaded) {
+                  final comments = state.comments;
+
+                  if (comments.isEmpty) {
                     return Center(
-                      child: Text(
-                        "No comments yet.",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: DealsViewAppColors.grey500,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 40,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "No comments yet",
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.grey),
+                          ),
+                        ],
                       ),
                     );
                   }
+
                   return ListView.separated(
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: state.comments.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final comment = state.comments[index];
+                    padding: EdgeInsets.zero,
+                    itemCount: comments.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, index) {
+                      final comment = comments[index];
+                      final createdBy =
+                          comment['createdBy'] as Map<String, dynamic>? ?? {};
+                      final authorName = createdBy['name'] ?? 'Unknown';
+
                       final timestamp = comment['createdAt'];
-                      String formattedTime = "-";
-                      if (timestamp != null) {
-                        DateTime dateTime;
-                        if (timestamp is Timestamp) {
-                          dateTime = timestamp.toDate();
-                        } else if (timestamp is DateTime) {
-                          dateTime = timestamp;
-                        } else {
-                          dateTime =
-                              DateTime.tryParse(timestamp.toString()) ??
-                              DateTime.now();
-                        }
-                        formattedTime =
-                            "${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+                      DateTime dateTime = DateTime.now();
+                      if (timestamp is Timestamp) {
+                        dateTime = timestamp.toDate();
+                      } else if (timestamp is DateTime) {
+                        dateTime = timestamp;
                       }
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: DealsViewAppColors.grey50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              comment['comment'] ?? '',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: DealsViewAppColors.black,
+
+                      final formattedTime =
+                          "${dateTime.day.toString().padLeft(2, '0')}/"
+                          "${dateTime.month.toString().padLeft(2, '0')}/"
+                          "${dateTime.year} "
+                          "${dateTime.hour.toString().padLeft(2, '0')}:"
+                          "${dateTime.minute.toString().padLeft(2, '0')}";
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: LeadsViewAppColors.primary
+                                .withOpacity(0.15),
+                            child: Text(
+                              authorName[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: LeadsViewAppColors.grey50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: LeadsViewAppColors.grey200,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    authorName,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(comment['comment'] ?? ''),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    formattedTime,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppColors.grey),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              formattedTime,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.grey),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       );
                     },
                   );
                 }
-                return Center(
-                  child: Text(
-                    "No comments.",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                );
+
+                if (state is DealDetailError) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                    ),
+                  );
+                }
+
+                return const Center(child: WaitingLoading());
               },
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistorySection(BuildContext context) {
+    return _sectionCard(
+      "History",
+      Iconsax.activity,
+      BlocBuilder<DealBloc, DealState>(
+        builder: (context, state) {
+          if (state is DealDetailLoaded) {
+            final history = state.history;
+
+            if (history.isEmpty) {
+              return Text(
+                "No history available.",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: LeadsViewAppColors.grey500,
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: history.map((h) {
+                final date = h.timestamp;
+                final performedBy = h.userId;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: LeadsViewAppColors.grey50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: LeadsViewAppColors.grey200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        h.updateDisposition,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.user,
+                            size: 14,
+                            color: LeadsViewAppColors.grey500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            performedBy,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: LeadsViewAppColors.grey500),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${date.day.toString().padLeft(2, '0')}/"
+                            "${date.month.toString().padLeft(2, '0')}/"
+                            "${date.year}",
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: LeadsViewAppColors.grey500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          }
+
+          if (state is DealDetailError) {
+            return Text(
+              state.message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+            );
+          }
+
+          return const Center(child: WaitingLoading());
+        },
       ),
     );
   }
