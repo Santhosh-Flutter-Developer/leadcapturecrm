@@ -13,12 +13,16 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   List<DealModel> allDeals = [];
   List<DealStatusModel> allStatus = [];
+  List<Map<String, dynamic>> _comments = [];
+  List<DealHistoryModel> _history = [];
 
   DealBloc() : super(DealLoading()) {
     on<StreamDeals>(_streamDeals);
     on<DeleteDeal>(_deleteDeal);
     on<StreamDealComments>(_streamDealComments);
     on<AddDealComment>(_addDealComment);
+    on<StreamDealHistory>(_streamDealHistory);
+    on<AddDealHistory>(_addDealHistory);
   }
 
   Future<void> _streamDeals(StreamDeals event, Emitter<DealState> emit) async {
@@ -110,27 +114,38 @@ class DealBloc extends Bloc<DealEvent, DealState> {
     StreamDealComments event,
     Emitter<DealState> emit,
   ) async {
-    emit(DealCommentsLoading());
-    final cid = await Spdb.getCid();
-    final commentsStream = firestore
-        .collection(Collections.users.name)
-        .doc(cid)
-        .collection(Collections.deals.name)
-        .doc(event.dealUid)
-        .collection('comments')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+    try {
+      final cid = await Spdb.getCid();
+      final commentsStream = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(event.dealUid)
+          .collection('comments')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['uid'] = doc.id;
+              return data;
+            }).toList(),
+          );
 
-    await emit.forEach<List<Map<String, dynamic>>>(
-      commentsStream,
-      onData: (comments) {
-        return DealCommentsLoaded(comments);
-      },
-      onError: (error, stackTrace) {
-        return DealCommentsError("Failed to load comments: $error");
-      },
-    );
+      await emit.forEach<List<Map<String, dynamic>>>(
+        commentsStream,
+        onData: (comments) {
+          _comments = comments;
+          return DealDetailLoaded(comments: _comments, history: _history);
+        },
+        onError: (error, stackTrace) {
+          debugPrint(stackTrace.toString());
+          return DealDetailError("Failed to load comments");
+        },
+      );
+    } catch (e) {
+      emit(DealDetailError("Failed to load comments: $e"));
+    }
   }
 
   Future<void> _addDealComment(
@@ -139,10 +154,11 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   ) async {
     try {
       final cid = await Spdb.getCid();
-      final uid = await Spdb.getUid();
+      final user = await Spdb.getUser();
+
       final comment = {
         'comment': event.commentText,
-        'createdBy': uid,
+        'createdBy': {'uid': user.uid, 'name': user.name},
         'createdAt': FieldValue.serverTimestamp(),
       };
 
@@ -154,11 +170,76 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           .collection('comments')
           .add(comment);
 
-      emit(DealCommentAdded());
+      await DealService.addDealHistory(
+        dealUid: event.dealUid,
+        action: "${user.name} added a comment",
+      );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("Error adding comment: $e\n$st");
-      emit(DealCommentsError("Failed to add comment: $e"));
+      debugPrint(st.toString());
+      emit(DealDetailError("Failed to add comment"));
+    }
+  }
+
+  Future<void> _streamDealHistory(
+    StreamDealHistory event,
+    Emitter<DealState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      final historyStream = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(event.dealUid)
+          .collection('history')
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => DealHistoryModel.fromMap(doc.data()))
+                .toList(),
+          );
+
+      await emit.forEach<List<DealHistoryModel>>(
+        historyStream,
+        onData: (history) {
+          _history = history;
+          return DealDetailLoaded(comments: _comments, history: _history);
+        },
+        onError: (error, _) => DealDetailError(error.toString()),
+      );
+    } catch (e) {
+      emit(DealDetailError(e.toString()));
+    }
+  }
+
+  Future<void> _addDealHistory(
+    AddDealHistory event,
+    Emitter<DealState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
+      final user = await Spdb.getUser();
+
+      final historyRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(event.dealUid)
+          .collection('history');
+
+      final history = DealHistoryModel(
+        userId: user.uid,
+        updateDisposition: event.action,
+      );
+
+      await historyRef.add(history.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error adding deal history: $e\n$st");
+      emit(DealDetailError("Failed to add deal history"));
     }
   }
 }

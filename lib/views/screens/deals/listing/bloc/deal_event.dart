@@ -27,7 +27,20 @@ class StreamDealComments extends DealEvent {
 class AddDealComment extends DealEvent {
   final String dealUid;
   final String commentText;
+
   AddDealComment({required this.dealUid, required this.commentText});
+}
+
+class StreamDealHistory extends DealEvent {
+  final String dealUid;
+  StreamDealHistory(this.dealUid);
+}
+
+class AddDealHistory extends DealEvent {
+  final String dealUid;
+  final String action;
+
+  AddDealHistory({required this.dealUid, required this.action});
 }
 
 class DeleteDeal extends DealEvent {

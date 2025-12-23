@@ -316,7 +316,7 @@ class _FeedEditState extends State<FeedEdit> {
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
+                backgroundColor: FeedAppColors.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -515,7 +515,7 @@ class _FeedEditState extends State<FeedEdit> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.description, color: kPrimaryColor),
+          const Icon(Icons.description, color: FeedAppColors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -625,7 +625,7 @@ class _FeedEditState extends State<FeedEdit> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               style: TextButton.styleFrom(
-                foregroundColor: kPrimaryColor,
+                foregroundColor: FeedAppColors.primary,
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),

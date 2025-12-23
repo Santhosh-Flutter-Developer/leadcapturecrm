@@ -522,7 +522,11 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       ),
       child: ExpansionTile(
         dense: true,
-        leading: Icon(icon, size: 20, color: DesktopColors.lightTextSecondary),
+        leading: Icon(
+          icon,
+          size: title == 'Clients' ? 10 : 20,
+          color: DesktopColors.lightTextSecondary,
+        ),
         title: Text(
           title,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -542,7 +546,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           if (child is String) return _buildChildMenuItem(child);
           if (child is Map && child.containsKey('title')) {
             return buildExpandableMenu(
-              icon: Icons.circle, // or another small icon
+              icon: Icons.circle,
               title: child['title'],
               expanded: child['title'] == widget.selectedMenu,
               onToggle: () {},

@@ -3,14 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
-import '/theme/theme.dart';
+import 'package:intl/intl.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
-import '/utils/utils.dart';
+import '/theme/theme.dart';
 import 'bloc/notifications_bloc.dart';
 
-/// Pretty notification list view — search, group-by-date, pull-to-refresh, swipe actions.
+class NotifyColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color danger = Color(0xFFEF4444);
+}
+
 class NotificationsListing extends StatefulWidget {
   const NotificationsListing({super.key});
 
@@ -25,7 +34,6 @@ class _NotificationsListingState extends State<NotificationsListing> {
   @override
   void initState() {
     super.initState();
-    // Start listening to search changes for live filter
     _searchController.addListener(() {
       setState(() {
         _search = _searchController.text.trim().toLowerCase();
@@ -40,10 +48,10 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Future<void> _refresh(BuildContext context) async {
+    context.read<NotificationsBloc>().add(StreamNotifications());
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
-  // Helper to format and group notifications by day label
   Map<String, List<NotificationModel>> _groupByDay(
     List<NotificationModel> items,
   ) {
@@ -56,15 +64,16 @@ class _NotificationsListingState extends State<NotificationsListing> {
         dt.month,
         dt.day,
       ).difference(DateTime(now.year, now.month, now.day)).inDays;
+
       String label;
       if (difference == 0) {
         label = 'Today';
       } else if (difference == -1) {
         label = 'Yesterday';
       } else {
-        label =
-            '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+        label = DateFormat('dd MMM yyyy').format(dt);
       }
+
       map.putIfAbsent(label, () => []).add(item);
     }
     return map;
@@ -75,24 +84,271 @@ class _NotificationsListingState extends State<NotificationsListing> {
     if (diff.inSeconds < 60) return '${diff.inSeconds}s';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${(diff.inDays / 7).floor()}w';
+    return '${diff.inDays}d';
   }
 
-  Widget _smallAvatar(String title, String type, {bool isRead = false}) {
-    final initial = title.trim().isNotEmpty
-        ? title.trim().first
-        : type.isNotEmpty
-        ? type.trim().first
-        : '?';
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: isRead ? AppColors.grey300 : AppColors.blue700,
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => NotificationsBloc()..add(StreamNotifications()),
+      child: Scaffold(
+        backgroundColor: NotifyColors.background,
+        appBar: AppBar(
+          backgroundColor: NotifyColors.white,
+          elevation: 0,
+          leading: const Padding(
+            padding: EdgeInsets.only(left: 8.0),
+            child: Back(color: AppColors.black),
+          ),
+          centerTitle: false,
+          title: const Text(
+            "Notifications",
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: NotifyColors.textPrimary,
+              fontSize: 18,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(70),
+            child: _buildHeaderSearch(),
+          ),
+        ),
+        body: BlocBuilder<NotificationsBloc, NotificationsState>(
+          builder: (context, state) {
+            if (state is NotificationsLoading) {
+              return const Center(child: WaitingLoading());
+            }
+            if (state is NotificationsError) {
+              return ErrorDisplay(error: state.message);
+            }
+            if (state is NotificationsLoaded) {
+              final filteredList = state.notification.where((it) {
+                if (_search.isEmpty) return true;
+                final t = it.title.toLowerCase();
+                final m = it.message.toLowerCase();
+                return t.contains(_search) || m.contains(_search);
+              }).toList();
+
+              if (filteredList.isEmpty) {
+                return RefreshIndicator(
+                  onRefresh: () => _refresh(context),
+                  child: ListView(
+                    children: const [
+                      SizedBox(height: 100),
+                      NoData(text: "No notifications found"),
+                    ],
+                  ),
+                );
+              }
+
+              final grouped = _groupByDay(filteredList);
+
+              return RefreshIndicator(
+                onRefresh: () => _refresh(context),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: grouped.length,
+                      itemBuilder: (context, index) {
+                        final entry = grouped.entries.elementAt(index);
+                        return _buildSection(entry.key, entry.value);
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderSearch() {
+    return Column(
+      children: [
+        Container(color: NotifyColors.border, height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Material(
+            borderRadius: BorderRadius.circular(12),
+            color: NotifyColors.background,
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(
+                  Iconsax.search_normal,
+                  size: 18,
+                  color: NotifyColors.textSecondary,
+                ),
+                hintText: 'Search title or message contents...',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: NotifyColors.textSecondary,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection(String label, List<NotificationModel> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: NotifyColors.textSecondary,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        ...items.map((item) => _buildNotificationCard(item)),
+      ],
+    );
+  }
+
+  Widget _buildNotificationCard(NotificationModel item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Dismissible(
+        key: ValueKey(item.uid ?? item.hashCode),
+        direction: DismissDirection.endToStart,
+        onDismissed: (_) async {
+          await deleteNotification(item.uid ?? '');
+          if (mounted) FlushBar.show(context, 'Notification deleted');
+        },
+        background: Container(
+          decoration: BoxDecoration(
+            color: NotifyColors.danger,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          child: const Icon(Iconsax.trash, color: Colors.white, size: 20),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: NotifyColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: NotifyColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: () => _openDetailSheet(item),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _smallAvatar(item.title, item.type ?? ''),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.title.isNotEmpty
+                                    ? item.title
+                                    : (item.type ?? 'Alert'),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: NotifyColors.textPrimary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              item.createdAt != null
+                                  ? _timeAgo(item.createdAt!)
+                                  : '',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: NotifyColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.message,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: NotifyColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Unread indicator dot
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: NotifyColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _smallAvatar(String title, String type) {
+    final initial = title.isNotEmpty
+        ? title[0]
+        : (type.isNotEmpty ? type[0] : '?');
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: NotifyColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
       child: Text(
-        initial,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+        initial.toUpperCase(),
+        style: const TextStyle(
+          color: NotifyColors.primary,
+          fontWeight: FontWeight.w900,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -101,531 +357,217 @@ class _NotificationsListingState extends State<NotificationsListing> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.transparent,
-      builder: (ctx) {
-        return Padding(
-          padding: MediaQuery.of(ctx).viewInsets,
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.55,
-            minChildSize: 0.3,
-            maxChildSize: 0.95,
-            builder: (_, controller) {
-              return ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                child: Material(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  elevation: 12,
-                  child: Column(
-                    children: [
-                      // Drag handle / header area
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Container(
-                          width: 48,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: AppColors.grey300,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-
-                      // Content area (scrollable)
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: CustomScrollView(
-                            controller: controller,
-                            slivers: [
-                              SliverToBoxAdapter(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // very small avatar
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      child: Text(
-                                        (item.title.isNotEmpty
-                                                ? item.title[0]
-                                                : '?')
-                                            .toUpperCase(),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(color: AppColors.white),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      item.title,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleMedium
-                                                          ?.copyWith(
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                    ),
-                                                    Text(
-                                                      item.createdAt != null
-                                                          ? _timeAgo(
-                                                              item.createdAt!,
-                                                            )
-                                                          : '',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: AppColors
-                                                                .grey600,
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              IconButton(
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints(),
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(),
-                                                icon: Icon(
-                                                  Icons.close,
-                                                  color: AppColors.grey600,
-                                                ),
-                                                tooltip: 'Close',
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SliverToBoxAdapter(
-                                child: SizedBox(height: 12),
-                              ),
-
-                              // Message card
-                              SliverToBoxAdapter(
-                                child: Card(
-                                  margin: EdgeInsets.zero,
-                                  elevation: 1,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    child: Text(
-                                      item.message,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(height: 1.3),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              const SliverToBoxAdapter(
-                                child: SizedBox(height: 14),
-                              ),
-
-                              // Payload heading + expand/collapse
-                              SliverToBoxAdapter(
-                                child: ExpansionTile(
-                                  initiallyExpanded: false,
-                                  title: Text(
-                                    'Payload',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleSmall,
-                                  ),
-                                  tilePadding: EdgeInsets.zero,
-                                  childrenPadding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 12,
-                                  ),
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHighest
-                                            .withValues(alpha: 0.06),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: SelectableText(
-                                        const JsonEncoder.withIndent(
-                                          '  ',
-                                        ).convert(item.payload),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontFamily: 'GoogleSans',
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SliverToBoxAdapter(
-                                child: SizedBox(height: 20),
-                              ),
-                              // Actions area
-                              SliverToBoxAdapter(
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.copy),
-                                        label: Text(
-                                          'Copy payload',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
-                                        ),
-                                        onPressed: () {
-                                          Clipboard.setData(
-                                            ClipboardData(
-                                              text: json.encode(item.payload),
-                                            ),
-                                          );
-                                          Navigator.of(ctx).pop();
-                                          FlushBar.show(
-                                            context,
-                                            'Payload copied',
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                  ],
-                                ),
-                              ),
-
-                              const SliverToBoxAdapter(
-                                child: SizedBox(height: 12),
-                              ),
-
-                              // Optional additional meta
-                              SliverToBoxAdapter(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Divider(),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Recipients',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 6,
-                                      children: [
-                                        ...item.toUids.map(
-                                          (u) => Chip(
-                                            label: Text(
-                                              CacheService.getUserByUid(
-                                                    u,
-                                                  )?.name ??
-                                                  '',
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 20),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildDetailSheet(item, ctx),
     );
   }
 
-  Widget _buildListSection(String sectionLabel, List<NotificationModel> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // section header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(
-            sectionLabel,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.grey700,
-            ),
-          ),
+  Widget _buildDetailSheet(NotificationModel item, BuildContext ctx) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: NotifyColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        ...items.map((item) {
-          final titleLower = item.title.toLowerCase();
-          final messageLower = item.message.toLowerCase();
-          if (_search.isNotEmpty &&
-              !titleLower.contains(_search) &&
-              !messageLower.contains(_search)) {
-            return const SizedBox.shrink();
-          }
-
-          return Dismissible(
-            key: ValueKey(item.uid ?? item.hashCode),
-            direction: DismissDirection.endToStart,
-            onDismissed: (_) async {
-              try {
-                futureLoading(context);
-                await deleteNotification(item.uid ?? '');
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-                FlushBar.show(context, 'Notification deleted');
-                setState(() {});
-              } catch (e) {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-                FlushBar.show(context, e.toString(), isSuccess: false);
-              }
-            },
-            background: Container(
-              color: AppColors.danger,
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete, color: AppColors.white),
-            ),
-            child: InkWell(
-              onTap: () => _openDetailSheet(item),
+        child: Column(
+          children: [
+            Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColors.grey100)),
-                ),
-                child: Row(
-                  children: [
-                    _smallAvatar(item.title, item.type ?? '', isRead: false),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.title.isNotEmpty
-                                      ? item.title
-                                      : (item.type ?? ''),
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                item.createdAt != null
-                                    ? _timeAgo(item.createdAt!)
-                                    : '',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.grey600),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            item.message,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey700),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
+                  color: NotifyColors.border,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          );
-        }),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 650;
-    return BlocProvider(
-      create: (context) => NotificationsBloc()..add(StreamNotifications()),
-      child: Scaffold(
-        appBar: isMobile
-            ? AppBar(leading: const Back(), title: Text('Notifications'))
-            : AppBar(
-                leading: const Back(),
-                title: Text('Notifications'),
-                actions: [
-                  SizedBox(
-                    width: 300,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 12,
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: 'Search notifications',
-                          prefixIcon: const Icon(Iconsax.search_normal),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  _smallAvatar(item.title, item.type ?? ''),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            color: NotifyColors.textPrimary,
                           ),
                         ),
-                        onEditingComplete: () =>
-                            FocusManager.instance.primaryFocus!.unfocus(),
-                        onTapOutside: (event) =>
-                            FocusManager.instance.primaryFocus!.unfocus(),
-                      ),
+                        Text(
+                          item.type ?? 'System Notification',
+                          style: const TextStyle(
+                            color: NotifyColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(
+                      Iconsax.close_circle,
+                      color: NotifyColors.textSecondary,
                     ),
                   ),
                 ],
               ),
-        body: BlocListener<NotificationsBloc, NotificationsState>(
-          listenWhen: (prev, curr) => curr is NotificationsLoaded,
-          listener: (context, state) {},
-          child: BlocBuilder<NotificationsBloc, NotificationsState>(
-            builder: (context, state) {
-              if (state is NotificationsLoading) {
-                return WaitingLoading();
-              }
-
-              if (state is NotificationsError) {
-                return ErrorDisplay(error: state.message);
-              }
-
-              if (state is NotificationsLoaded) {
-                final List<NotificationModel> allNotifications =
-                    state.notification;
-
-                final filteredList = _search.isEmpty
-                    ? allNotifications
-                    : allNotifications.where((it) {
-                        final t = it.title.toLowerCase();
-                        final m = it.message.toLowerCase();
-                        return t.contains(_search) || m.contains(_search);
-                      }).toList();
-
-                if (filteredList.isEmpty) {
-                  return RefreshIndicator(
-                    onRefresh: () => _refresh(context),
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        const SizedBox(height: 80),
-                        Icon(
-                          Icons.notifications_off,
-                          size: 64,
-                          color: AppColors.grey400,
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            'No notifications',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey600),
-                          ),
-                        ),
-                        const SizedBox(height: 200),
-                      ],
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  const Text(
+                    "MESSAGE",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                      color: NotifyColors.textSecondary,
                     ),
-                  );
-                }
-
-                final grouped = _groupByDay(filteredList);
-
-                return RefreshIndicator(
-                  onRefresh: () => _refresh(context),
-                  child: ListView(
-                    children: [
-                      // search field for mobile UI
-                      if (isMobile)
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: 'Search notifications',
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.message,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: NotifyColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    "PAYLOAD DATA",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                      color: NotifyColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: NotifyColors.background,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: NotifyColors.border),
+                    ),
+                    child: SelectableText(
+                      const JsonEncoder.withIndent('  ').convert(item.payload),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    "RECIPIENTS",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                      color: NotifyColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: item.toUids.map((u) {
+                      final user = CacheService.getUserByUid(u);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: NotifyColors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: NotifyColors.border),
+                        ),
+                        child: Text(
+                          user?.name ?? u,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: NotifyColors.textPrimary,
                           ),
                         ),
-
-                      const SizedBox(height: 8),
-                      for (final entry in grouped.entries)
-                        _buildListSection(entry.key, entry.value),
-                      const SizedBox(height: 60),
-                    ],
+                      );
+                    }).toList(),
                   ),
-                );
-              }
-
-              // fallback
-              return const SizedBox.shrink();
-            },
-          ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+            _buildSheetFooter(item),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSheetFooter(NotificationModel item) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: NotifyColors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Clipboard.setData(
+                  ClipboardData(text: json.encode(item.payload)),
+                );
+                FlushBar.show(context, 'Payload copied to clipboard');
+              },
+              icon: const Icon(Iconsax.copy, size: 18),
+              label: const Text("Copy Payload"),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Iconsax.tick_circle, size: 18),
+              label: const Text("Acknowledge"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NotifyColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

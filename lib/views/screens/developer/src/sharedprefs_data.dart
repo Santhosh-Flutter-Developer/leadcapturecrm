@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:iconsax/iconsax.dart';
 import '/views/views.dart';
+import '/theme/theme.dart';
+
+class SharedPrefsColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color danger = Color(0xFFEF4444);
+}
 
 class SharedprefsData extends StatefulWidget {
   const SharedprefsData({super.key});
@@ -28,9 +40,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     final keys = prefs.getKeys();
     final Map<String, Object?> map = {};
     for (final k in keys) {
-      // SharedPreferences provides typed getters; use get() to retrieve dynamic.
-      final v = prefs.get(k);
-      map[k] = v;
+      map[k] = prefs.get(k);
     }
     setState(() {
       _prefs = map;
@@ -45,11 +55,10 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     } else {
       final q = _query.toLowerCase();
       _filteredPrefs = _prefs.entries
-          .where(
-            (e) =>
-                e.key.toLowerCase().contains(q) ||
-                (e.value?.toString().toLowerCase().contains(q) ?? false),
-          )
+          .where((e) {
+            return e.key.toLowerCase().contains(q) ||
+                (e.value?.toString().toLowerCase().contains(q) ?? false);
+          })
           .fold<Map<String, Object?>>({}, (m, e) {
             m[e.key] = e.value;
             return m;
@@ -59,21 +68,19 @@ class _SharedprefsDataState extends State<SharedprefsData> {
 
   Future<void> _removeKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    // keep old value for undo
     final oldValue = prefs.get(key);
     await prefs.remove(key);
     await _loadAll();
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Removed "$key"',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        behavior: SnackBarBehavior.floating,
+        content: Text('Removed "$key"', style: const TextStyle(fontSize: 12)),
         action: SnackBarAction(
           label: 'UNDO',
+          textColor: Colors.blueAccent,
           onPressed: () async {
-            // restore using type detection
             if (oldValue is String) {
               await prefs.setString(key, oldValue);
             } else if (oldValue is int) {
@@ -96,22 +103,31 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     final should = await showDialog<bool?>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Clear all SharedPreferences?',
-          style: Theme.of(context).textTheme.bodySmall,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Purge Storage?',
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: Text(
-          'This will remove all saved keys and cannot be undone.',
-          style: Theme.of(context).textTheme.bodySmall,
+        content: const Text(
+          'This will remove all local SharedPreferences keys. This action is permanent.',
+          style: TextStyle(color: SharedPrefsColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel', style: Theme.of(context).textTheme.bodySmall),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: SharedPrefsColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Clear', style: Theme.of(context).textTheme.bodySmall),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: SharedPrefsColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Clear All'),
           ),
         ],
       ),
@@ -120,32 +136,24 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
       await _loadAll();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'All preferences cleared.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ),
-      );
     }
   }
 
-  String _valuePreview(Object? v) {
-    if (v == null) return 'null';
-    if (v is String) return '"$v"';
-    if (v is List) return '[${v.join(', ')}]';
-    return v.toString();
+  Color _getTypeColor(Object? v) {
+    if (v is String) return const Color(0xFF3B82F6);
+    if (v is int || v is double) return const Color(0xFF8B5CF6);
+    if (v is bool) return const Color(0xFF10B981);
+    if (v is List) return const Color(0xFFF59E0B);
+    return SharedPrefsColors.textSecondary;
   }
 
-  String _typeOf(Object? v) {
-    if (v == null) return 'null';
-    if (v is String) return 'String';
-    if (v is int) return 'int';
-    if (v is bool) return 'bool';
-    if (v is double) return 'double';
-    if (v is List) return 'List';
-    return v.runtimeType.toString();
+  String _typeLabel(Object? v) {
+    if (v is String) return 'STR';
+    if (v is int) return 'INT';
+    if (v is double) return 'DBL';
+    if (v is bool) return 'BOL';
+    if (v is List) return 'LST';
+    return 'UNK';
   }
 
   @override
@@ -154,177 +162,349 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       ..sort((a, b) => a.key.compareTo(b.key));
 
     return Scaffold(
+      backgroundColor: SharedPrefsColors.background,
       appBar: AppBar(
-        leading: Back(),
-        title: Text('SharedPreferences Viewer'),
+        backgroundColor: SharedPrefsColors.white,
+        elevation: 0,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8.0),
+          child: Back(color: AppColors.black),
+        ),
+        title: const Text(
+          "Shared Prefs",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: SharedPrefsColors.textPrimary,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh),
             onPressed: _loadAll,
+            icon: const Icon(
+              Iconsax.refresh,
+              color: SharedPrefsColors.primary,
+              size: 20,
+            ),
           ),
           IconButton(
-            tooltip: 'Clear all',
-            icon: const Icon(Icons.delete_forever),
             onPressed: _prefs.isEmpty ? null : _clearAll,
+            icon: const Icon(
+              Iconsax.trash,
+              color: SharedPrefsColors.danger,
+              size: 20,
+            ),
           ),
+          const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      hintText: 'Search keys or values',
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 12,
+          preferredSize: const Size.fromHeight(70),
+          child: Column(
+            children: [
+              Container(color: SharedPrefsColors.border, height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (s) {
+                          setState(() {
+                            _query = s;
+                            _applyFilter();
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Search keys or values...",
+                          hintStyle: const TextStyle(
+                            fontSize: 14,
+                            color: SharedPrefsColors.textSecondary,
+                          ),
+                          prefixIcon: const Icon(
+                            Iconsax.search_normal,
+                            size: 18,
+                            color: SharedPrefsColors.textSecondary,
+                          ),
+                          filled: true,
+                          fillColor: SharedPrefsColors.background,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      isDense: true,
                     ),
-                    onChanged: (s) {
-                      setState(() {
-                        _query = s;
-                        _applyFilter();
-                      });
-                    },
-                  ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${items.length} matched',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: SharedPrefsColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${_prefs.length} total',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
       body: _loading
-          ? const WaitingLoading()
-          : _prefs.isEmpty
-          ? Center(
-              child: Text(
-                'No SharedPreferences keys found.',
-                style: Theme.of(context).textTheme.bodySmall,
+          ? const Center(child: WaitingLoading())
+          : items.isEmpty
+          ? _buildEmptyState()
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final e = items[index];
+                    return _buildPrefCard(e.key, e.value);
+                  },
+                ),
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: items.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final e = items[index];
-                final key = e.key;
-                final value = e.value;
-                final preview = _valuePreview(value);
-                final type = _typeOf(value);
+            ),
+    );
+  }
 
-                return Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Iconsax.document_filter,
+            size: 48,
+            color: SharedPrefsColors.border,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "No preferences found",
+            style: TextStyle(
+              color: SharedPrefsColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrefCard(String key, Object? value) {
+    final typeColor = _getTypeColor(value);
+    final valStr = value?.toString() ?? 'null';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: SharedPrefsColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SharedPrefsColors.border),
+      ),
+      child: InkWell(
+        onTap: () => _showDetailDialog(key, value),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    title: Text(
-                      key,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    decoration: BoxDecoration(
+                      color: typeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _typeLabel(value),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: typeColor,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    subtitle: Text(
-                      '$preview • $type',
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'Copy value',
-                          icon: const Icon(Icons.copy, size: 18),
-                          onPressed: () {
-                            Clipboard.setData(
-                              ClipboardData(text: value?.toString() ?? 'null'),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Value copied to clipboard',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          tooltip: 'Delete key',
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          onPressed: () => _removeKey(key),
-                        ),
-                      ],
-                    ),
-                    onTap: () async {
-                      // show details dialog
-                      await showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(
-                            key,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          content: SelectableText(
-                            'Value: ${value?.toString() ?? 'null'}\n\nType: $type',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(
-                                'Close',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(
-                                    text: value?.toString() ?? 'null',
-                                  ),
-                                );
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Copied value',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                'Copy',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
                   ),
-                );
-              },
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      key,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: SharedPrefsColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _removeKey(key),
+                    icon: const Icon(
+                      Iconsax.close_circle,
+                      color: SharedPrefsColors.border,
+                      size: 18,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: SharedPrefsColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  valStr,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: SharedPrefsColors.textPrimary,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _actionButton(Iconsax.copy, "Copy", () {
+                    Clipboard.setData(ClipboardData(text: valStr));
+                  }),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: SharedPrefsColors.primary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: SharedPrefsColors.primary,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetailDialog(String key, Object? value) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          key,
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "DATA TYPE",
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: SharedPrefsColors.textSecondary,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value.runtimeType.toString(),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: SharedPrefsColors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "VALUE",
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: SharedPrefsColors.textSecondary,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: SharedPrefsColors.background,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: SharedPrefsColors.border),
+              ),
+              child: SelectableText(
+                value?.toString() ?? 'null',
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: SharedPrefsColors.textSecondary),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Clipboard.setData(
+                ClipboardData(text: value?.toString() ?? 'null'),
+              );
+              Navigator.pop(context);
+            },
+            icon: const Icon(Iconsax.copy, size: 16),
+            label: const Text("Copy Value"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: SharedPrefsColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

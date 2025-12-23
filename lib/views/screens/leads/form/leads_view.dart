@@ -2,24 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
+import '/utils/utils.dart';
 import '/models/models.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/views/views.dart';
+import '/constants/constants.dart';
 
 class LeadsViewAppColors {
-  static const Color primary = Color(0xFF3B82F6);
-  static const Color white = AppColors.white;
-  static const Color black = AppColors.black87;
-  static const Color info = AppColors.blue;
-  static const Color warning = AppColors.orange;
-  static const Color success = AppColors.success;
+  static const Color primary = Color(0xFF2563EB);
+  static const Color secondary = Color(0xFF64748B);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color surface = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
 
-  static const Color grey50 = Color(0xFFFAFAFA);
-  static const Color grey100 = Color(0xFFF5F5F5);
-  static const Color grey200 = Color(0xFFEEEEEE);
-  static const Color grey500 = AppColors.grey;
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF3B82F6);
+  static const Color danger = Color(0xFFEF4444);
 }
 
 class LeadsViewPage extends StatelessWidget {
@@ -54,11 +59,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     widgetLeadCategory = CacheService.leadCategoryByUid(
       widget.lead.leadCategory,
     )!;
-
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -72,824 +75,944 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   void _addComment() {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
-
     context.read<LeadBloc>().add(
       AddLeadComment(leadUid: widget.lead.uid!, commentText: text),
     );
-
     _commentController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(16),
-        bottomLeft: Radius.circular(16),
-      ),
-      child: Scaffold(
-        backgroundColor: LeadsViewAppColors.grey100,
-        appBar: FormWidgets.buildHeader(
-          context: context,
-          title: "Lead Details",
+    return Scaffold(
+      backgroundColor: LeadsViewAppColors.background,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: LeadsViewAppColors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "Lead Management",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: LeadsViewAppColors.textPrimary,
+            fontSize: 18,
+          ),
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1250),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 900;
-                  return Flex(
-                    direction: isWide ? Axis.horizontal : Axis.vertical,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildHeader(context),
-                              const SizedBox(height: 24),
-                              _buildInfoTabs(context),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (isWide) const SizedBox(width: 24),
-                      if (!isWide) const SizedBox(height: 24),
-                      Flexible(flex: 1, child: _buildCommentsSection(context)),
-                    ],
-                  );
-                },
+        actions: [
+          _appBarButton(Iconsax.edit, "Edit", () {
+            if (kIsMobile) {
+              Sheet.showSheet(
+                context,
+                widget: LeadEdit(uid: widget.lead.uid ?? ''),
+              );
+            } else {
+              GeneralDialog.showRTLSheet(
+                context,
+                LeadEdit(uid: widget.lead.uid ?? ''),
+              );
+            }
+          }),
+          const SizedBox(width: 8),
+          _appBarButton(Iconsax.trash, "Delete", () async {
+            final result = await showDialog<bool>(
+              context: context,
+              builder: (context) => const ConfirmDialog(
+                title: 'Delete Lead',
+                content: 'Are you sure you want to delete this lead?',
               ),
-            ),
+            );
+
+            if (result == true) {
+              try {
+                await LeadService.deleteLead(uid: widget.lead.uid ?? '');
+                FlushBar.show(context, 'Lead deleted successfully');
+
+                context.read<LeadBloc>().add(StreamLead());
+              } catch (e, st) {
+                await ErrorService.recordError(e, st);
+                FlushBar.show(context, e.toString(), isSuccess: false);
+              }
+            }
+          }, isDanger: true),
+          const SizedBox(width: 16),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: LeadsViewAppColors.border, height: 1),
+        ),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 1000;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: isWide ? 7 : 1,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProfessionalHeader(),
+                          const SizedBox(height: 24),
+                          _buildModernTabs(),
+                          const SizedBox(height: 24),
+                          _buildTabContent(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isWide)
+                    Container(
+                      width: 450,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: LeadsViewAppColors.border),
+                        ),
+                        color: LeadsViewAppColors.white,
+                      ),
+                      child: _buildCommentsSection(),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  // PreferredSizeWidget _buildHeaderBar(BuildContext context) {
-  //   return AppBar(
-  //     backgroundColor: LeadsViewAppColors.white,
-  //     elevation: 1.0,
-  //     shadowColor: AppColors.black12,
-  //     automaticallyImplyLeading: false,
-  //     foregroundColor: LeadsViewAppColors.black,
-  //     // leading: IconButton(
-  //     //   onPressed: () {
-  //     //     if (Navigator.canPop(context)) {
-  //     //       Navigator.pop(context);
-  //     //     }
-  //     //   },
-  //     //   icon: Icon(Icons.close, color: AppColors.black),
-  //     // ),
-  //     title: Text(
-  //       "Lead Details",
-  //       style: Theme.of(context).textTheme.titleLarge!.copyWith(
-  //         color: LeadsViewAppColors.primary,
-  //         fontWeight: FontWeight.bold,
-  //       ),
-  //     ),
-  //   );
-  // }
+  Widget _appBarButton(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    bool isDanger = false,
+  }) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(
+        icon,
+        size: 16,
+        color: isDanger
+            ? LeadsViewAppColors.danger
+            : LeadsViewAppColors.primary,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isDanger
+              ? LeadsViewAppColors.danger
+              : LeadsViewAppColors.primary,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
 
-  Widget _buildInfoTabs(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: _cardDecoration(),
-          child: TabBar(
-            controller: _tabController,
-            labelColor: LeadsViewAppColors.primary,
-            unselectedLabelColor: LeadsViewAppColors.grey500,
-            indicator: BoxDecoration(
-              color: LeadsViewAppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildProfessionalHeader() {
+    final status = CacheService.leadStatusByUid(widget.lead.leadStatus);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ─── AVATAR ───────────────────────────────
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: LeadsViewAppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            tabs: const [
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Iconsax.user_tag, size: 18),
-                    SizedBox(width: 8),
-                    Text("Lead Details"),
-                  ],
+            child: Center(
+              child: Text(
+                widget.lead.leadName[0].toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 32,
+                  color: LeadsViewAppColors.primary,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            ),
+          ),
+
+          const SizedBox(width: 20),
+
+          /// ─── MAIN CONTENT ─────────────────────────
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// NAME + STATUS
+                Row(
                   children: [
-                    Icon(Iconsax.note_2, size: 18),
-                    SizedBox(width: 8),
-                    Text("Notes"),
+                    Expanded(
+                      child: Tooltip(
+                        message: widget.lead.leadName,
+                        child: Text(
+                          widget.lead.leadName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: LeadsViewAppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: _buildStatusBadge(status?.name ?? 'Unknown'),
+                    ),
                   ],
                 ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+
+                const SizedBox(height: 4),
+
+                /// COMPANY
+                Text(
+                  widget.lead.companyName ?? 'Unspecified Company',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: LeadsViewAppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// QUICK ACTIONS
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Icon(Iconsax.activity, size: 18),
-                    SizedBox(width: 8),
-                    Text("History"),
+                    _quickAction(
+                      Iconsax.call,
+                      "Call",
+                      () {
+                        if (widget.lead.companyMobile?.isNotEmpty ?? false) {
+                          launchUrl(
+                            Uri.parse("tel:${widget.lead.companyMobile}"),
+                          );
+                        }
+                      },
+                      tooltip: widget.lead.companyMobile?.isNotEmpty ?? false
+                          ? "Call ${widget.lead.companyMobile}"
+                          : "No contact number available",
+                    ),
+                    _quickAction(
+                      Iconsax.sms,
+                      "Email",
+                      () {},
+                      tooltip: widget.lead.leadEmail.isNotEmpty
+                          ? "Mail ${widget.lead.leadEmail}"
+                          : "No contact mail available",
+                    ),
+                    _quickAction(
+                      LineIcons.whatSApp,
+                      "WA",
+                      () {
+                        if (widget.lead.companyMobile?.isNotEmpty ?? false) {
+                          launchUrl(
+                            Uri.parse("tel:${widget.lead.companyMobile}"),
+                          );
+                        }
+                      },
+                      color: Colors.green,
+                      tooltip: widget.lead.leadEmail.isNotEmpty
+                          ? "Message ${widget.lead.leadEmail}"
+                          : "No contact number available",
+                    ),
                   ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          /// ─── LEAD VALUE ───────────────────────────
+          IntrinsicWidth(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: LeadsViewAppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: LeadsViewAppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    "Lead Value",
+                    style: TextStyle(
+                      color: LeadsViewAppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  /// AMOUNT SAFE RENDER
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "₹${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: LeadsViewAppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: LeadsViewAppColors.success.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: LeadsViewAppColors.success,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _quickAction(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    Color? color,
+    String? tooltip,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: LeadsViewAppColors.background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: LeadsViewAppColors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color ?? LeadsViewAppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  color: LeadsViewAppColors.textPrimary,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        AnimatedBuilder(
-          animation: _tabController,
-          builder: (context, child) {
-            return IndexedStack(
-              index: _tabController.index,
-              children: [
-                _buildDetailsTab(context),
-                _buildNotesAndAttachments(context),
-                _buildHistorySection(),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailsTab(BuildContext context) {
-    return _sectionCard(
-      "Lead Information",
-      Iconsax.user_tag,
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Profile Info", style: _subHeaderStyle(context)),
-          const SizedBox(height: 12),
-          _buildGrid(_getProfileInfo(context)),
-          const Divider(
-            height: 28,
-            thickness: 1,
-            color: LeadsViewAppColors.grey200,
-          ),
-          Text("Company Info", style: _subHeaderStyle(context)),
-          const SizedBox(height: 12),
-          _buildGrid(_getCompanyInfo()),
-          const Divider(
-            height: 28,
-            thickness: 1,
-            color: LeadsViewAppColors.grey200,
-          ),
-          Text("Lead Agent", style: _subHeaderStyle(context)),
-          const SizedBox(height: 12),
-          _buildAgentInfoContent(),
-        ],
       ),
     );
   }
 
-  TextStyle _subHeaderStyle(BuildContext context) {
-    return Theme.of(context).textTheme.bodyMedium!.copyWith(
-      fontWeight: FontWeight.w600,
-      color: LeadsViewAppColors.black,
-    );
-  }
-
-  Widget _buildCommentsSection(BuildContext context) {
+  Widget _buildModernTabs() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader("Comments", Iconsax.message),
-          const Divider(
-            height: 28,
-            thickness: 1,
-            color: LeadsViewAppColors.grey200,
-          ),
-          TextField(
-            controller: _commentController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: "Write a comment...",
-              filled: true,
-              fillColor: LeadsViewAppColors.grey50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ValueListenableBuilder(
-            valueListenable: _commentController,
-            builder: (context, TextEditingValue value, _) {
-              return ElevatedButton.icon(
-                onPressed: value.text.trim().isEmpty ? null : _addComment,
-                icon: const Icon(Iconsax.save_2, size: 18),
-                label: const Text("Save"),
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-
-          /// Make comments scrollable
-          Expanded(
-            child: BlocBuilder<LeadBloc, LeadState>(
-              builder: (context, state) {
-                if (state is LeadDetailLoaded) {
-                  final comments = state.comments;
-
-                  if (comments.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.chat_bubble_outline,
-                            size: 40,
-                            color: AppColors.grey,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "No comments yet",
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: comments.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final comment = comments[index];
-
-                      final createdBy = comment['createdBy'];
-                      String authorName = 'Unknown';
-                      if (createdBy is Map<String, dynamic>) {
-                        authorName = createdBy['name'] ?? 'Unknown';
-                      }
-
-                      final timestamp = comment['createdAt'];
-                      DateTime dateTime = DateTime.now();
-                      if (timestamp is Timestamp) {
-                        dateTime = timestamp.toDate();
-                      } else if (timestamp is DateTime) {
-                        dateTime = timestamp;
-                      }
-
-                      final formattedTime =
-                          "${dateTime.day.toString().padLeft(2, '0')}/"
-                          "${dateTime.month.toString().padLeft(2, '0')}/"
-                          "${dateTime.year} "
-                          "${dateTime.hour.toString().padLeft(2, '0')}:"
-                          "${dateTime.minute.toString().padLeft(2, '0')}";
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: LeadsViewAppColors.primary
-                                .withValues(alpha: 0.15),
-                            child: Text(
-                              authorName[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: LeadsViewAppColors.grey50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: LeadsViewAppColors.grey200,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    authorName,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(comment['comment']),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    formattedTime,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: AppColors.grey),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-
-                if (state is LeadDetailError) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
-                    ),
-                  );
-                }
-
-                return const Center(child: WaitingLoading());
-              },
-            ),
-          ),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: LeadsViewAppColors.border)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: LeadsViewAppColors.primary,
+        unselectedLabelColor: LeadsViewAppColors.textSecondary,
+        indicatorColor: LeadsViewAppColors.primary,
+        indicatorWeight: 3,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 24),
+        isScrollable: true,
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        tabs: const [
+          Tab(text: "Lead Profile"),
+          Tab(text: "Files & Notes"),
+          Tab(text: "History Log"),
         ],
       ),
     );
   }
 
-  Widget _buildHistorySection() {
-    return _sectionCard(
-      "History",
-      Iconsax.activity,
-      BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          if (state is LeadDetailLoaded) {
-            final history = state.history;
-
-            if (history.isEmpty) {
-              return Text(
-                "No history available.",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: LeadsViewAppColors.grey500,
-                ),
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: history.map((h) {
-                final date = h.timestamp;
-                final performedBy = h.userId;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: LeadsViewAppColors.grey50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: LeadsViewAppColors.grey200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        h.updateDisposition,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Iconsax.user,
-                            size: 14,
-                            color: LeadsViewAppColors.grey500,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            performedBy,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: LeadsViewAppColors.grey500),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "${date.day.toString().padLeft(2, '0')}/"
-                            "${date.month.toString().padLeft(2, '0')}/"
-                            "${date.year}",
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: LeadsViewAppColors.grey500),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            );
-          }
-
-          if (state is LeadDetailError) {
-            return Text(
-              state.message,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
-            );
-          }
-
-          return const Center(child: WaitingLoading());
-        },
-      ),
-    );
-  }
-
-  Widget _sectionCard(String title, IconData icon, Widget child) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(title, icon),
-          const Divider(
-            height: 28,
-            thickness: 1,
-            color: LeadsViewAppColors.grey200,
-          ),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: LeadsViewAppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: LeadsViewAppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: LeadsViewAppColors.primary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  BoxDecoration _cardDecoration() => BoxDecoration(
-    color: LeadsViewAppColors.white,
-    borderRadius: BorderRadius.circular(20),
-    boxShadow: [
-      BoxShadow(
-        color: LeadsViewAppColors.black.withValues(alpha: 0.05),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  );
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 45,
-            backgroundColor: LeadsViewAppColors.primary.withValues(alpha: 0.15),
-            child: const Icon(
-              Icons.person,
-              size: 50,
-              color: LeadsViewAppColors.primary,
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.lead.leadName,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: LeadsViewAppColors.black,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.lead.companyName ?? '',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: LeadsViewAppColors.grey500,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 6,
-                  children: [
-                    _iconText(Icons.email_outlined, widget.lead.leadEmail),
-                    _iconText(Icons.source, widgetLeadCategory.name),
-                    _iconText(
-                      Icons.category_outlined,
-                      CacheService.leadStatusByUid(
-                            widget.lead.leadStatus,
-                          )?.name ??
-                          '',
-                    ),
-                    _iconText(
-                      Icons.attach_money,
-                      "₹${widget.lead.leadValue.toStringAsFixed(2)}",
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusChip(BuildContext context, String status) {
-    final lower = status.toLowerCase();
-
-    final Color backgroundColor = lower.contains('in progress')
-        ? LeadsViewAppColors.info
-        : lower.contains('pending')
-        ? LeadsViewAppColors.warning
-        : lower.contains('completed')
-        ? LeadsViewAppColors.success
-        : LeadsViewAppColors.grey500;
-
-    final bool isLight = backgroundColor.computeLuminance() > 0.5;
-    final Color textColor = isLight
-        ? LeadsViewAppColors.black
-        : LeadsViewAppColors.white;
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        chipTheme: Theme.of(context).chipTheme.copyWith(
-          side: BorderSide.none,
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-      child: Chip(
-        label: Text(
-          status,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        visualDensity: VisualDensity.compact,
-      ),
-    );
-  }
-
-  Widget _iconText(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: LeadsViewAppColors.primary),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: LeadsViewAppColors.grey500),
-        ),
-      ],
-    );
-  }
-
-  List<Map<String, dynamic>> _getProfileInfo(BuildContext context) {
-    return [
-      {"label": "Lead Email", "value": widget.lead.leadEmail},
-      {"label": "Source", "value": widgetLeadCategory.name},
-      {
-        "label": "Status",
-        "value": _statusChip(
-          context,
-          CacheService.leadStatusByUid(widget.lead.leadStatus)?.name ?? '',
-        ),
-      },
-      {"label": "Category", "value": widgetLeadCategory.name},
-      {
-        "label": "Value",
-        "value": "₹${widget.lead.leadValue.toStringAsFixed(2)}",
-      },
-      {
-        "label": "Follow-Up Allowed",
-        "value": widget.lead.allowFollowUp ? "Yes" : "No",
-      },
-      {"label": "Created By", "value": widget.lead.createdBy},
-      {
-        "label": "Created At",
-        "value": widget.lead.createdAt.toLocal().toString().split('.')[0],
-      },
-      {
-        "label": "Updated At",
-        "value": widget.lead.updatedAt.toLocal().toString().split('.')[0],
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getCompanyInfo() {
-    return [
-      {"label": "Company Name", "value": widget.lead.companyName},
-      {"label": "Website", "value": widget.lead.companyWebsite ?? "-"},
-      {"label": "Mobile", "value": widget.lead.companyMobile ?? "-"},
-      {"label": "Country", "value": widget.lead.companyCountry?.name ?? "-"},
-      {"label": "State", "value": widget.lead.companyState?.name ?? "-"},
-      {"label": "City", "value": widget.lead.companyCity?.name ?? "-"},
-      {"label": "Postal Code", "value": widget.lead.companyZipCode ?? "-"},
-      {"label": "Address", "value": widget.lead.companyAddress ?? "-"},
-    ];
-  }
-
-  Widget _buildAgentInfoContent() {
-    var employeeModel = CacheService.getUserByUid(widget.lead.createdBy.uid);
-    var roleModel = CacheService.roleByUid(employeeModel?.role ?? '');
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: LeadsViewAppColors.primary.withValues(alpha: 0.15),
-          child: const Icon(
-            Icons.person,
-            size: 32,
-            color: LeadsViewAppColors.primary,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTabContent() {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        return IndexedStack(
+          index: _tabController.index,
           children: [
-            Text(
-              employeeModel != null ? employeeModel.name : 'N/A',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: LeadsViewAppColors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              roleModel != null ? roleModel.name : 'N/A',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: LeadsViewAppColors.grey500,
-              ),
-            ),
+            _buildOverviewTab(),
+            _buildNotesTab(),
+            _buildTimelineTab(),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotesAndAttachments(BuildContext context) {
-    return _sectionCard(
-      "Notes & Attachments",
-      Iconsax.note_2,
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.lead.notes.isEmpty
-                ? "No notes available."
-                : widget.lead.notes,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: LeadsViewAppColors.black,
-              height: 1.5,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 20),
-          if (widget.lead.attachments.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.lead.attachments.map((file) {
-                final name = file.name;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: InkWell(
-                    onTap: () async {
-                      if (await canLaunchUrl(Uri.parse(file.url))) {
-                        await launchUrl(
-                          Uri.parse(file.url),
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.attach_file,
-                          size: 18,
-                          color: LeadsViewAppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          name,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: LeadsViewAppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.underline,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            )
-          else
-            Text(
-              "No attachments added.",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: LeadsViewAppColors.grey500,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGrid(List<Map<String, dynamic>> info) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossCount = constraints.maxWidth > 800
-            ? 3
-            : constraints.maxWidth > 500
-            ? 2
-            : 1;
-
-        return Wrap(
-          spacing: 20,
-          runSpacing: 12,
-          children: info.map((item) {
-            final label = item["label"]?.toString() ?? '';
-            final value = item["value"];
-
-            return SizedBox(
-              width: (constraints.maxWidth / crossCount) - 24,
-              child: _infoTile(
-                label,
-                value is Widget ? value : Text(value?.toString() ?? '-'),
-              ),
-            );
-          }).toList(),
         );
       },
     );
   }
 
-  Widget _infoTile(String label, Widget valueWidget) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+  Widget _buildOverviewTab() {
+    return Column(
+      children: [
+        _infoSection("Engagement Details", [
+          _dataPoint(Iconsax.sms, "Email Address", widget.lead.leadEmail),
+          _dataPoint(Iconsax.category, "Lead Segment", widgetLeadCategory.name),
+          _dataPoint(
+            Iconsax.user_add,
+            "Assigned Agent",
+            widget.lead.createdBy.name,
+          ),
+          _dataPoint(
+            Iconsax.calendar_1,
+            "Capture Date",
+            DateFormat('MMM dd, yyyy').format(widget.lead.createdAt),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        _infoSection("Corporate Profile", [
+          _dataPoint(
+            Iconsax.buildings,
+            "Company Name",
+            widget.lead.companyName ?? 'N/A',
+          ),
+          _dataPoint(
+            Iconsax.global,
+            "Web Presence",
+            widget.lead.companyWebsite ?? 'N/A',
+            isLink: true,
+          ),
+          _dataPoint(
+            Iconsax.call,
+            "Business Contact",
+            widget.lead.companyMobile ?? 'N/A',
+          ),
+          _dataPoint(
+            Iconsax.location,
+            "Office Location",
+            "${widget.lead.companyCity?.name ?? 'Unknown'}, ${widget.lead.companyCountry?.name ?? 'Unknown'}",
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _infoSection(String title, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: LeadsViewAppColors.grey500,
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: LeadsViewAppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
-          valueWidget,
+          const SizedBox(height: 20),
+          Wrap(spacing: 40, runSpacing: 24, children: children),
         ],
       ),
+    );
+  }
+
+  Widget _dataPoint(
+    IconData icon,
+    String label,
+    String value, {
+    bool isLink = false,
+  }) {
+    return SizedBox(
+      width: 280,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: LeadsViewAppColors.background,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: LeadsViewAppColors.secondary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: LeadsViewAppColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: isLink
+                        ? LeadsViewAppColors.primary
+                        : LeadsViewAppColors.textPrimary,
+                    decoration: isLink ? TextDecoration.underline : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsSection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Row(
+            children: [
+              const Icon(
+                Iconsax.message_text_1,
+                color: LeadsViewAppColors.textPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "Comments & Activity",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              _buildCommentCountIndicator(),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: BlocBuilder<LeadBloc, LeadState>(
+            builder: (context, state) {
+              if (state is LeadDetailLoaded) {
+                if (state.comments.isEmpty) {
+                  return _emptyState(
+                    Iconsax.message_minus,
+                    "No comments found",
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.all(24),
+                  itemCount: state.comments.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 32),
+                  itemBuilder: (context, index) =>
+                      _buildCommentItem(state.comments[index]),
+                );
+              }
+              return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              );
+            },
+          ),
+        ),
+        _buildCommentInputArea(),
+      ],
+    );
+  }
+
+  Widget _buildCommentItem(Map<String, dynamic> comment) {
+    final name = comment['createdBy']['name'] ?? 'System';
+    final date = comment['createdAt'] != null
+        ? (comment['createdAt'] as Timestamp).toDate()
+        : DateTime.now();
+
+    var userId = comment['createdBy']['uid'];
+    var user = CacheService.getUserByUid(userId);
+
+    UserDataModel userDataModel = UserDataModel.fromEmptyMap();
+    if (user is AdminModel) {
+      userDataModel = UserDataModel(
+        uid: userId,
+        name: user.name,
+        desc: user.email,
+        profilePic: user.profileImageUrl,
+        userType: UserType.admin,
+      );
+    } else if (user is EmployeeModel) {
+      userDataModel = UserDataModel(
+        uid: userId,
+        name: user.name,
+        desc: user.email,
+        profilePic: user.profileImageUrl,
+        userType: UserType.employee,
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UserAvatar(userData: userDataModel),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: LeadsViewAppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('MMM dd, hh:mm a').format(date),
+                    style: const TextStyle(
+                      color: LeadsViewAppColors.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                comment['comment'] ?? '',
+                style: const TextStyle(
+                  height: 1.5,
+                  fontSize: 13,
+                  color: LeadsViewAppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentInputArea() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        border: const Border(top: BorderSide(color: LeadsViewAppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _commentController,
+            maxLines: 3,
+            minLines: 1,
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "Add a comment...",
+              hintStyle: const TextStyle(
+                color: LeadsViewAppColors.textSecondary,
+                fontSize: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: LeadsViewAppColors.background,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: _addComment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: LeadsViewAppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  "Post Comment",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState(IconData icon, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: LeadsViewAppColors.border),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: const TextStyle(
+              color: LeadsViewAppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineTab() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
+      child: BlocBuilder<LeadBloc, LeadState>(
+        builder: (context, state) {
+          if (state is LeadDetailLoaded) {
+            if (state.history.isEmpty) {
+              return _emptyState(Iconsax.activity, "No activity logs yet");
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.history.length,
+              itemBuilder: (context, index) => _buildTimelineItem(
+                state.history[index],
+                index == state.history.length - 1,
+              ),
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem(LeadHistoryModel history, bool isLast) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: LeadsViewAppColors.primary.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: LeadsViewAppColors.primary,
+                    width: 2,
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(width: 1, color: LeadsViewAppColors.border),
+                ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    history.updateDisposition,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: LeadsViewAppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Modified by ${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
+                    style: const TextStyle(
+                      color: LeadsViewAppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    DateFormat(
+                      'MMM dd, yyyy • hh:mm a',
+                    ).format(history.timestamp),
+                    style: const TextStyle(
+                      color: LeadsViewAppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentCountIndicator() {
+    return BlocBuilder<LeadBloc, LeadState>(
+      builder: (context, state) {
+        if (state is LeadDetailLoaded) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: LeadsViewAppColors.background,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: LeadsViewAppColors.border),
+            ),
+            child: Text(
+              state.comments.length.toString(),
+              style: const TextStyle(
+                color: LeadsViewAppColors.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  Widget _buildNotesTab() {
+    return Column(
+      children: [
+        _infoSection("Internal Documentation", [
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              widget.lead.notes.isEmpty
+                  ? "No internal notes provided."
+                  : widget.lead.notes,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.7,
+                color: LeadsViewAppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        _infoSection("Shared Attachments", [
+          if (widget.lead.attachments.isEmpty)
+            const Text(
+              "No documents found.",
+              style: TextStyle(
+                color: LeadsViewAppColors.textSecondary,
+                fontSize: 13,
+              ),
+            )
+          else
+            ...widget.lead.attachments.map(
+              (file) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: LeadsViewAppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: LeadsViewAppColors.border),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: const Icon(
+                    Iconsax.document_text,
+                    color: LeadsViewAppColors.primary,
+                    size: 20,
+                  ),
+                  title: Text(
+                    file.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    "External Resource",
+                    style: TextStyle(fontSize: 11),
+                  ),
+                  trailing: const Icon(Iconsax.export_1, size: 16),
+                  onTap: () {},
+                ),
+              ),
+            ),
+        ]),
+      ],
     );
   }
 }

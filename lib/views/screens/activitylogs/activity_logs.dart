@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import '/theme/theme.dart';
+import 'package:intl/intl.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import 'bloc/activity_log_bloc.dart';
+
+class LogColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color surface = Colors.white;
+}
 
 class ActivityLogsListing extends StatefulWidget {
   final bool showAppbar;
@@ -22,7 +32,6 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
   @override
   void initState() {
     super.initState();
-    // Start listening to search changes for live filter
     _searchController.addListener(() {
       setState(() {
         _search = _searchController.text.trim().toLowerCase();
@@ -37,10 +46,10 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
   }
 
   Future<void> _refresh(BuildContext context) async {
+    context.read<ActivityLogsBloc>().add(StreamActivityLogs());
     await Future.delayed(const Duration(milliseconds: 300));
   }
 
-  // Helper to format and group activity log by day label
   Map<String, List<ActivityLogModel>> _groupByDay(
     List<ActivityLogModel> items,
   ) {
@@ -53,15 +62,16 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
         dt.month,
         dt.day,
       ).difference(DateTime(now.year, now.month, now.day)).inDays;
+
       String label;
       if (difference == 0) {
         label = 'Today';
       } else if (difference == -1) {
         label = 'Yesterday';
       } else {
-        label =
-            '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+        label = DateFormat('dd MMM yyyy').format(dt);
       }
+
       map.putIfAbsent(label, () => []).add(item);
     }
     return map;
@@ -72,205 +82,288 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
     if (diff.inSeconds < 60) return '${diff.inSeconds}s';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${(diff.inDays / 7).floor()}w';
-  }
-
-  Widget _buildListSection(String sectionLabel, List<ActivityLogModel> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // section header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(
-            sectionLabel,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.grey700,
-            ),
-          ),
-        ),
-        ...items.map((item) {
-          final titleLower = item.activity;
-          final messageLower = item.description ?? '';
-          if (_search.isNotEmpty &&
-              !titleLower.contains(_search) &&
-              !messageLower.contains(_search)) {
-            return const SizedBox.shrink();
-          }
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.grey100)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CreatedByWidget(userData: item.userData),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Iconsax.arrow_right_3,
-                            size: 14,
-                            color: AppColors.grey600,
-                          ),
-                          Expanded(
-                            child: Text(
-                              item.activity,
-                              style: Theme.of(context).textTheme.bodySmall!
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _timeAgo(item.createdAt),
-                            style: Theme.of(context).textTheme.bodySmall!
-                                .copyWith(color: AppColors.grey600),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      // Text(
-                      //   "${item.description}",
-                      //   maxLines: 2,
-                      //   overflow: TextOverflow.ellipsis,
-                      //   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      //     color: AppColors.grey700,
-                      //   ),
-                      // ),
-                      // const SizedBox(height: 6),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
+    return '${diff.inDays}d';
   }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 650;
+
     return BlocProvider(
       create: (context) => ActivityLogsBloc()..add(StreamActivityLogs()),
       child: Scaffold(
-        appBar: isMobile
+        backgroundColor: LogColors.background,
+        appBar: widget.showAppbar
             ? AppBar(
-                leading: Back(),
-                title: Text(
-                  'Activity Logs',
-                  style: Theme.of(context).textTheme.bodyMedium!,
+                backgroundColor: LogColors.white,
+                elevation: 0,
+                leading: const Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Back(),
+                ),
+                centerTitle: false,
+                title: const Text(
+                  "Activity Logs",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: LogColors.textPrimary,
+                    fontSize: 18,
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(70),
+                  child: _buildHeaderSearch(isMobile),
                 ),
               )
-            : AppBar(
-                backgroundColor: Colors.transparent,
-                actions: [
-                  SizedBox(
-                    width: 300,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 12,
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: 'Search activity log',
-                          prefixIcon: const Icon(Iconsax.search_normal),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onEditingComplete: () =>
-                            FocusManager.instance.primaryFocus!.unfocus(),
-                        onTapOutside: (event) =>
-                            FocusManager.instance.primaryFocus!.unfocus(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        body: BlocListener<ActivityLogsBloc, ActivityLogsState>(
-          listenWhen: (prev, curr) => curr is ActivityLogsLoaded,
-          listener: (context, state) {},
-          child: BlocBuilder<ActivityLogsBloc, ActivityLogsState>(
-            builder: (context, state) {
-              if (state is ActivityLogsLoading) {
-                return WaitingLoading();
-              }
+            : null,
+        body: BlocBuilder<ActivityLogsBloc, ActivityLogsState>(
+          builder: (context, state) {
+            if (state is ActivityLogsLoading) {
+              return const Center(child: WaitingLoading());
+            }
+            if (state is ActivityLogsError) {
+              return ErrorDisplay(error: state.message);
+            }
 
-              if (state is ActivityLogsError) {
-                return ErrorDisplay(error: state.message);
-              }
+            if (state is ActivityLogsLoaded) {
+              final filteredList = state.activityLogs.where((it) {
+                if (_search.isEmpty) return true;
+                return it.activity.toLowerCase().contains(_search) ||
+                    (it.description?.toLowerCase().contains(_search) ??
+                        false) ||
+                    it.collection.toLowerCase().contains(_search);
+              }).toList();
 
-              if (state is ActivityLogsLoaded) {
-                final List<ActivityLogModel> allActivityLogs =
-                    state.activityLogs;
-
-                final filteredList = _search.isEmpty
-                    ? allActivityLogs
-                    : allActivityLogs.where((it) {
-                        final t = it.activity.toLowerCase();
-                        final m = it.description?.toLowerCase() ?? '';
-                        final n = it.collection.toLowerCase();
-                        return t.contains(_search) ||
-                            m.contains(_search) ||
-                            n.contains(_search);
-                      }).toList();
-
-                if (filteredList.isEmpty) {
-                  return RefreshIndicator(
-                    onRefresh: () => _refresh(context),
-                    child: NoData(text: "No activity log found"),
-                  );
-                }
-
-                final grouped = _groupByDay(filteredList);
-
+              if (filteredList.isEmpty) {
                 return RefreshIndicator(
                   onRefresh: () => _refresh(context),
                   child: ListView(
-                    children: [
-                      // search field for mobile UI
-                      if (isMobile)
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: 'Search activity log',
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      const SizedBox(height: 8),
-                      for (final entry in grouped.entries)
-                        _buildListSection(entry.key, entry.value),
-                      const SizedBox(height: 60),
+                    children: const [
+                      SizedBox(height: 100),
+                      NoData(text: "No activity records match your search"),
                     ],
                   ),
                 );
               }
 
-              // fallback
-              return const SizedBox.shrink();
-            },
+              final grouped = _groupByDay(filteredList);
+
+              return RefreshIndicator(
+                onRefresh: () => _refresh(context),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 900),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: grouped.length,
+                      itemBuilder: (context, index) {
+                        final entry = grouped.entries.elementAt(index);
+                        return _buildSection(entry.key, entry.value);
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderSearch(bool isMobile) {
+    return Column(
+      children: [
+        Container(color: LogColors.border, height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Material(
+            borderRadius: BorderRadius.circular(12),
+            color: LogColors.background,
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(
+                  Iconsax.search_normal,
+                  size: 18,
+                  color: LogColors.textSecondary,
+                ),
+                hintText: 'Filter by activity, user or description...',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: LogColors.textSecondary,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection(String label, List<ActivityLogModel> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: LogColors.textSecondary,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        ...items.map((item) => _buildLogCard(item)),
+      ],
+    );
+  }
+
+  Widget _buildLogCard(ActivityLogModel item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: LogColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LogColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                UserAvatar(userData: item.userData, size: 36),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.userData.name.isNotEmpty
+                            ? item.userData.name
+                            : 'System User',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: LogColors.textPrimary,
+                        ),
+                      ),
+                      if (item.userData.desc != null)
+                        Text(
+                          item.userData.desc!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: LogColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: LogColors.background,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _timeAgo(item.createdAt),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: LogColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: LogColors.border),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: LogColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Iconsax.arrow_right_3,
+                    size: 10,
+                    color: LogColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.activity,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: LogColors.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (item.description != null &&
+                          item.description!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.description!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: LogColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Iconsax.folder_2,
+                            size: 12,
+                            color: LogColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.collection.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: LogColors.textSecondary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

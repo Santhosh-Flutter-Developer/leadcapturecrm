@@ -91,4 +91,31 @@ class FirestoreNotificationListener {
           });
     }
   }
+
+  static Future<void> sendTestNotification() async {
+    try {
+      LocalNotification notification = LocalNotification(
+        title: "Test Notification",
+        body: "This is a test notification.",
+      );
+
+      notification.onClick = () async {
+        await windowManager.focus();
+        await windowManager.show();
+
+        var navigator = navigatorKey.currentState;
+        if (navigator == null) return;
+        bool isAdmin = await Spdb.isAdminLoggedIn();
+
+        navigator.pushAndRemoveUntil(
+          CupertinoPageRoute(builder: (_) => MainScreen(isAdmin: isAdmin)),
+          (route) => false,
+        );
+      };
+
+      notification.show();
+    } catch (e) {
+      throw 'Error sending test notification: $e';
+    }
+  }
 }

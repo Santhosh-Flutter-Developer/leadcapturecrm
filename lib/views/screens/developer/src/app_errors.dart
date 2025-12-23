@@ -1,10 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import '/theme/theme.dart';
 import '/views/views.dart';
+import '/theme/theme.dart';
 import '/constants/constants.dart';
+
+class DevColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color danger = Color(0xFFEF4444);
+}
 
 class AppErrors extends StatefulWidget {
   const AppErrors({super.key});
@@ -15,7 +26,6 @@ class AppErrors extends StatefulWidget {
 
 class _AppErrorsState extends State<AppErrors> {
   FirebaseFirestore firebase = FirebaseFirestore.instance;
-
   bool _loading = false;
   List<Map<String, dynamic>> _errors = [];
 
@@ -25,46 +35,47 @@ class _AppErrorsState extends State<AppErrors> {
     _loadErrors();
   }
 
-  /// Fetch last 100 errors
   Future<void> _loadErrors() async {
     setState(() => _loading = true);
+    try {
+      final query = await firebase
+          .collection(Collections.errors.name)
+          .orderBy("time", descending: true)
+          .limit(100)
+          .get();
 
-    final query = await firebase
-        .collection(Collections.errors.name)
-        .orderBy("time", descending: true)
-        .limit(100)
-        .get();
-
-    final List<Map<String, dynamic>> list = [];
-
-    for (var doc in query.docs) {
-      final data = doc.data();
-
-      list.add({
-        "id": doc.id,
-        "cid": data["cid"],
-        "uid": data["uid"],
-        "error": data["error"],
-        "stackTrace": data["stackTrace"],
-        "device": data["device"],
-        "time": data["time"] is Timestamp
-            ? (data["time"] as Timestamp).toDate()
-            : null,
+      final List<Map<String, dynamic>> list = [];
+      for (var doc in query.docs) {
+        final data = doc.data();
+        list.add({
+          "id": doc.id,
+          "cid": data["cid"],
+          "uid": data["uid"],
+          "error": data["error"],
+          "stackTrace": data["stackTrace"],
+          "device": data["device"],
+          "time": data["time"] is Timestamp
+              ? (data["time"] as Timestamp).toDate()
+              : null,
+        });
+      }
+      setState(() {
+        _errors = list;
+        _loading = false;
       });
+    } catch (e) {
+      setState(() => _loading = false);
+      if (mounted) {
+        FlushBar.show(context, 'Error loading logs', isSuccess: false);
+      }
     }
-
-    setState(() {
-      _errors = list;
-      _loading = false;
-    });
   }
 
   String _formatTime(DateTime? t) {
     if (t == null) return "-";
-    return DateFormat("dd-MM-yyyy hh:mm a").format(t);
+    return DateFormat("dd MMM, hh:mm a").format(t);
   }
 
-  /// Copy text to clipboard
   void _copy(String text) {
     Clipboard.setData(ClipboardData(text: text));
     FlushBar.show(context, 'Copied to clipboard');
@@ -73,82 +84,308 @@ class _AppErrorsState extends State<AppErrors> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DevColors.background,
       appBar: AppBar(
-        leading: Back(),
-        title: Text("App Errors (Last 100)"),
+        backgroundColor: DevColors.white,
+        elevation: 0,
+        centerTitle: false,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8.0),
+          child: Back(color: AppColors.black),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "System Logs",
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: DevColors.textPrimary,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              "Latest 100 entries",
+              style: TextStyle(
+                fontSize: 11,
+                color: DevColors.textSecondary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(
+              Iconsax.refresh,
+              color: DevColors.primary,
+              size: 20,
+            ),
             onPressed: _loadErrors,
             tooltip: "Reload",
           ),
+          const SizedBox(width: 8),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: DevColors.border, height: 1),
+        ),
       ),
-
       body: _loading
-          ? WaitingLoading()
+          ? const Center(child: WaitingLoading())
           : _errors.isEmpty
-          ? Center(
-              child: Text(
-                "No errors found",
-                style: Theme.of(context).textTheme.bodySmall,
+          ? _buildEmptyState()
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _errors.length,
+                  itemBuilder: (context, index) =>
+                      _buildErrorCard(_errors[index]),
+                ),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: _errors.length,
-              itemBuilder: (context, index) {
-                final e = _errors[index];
-
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ExpansionTile(
-                    title: Text(
-                      e["error"] ?? "",
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _formatTime(e["time"]),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                    ),
-                    children: [
-                      _tile("Error", e["error"], copy: true),
-                      _tile("StackTrace", e["stackTrace"], copy: true),
-                      _tile("Collection Id", e["cid"]),
-                      _tile("User Id", e["uid"]),
-                      _tile("Device", e["device"]?.toString()),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                );
-              },
             ),
     );
   }
 
-  Widget _tile(String title, String? value, {bool copy = false}) {
-    return ListTile(
-      dense: true,
-      title: Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconsax.tick_circle, size: 48, color: DevColors.border),
+          const SizedBox(height: 16),
+          const Text(
+            "No system errors detected",
+            style: TextStyle(
+              color: DevColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
-      subtitle: SelectableText(value ?? "-"),
-      trailing: copy
-          ? IconButton(
-              icon: const Icon(Icons.copy, size: 18),
-              onPressed: () => _copy(value ?? ""),
-            )
-          : null,
+    );
+  }
+
+  Widget _buildErrorCard(Map<String, dynamic> errorData) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: DevColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DevColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          iconColor: DevColors.textSecondary,
+          collapsedIconColor: DevColors.textSecondary,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DevColors.danger.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  "ERROR",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: DevColors.danger,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  errorData["error"] ?? "Unknown Exception",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: DevColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              _formatTime(errorData["time"]),
+              style: const TextStyle(
+                fontSize: 12,
+                color: DevColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          children: [
+            Container(
+              color: DevColors.border.withValues(alpha: 0.5),
+              height: 1,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetailSection(
+                    "EXCEPTION",
+                    errorData["error"],
+                    copy: true,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailSection(
+                    "STACK TRACE",
+                    errorData["stackTrace"],
+                    copy: true,
+                    isCode: true,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "METADATA",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: DevColors.textSecondary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: DevColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: DevColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildMetadataRow("Collection ID", errorData["cid"]),
+                        const Divider(height: 16, thickness: 0.5),
+                        _buildMetadataRow("User ID", errorData["uid"]),
+                        const Divider(height: 16, thickness: 0.5),
+                        _buildMetadataRow(
+                          "Device info",
+                          errorData["device"]?.toString(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(
+    String label,
+    String? value, {
+    bool copy = false,
+    bool isCode = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: DevColors.textSecondary,
+                letterSpacing: 1,
+              ),
+            ),
+            if (copy && value != null)
+              InkWell(
+                onTap: () => _copy(value),
+                child: const Row(
+                  children: [
+                    Icon(Iconsax.copy, size: 12, color: DevColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      "Copy",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: DevColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isCode ? const Color(0xFF1E293B) : DevColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: DevColors.border),
+          ),
+          child: Text(
+            value ?? "-",
+            style: TextStyle(
+              fontSize: 12,
+              color: isCode ? const Color(0xFFF1F5F9) : DevColors.textPrimary,
+              fontFamily: isCode ? 'monospace' : null,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetadataRow(String label, String? value) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: DevColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: SelectableText(
+            value ?? "-",
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 12,
+              color: DevColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

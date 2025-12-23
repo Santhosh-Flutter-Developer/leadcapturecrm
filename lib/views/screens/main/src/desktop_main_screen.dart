@@ -18,7 +18,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   late String _currentUserUid;
   final List<UserDataModel> _users = [];
 
-  final items = [
+  final List<Map<String, dynamic>> items = [
     {"icon": Iconsax.message, "label": "Messenger"},
     {"icon": Iconsax.graph, "label": "Leads"},
     {"icon": Iconsax.grid_lock, "label": "Deals"},
@@ -30,11 +30,6 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     _future = _init();
     _selectedMenu = widget.selectedMenu ?? 'Dashboard';
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _init() async {
@@ -57,6 +52,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
             )
             .toList(),
       );
+
       var admins = await AdminService.getAllAdmins(excludeCurrentUser: true);
       _users.addAll(
         admins
@@ -144,7 +140,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
       case 'Feed':
         return BlocProvider(
           create: (context) => FeedBloc(),
-          child: FeedListing(),
+          child: const FeedListing(),
         );
       default:
         return Center(
@@ -159,6 +155,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {
@@ -167,10 +164,11 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Error: ${snapshot.error}',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                'Sync Error: ${snapshot.error}',
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             );
           }
@@ -198,51 +196,112 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   }
 
   Widget _buildGlassNavigationRail() {
-    return ClipRRect(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(16),
-        bottomLeft: Radius.circular(16),
+    return Container(
+      width: 50, // Comfortable modern width
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          left: BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(-5, 0),
+          ),
+        ],
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          width: 40,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            border: Border(
-              left: BorderSide(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                width: 1,
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          // User count badge / Action
+          _buildRailTopAction(),
+          const SizedBox(height: 12),
+          const Divider(indent: 16, endIndent: 16, thickness: 0.5),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                itemCount: _users.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  var userData = _users[index];
+                  return _buildRailAvatar(userData);
+                },
               ),
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(scrollbars: false),
-                  child: ListView.separated(
-                    itemCount: _users.length,
-                    itemBuilder: (context, index) {
-                      var userData = _users[index];
-                      return Center(
-                        child: UserAvatar(userData: userData, size: 30),
-                      );
-                    },
-                    separatorBuilder: (context, index) {
-                      return const SizedBox(height: 8);
-                    },
-                  ),
-                ),
-              ),
-              _buildRailItem(icon: Icons.help, label: 'Help'),
-            ],
-          ),
+          _buildRailBottomActions(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRailTopAction() {
+    return Tooltip(
+      message: "Direct Messages",
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+          shape: BoxShape.circle,
         ),
+        child: const Icon(
+          Iconsax.messages_1,
+          color: Color(0xFF2563EB),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRailAvatar(UserDataModel userData) {
+    return Center(
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.transparent,
+                width: 2,
+              ), // Can add active border logic here
+            ),
+            child: UserAvatar(userData: userData, size: 36),
+          ),
+          // Online Indicator
+          Positioned(
+            bottom: 2,
+            right: 2,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRailBottomActions() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24, top: 12),
+      child: Column(
+        children: [
+          const Divider(indent: 16, endIndent: 16, thickness: 0.5),
+          const SizedBox(height: 12),
+          _buildRailItem(icon: Iconsax.setting_2, label: 'Panel Settings'),
+        ],
       ),
     );
   }
@@ -250,9 +309,13 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   Widget _buildRailItem({required IconData icon, required String label}) {
     return Tooltip(
       message: label,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: Icon(icon, color: Colors.black, size: 24),
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, color: const Color(0xFF64748B), size: 22),
+        ),
       ),
     );
   }

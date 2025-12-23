@@ -256,12 +256,12 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
     return CircleAvatar(
       radius: 15,
-      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+      backgroundColor: LetterColors.getColor((userName ?? '?').first),
       child: Text(
-        (userName ?? '?').capitalizeFirst,
+        (userName ?? '?').first,
         style: Theme.of(
           context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.primary),
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
       ),
     );
   }

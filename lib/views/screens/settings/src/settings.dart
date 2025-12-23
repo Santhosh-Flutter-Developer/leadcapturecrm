@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import '/app/app.dart';
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
+import '/services/services.dart';
+
+class SettingsColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color surface = Colors.white;
+}
 
 class Settings extends StatelessWidget {
   final bool showAppbar;
@@ -47,25 +57,27 @@ class _SettingsListingState extends State<SettingsListing> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: SettingsColors.background,
       appBar: widget.showAppbar
           ? AppBar(
-              leading: const Back(), // Assuming 'Back' is a defined widget
-              title: Text(
-                "Settings",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              backgroundColor: AppColors.white,
-              foregroundColor: AppColors.black,
+              backgroundColor: SettingsColors.white,
               elevation: 0,
-              centerTitle: true,
+              centerTitle: false,
+              leading: const Padding(
+                padding: EdgeInsets.only(left: 8.0),
+                child: Back(),
+              ),
+              title: const Text(
+                "Preferences",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: SettingsColors.textPrimary,
+                  fontSize: 18,
+                ),
+              ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  height: 1,
-                ),
+                child: Container(color: SettingsColors.border, height: 1),
               ),
             )
           : null,
@@ -78,413 +90,237 @@ class _SettingsListingState extends State<SettingsListing> {
 
           if (state is SettingsLoaded) {
             final settings = state.settings;
-            return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              children: [
-                SettingsSection(
-                  title: "NOTIFICATIONS",
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
                   children: [
-                    SettingsSwitchTile(
-                      icon: Iconsax.sms,
-                      iconColor: Colors.blueAccent,
-                      title: "Email Notifications",
-                      value: settings.emailNotification,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(
+                    _buildSectionHeader("Notifications", Iconsax.notification),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard([
+                      _buildSwitchTile(
+                        icon: Iconsax.sms,
+                        iconColor: Colors.blueAccent,
+                        title: "Email Notifications",
+                        subtitle: "Receive daily summaries via email",
+                        value: settings.emailNotification,
+                        onChanged: (val) => context.read<SettingsBloc>().add(
                           UpdateSettingsEvent("emailNotification", val),
-                        );
-                      },
-                    ),
-                    SettingsSwitchTile(
-                      icon: Iconsax.notification,
-                      iconColor: Colors.orangeAccent,
-                      title: "Push Notifications",
-                      value: settings.pushNotification,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(
-                          UpdateSettingsEvent("pushNotification", val),
-                        );
-                      },
-                    ),
-                    SettingsSwitchTile(
-                      icon: Iconsax.message,
-                      iconColor: Colors.greenAccent,
-                      title: "In-App Notifications",
-                      value: settings.inAppNotification,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(
-                          UpdateSettingsEvent("inAppNotification", val),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                SettingsSection(
-                  title: "APPLICATION",
-                  children: [
-                    SettingsTile(
-                      icon: Iconsax.mobile_programming,
-                      iconColor: Colors.purpleAccent,
-                      title: "App Name",
-                      trailing: SizedBox(
-                        width: 150,
-                        child: TextField(
-                          controller: TextEditingController(
-                            text: settings.appName,
-                          ),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.grey700),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            hintText: "Enter Name",
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                          ),
-                          onChanged: (val) {
-                            context.read<SettingsBloc>().add(
-                              UpdateSettingsEvent("appName", val),
-                            );
-                          },
                         ),
                       ),
-                    ),
-                    SettingsTile(
-                      icon: Iconsax.clock,
-                      iconColor: Colors.tealAccent,
-                      title: "Timezone",
-                      trailing: _buildDropdown(
-                        value: settings.timezone,
-                        options: [
-                          "UTC",
-                          "IST (India)",
-                          "PST (US Pacific)",
-                          "EST (US Eastern)",
-                          "CET (Central Europe)",
-                          "GST (UAE)",
-                        ],
-                        onChanged: (val) {
-                          context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("timezone", val),
-                          );
-                        },
+                      _buildSwitchTile(
+                        icon: Iconsax.notification,
+                        iconColor: Colors.orangeAccent,
+                        title: "Push Notifications",
+                        subtitle: "Instant alerts on your device",
+                        value: settings.pushNotification,
+                        onChanged: (val) => context.read<SettingsBloc>().add(
+                          UpdateSettingsEvent("pushNotification", val),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                SettingsSection(
-                  title: "PREFERENCES",
-                  children: [
-                    SettingsSwitchTile(
-                      icon: Iconsax.moon,
-                      iconColor: const Color(0xFF34495E),
-                      title: "Dark Theme",
-                      value: isDark,
-                      onChanged: (value) {
-                        themeProvider.setDarkMode(value);
-                      },
-                    ),
-                    SettingsSwitchTile(
-                      icon: Iconsax.message_2,
-                      iconColor: Colors.pinkAccent,
-                      title: "Show Chats",
-                      value: settings.showChats,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(
-                          UpdateSettingsEvent("showChats", val),
-                        );
-                      },
-                    ),
-                    SettingsTile(
-                      icon: Iconsax.global,
-                      iconColor: Colors.indigoAccent,
-                      title: "Language",
-                      trailing: _buildDropdown(
-                        value: settings.language,
-                        options: ["English", "Hindi", "Tamil", "Telugu"],
-                        onChanged: (val) {
-                          context.read<SettingsBloc>().add(
+                      _buildSwitchTile(
+                        icon: Iconsax.message,
+                        iconColor: Colors.greenAccent,
+                        title: "In-App Alerts",
+                        subtitle: "Banners and indicators within the app",
+                        value: settings.inAppNotification,
+                        onChanged: (val) => context.read<SettingsBloc>().add(
+                          UpdateSettingsEvent("inAppNotification", val),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader("App Appearance", Iconsax.brush),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard([
+                      _buildSwitchTile(
+                        icon: isDark ? Iconsax.moon : Iconsax.sun_1,
+                        iconColor: const Color(0xFF34495E),
+                        title: "Dark Theme",
+                        subtitle: "Reduce eye strain in low light",
+                        value: isDark,
+                        onChanged: (value) => themeProvider.setDarkMode(value),
+                      ),
+                      _buildInteractiveTile(
+                        icon: Iconsax.global,
+                        iconColor: Colors.indigoAccent,
+                        title: "Language",
+                        trailing: _buildDropdown(
+                          value: settings.language,
+                          options: ["English", "Hindi", "Tamil", "Telugu"],
+                          onChanged: (val) => context.read<SettingsBloc>().add(
                             UpdateSettingsEvent("language", val),
-                          );
-                        },
+                          ),
+                        ),
                       ),
-                    ),
-                    SettingsTile(
-                      icon: Iconsax.music_dashboard,
-                      iconColor: Colors.deepOrangeAccent,
-                      title: "Layout",
-                      trailing: _buildDropdown(
-                        value: settings.dashboardLayout,
-                        options: ["Default", "Compact", "Analytics"],
-                        onChanged: (val) {
-                          context.read<SettingsBloc>().add(
+                      _buildInteractiveTile(
+                        icon: Iconsax.music_dashboard,
+                        iconColor: Colors.deepOrangeAccent,
+                        title: "Dashboard Layout",
+                        trailing: _buildDropdown(
+                          value: settings.dashboardLayout,
+                          options: ["Default", "Compact", "Analytics"],
+                          onChanged: (val) => context.read<SettingsBloc>().add(
                             UpdateSettingsEvent("dashboardLayout", val),
-                          );
-                        },
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                SettingsSection(
-                  title: "SYSTEM",
-                  children: [
-                    SettingsSwitchTile(
-                      icon: Iconsax.cloud_notif,
-                      iconColor: Colors.cyan,
-                      title: "Auto Backup",
-                      value: settings.autoBackup,
-                      onChanged: (val) {
-                        context.read<SettingsBloc>().add(
+                    ]),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader("System & Data", Iconsax.status),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard([
+                      _buildInteractiveTile(
+                        icon: Iconsax.mobile_programming,
+                        iconColor: Colors.purpleAccent,
+                        title: "Application Name",
+                        trailing: SizedBox(
+                          width: 140,
+                          child: TextField(
+                            onChanged: (val) => context
+                                .read<SettingsBloc>()
+                                .add(UpdateSettingsEvent("appName", val)),
+                            controller:
+                                TextEditingController(text: settings.appName)
+                                  ..selection = TextSelection.fromPosition(
+                                    TextPosition(
+                                      offset: settings.appName.length,
+                                    ),
+                                  ),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: SettingsColors.primary,
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              hintText: "Enter Name",
+                              hintStyle: TextStyle(
+                                fontWeight: FontWeight.normal,
+                                color: SettingsColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildSwitchTile(
+                        icon: Iconsax.cloud_notif,
+                        iconColor: Colors.cyan,
+                        title: "Cloud Auto-Backup",
+                        subtitle: "Secure your data automatically",
+                        value: settings.autoBackup,
+                        onChanged: (val) => context.read<SettingsBloc>().add(
                           UpdateSettingsEvent("autoBackup", val),
-                        );
-                      },
-                    ),
-                    SettingsTile(
-                      icon: Iconsax.cloud_remove,
-                      iconColor: Colors.redAccent,
-                      title: "Backup Now",
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: Colors.grey,
+                        ),
                       ),
-                      onTap: () => Navigate.route(context, BackupListing()),
-                    ),
+                      _buildInteractiveTile(
+                        icon: Iconsax.trash,
+                        iconColor: Colors.redAccent,
+                        title: "Trash Manager",
+                        onTap: () =>
+                            Navigate.route(context, const TrashScreen()),
+                        trailing: const Icon(
+                          Iconsax.arrow_right_3,
+                          size: 16,
+                          color: SettingsColors.border,
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 40),
+                    _buildFooter(),
                   ],
                 ),
-
-                const SizedBox(height: 24),
-
-                SettingsSection(
-                  title: "DATA",
-                  children: [
-                    SettingsTile(
-                      icon: Iconsax.trash,
-                      iconColor: Colors.red,
-                      title: "Trash",
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      onTap: () => Navigate.route(
-                        context,
-                        TrashScreen(),
-                      ), // Assuming TrashScreen exists
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 40),
-              ],
+              ),
             );
           }
 
-          return const ErrorDisplay(error: "Error loading settings");
+          return const ErrorDisplay(error: "Synchronization issue detected.");
         },
       ),
     );
   }
 
-  // Helper to build a clean dropdown
-  Widget _buildDropdown({
-    required String value,
-    required List<String> options,
-    required ValueChanged<String?> onChanged,
-  }) {
-    // Ensure value is in options, fallback to first if not
-    final validValue = options.contains(value) ? value : options.first;
-
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: validValue,
-        icon: const Padding(
-          padding: EdgeInsets.only(left: 4),
-          child: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 18,
-            color: Colors.grey,
-          ),
-        ),
-        isDense: true,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: context.colors.textPrimary,
-          fontWeight: FontWeight.w500,
-        ),
-        items: options
-            .map(
-              (e) => DropdownMenuItem(
-                value: e,
-                child: Text(e, style: Theme.of(context).textTheme.bodySmall),
-              ),
-            )
-            .toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
-
-// --- Components ---
-
-class SettingsSection extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const SettingsSection({
-    super.key,
-    required this.title,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: context.colors.textSecondary,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: context.colors.cardColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.05)),
-          ),
-          child: Column(
-            children: [
-              for (int i = 0; i < children.length; i++) ...[
-                children[i],
-                if (i != children.length - 1)
-                  Divider(
-                    height: 1,
-                    indent: 56,
-                    color: Colors.grey.withValues(alpha: 0.1),
-                  ),
-              ],
-            ],
+        Icon(icon, size: 16, color: SettingsColors.textSecondary),
+        const SizedBox(width: 8),
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: SettingsColors.textSecondary,
+            letterSpacing: 1.2,
           ),
         ),
       ],
     );
   }
-}
 
-class SettingsTile extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color iconColor;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  const SettingsTile({
-    super.key,
-    required this.title,
-    required this.icon,
-    this.iconColor = AppColors.primary,
-    this.trailing,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16), // Match section border
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: context.colors.textPrimary,
+  Widget _buildSettingsCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: SettingsColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SettingsColors.border),
+      ),
+      child: Column(
+        children: children.asMap().entries.map((entry) {
+          bool isLast = entry.key == children.length - 1;
+          return Column(
+            children: [
+              entry.value,
+              if (!isLast)
+                Container(
+                  margin: const EdgeInsets.only(left: 64),
+                  color: SettingsColors.border,
+                  height: 1,
                 ),
-              ),
-            ),
-            if (trailing != null) trailing!,
-          ],
-        ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
-}
 
-class SettingsSwitchTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const SettingsSwitchTile({
-    super.key,
-    required this.icon,
-    this.iconColor = AppColors.primary,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
+          _buildIconContainer(icon, iconColor),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: context.colors.textSecondary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: SettingsColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: SettingsColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ),
           MorphSwitch(value: value, onChanged: onChanged),
@@ -492,9 +328,111 @@ class SettingsSwitchTile extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildInteractiveTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _buildIconContainer(icon, iconColor),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: SettingsColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconContainer(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String value,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+  }) {
+    final validValue = options.contains(value) ? value : options.first;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: SettingsColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: SettingsColors.border),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: validValue,
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 16,
+            color: SettingsColors.textSecondary,
+          ),
+          isDense: true,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: SettingsColors.textPrimary,
+          ),
+          items: options
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Center(
+      child: Column(
+        children: [
+          const Text(
+            "Syncing with Cloud Vault",
+            style: TextStyle(
+              fontSize: 11,
+              color: SettingsColors.textSecondary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Workspace Version ${VersionService.version?.version ?? 'N/A'} (LTS)",
+            style: TextStyle(fontSize: 10, color: SettingsColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// --- Custom Animated Switch ---
 class MorphSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -506,20 +444,22 @@ class MorphSwitch extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        width: 46,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.decelerate,
+        width: 48,
         height: 26,
         decoration: BoxDecoration(
-          color: value ? AppColors.primary : Colors.grey.shade300,
+          color: value ? SettingsColors.primary : SettingsColors.border,
           borderRadius: BorderRadius.circular(20),
         ),
-        padding: const EdgeInsets.all(2),
-        child: Align(
+        padding: const EdgeInsets.all(3),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.decelerate,
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            width: 22,
-            height: 22,
+            width: 20,
+            height: 20,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,

@@ -281,7 +281,7 @@ class _FeedCreateState extends State<FeedCreate> {
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: kPrimaryColor,
+                backgroundColor: FeedAppColors.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -429,7 +429,7 @@ class _FeedCreateState extends State<FeedCreate> {
                                 children: [
                                   const Icon(
                                     Icons.description,
-                                    color: kPrimaryColor,
+                                    color: FeedAppColors.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -567,7 +567,7 @@ class _FeedCreateState extends State<FeedCreate> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               style: TextButton.styleFrom(
-                foregroundColor: kPrimaryColor,
+                foregroundColor: FeedAppColors.primary,
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),

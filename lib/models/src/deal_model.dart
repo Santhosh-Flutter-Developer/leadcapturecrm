@@ -302,3 +302,83 @@ class DealModel {
         updatedAt.hashCode;
   }
 }
+
+class DealCommentModel {
+  final String userId;
+  final String comment;
+  final DateTime timestamp;
+
+  DealCommentModel({
+    required this.userId,
+    required this.comment,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  DealCommentModel copyWith({
+    String? userId,
+    String? comment,
+    DateTime? timestamp,
+  }) {
+    return DealCommentModel(
+      userId: userId ?? this.userId,
+      comment: comment ?? this.comment,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'userId': userId,
+    'comment': comment,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+  };
+
+  factory DealCommentModel.fromMap(Map<String, dynamic> map) =>
+      DealCommentModel(
+        userId: map['userId'] as String,
+        comment: map['comment'] as String,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      );
+}
+
+class DealHistoryModel {
+  final String userId;
+  final String updateDisposition;
+  final String? update;
+  final DateTime timestamp;
+
+  DealHistoryModel({
+    required this.userId,
+    required this.updateDisposition,
+    this.update,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  DealHistoryModel copyWith({
+    String? userId,
+    String? updateDisposition,
+    String? update,
+    DateTime? timestamp,
+  }) {
+    return DealHistoryModel(
+      userId: userId ?? this.userId,
+      updateDisposition: updateDisposition ?? this.updateDisposition,
+      update: update ?? this.update,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'userId': userId,
+    'updateDisposition': updateDisposition,
+    'update': update,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+  };
+
+  factory DealHistoryModel.fromMap(Map<String, dynamic> map) =>
+      DealHistoryModel(
+        userId: map['userId'] as String,
+        updateDisposition: map['updateDisposition'] as String,
+        update: map['update'] as String?,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      );
+}

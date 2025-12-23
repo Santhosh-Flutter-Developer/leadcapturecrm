@@ -4,13 +4,17 @@ import '/views/views.dart';
 
 class Back extends StatelessWidget {
   final bool pop;
-  const Back({super.key, this.pop = false});
+  final Color? color;
+  const Back({super.key, this.pop = false, this.color});
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: "Back",
-      icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.white),
+      icon: Icon(
+        Icons.arrow_back_ios_new_rounded,
+        color: color ?? AppColors.white,
+      ),
       onPressed: () async {
         if (pop) {
           var result = await showDialog(
