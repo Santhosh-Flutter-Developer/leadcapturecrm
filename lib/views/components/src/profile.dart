@@ -41,8 +41,10 @@ class _ProfileState extends State<Profile> {
 
     if (user.userType == UserType.admin) {
       admin = await Spdb.getAdmin();
+      setState(() => isAdmin = true); 
     } else {
       employee = await Spdb.getEmployee();
+      setState(() => isAdmin = false);
     }
 
     setState(() => isLoading = false);

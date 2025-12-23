@@ -77,6 +77,7 @@ class LeadsListingView extends StatefulWidget {
 class _LeadsListingViewState extends State<LeadsListingView> {
   String _selectedView = 'Grid';
   final List<LeadModel> _selectedLeads = [];
+  List<LeadModel> _filteredLeads = [];
   PermissionModel? permissions;
 
   DateTime? _fromDate;
@@ -84,6 +85,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   String? _selectedStatus;
   String? _selectedCategory;
   String? _selectedCreatedBy;
+
+  double? _minLeadValue;
+  double? _maxLeadValue;
 
   @override
   void initState() {
@@ -135,6 +139,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         listener: (context, state) {
           if (state is LeadLoaded) {
             controllerRead.setData(state.leads);
+            setState(() {
+              _filteredLeads = state.leads;
+            });
           }
         },
         child: BlocBuilder<LeadBloc, LeadState>(
@@ -160,7 +167,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       _buildActionRow(context),
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
-                        LeadKanbanListing(leadList: state.leads),
+                        LeadKanbanListing(leadList: _filteredLeads),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -489,11 +496,106 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   _applyFilters();
                 },
               ),
+
+              const SizedBox(width: 10),
+
+              _valueRangeFilter(onChanged: _onValueRangeChanged),
             ],
           ),
         ),
       ],
     );
+  }
+
+  Widget _valueRangeFilter({
+    required ValueChanged<String> onChanged,
+    double itemWidth = 180,
+  }) {
+    return SizedBox(
+      width: itemWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Lead Value",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+          Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade700),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.currency_rupee,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    onChanged: onChanged,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: "1000 - 5000",
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onValueRangeChanged(String value) {
+    _minLeadValue = null;
+    _maxLeadValue = null;
+
+    final cleaned = value.replaceAll(' ', '');
+
+    if (!cleaned.contains('-')) {
+      _applyFilters();
+      return;
+    }
+
+    final parts = cleaned.split('-');
+    if (parts.length != 2) {
+      _applyFilters();
+      return;
+    }
+
+    final from = double.tryParse(parts[0]);
+    final to = double.tryParse(parts[1]);
+
+    if (from == null || to == null) {
+      _applyFilters();
+      return;
+    }
+
+    if (from > to) {
+      // invalid range → ignore filter
+      _applyFilters();
+      return;
+    }
+
+    _minLeadValue = from;
+    _maxLeadValue = to;
+
+    _applyFilters();
   }
 
   Widget _dateFilter({
@@ -589,12 +691,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
     if (_fromDate != null) {
       filtered = filtered
-          .where((e) => e.createdAt.isAfter(_fromDate!))
+          .where((e) => !e.createdAt.isBefore(_fromDate!))
           .toList();
     }
 
     if (_toDate != null) {
-      filtered = filtered.where((e) => e.createdAt.isBefore(_toDate!)).toList();
+      filtered = filtered.where((e) => !e.createdAt.isAfter(_toDate!)).toList();
     }
 
     if (_selectedStatus != null) {
@@ -614,6 +716,19 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           .where((e) => e.createdBy.uid == _selectedCreatedBy)
           .toList();
     }
+
+    if (_minLeadValue != null && _maxLeadValue != null) {
+      filtered = filtered
+          .where(
+            (e) =>
+                e.leadValue >= _minLeadValue! && e.leadValue <= _maxLeadValue!,
+          )
+          .toList();
+    }
+
+    setState(() {
+      _filteredLeads = filtered;
+    });
 
     controller.setData(filtered);
   }
@@ -688,7 +803,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       try {
                         futureLoading(context);
                         for (var i in _selectedLeads) {
-                          await DealService.deleteDeal(uid: i.uid ?? '');
+                          await LeadService.deleteLead(uid: i.uid ?? '');
                         }
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);

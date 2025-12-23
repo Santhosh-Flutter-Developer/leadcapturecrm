@@ -33,6 +33,16 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     _future = _initializeBoard();
   }
 
+  @override
+  void didUpdateWidget(covariant LeadKanbanListing oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.leadList != widget.leadList) {
+      _future = _initializeBoard();
+      setState(() {});
+    }
+  }
+
   Future<void> _initializeBoard() async {
     _leadList = await LeadService.getLeadByGroup(leadList: widget.leadList);
   }
