@@ -25,12 +25,16 @@ class DeleteLead extends LeadEvent {
 
 class StreamLeadComments extends LeadEvent {
   final String leadUid;
-   StreamLeadComments(this.leadUid);
+  StreamLeadComments(this.leadUid);
 }
 
 class AddLeadComment extends LeadEvent {
   final String leadUid;
   final String commentText;
-   AddLeadComment({required this.leadUid, required this.commentText});
+  AddLeadComment({required this.leadUid, required this.commentText});
 }
 
+class StreamLeadHistory extends LeadEvent {
+  final String leadUid;
+  StreamLeadHistory(this.leadUid);
+}

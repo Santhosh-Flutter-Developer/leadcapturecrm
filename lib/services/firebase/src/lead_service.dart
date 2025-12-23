@@ -38,6 +38,8 @@ class LeadService {
 
       var leadDoc = await leadsRef.add(leadData);
 
+      await addLeadHistory(leadUid: leadDoc.id, action: 'Lead Created');
+
       // Collect workflow users for notifications
       List<String> users = lead.workflow.toSet().toList();
       List<String> fcmIds = [];
@@ -85,6 +87,7 @@ class LeadService {
         lead.toUpdateMap(),
         activity: '${lead.leadName} has been updated',
       );
+      await addLeadHistory(leadUid: uid, action: 'Lead Updated');
 
       List<String> users = lead.workflow.toSet().toList();
 
@@ -255,6 +258,10 @@ class LeadService {
           .collection(Collections.leads.name)
           .doc(lead.uid)
           .update({'leadsConversion': true});
+      await addLeadHistory(
+        leadUid: lead.uid!,
+        action: 'Lead Converted to Deal',
+      );
 
       debugPrint("Lead ${lead.leadName} marked as converted.");
     } catch (e, st) {
@@ -282,11 +289,15 @@ class LeadService {
 
       final commentData = {
         'comment': commentText,
-        'createdBy': uid,
+        'createdBy': {'uid': uid, 'name': (await Spdb.getUser()).name},
         'createdAt': FieldValue.serverTimestamp(),
       };
 
       await commentsRef.add(commentData);
+      await addLeadHistory(
+        leadUid: leadUid,
+        action: 'Comment Added: $commentText',
+      );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("Error adding lead comment: $e\n$st");
@@ -372,6 +383,33 @@ class LeadService {
       await ErrorService.recordError(e, st);
       debugPrint("${e.toString()}, ${st.toString()}");
       throw 'Error fetching projects: $e';
+    }
+  }
+
+  static Future<void> addLeadHistory({
+    required String leadUid,
+    required String action,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final user = await Spdb.getUser();
+
+      final historyRef = firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(leadUid)
+          .collection('history');
+
+      final history = LeadHistoryModel(
+        userId: user.uid,
+        updateDisposition: action,
+      );
+
+      await historyRef.add(history.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error adding lead history: $e\n$st");
+      rethrow;
     }
   }
 }

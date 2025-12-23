@@ -30,7 +30,9 @@ class LeadsViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => LeadBloc()..add(StreamLeadComments(lead.uid!)),
+      create: (_) => LeadBloc()
+        ..add(StreamLeadComments(lead.uid!))
+        ..add(StreamLeadHistory(lead.uid!)),
       child: LeadsView(lead: lead),
     );
   }
@@ -52,11 +54,12 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
     widgetLeadCategory = CacheService.leadCategoryByUid(
       widget.lead.leadCategory,
     )!;
-    _tabController = TabController(length: 2, vsync: this);
-    context.read<LeadBloc>().add(StreamLeadComments(widget.lead.uid!));
+
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -171,17 +174,14 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(10),
             ),
             indicatorSize: TabBarIndicatorSize.tab,
-            tabs: [
+            tabs: const [
               Tab(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Iconsax.user_tag, size: 18),
                     SizedBox(width: 8),
-                    Text(
-                      "Lead Details",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text("Lead Details"),
                   ],
                 ),
               ),
@@ -191,7 +191,17 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                   children: [
                     Icon(Iconsax.note_2, size: 18),
                     SizedBox(width: 8),
-                    Text("Notes", style: Theme.of(context).textTheme.bodySmall),
+                    Text("Notes"),
+                  ],
+                ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Iconsax.activity, size: 18),
+                    SizedBox(width: 8),
+                    Text("History"),
                   ],
                 ),
               ),
@@ -207,6 +217,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 _buildDetailsTab(context),
                 _buildNotesAndAttachments(context),
+                _buildHistorySection(),
               ],
             );
           },
@@ -257,127 +268,252 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: _cardDecoration(),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader("Comments", Iconsax.message),
-            const Divider(
-              height: 28,
-              thickness: 1,
-              color: LeadsViewAppColors.grey200,
-            ),
-            TextField(
-              controller: _commentController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: "Write a comment...",
-                filled: true,
-                fillColor: LeadsViewAppColors.grey50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader("Comments", Iconsax.message),
+          const Divider(
+            height: 28,
+            thickness: 1,
+            color: LeadsViewAppColors.grey200,
+          ),
+          TextField(
+            controller: _commentController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: "Write a comment...",
+              filled: true,
+              fillColor: LeadsViewAppColors.grey50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: _addComment,
+          ),
+          const SizedBox(height: 12),
+          ValueListenableBuilder(
+            valueListenable: _commentController,
+            builder: (context, TextEditingValue value, _) {
+              return ElevatedButton.icon(
+                onPressed: value.text.trim().isEmpty ? null : _addComment,
                 icon: const Icon(Iconsax.save_2, size: 18),
-                label: Text(
-                  "Save",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            BlocBuilder<LeadBloc, LeadState>(
+                label: const Text("Save"),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+
+          /// Make comments scrollable
+          Expanded(
+            child: BlocBuilder<LeadBloc, LeadState>(
               builder: (context, state) {
-                if (state is CommentsLoading) {
-                  return const WaitingLoading();
-                } else if (state is CommentsError) {
-                  return Text(
-                    state.message,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
-                  );
-                } else if (state is CommentsLoaded) {
-                  if (state.comments.isEmpty) {
+                if (state is LeadDetailLoaded) {
+                  final comments = state.comments;
+
+                  if (comments.isEmpty) {
                     return Center(
-                      child: Text(
-                        "No comments yet.",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: LeadsViewAppColors.grey500,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 40,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "No comments yet",
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.grey),
+                          ),
+                        ],
                       ),
                     );
                   }
+
                   return ListView.separated(
-                    itemCount: state.comments.length,
+                    padding: EdgeInsets.zero,
+                    itemCount: comments.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final comment = state.comments[index];
-                      final timestamp = comment['createdAt'];
-                      String formattedTime = "-";
+                      final comment = comments[index];
 
-                      if (timestamp != null) {
-                        DateTime dateTime;
-                        if (timestamp is Timestamp) {
-                          dateTime = timestamp.toDate();
-                        } else if (timestamp is DateTime) {
-                          dateTime = timestamp;
-                        } else {
-                          dateTime =
-                              DateTime.tryParse(timestamp.toString()) ??
-                              DateTime.now();
-                        }
-                        formattedTime =
-                            "${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+                      final createdBy = comment['createdBy'];
+                      String authorName = 'Unknown';
+                      if (createdBy is Map<String, dynamic>) {
+                        authorName = createdBy['name'] ?? 'Unknown';
                       }
 
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: LeadsViewAppColors.grey50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              comment['comment'] ?? '',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: LeadsViewAppColors.black,
+                      final timestamp = comment['createdAt'];
+                      DateTime dateTime = DateTime.now();
+                      if (timestamp is Timestamp) {
+                        dateTime = timestamp.toDate();
+                      } else if (timestamp is DateTime) {
+                        dateTime = timestamp;
+                      }
+
+                      final formattedTime =
+                          "${dateTime.day.toString().padLeft(2, '0')}/"
+                          "${dateTime.month.toString().padLeft(2, '0')}/"
+                          "${dateTime.year} "
+                          "${dateTime.hour.toString().padLeft(2, '0')}:"
+                          "${dateTime.minute.toString().padLeft(2, '0')}";
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: LeadsViewAppColors.primary
+                                .withOpacity(0.15),
+                            child: Text(
+                              authorName[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: LeadsViewAppColors.grey50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: LeadsViewAppColors.grey200,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    authorName,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(comment['comment']),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    formattedTime,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppColors.grey),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              formattedTime,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.grey),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       );
                     },
                   );
                 }
-                return Center(
-                  child: Text(
-                    "No comments.",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                );
+
+                if (state is LeadDetailError) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                    ),
+                  );
+                }
+
+                return const Center(child: WaitingLoading());
               },
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistorySection() {
+    return _sectionCard(
+      "History",
+      Iconsax.activity,
+      BlocBuilder<LeadBloc, LeadState>(
+        builder: (context, state) {
+          if (state is LeadDetailLoaded) {
+            final history = state.history;
+
+            if (history.isEmpty) {
+              return Text(
+                "No history available.",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: LeadsViewAppColors.grey500,
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: history.map((h) {
+                final date = h.timestamp;
+                final performedBy = h.userId;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: LeadsViewAppColors.grey50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: LeadsViewAppColors.grey200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        h.updateDisposition,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.user,
+                            size: 14,
+                            color: LeadsViewAppColors.grey500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            performedBy,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: LeadsViewAppColors.grey500),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${date.day.toString().padLeft(2, '0')}/"
+                            "${date.month.toString().padLeft(2, '0')}/"
+                            "${date.year}",
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: LeadsViewAppColors.grey500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          }
+
+          if (state is LeadDetailError) {
+            return Text(
+              state.message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+            );
+          }
+
+          return const Center(child: WaitingLoading());
+        },
       ),
     );
   }

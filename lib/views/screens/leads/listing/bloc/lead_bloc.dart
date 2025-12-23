@@ -13,12 +13,15 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   List<LeadModel> allLeads = [];
   List<LeadStatusModel> allStatus = [];
+  List<Map<String, dynamic>> _comments = [];
+  List<LeadHistoryModel> _history = [];
 
   LeadBloc() : super(LeadLoading()) {
     on<StreamLead>(_streamLeads);
     on<DeleteLead>(_deleteLead);
     on<StreamLeadComments>(_streamLeadComments);
     on<AddLeadComment>(_addLeadComment);
+    on<StreamLeadHistory>(_streamLeadHistory);
   }
 
   Future<void> _streamLeads(StreamLead event, Emitter<LeadState> emit) async {
@@ -112,29 +115,32 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     StreamLeadComments event,
     Emitter<LeadState> emit,
   ) async {
-    emit(CommentsLoading());
-    final cid = await Spdb.getCid();
+    try {
+      final cid = await Spdb.getCid();
+      final commentsStream = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(event.leadUid)
+          .collection('comments')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
 
-    final commentsStream = firestore
-        .collection(Collections.users.name)
-        .doc(cid)
-        .collection(Collections.leads.name)
-        .doc(event.leadUid)
-        .collection('comments')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
-
-    await emit.forEach<List<Map<String, dynamic>>>(
-      commentsStream,
-      onData: (comments) {
-        return CommentsLoaded(comments);
-      },
-      onError: (error, stackTrace) {
-        debugPrint(stackTrace.toString());
-        return CommentsError("Failed to load comments: $error");
-      },
-    );
+      await emit.forEach(
+        commentsStream,
+        onData: (comments) {
+          _comments = comments;
+          return LeadDetailLoaded(comments: _comments, history: _history);
+        },
+        onError: (error, stackTrace) {
+          debugPrint(stackTrace.toString());
+          return LeadDetailError("Failed to load comments");
+        },
+      );
+    } catch (e) {
+      emit(LeadDetailError("Failed to load comments: $e"));
+    }
   }
 
   Future<void> _addLeadComment(
@@ -143,10 +149,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   ) async {
     try {
       final cid = await Spdb.getCid();
-      final uid = await Spdb.getUid(); // user UID
+      final user = await Spdb.getUser();
+
       final comment = {
         'comment': event.commentText,
-        'createdBy': uid,
+        'createdBy': {'uid': user.uid, 'name': user.name},
         'createdAt': FieldValue.serverTimestamp(),
       };
 
@@ -158,11 +165,47 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           .collection('comments')
           .add(comment);
 
-      emit(CommentAdded());
+      // Add history entry
+      await LeadService.addLeadHistory(
+        leadUid: event.leadUid,
+        action: "${user.name} added a comment",
+      );
     } catch (e, st) {
-      await ErrorService.recordError(e, st);
-      debugPrint("Error adding comment: $e\n$st");
-      emit(CommentsError("Failed to add comment: $e"));
+      debugPrint(st.toString());
+      emit(LeadDetailError("Failed to add comment"));
+    }
+  }
+
+  Future<void> _streamLeadHistory(
+    StreamLeadHistory event,
+    Emitter<LeadState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
+      final historyStream = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(event.leadUid)
+          .collection('history')
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => LeadHistoryModel.fromMap(doc.data()))
+                .toList(),
+          );
+
+      await emit.forEach(
+        historyStream,
+        onData: (history) {
+          _history = history;
+          return LeadDetailLoaded(comments: _comments, history: _history);
+        },
+        onError: (error, _) => LeadDetailError(error.toString()),
+      );
+    } catch (e) {
+      emit(LeadDetailError(e.toString()));
     }
   }
 }

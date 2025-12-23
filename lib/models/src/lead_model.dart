@@ -300,3 +300,83 @@ class LeadModel {
   int get hashCode =>
       Object.hash(uid, leadName, leadEmail, leadCategory, leadStatus);
 }
+
+class LeadCommentModel {
+  final String userId;
+  final String comment;
+  final DateTime timestamp;
+
+  LeadCommentModel({
+    required this.userId,
+    required this.comment,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  LeadCommentModel copyWith({
+    String? userId,
+    String? comment,
+    DateTime? timestamp,
+  }) {
+    return LeadCommentModel(
+      userId: userId ?? this.userId,
+      comment: comment ?? this.comment,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'userId': userId,
+    'comment': comment,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+  };
+
+  factory LeadCommentModel.fromMap(Map<String, dynamic> map) =>
+      LeadCommentModel(
+        userId: map['userId'] as String,
+        comment: map['comment'] as String,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      );
+}
+
+class LeadHistoryModel {
+  final String userId;
+  final String updateDisposition;
+  final String? update;
+  final DateTime timestamp;
+
+  LeadHistoryModel({
+    required this.userId,
+    required this.updateDisposition,
+    this.update,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  LeadHistoryModel copyWith({
+    String? userId,
+    String? updateDisposition,
+    String? update,
+    DateTime? timestamp,
+  }) {
+    return LeadHistoryModel(
+      userId: userId ?? this.userId,
+      updateDisposition: updateDisposition ?? this.updateDisposition,
+      update: update ?? this.update,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'userId': userId,
+    'updateDisposition': updateDisposition,
+    'update': update,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+  };
+
+  factory LeadHistoryModel.fromMap(Map<String, dynamic> map) =>
+      LeadHistoryModel(
+        userId: map['userId'] as String,
+        updateDisposition: map['updateDisposition'] as String,
+        update: map['update'] as String?,
+        timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      );
+}

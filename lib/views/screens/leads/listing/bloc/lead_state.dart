@@ -30,14 +30,20 @@ class LeadError extends LeadState {
   List<Object> get props => [message];
 }
 
-class CommentsLoading extends LeadState {}
-class CommentsLoaded extends LeadState {
+class LeadDetailLoaded extends LeadState {
   final List<Map<String, dynamic>> comments;
-   CommentsLoaded(this.comments);
-}
-class CommentAdded extends LeadState {}
-class CommentsError extends LeadState {
-  final String message;
-   CommentsError(this.message);
+  final List<LeadHistoryModel> history;
+
+  LeadDetailLoaded({required this.comments, required this.history});
+
+  @override
+  List<Object> get props => [comments, history];
 }
 
+class LeadDetailError extends LeadState {
+  final String message;
+  LeadDetailError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

@@ -291,7 +291,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             const SizedBox(height: 20),
             BlocBuilder<DealBloc, DealState>(
               builder: (context, state) {
-                if (state is CommentsLoading) {
+                if (state is DealCommentsLoading) {
                   return WaitingLoading();
                 } else if (state is DealCommentsError) {
                   return Text(
