@@ -74,10 +74,17 @@ class DealsListingView extends StatefulWidget {
 class _DealsListingViewState extends State<DealsListingView> {
   String _selectedView = 'Grid';
   final List<DealModel> _selectedDeals = [];
+  List<DealModel> _filteredDeals = [];
+
   DateTime? _fromDate;
   DateTime? _toDate;
+
   String? _selectedStatus;
   String? _selectedCreatedBy;
+
+  double? _minDealValue;
+  double? _maxDealValue;
+
   PermissionModel? permissions;
 
   @override
@@ -120,6 +127,9 @@ class _DealsListingViewState extends State<DealsListingView> {
         listener: (context, state) {
           if (state is DealLoaded) {
             controllerRead.setData(state.deals);
+            setState(() {
+              _filteredDeals = state.deals;
+            });
           }
         },
         child: BlocBuilder<DealBloc, DealState>(
@@ -145,7 +155,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                       _buildActionRow(context),
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
-                        DealKanbanListing(dealList: state.deals),
+                        DealKanbanListing(dealList: _filteredDeals),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -380,11 +390,105 @@ class _DealsListingViewState extends State<DealsListingView> {
                   _applyFilters();
                 },
               ),
+              const SizedBox(width: 10),
+
+              _valueRangeFilter(onChanged: _onDealValueRangeChanged),
             ],
           ),
         ),
       ],
     );
+  }
+
+  Widget _valueRangeFilter({
+    required ValueChanged<String> onChanged,
+    double itemWidth = 180,
+  }) {
+    return SizedBox(
+      width: itemWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Deal Value",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+          Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade700),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.currency_rupee,
+                  size: 18,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    onChanged: onChanged,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: "1000 - 5000",
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onDealValueRangeChanged(String value) {
+    _minDealValue = null;
+    _maxDealValue = null;
+
+    final cleaned = value.replaceAll(' ', '');
+
+    if (!cleaned.contains('-')) {
+      _applyFilters();
+      return;
+    }
+
+    final parts = cleaned.split('-');
+    if (parts.length != 2) {
+      _applyFilters();
+      return;
+    }
+
+    final from = double.tryParse(parts[0]);
+    final to = double.tryParse(parts[1]);
+
+    if (from == null || to == null) {
+      _applyFilters();
+      return;
+    }
+
+    if (from > to) {
+      // invalid range → ignore filter
+      _applyFilters();
+      return;
+    }
+
+    _minDealValue = from;
+    _maxDealValue = to;
+
+    _applyFilters();
   }
 
   Widget _dateFilter({
@@ -476,12 +580,12 @@ class _DealsListingViewState extends State<DealsListingView> {
 
     if (_fromDate != null) {
       filtered = filtered
-          .where((e) => e.createdAt.isAfter(_fromDate!))
+          .where((e) => !e.createdAt.isBefore(_fromDate!))
           .toList();
     }
 
     if (_toDate != null) {
-      filtered = filtered.where((e) => e.createdAt.isBefore(_toDate!)).toList();
+      filtered = filtered.where((e) => !e.createdAt.isAfter(_toDate!)).toList();
     }
 
     if (_selectedStatus != null) {
@@ -495,6 +599,19 @@ class _DealsListingViewState extends State<DealsListingView> {
           .where((e) => e.createdBy.uid == _selectedCreatedBy)
           .toList();
     }
+
+    if (_minDealValue != null && _maxDealValue != null) {
+      filtered = filtered
+          .where(
+            (e) =>
+                e.dealValue >= _minDealValue! && e.dealValue <= _maxDealValue!,
+          )
+          .toList();
+    }
+
+    setState(() {
+      _filteredDeals = filtered;
+    });
 
     controller.setData(filtered);
   }
