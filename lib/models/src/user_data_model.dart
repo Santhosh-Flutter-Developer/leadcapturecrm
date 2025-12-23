@@ -55,7 +55,12 @@ class UserDataModel {
   }
 
   factory UserDataModel.fromEmptyMap() {
-    return UserDataModel(uid: '', name: '', userType: UserType.employee);
+    return UserDataModel(
+      uid: '',
+      name: 'User',
+      userType: UserType.employee,
+      profilePic: AppStrings.emptyProfilePhotoUrl,
+    );
   }
 
   String toJson() => json.encode(toMap());

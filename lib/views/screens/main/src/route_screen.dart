@@ -192,10 +192,11 @@ class _RouteScreenState extends State<RouteScreen> {
                               ),
                               const SizedBox(width: 8),
                               InkWell(
-                                onTap: () {
+                                onTap: () async {
+                                  var isAdmin = await Spdb.isAdminLoggedIn();
                                   Navigate.routeReplace(
                                     context,
-                                    MainScreen(isAdmin: false),
+                                    MainScreen(isAdmin: isAdmin),
                                   );
                                 },
                                 child: Container(

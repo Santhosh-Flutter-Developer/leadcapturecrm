@@ -400,9 +400,9 @@ class _DealsListingViewState extends State<DealsListingView> {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.black,
-              // fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -418,7 +418,7 @@ class _DealsListingViewState extends State<DealsListingView> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.calendar_month,
+                    Iconsax.calendar_1,
                     size: 18,
                     color: Colors.grey.shade600,
                   ),
@@ -434,7 +434,11 @@ class _DealsListingViewState extends State<DealsListingView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.grey,
+                    size: 18,
+                  ),
                 ],
               ),
             ),

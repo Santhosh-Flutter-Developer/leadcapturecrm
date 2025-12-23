@@ -10,11 +10,13 @@ import '/utils/utils.dart';
 class UserAvatar extends StatelessWidget {
   final UserDataModel userData;
   final double size;
+  final bool showCrown;
 
   const UserAvatar({
     super.key,
     required this.userData,
     this.size = 32, // IMPORTANT for rail
+    this.showCrown = true,
   });
 
   @override
@@ -66,7 +68,7 @@ class UserAvatar extends StatelessWidget {
                 ),
               ),
 
-              if (userData.userType == UserType.admin)
+              if (userData.userType == UserType.admin && showCrown)
                 Positioned(
                   top: -3,
                   right: -3,

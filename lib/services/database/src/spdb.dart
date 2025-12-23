@@ -31,7 +31,7 @@ class Spdb {
 
       var map = model.toMap();
       map["uid"] = model.uid;
-      cn.setString("employee", jsonEncode(map));
+      cn.setString("employee", json.encode(map));
     } catch (e, st) {
       await ErrorService.recordError(e, st);
     }
@@ -84,7 +84,12 @@ class Spdb {
         name: employeeModel?.name ?? adminModel?.name ?? '',
         profilePic:
             employeeModel?.profileImageUrl ?? adminModel?.profileImageUrl ?? '',
-        desc: employeeModel?.designation ?? adminModel?.email ?? '',
+        desc:
+            CacheService.designationByUid(
+              employeeModel?.designation ?? '',
+            )?.name ??
+            adminModel?.email ??
+            '',
         userType: employeeModel != null
             ? UserType.employee
             : adminModel != null
@@ -140,7 +145,7 @@ class Spdb {
       var map = model.toMap();
       map["uid"] = model.uid;
 
-      cn.setString("admin", jsonEncode(map));
+      cn.setString("admin", json.encode(map));
     } catch (e, st) {
       await ErrorService.recordError(e, st);
     }

@@ -300,37 +300,69 @@ class _CustomSearchableDropdownState<T>
                             children: [
                               // Search field
                               Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocus,
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    hintText: 'Search...',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    suffixIcon: _searchController.text.isEmpty
-                                        ? null
-                                        : IconButton(
-                                            icon: const Icon(Icons.clear),
-                                            onPressed: () {
-                                              _searchController.clear();
-                                              _overlayEntry?.markNeedsBuild();
-                                            },
+                                padding: const EdgeInsets.all(8),
+                                child: SizedBox(
+                                  height: 36, // CONTROL OVERALL HEIGHT
+                                  child: TextField(
+                                    controller: _searchController,
+                                    focusNode: _searchFocus,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall, // SMALLER TEXT
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: 'Search',
+                                      hintStyle: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8, // 👈 REDUCES HEIGHT
                                           ),
-                                  ),
-                                  textInputAction: TextInputAction.search,
-                                  onSubmitted: (_) {
-                                    if (_filtered.isNotEmpty) {
-                                      final item = _filtered[0];
-                                      if (widget.multiSelect) {
-                                        _onItemToggledMulti(item);
-                                      } else {
-                                        _onItemSelectedSingle(item);
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                      // suffixIcon: _searchController.text.isEmpty
+                                      //     ? null
+                                      //     : IconButton(
+                                      //         padding: EdgeInsets.zero,
+                                      //         constraints:
+                                      //             const BoxConstraints(),
+                                      //         icon: const Icon(
+                                      //           Icons.clear,
+                                      //           size: 16,
+                                      //         ),
+                                      //         onPressed: () {
+                                      //           _searchController.clear();
+                                      //           _overlayEntry?.markNeedsBuild();
+                                      //         },
+                                      //       ),
+                                    ),
+                                    textInputAction: TextInputAction.search,
+                                    onSubmitted: (_) {
+                                      if (_filtered.isNotEmpty) {
+                                        final item = _filtered[0];
+                                        if (widget.multiSelect) {
+                                          _onItemToggledMulti(item);
+                                        } else {
+                                          _onItemSelectedSingle(item);
+                                        }
                                       }
-                                    }
-                                  },
+                                    },
+                                  ),
                                 ),
                               ),
 
@@ -379,7 +411,7 @@ class _CustomSearchableDropdownState<T>
                                         child: Container(
                                           color: isHighlighted
                                               ? theme.colorScheme.primary
-                                                    .withOpacity(0.12)
+                                                    .withValues(alpha: 0.12)
                                               : null,
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 12,
@@ -529,7 +561,9 @@ class _CustomSearchableDropdownState<T>
           margin: const EdgeInsets.only(right: 6),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

@@ -509,9 +509,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.black,
-              // fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -527,7 +527,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.calendar_month,
+                    Iconsax.calendar_1,
                     size: 18,
                     color: Colors.grey.shade600,
                   ),
@@ -543,7 +543,11 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.black),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.black,
+                    size: 18,
+                  ),
                 ],
               ),
             ),

@@ -335,6 +335,30 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
             ),
           ),
         ],
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SizedBox(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                UserAvatar(
+                  userData: deal.createdBy,
+                  showCrown: false,
+                  size: 15,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  deal.createdBy.name,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
     );
   }

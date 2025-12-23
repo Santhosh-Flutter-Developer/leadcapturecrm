@@ -233,7 +233,8 @@ class _DealEditState extends State<DealEdit> {
         SizedBox(
           width: itemWidth,
           child: FormFields(
-            label: 'Deal Value (₹)',
+            label:
+                'Deal Value ${_regionModel != null ? '(${_regionModel?.currencySymbol})' : ''}',
             controller: _dealValueController,
             hintText: 'Enter Value',
             keyboardType: TextInputType.number,

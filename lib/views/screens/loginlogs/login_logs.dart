@@ -4,7 +4,6 @@ import 'package:iconsax/iconsax.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
 import '/views/views.dart';
-import '/utils/utils.dart';
 import 'bloc/login_log_bloc.dart';
 
 class LoginLogsListing extends StatefulWidget {
@@ -75,20 +74,6 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
     return '${(diff.inDays / 7).floor()}w';
   }
 
-  Widget _smallAvatar(String title, {bool isRead = false}) {
-    final initial = title.trim().isNotEmpty ? title.trim().first : '?';
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: isRead ? AppColors.grey300 : AppColors.blue700,
-      child: Text(
-        initial,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
-      ),
-    );
-  }
-
   Widget _buildListSection(String sectionLabel, List<LoginLogsModel> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,21 +105,13 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
             ),
             child: Row(
               children: [
-                _smallAvatar(item.user.name, isRead: false),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              item.user.name,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
+                          Expanded(child: CreatedByWidget(userData: item.user)),
                           const SizedBox(width: 8),
                           Text(
                             _timeAgo(item.loginTime),

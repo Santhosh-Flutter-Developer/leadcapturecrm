@@ -361,7 +361,8 @@ class _LeadCreateState extends State<LeadCreate> {
         SizedBox(
           width: itemWidth,
           child: FormFields(
-            label: 'Lead Value (₹)',
+            label:
+                'Lead Value ${_regionModel != null ? '(${_regionModel?.currencySymbol})' : ''}',
             controller: _leadValueController,
             hintText: 'Enter Amount',
             keyboardType: TextInputType.number,

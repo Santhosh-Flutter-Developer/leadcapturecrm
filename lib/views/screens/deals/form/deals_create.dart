@@ -231,7 +231,8 @@ class _DealCreateState extends State<DealCreate> {
         SizedBox(
           width: itemWidth,
           child: FormFields(
-            label: 'Deal Value (₹)',
+            label:
+                'Deal Value ${_regionModel != null ? '(${_regionModel?.currencySymbol})' : ''}',
             controller: _dealValueController,
             keyboardType: TextInputType.number,
             hintText: 'Enter amount',

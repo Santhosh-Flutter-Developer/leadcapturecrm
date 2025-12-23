@@ -318,7 +318,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                                         onPressed: () {
                                           Clipboard.setData(
                                             ClipboardData(
-                                              text: jsonEncode(item.payload),
+                                              text: json.encode(item.payload),
                                             ),
                                           );
                                           Navigator.of(ctx).pop();

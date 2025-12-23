@@ -366,7 +366,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           CircleAvatar(
                             radius: 18,
                             backgroundColor: LeadsViewAppColors.primary
-                                .withOpacity(0.15),
+                                .withValues(alpha: 0.15),
                             child: Text(
                               authorName[0].toUpperCase(),
                               style: const TextStyle(

@@ -232,7 +232,7 @@ class NotificationService {
           null,
           null,
           notificationDetails,
-          payload: jsonEncode({...data, 'isReply': 'true'}),
+          payload: json.encode({...data, 'isReply': 'true'}),
         );
         return;
       }
@@ -256,7 +256,7 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        payload: jsonEncode(data),
+        payload: json.encode(data),
       );
     } catch (e, st) {
       await ErrorService.recordError(e, st);

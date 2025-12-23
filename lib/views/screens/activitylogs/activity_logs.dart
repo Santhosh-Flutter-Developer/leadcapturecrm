@@ -4,7 +4,6 @@ import 'package:iconsax/iconsax.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
 import '/views/views.dart';
-import '/utils/utils.dart';
 import 'bloc/activity_log_bloc.dart';
 
 class ActivityLogsListing extends StatefulWidget {
@@ -77,24 +76,6 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
     return '${(diff.inDays / 7).floor()}w';
   }
 
-  Widget _smallAvatar(
-    BuildContext context,
-    String title, {
-    bool isRead = false,
-  }) {
-    final initial = title.trim().isNotEmpty ? title.trim().first : '?';
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: isRead ? AppColors.grey300 : AppColors.blue700,
-      child: Text(
-        initial,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall!.copyWith(color: AppColors.white),
-      ),
-    );
-  }
-
   Widget _buildListSection(String sectionLabel, List<ActivityLogModel> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,14 +107,19 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
             ),
             child: Row(
               children: [
-                _smallAvatar(context, item.userData.name, isRead: false),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      CreatedByWidget(userData: item.userData),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
+                          Icon(
+                            Iconsax.arrow_right_3,
+                            size: 14,
+                            color: AppColors.grey600,
+                          ),
                           Expanded(
                             child: Text(
                               item.activity,
@@ -150,14 +136,15 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        "${item.description}",
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          color: AppColors.grey700,
-                        ),
-                      ),
+                      // Text(
+                      //   "${item.description}",
+                      //   maxLines: 2,
+                      //   overflow: TextOverflow.ellipsis,
+                      //   style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      //     color: AppColors.grey700,
+                      //   ),
+                      // ),
+                      // const SizedBox(height: 6),
                     ],
                   ),
                 ),
