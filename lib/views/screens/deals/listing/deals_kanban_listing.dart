@@ -33,6 +33,16 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
     _future = _initializeBoard();
   }
 
+  @override
+  void didUpdateWidget(covariant DealKanbanListing oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.dealList != widget.dealList) {
+      _future = _initializeBoard();
+      setState(() {});
+    }
+  }
+
   Future<void> _initializeBoard() async {
     _dealList = await DealService.getDealByGroup(dealList: widget.dealList);
   }
