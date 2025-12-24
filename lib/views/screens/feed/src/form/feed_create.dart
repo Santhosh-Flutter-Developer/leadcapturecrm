@@ -257,27 +257,12 @@ class _FeedCreateState extends State<FeedCreate> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: kTextPrimary),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        title: Text(
-          "Create Post",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: kTextPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      appBar: FormWidgets.buildHeader(
+        context: context,
+        title: "Create Post",
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 10, bottom: 10),
+            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
@@ -299,6 +284,7 @@ class _FeedCreateState extends State<FeedCreate> {
           ),
         ],
       ),
+
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {

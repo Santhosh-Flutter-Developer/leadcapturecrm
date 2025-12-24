@@ -1,3 +1,4 @@
+import 'package:aaatp/views/components/src/form_widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,7 +18,27 @@ class ChatAttachment extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        appBar: _buildHeaderBar(context),
+        appBar: FormWidgets.buildHeader(
+          context: context,
+          title: "Media and Links",
+          bottom: TabBar(
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.grey500,
+            labelStyle: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.normal),
+            indicatorColor: AppColors.primary,
+            tabs: const [
+              Tab(text: 'Media'),
+              Tab(text: 'Links'),
+              Tab(text: 'Docs'),
+            ],
+          ),
+        ),
+
         body: TabBarView(
           children: [_MediaTab(media), _LinksTab(links), _DocsTab(docs)],
         ),
@@ -37,7 +58,7 @@ class _MediaTab extends StatelessWidget {
       return Center(
         child: Text(
           'No media found',
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       );
     }
@@ -60,47 +81,6 @@ class _MediaTab extends StatelessWidget {
       },
     );
   }
-}
-
-PreferredSizeWidget _buildHeaderBar(BuildContext context) {
-  return AppBar(
-    backgroundColor: AppColors.white,
-    elevation: 1.0,
-    shadowColor: AppColors.black12,
-    automaticallyImplyLeading: false,
-    foregroundColor: AppColors.black,
-    leading: IconButton(
-      onPressed: () {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      },
-      icon: Icon(Icons.close, color: AppColors.black),
-    ),
-    title: Text(
-      'Media & Links',
-      style: Theme.of(context).textTheme.titleLarge!.copyWith(
-        color: AppColors.primary,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    bottom: TabBar(
-      labelColor: AppColors.primary,
-      unselectedLabelColor: AppColors.grey500,
-      labelStyle: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-      unselectedLabelStyle: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.normal),
-      indicatorColor: AppColors.primary,
-      tabs: const [
-        Tab(text: 'Media'),
-        Tab(text: 'Links'),
-        Tab(text: 'Docs'),
-      ],
-    ),
-  );
 }
 
 class _LinksTab extends StatelessWidget {

@@ -6,7 +6,8 @@ class FormWidgets {
   static PreferredSizeWidget buildHeader({
     required BuildContext context,
     required String title,
-    // bool showCloseButton = true,
+    List<Widget>? actions,
+    PreferredSizeWidget? bottom,
   }) {
     return AppBar(
       backgroundColor: AppColors.white,
@@ -15,16 +16,6 @@ class FormWidgets {
       automaticallyImplyLeading: false,
       foregroundColor: AppColors.black,
       centerTitle: false,
-      // leading: showCloseButton
-      //     ? IconButton(
-      //         onPressed: () {
-      //           if (Navigator.canPop(context)) {
-      //             Navigator.pop(context);
-      //           }
-      //         },
-      //         icon: const Icon(Icons.close, color: AppColors.black),
-      //       )
-      //     : null,
       title: Text(
         title,
         style: Theme.of(context).textTheme.titleLarge!.copyWith(
@@ -32,6 +23,8 @@ class FormWidgets {
           color: AppColors.primary,
         ),
       ),
+      actions: actions,
+      bottom: bottom,
     );
   }
 

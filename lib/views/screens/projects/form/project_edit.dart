@@ -426,24 +426,24 @@ class _ProjectEditState extends State<ProjectEdit> {
       try {
         futureLoading(context);
 
-        var projectCodeExists = _projectCodeController.text.isNotEmpty
-            ? await ProjectService.checkProjectCodeExists(
-                code: _projectCodeController.text,
-                uid: widget.uid,
-              )
-            : true;
+        // var projectCodeExists = _projectCodeController.text.isNotEmpty
+        //     ? await ProjectService.checkProjectCodeExists(
+        //         code: _projectCodeController.text,
+        //         uid: widget.uid,
+        //       )
+        //     : true;
 
-        if (projectCodeExists) {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
-          FlushBar.show(
-            context,
-            'Project Code already exists',
-            isSuccess: false,
-          );
-          return;
-        }
+        // if (projectCodeExists) {
+        //   if (Navigator.canPop(context)) {
+        //     Navigator.pop(context);
+        //   }
+        //   FlushBar.show(
+        //     context,
+        //     'Project Code already exists',
+        //     isSuccess: false,
+        //   );
+        //   return;
+        // }
 
         ProjectModel projectModel = ProjectModel(
           projectName: _projectNameController.text,
