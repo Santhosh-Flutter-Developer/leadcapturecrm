@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/constants/constants.dart';
 import '/services/services.dart';
@@ -207,4 +208,25 @@ class Spdb {
     final prefs = await _connect();
     return prefs.getString('settingsDocId');
   }
+
+  static Future<void> savePanelSettings(bool value) async {
+    final prefs = await _connect();
+    await prefs.setBool('panelSettings', value);
+    PanelSettingsNotifier.hidePanel.value = value;
+  }
+
+  static Future<bool?> getPanelSettings() async {
+    final prefs = await _connect();
+    return prefs.getBool('panelSettings');
+  }
+
+  static Future<void> loadPanelSettings() async {
+    final prefs = await _connect();
+    final value = prefs.getBool('panelSettings') ?? false;
+    PanelSettingsNotifier.hidePanel.value = value;
+  }
+}
+
+class PanelSettingsNotifier {
+  static final ValueNotifier<bool> hidePanel = ValueNotifier<bool>(false);
 }

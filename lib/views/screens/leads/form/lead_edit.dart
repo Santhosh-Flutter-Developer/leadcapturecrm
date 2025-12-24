@@ -641,6 +641,7 @@ class _LeadEditState extends State<LeadEdit> {
           state: _stateModel,
           city: _cityModel,
           createdBy: await Spdb.getUser(),
+          isCompany: true,
         );
 
         var clientId = _leadModel.clientId;

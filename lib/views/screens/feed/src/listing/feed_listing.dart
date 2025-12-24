@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../../../../utils/utils.dart';
+import '/utils/utils.dart';
 import '/views/views.dart';
 import '/models/models.dart';
 import '/constants/constants.dart';
@@ -59,7 +59,7 @@ class _FeedListingState extends State<FeedListing> {
     return Scaffold(
       backgroundColor: FeedAppColors.background,
       appBar: AppBar(
-        leading: Back(color: FeedAppColors.textPrimary),
+        leading: kIsMobile ? Back(color: FeedAppColors.textPrimary) : null,
         backgroundColor: FeedAppColors.white,
         elevation: 0,
         centerTitle: false,

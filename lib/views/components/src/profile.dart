@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:aaatp/theme/src/app_colors.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -9,6 +8,7 @@ import '/services/services.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
+import '/theme/theme.dart';
 
 class ProfileColors {
   static const Color primary = Color(0xFF2563EB);
@@ -258,7 +258,7 @@ class _ProfileState extends State<Profile> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: ProfileColors.primary.withValues(alpha:0.2),
+                        color: ProfileColors.primary.withValues(alpha: 0.2),
                         width: 2,
                       ),
                     ),
@@ -324,7 +324,7 @@ class _ProfileState extends State<Profile> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: ProfileColors.success.withValues(alpha:0.1),
+                            color: ProfileColors.success.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(

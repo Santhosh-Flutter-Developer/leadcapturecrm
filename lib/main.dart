@@ -53,6 +53,7 @@ void main() async {
   await AppPackageInfo.init();
   await CacheService().init();
   await VersionService.init();
+  await Spdb.loadPanelSettings();
 
   final uid = await Spdb.getUid();
   if (uid != null && uid.isNotEmpty) {

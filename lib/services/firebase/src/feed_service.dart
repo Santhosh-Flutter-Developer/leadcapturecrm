@@ -97,6 +97,7 @@ class FeedService {
       var querySnapshot = await firebase.users
           .doc(cid)
           .collection(Collections.feed.name)
+          .orderBy('createdAt', descending: true)
           .get();
 
       List<FeedModel> feed = querySnapshot.docs.map((doc) {

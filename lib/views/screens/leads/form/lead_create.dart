@@ -567,6 +567,7 @@ class _LeadCreateState extends State<LeadCreate> {
           state: _stateModel,
           city: _cityModel,
           createdBy: await Spdb.getUser(),
+          isCompany: true,
         );
 
         var clientId = await ClientService.createClient(client: clientModel);

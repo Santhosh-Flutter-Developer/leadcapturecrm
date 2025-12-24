@@ -270,34 +270,47 @@ class _ContactCreateState extends State<ContactCreate> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    try {
+      if (!_formKey.currentState!.validate()) return;
 
-    futureLoading(context);
+      futureLoading(context);
 
-    final imageUrl = _profileImage == null
-        ? null
-        : await StorageService.uploadFile(
-            file: _profileImage!,
-            folder: StorageFolder.clientPhotos,
-          );
+      final imageUrl = _profileImage == null
+          ? null
+          : await StorageService.uploadFile(
+              file: _profileImage!,
+              folder: StorageFolder.clientPhotos,
+            );
 
-    final client = ClientModel(
-      salutation: _salutation,
-      clientName: _clientName.text.trim(),
-      email: _email.text.trim(),
-      password: _password.text,
-      mobileNumber: _mobile.text,
-      gender: _gender,
-      changeLanguage: _language,
-      loginAllowed: _loginAllowed,
-      receiveEmailNotifications: _emailNotify,
-      profilePictureUrl: imageUrl,
-      createdBy: await Spdb.getUser(),
-    );
+      final client = ClientModel(
+        salutation: _salutation,
+        clientName: _clientName.text.trim(),
+        email: _email.text.trim(),
+        password: _password.text,
+        mobileNumber: _mobile.text,
+        gender: _gender,
+        changeLanguage: _language,
+        loginAllowed: _loginAllowed,
+        receiveEmailNotifications: _emailNotify,
+        profilePictureUrl: imageUrl,
+        createdBy: await Spdb.getUser(),
+        isCompany: false,
+      );
 
-    await ClientService.createClient(client: client);
-    Navigator.pop(context);
-    FlushBar.show(context, "Contact created", isSuccess: true);
+      await ClientService.createClient(client: client);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      Navigator.pop(context, true);
+      FlushBar.show(context, "Contact created", isSuccess: true);
+    } catch (e, st) {
+      debugPrint("$e, $st");
+      await ErrorService.recordError(e, st);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
   }
 }
 
@@ -542,31 +555,44 @@ class _CompanyCreateState extends State<CompanyCreate> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    try {
+      if (!_formKey.currentState!.validate()) return;
 
-    futureLoading(context);
+      futureLoading(context);
 
-    final logoUrl = _logo == null
-        ? null
-        : await StorageService.uploadFile(
-            file: _logo!,
-            folder: StorageFolder.clientCompanyLogos,
-          );
+      final logoUrl = _logo == null
+          ? null
+          : await StorageService.uploadFile(
+              file: _logo!,
+              folder: StorageFolder.clientCompanyLogos,
+            );
 
-    final company = ClientModel(
-      companyName: _companyName.text.trim(),
-      officialWebsite: _website.text.trim(),
-      gstVatNumber: _gst.text.trim(),
-      officePhoneNo: _phone.text.trim(),
-      postalCode: _postal.text.trim(),
-      companyAddress: _address.text.trim(),
-      notes: _note.text.trim(),
-      companyLogoUrl: logoUrl,
-      createdBy: await Spdb.getUser(),
-    );
+      final company = ClientModel(
+        companyName: _companyName.text.trim(),
+        officialWebsite: _website.text.trim(),
+        gstVatNumber: _gst.text.trim(),
+        officePhoneNo: _phone.text.trim(),
+        postalCode: _postal.text.trim(),
+        companyAddress: _address.text.trim(),
+        notes: _note.text.trim(),
+        companyLogoUrl: logoUrl,
+        createdBy: await Spdb.getUser(),
+        isCompany: true,
+      );
 
-    await ClientService.createClient(client: company);
-    Navigator.pop(context);
-    FlushBar.show(context, "Company created", isSuccess: true);
+      await ClientService.createClient(client: company);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      Navigator.pop(context, true);
+      FlushBar.show(context, "Company created", isSuccess: true);
+    } catch (e, st) {
+      debugPrint("$e, $st");
+      await ErrorService.recordError(e, st);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
   }
 }

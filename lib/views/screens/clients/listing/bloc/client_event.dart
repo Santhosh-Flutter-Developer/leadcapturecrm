@@ -14,3 +14,18 @@ class DeleteClients extends ClientEvent {
 
   DeleteClients({required this.uid});
 }
+
+abstract class ClientCompanyEvent extends Equatable {
+  @override
+  List<Object> get props => [];
+}
+
+class StreamClientCompany extends ClientCompanyEvent {}
+
+class FetchClientCompany extends ClientCompanyEvent {}
+
+class DeleteClientCompany extends ClientCompanyEvent {
+  final String uid;
+
+  DeleteClientCompany({required this.uid});
+}

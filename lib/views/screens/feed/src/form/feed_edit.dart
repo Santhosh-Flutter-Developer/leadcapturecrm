@@ -295,14 +295,14 @@ class _FeedEditState extends State<FeedEdit> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: kTextPrimary),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.close, color: kTextPrimary),
+        //   onPressed: () {
+        //     if (Navigator.canPop(context)) {
+        //       Navigator.pop(context);
+        //     }
+        //   },
+        // ),
         title: Text(
           "Edit Post",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(

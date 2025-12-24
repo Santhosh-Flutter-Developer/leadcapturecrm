@@ -1,10 +1,10 @@
-import 'package:aaatp/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import '/app/app.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
+import '/theme/theme.dart';
 import '/services/services.dart';
 
 class SettingsColors {
@@ -130,6 +130,23 @@ class _SettingsListingState extends State<SettingsListing> {
                           UpdateSettingsEvent("inAppNotification", val),
                         ),
                       ),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: PanelSettingsNotifier.hidePanel,
+                        builder: (context, hidePanel, _) {
+                          return _buildSwitchTile(
+                            icon: hidePanel
+                                ? Iconsax.lamp_slash
+                                : Iconsax.lamp_on,
+                            iconColor: Colors.purple,
+                            title: "Hide Chat Panel",
+                            subtitle: "Enable to hide the side panel",
+                            value: hidePanel,
+                            onChanged: (val) async {
+                              await Spdb.savePanelSettings(val);
+                            },
+                          );
+                        },
+                      ),
                     ]),
                     const SizedBox(height: 32),
                     _buildSectionHeader("App Appearance", Iconsax.brush),
@@ -142,6 +159,7 @@ class _SettingsListingState extends State<SettingsListing> {
                         subtitle: "Reduce eye strain in low light",
                         value: isDark,
                         onChanged: (value) => themeProvider.setDarkMode(value),
+                        isInDevelop: true,
                       ),
                       _buildInteractiveTile(
                         icon: Iconsax.global,
@@ -295,6 +313,7 @@ class _SettingsListingState extends State<SettingsListing> {
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
+    bool isInDevelop = false,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -324,7 +343,17 @@ class _SettingsListingState extends State<SettingsListing> {
               ],
             ),
           ),
-          MorphSwitch(value: value, onChanged: onChanged),
+          if (!isInDevelop)
+            MorphSwitch(value: value, onChanged: onChanged)
+          else
+            Text(
+              "In Development",
+              style: TextStyle(
+                fontSize: 10,
+                color: SettingsColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
         ],
       ),
     );

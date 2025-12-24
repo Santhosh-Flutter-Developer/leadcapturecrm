@@ -32,7 +32,7 @@ class TrashModel {
       'parentPath': parentPath,
       'data': data,
       'deletedAt': deletedAt,
-      'deletedBy': deletedBy,
+      'deletedBy': deletedBy?.toMap(),
       'reason': reason,
       'canRestoreTo': canRestoreTo,
     };

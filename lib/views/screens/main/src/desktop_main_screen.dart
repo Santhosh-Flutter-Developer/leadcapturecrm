@@ -120,7 +120,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
       case 'Contact':
         return const ClientsListing(section: ClientSection.contacts);
       case 'Company':
-        return const ClientsListing(section: ClientSection.company);
+        return const ClientCompanyListing(section: ClientSection.company);
       case 'Projects':
         return const ProjectsListing();
       case 'Tasks':
@@ -196,48 +196,60 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   }
 
   Widget _buildGlassNavigationRail() {
-    return Container(
-      width: 50, // Comfortable modern width
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          left: BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 20,
-            offset: const Offset(-5, 0),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          // User count badge / Action
-          _buildRailTopAction(),
-          const SizedBox(height: 12),
-          const Divider(indent: 16, endIndent: 16, thickness: 0.5),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                itemCount: _users.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  var userData = _users[index];
-                  return _buildRailAvatar(userData);
-                },
+    return ValueListenableBuilder<bool>(
+      valueListenable: PanelSettingsNotifier.hidePanel,
+      builder: (context, hidePanel, _) {
+        if (hidePanel) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          width: 50, // Comfortable modern width
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              left: BorderSide(
+                color: Colors.grey.withValues(alpha: 0.1),
+                width: 1,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 20,
+                offset: const Offset(-5, 0),
+              ),
+            ],
           ),
-          _buildRailBottomActions(),
-        ],
-      ),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              // User count badge / Action
+              _buildRailTopAction(),
+              const SizedBox(height: 12),
+              const Divider(indent: 16, endIndent: 16, thickness: 0.5),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(scrollbars: false),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: _users.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      var userData = _users[index];
+                      return _buildRailAvatar(userData);
+                    },
+                  ),
+                ),
+              ),
+              // _buildRailBottomActions(),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -293,30 +305,38 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     );
   }
 
-  Widget _buildRailBottomActions() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24, top: 12),
-      child: Column(
-        children: [
-          const Divider(indent: 16, endIndent: 16, thickness: 0.5),
-          const SizedBox(height: 12),
-          _buildRailItem(icon: Iconsax.setting_2, label: 'Panel Settings'),
-        ],
-      ),
-    );
-  }
+  // Widget _buildRailBottomActions() {
+  //   return Padding(
+  //     padding: const EdgeInsets.only(bottom: 24, top: 12),
+  //     child: Column(
+  //       children: [
+  //         const Divider(indent: 16, endIndent: 16, thickness: 0.5),
+  //         const SizedBox(height: 12),
+  //         _buildRailItem(
+  //           icon: Iconsax.setting_2,
+  //           label: 'Panel Settings',
+  //           onTap: () => showPanelSettingsGeneralDialog(context),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildRailItem({required IconData icon, required String label}) {
-    return Tooltip(
-      message: label,
-      child: InkWell(
-        onTap: () {},
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: const Color(0xFF64748B), size: 22),
-        ),
-      ),
-    );
-  }
+  // Widget _buildRailItem({
+  //   required IconData icon,
+  //   required String label,
+  //   required VoidCallback onTap,
+  // }) {
+  //   return Tooltip(
+  //     message: label,
+  //     child: InkWell(
+  //       onTap: onTap,
+  //       borderRadius: BorderRadius.circular(12),
+  //       child: Container(
+  //         padding: const EdgeInsets.all(10),
+  //         child: Icon(icon, color: const Color(0xFF64748B), size: 22),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

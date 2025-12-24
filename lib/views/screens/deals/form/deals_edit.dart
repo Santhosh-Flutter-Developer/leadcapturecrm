@@ -547,6 +547,7 @@ class _DealEditState extends State<DealEdit> {
           state: _stateModel,
           city: _cityModel,
           createdBy: await Spdb.getUser(),
+          isCompany: true,
         );
 
         var clientId = _dealModel.clientId;

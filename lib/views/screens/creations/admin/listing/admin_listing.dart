@@ -401,6 +401,7 @@ class _AdminListingViewState extends State<AdminListingView> {
                     foregroundColor: AppColors.white,
                   ),
                 ),
+          const SizedBox(width: 10),
         ],
         ElevatedButton.icon(
           label: Text(

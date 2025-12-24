@@ -8,6 +8,16 @@ import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 
+class AboutChatColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color surface = Colors.white;
+}
+
 class AboutChat extends StatelessWidget {
   final ChatModel chat;
   final String userUid;
@@ -17,281 +27,363 @@ class AboutChat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = chat.isGroupChat
-        ? chat.title ?? 'Group'
-        : CacheService.getUserByUid(userUid)?.name ?? '';
+        ? chat.title ?? 'Group Chat'
+        : CacheService.getUserByUid(userUid)?.name ?? 'User Details';
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.grey300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AboutChatColors.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AboutChatColors.border,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
+            ),
 
-              /// Header avatar + title
-              Center(
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: AppColors.primary.withValues(
-                        alpha: 0.12,
-                      ),
-                      child: chat.isGroupChat
-                          ? const Icon(
-                              Icons.group,
-                              size: 34,
-                              color: AppColors.primary,
-                            )
-                          : Text(
-                              title.isNotEmpty
-                                  ? title.toString().capitalizeFirst
-                                  : '?',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                            ),
-                    ),
+                    _buildHeader(context, title),
+                    const SizedBox(height: 32),
+
+                    if (chat.isGroupChat) ...[
+                      _buildSectionLabel("PARTICIPANTS"),
+                      const SizedBox(height: 12),
+                      _buildParticipantsCard(context),
+                      const SizedBox(height: 32),
+                    ],
+
+                    _buildSectionLabel("PREFERENCES & MEDIA"),
                     const SizedBox(height: 12),
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (chat.isGroupChat)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '${chat.participants.length} members',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.grey500),
-                        ),
-                      ),
+                    _buildActionsCard(context),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              /// Members
-              if (chat.isGroupChat) ...[
-                Text('Members', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.grey50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.grey200),
-                  ),
-                  child: SizedBox(
-                    height: 260,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: chat.participants.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final uid = chat.participants[index];
-                        final user = CacheService.getUserByUid(uid);
-
-                        String name = 'Unknown';
-                        String? image;
-
-                        if (user is AdminModel) {
-                          name = user.name;
-                          image = user.profileImageUrl;
-                        } else if (user is EmployeeModel) {
-                          name = user.name;
-                          image = user.profileImageUrl;
-                        }
-
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          leading: CircleAvatar(
-                            radius: 22,
-                            backgroundColor: (image == null || image.isEmpty)
-                                ? LetterColors.getColor(
-                                    name.isNotEmpty
-                                        ? name.capitalizeFirst
-                                        : 'U',
-                                  )
-                                : AppColors.grey200,
-                            foregroundColor: AppColors.white,
-                            child: image != null && image.isNotEmpty
-                                ? ClipOval(
-                                    child: CachedNetworkImage(
-                                      imageUrl: image,
-                                      height: 44,
-                                      width: 44,
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, _) => Shimmer.fromColors(
-                                        baseColor: AppColors.grey300,
-                                        highlightColor: AppColors.grey100,
-                                        child: Container(
-                                          color: AppColors.white,
-                                        ),
-                                      ),
-                                      errorWidget: (_, _, _) =>
-                                          const Icon(Icons.person, size: 20),
-                                    ),
-                                  )
-                                : Text(
-                                    name.isNotEmpty
-                                        ? name.capitalizeFirst
-                                        : '?',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                          ),
-
-                          /// Name
-                          title: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.w500),
-                          ),
-
-                          /// Role badge
-                          subtitle: uid == chat.createdBy
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Admin',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  ),
-                                )
-                              : null,
-
-                          visualDensity: VisualDensity.compact,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-              ],
-
-              /// Actions
-              // Text('Actions', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-
-              ListTile(
-                leading: Icon(
-                  chat.isPinned == true
-                      ? Icons.push_pin
-                      : Icons.push_pin_outlined,
-                  color: AppColors.primary,
-                ),
-                title: Text(
-                  chat.isPinned == true ? 'Unpin chat' : 'Pin chat',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                onTap: () async {
-                  await ChatService.toggleChatPin(
-                    chatId: chat.uid!,
-                    value: !chat.isPinned,
-                  );
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: Icon(
-                  chat.isFavorite == true
-                      ? Iconsax.heart_remove
-                      : Iconsax.heart,
-                  color: chat.isFavorite == true
-                      ? AppColors.danger
-                      : AppColors.primary,
-                ),
-                title: Text(
-                  chat.isFavorite == true
-                      ? 'Remove from favorites'
-                      : 'Add to favorites',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                onTap: () async {
-                  await ChatService.toggleChatFavorite(
-                    chatId: chat.uid!,
-                    value: !chat.isFavorite,
-                  );
-                  Navigator.pop(context);
-                },
-              ),
-
-              const Divider(),
-
-              /// Attachments
-              ListTile(
-                leading: const Icon(
-                  Icons.attach_file,
-                  color: AppColors.primary,
-                ),
-                title: Text(
-                  'Media, links & documents',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-
-                  if (kIsMobile) {
-                    Sheet.showSheet(
-                      context,
-                      widget: ChatAttachment(messages: []),
-                    );
-                  } else {
-                    GeneralDialog.showRTLSheet(
-                      context,
-                      ChatAttachment(messages: []),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildHeader(BuildContext context, String title) {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AboutChatColors.primary.withValues(alpha: 0.1),
+                width: 2,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 48,
+              backgroundColor: AboutChatColors.primary.withValues(alpha: 0.08),
+              child: chat.isGroupChat
+                  ? const Icon(
+                      Iconsax.people,
+                      size: 40,
+                      color: AboutChatColors.primary,
+                    )
+                  : Text(
+                      title.isNotEmpty ? title[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: AboutChatColors.primary,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AboutChatColors.textPrimary,
+            ),
+          ),
+          if (chat.isGroupChat)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AboutChatColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${chat.participants.length} Active Members',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AboutChatColors.primary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: AboutChatColors.textSecondary,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParticipantsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AboutChatColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AboutChatColors.border),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 320),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: chat.participants.length,
+          separatorBuilder: (_, _) => Container(
+            margin: const EdgeInsets.only(left: 72),
+            child: const Divider(height: 1, thickness: 0.5),
+          ),
+          itemBuilder: (context, index) {
+            final uid = chat.participants[index];
+            final user = CacheService.getUserByUid(uid);
+            String name = 'Workspace User';
+            String? image;
+
+            if (user is AdminModel) {
+              name = user.name;
+              image = user.profileImageUrl;
+            } else if (user is EmployeeModel) {
+              name = user.name;
+              image = user.profileImageUrl;
+            }
+
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              leading: _buildMemberAvatar(name, image),
+              title: Text(
+                name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: AboutChatColors.textPrimary,
+                ),
+              ),
+              subtitle: uid == chat.createdBy
+                  ? const Text(
+                      "Group Owner",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AboutChatColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : const Text(
+                      "Member",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AboutChatColors.textSecondary,
+                      ),
+                    ),
+              trailing: const Icon(
+                Iconsax.message,
+                size: 18,
+                color: AboutChatColors.border,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMemberAvatar(String name, String? image) {
+    bool hasImage = image != null && image.isNotEmpty;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: !hasImage
+            ? LetterColors.getColor(name.isNotEmpty ? name[0] : 'U')
+            : AboutChatColors.border,
+        shape: BoxShape.circle,
+      ),
+      child: hasImage
+          ? ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: image,
+                fit: BoxFit.cover,
+                placeholder: (_, _) => Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(color: Colors.white),
+                ),
+                errorWidget: (_, _, _) =>
+                    const Icon(Iconsax.user, size: 20, color: Colors.white),
+              ),
+            )
+          : Center(
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildActionsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AboutChatColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AboutChatColors.border),
+      ),
+      child: Column(
+        children: [
+          _buildActionTile(
+            context,
+            icon: chat.isPinned == true
+                ? Icons.push_pin
+                : Iconsax.percentage_circle,
+            iconColor: Colors.orangeAccent,
+            title: chat.isPinned == true
+                ? 'Unpin this conversation'
+                : 'Pin to top',
+            onTap: () async {
+              await ChatService.toggleChatPin(
+                chatId: chat.uid!,
+                value: !chat.isPinned,
+              );
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+          _buildDivider(),
+          _buildActionTile(
+            context,
+            icon: chat.isFavorite == true ? Iconsax.heart5 : Iconsax.heart,
+            iconColor: Colors.redAccent,
+            title: chat.isFavorite == true
+                ? 'Remove from favorites'
+                : 'Add to favorites',
+            onTap: () async {
+              await ChatService.toggleChatFavorite(
+                chatId: chat.uid!,
+                value: !chat.isFavorite,
+              );
+              if (context.mounted) Navigator.pop(context);
+            },
+          ),
+          _buildDivider(),
+          _buildActionTile(
+            context,
+            icon: Iconsax.folder_open,
+            iconColor: Colors.blueAccent,
+            title: 'Media, links & documents',
+            showChevron: true,
+            onTap: () {
+              Navigator.pop(context);
+              if (kIsMobile) {
+                Sheet.showSheet(
+                  context,
+                  widget: ChatAttachment(chatId: chat.uid ?? ''),
+                );
+              } else {
+                GeneralDialog.showRTLSheet(
+                  context,
+                  ChatAttachment(chatId: chat.uid ?? ''),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required VoidCallback onTap,
+    bool showChevron = false,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: AboutChatColors.textPrimary,
+        ),
+      ),
+      trailing: showChevron
+          ? const Icon(
+              Iconsax.arrow_right_3,
+              size: 16,
+              color: AboutChatColors.textSecondary,
+            )
+          : null,
+    );
+  }
+
+  Widget _buildDivider() => Container(
+    margin: const EdgeInsets.only(left: 64),
+    child: const Divider(height: 1, thickness: 0.5),
+  );
 }

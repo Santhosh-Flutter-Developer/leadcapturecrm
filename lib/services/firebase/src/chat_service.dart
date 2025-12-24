@@ -33,6 +33,28 @@ class ChatService {
         });
   }
 
+  static Future<List<MessagesModel>> getChatMessages({
+    required String uid,
+  }) async {
+    var cid = await Spdb.getCid();
+
+    return await firebase.users
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(uid)
+        .collection(Collections.messages.name)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            var data = doc.data();
+            data['uid'] = doc.id;
+            return MessagesModel.fromMap(data);
+          }).toList();
+        })
+        .first;
+  }
+
   static Future<void> updateSeenChat({
     required String chatId,
     required String messageId,

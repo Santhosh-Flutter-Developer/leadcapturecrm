@@ -1,25 +1,25 @@
+import 'package:aaatp/models/models.dart';
+import 'package:aaatp/theme/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
-import '/services/services.dart';
-import '/views/views.dart';
 import '/constants/constants.dart';
-import '/models/models.dart';
-import '/theme/theme.dart';
+import '/services/services.dart';
 import '/utils/utils.dart';
+import '/views/views.dart';
 import 'bloc/client_bloc.dart';
 
-class ClientsListing extends StatelessWidget {
+class ClientCompanyListing extends StatelessWidget {
   final ClientSection section;
 
-  const ClientsListing({super.key, required this.section});
+  const ClientCompanyListing({super.key, required this.section});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ClientBloc()..add(StreamClients()),
+      create: (_) => ClientCompanyBloc()..add(StreamClientCompany()),
       child: ClientListView(section: section),
     );
   }
@@ -89,7 +89,7 @@ class ClientListingView extends StatefulWidget {
 }
 
 class _ClientListingViewState extends State<ClientListingView> {
-  final List<ClientModel> _selectedClients = [];
+  final List<ClientModel> _selectedClientCompany = [];
   PermissionModel? permissions;
   String get pageTitle {
     return widget.section == ClientSection.contacts ? 'Contacts' : 'Company';
@@ -116,21 +116,21 @@ class _ClientListingViewState extends State<ClientListingView> {
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(pageTitle))
           : null,
-      body: BlocListener<ClientBloc, ClientState>(
-        listenWhen: (previous, current) => current is ClientLoaded,
+      body: BlocListener<ClientCompanyBloc, ClientCompanyState>(
+        listenWhen: (previous, current) => current is ClientCompanyLoaded,
         listener: (context, state) {
-          if (state is ClientLoaded) {
+          if (state is ClientCompanyLoaded) {
             final filtered = state.clients.where(_filterBySection).toList();
             controllerRead.setData(filtered);
           }
         },
-        child: BlocBuilder<ClientBloc, ClientState>(
+        child: BlocBuilder<ClientCompanyBloc, ClientCompanyState>(
           builder: (context, state) {
-            if (state is ClientLoading) {
+            if (state is ClientCompanyLoading) {
               return const WaitingLoading();
             }
 
-            if (state is ClientLoaded) {
+            if (state is ClientCompanyLoaded) {
               // if (!(permissions?.canView ?? false)) {
               //   return buildNoPermissionView(context);
               // }
@@ -217,7 +217,7 @@ class _ClientListingViewState extends State<ClientListingView> {
               );
             }
 
-            if (state is ClientError) {
+            if (state is ClientCompanyError) {
               return Center(
                 child: Text(
                   state.message,
@@ -424,7 +424,7 @@ class _ClientListingViewState extends State<ClientListingView> {
             // ),
             // ],
             // if (permissions?.canDelete ?? false) ...[
-            if (_selectedClients.isNotEmpty) ...[
+            if (_selectedClientCompany.isNotEmpty) ...[
               ElevatedButton.icon(
                 label: Text(
                   "Delete",
@@ -434,9 +434,9 @@ class _ClientListingViewState extends State<ClientListingView> {
                 ),
                 icon: const Icon(Iconsax.trash),
                 onPressed: () async {
-                  if (_selectedClients.isEmpty) return;
+                  if (_selectedClientCompany.isEmpty) return;
 
-                  for (var client in _selectedClients) {
+                  for (var client in _selectedClientCompany) {
                     final isAssigned = await ClientService.isClientAssigned(
                       client.uid ?? '',
                     );
@@ -481,7 +481,9 @@ class _ClientListingViewState extends State<ClientListingView> {
                   );
 
                   if (confirm == true) {
-                    context.read<ClientBloc>().add(DeleteClients(uid: 'uid'));
+                    context.read<ClientBloc>().add(
+                      DeleteClientCompany(uid: 'uid'),
+                    );
                     FlushBar.show(
                       context,
                       'Client deleted successfully',
@@ -546,8 +548,8 @@ class _ClientListingViewState extends State<ClientListingView> {
       onSelectChanged: (selected) {
         controllerRead.onSelected(client.uid!, selected);
         selected == true
-            ? _selectedClients.add(client)
-            : _selectedClients.remove(client);
+            ? _selectedClientCompany.add(client)
+            : _selectedClientCompany.remove(client);
         setState(() {});
       },
       cells: [
@@ -602,8 +604,8 @@ class _ClientListingViewState extends State<ClientListingView> {
       onSelectChanged: (selected) {
         controllerRead.onSelected(company.uid!, selected);
         selected == true
-            ? _selectedClients.add(company)
-            : _selectedClients.remove(company);
+            ? _selectedClientCompany.add(company)
+            : _selectedClientCompany.remove(company);
         setState(() {});
       },
       cells: [
@@ -748,7 +750,9 @@ class _ClientListingViewState extends State<ClientListingView> {
             );
 
             if (confirm == true) {
-              context.read<ClientBloc>().add(DeleteClients(uid: client.uid!));
+              context.read<ClientCompanyBloc>().add(
+                DeleteClientCompany(uid: client.uid!),
+              );
             }
           },
         ),

@@ -1,14 +1,16 @@
-import 'package:aaatp/services/database/database.dart';
+import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
+import '/services/services.dart';
 
 const Color kBgColor = Color(0xFFF4F7FE);
 const Color kCardColor = Colors.white;
@@ -132,6 +134,8 @@ class _DashboardState extends State<Dashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (VersionService.version?.isUpdateNeed ?? false)
+          _buildAppUpdateContainer(),
         Text(
           "Dashboard",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -149,6 +153,111 @@ class _DashboardState extends State<Dashboard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAppUpdateContainer() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF4A90E2).withValues(alpha: 0.18),
+            const Color(0xFF7F53AC).withValues(alpha: 0.18),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: const Color(0xFF4A90E2).withValues(alpha: 0.3),
+          width: 1.3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4A90E2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.system_update_alt_rounded,
+              color: AppColors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Update Available (v${VersionService.version?.version})",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF222B45),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "A newer version of the app is available. Update now for better performance, features and stability.",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.4,
+                    color: Color(0xFF4A4A4A),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 42,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A90E2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () async {
+                      try {
+                        if (Platform.isAndroid) {
+                          Navigate.route(context, AndroidUpdate());
+                        } else {
+                          Uri url = Uri.parse(
+                            VersionService.version?.url ?? '',
+                          );
+                          if (await canLaunchUrl(url)) {
+                            launchUrl(url);
+                          }
+                        }
+                      } catch (e, st) {
+                        FlushBar.show(context, e.toString(), isSuccess: false);
+                        await ErrorService.recordError(e, st);
+                      }
+                    },
+                    child: Text(
+                      "Update Now",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

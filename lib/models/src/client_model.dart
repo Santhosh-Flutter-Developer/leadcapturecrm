@@ -27,6 +27,7 @@ class ClientModel {
   final String? notes;
   final String? companyLogoUrl;
   final bool isActive;
+  final bool isCompany;
   final DateTime createdAt;
   final DateTime updatedAt;
   ClientModel({
@@ -40,7 +41,7 @@ class ClientModel {
     this.changeLanguage,
     this.profilePictureUrl,
     this.loginAllowed,
-     this.receiveEmailNotifications,
+    this.receiveEmailNotifications,
     this.companyName,
     this.officialWebsite,
     this.gstVatNumber,
@@ -55,6 +56,7 @@ class ClientModel {
     this.notes,
     this.companyLogoUrl,
     this.isActive = true,
+    required this.isCompany,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
@@ -86,6 +88,7 @@ class ClientModel {
     String? notes,
     String? companyLogoUrl,
     bool? isActive,
+    bool? isCompany,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -116,6 +119,7 @@ class ClientModel {
       notes: notes ?? this.notes,
       companyLogoUrl: companyLogoUrl ?? this.companyLogoUrl,
       isActive: isActive ?? this.isActive,
+      isCompany: isCompany ?? this.isCompany,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -147,6 +151,7 @@ class ClientModel {
       'notes': notes,
       'companyLogoUrl': companyLogoUrl,
       'isActive': isActive,
+      'isCompany': isCompany,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
@@ -178,6 +183,7 @@ class ClientModel {
       'notes': notes,
       'companyLogoUrl': companyLogoUrl,
       'isActive': isActive,
+      'isCompany': isCompany,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
   }
@@ -259,6 +265,7 @@ class ClientModel {
           ? map['companyLogoUrl'] as String
           : null,
       isActive: map['isActive'] is bool ? map['isActive'] as bool : false,
+      isCompany: map['isCompany'] is bool ? map['isCompany'] as bool : false,
       createdAt: map['createdAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
           : DateTime.now(),
@@ -275,7 +282,7 @@ class ClientModel {
 
   @override
   String toString() {
-    return 'ClientModel(uid: $uid, salutation: $salutation, clientName: $clientName, email: $email, password: $password, mobileNumber: $mobileNumber, gender: $gender, changeLanguage: $changeLanguage, profilePictureUrl: $profilePictureUrl, loginAllowed: $loginAllowed, receiveEmailNotifications: $receiveEmailNotifications, companyName: $companyName, officialWebsite: $officialWebsite, gstVatNumber: $gstVatNumber, officePhoneNo: $officePhoneNo, country: $country, state: $state, city: $city, postalCode: $postalCode, createdBy: $createdBy, companyAddress: $companyAddress, shippingAddress: $shippingAddress, notes: $notes, companyLogoUrl: $companyLogoUrl, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ClientModel(uid: $uid, salutation: $salutation, clientName: $clientName, email: $email, password: $password, mobileNumber: $mobileNumber, gender: $gender, changeLanguage: $changeLanguage, profilePictureUrl: $profilePictureUrl, loginAllowed: $loginAllowed, receiveEmailNotifications: $receiveEmailNotifications, companyName: $companyName, officialWebsite: $officialWebsite, gstVatNumber: $gstVatNumber, officePhoneNo: $officePhoneNo, country: $country, state: $state, city: $city, postalCode: $postalCode, createdBy: $createdBy, companyAddress: $companyAddress, shippingAddress: $shippingAddress, notes: $notes, companyLogoUrl: $companyLogoUrl, isActive: $isActive, isCompany: $isCompany, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -307,6 +314,7 @@ class ClientModel {
         other.notes == notes &&
         other.companyLogoUrl == companyLogoUrl &&
         other.isActive == isActive &&
+        other.isCompany == isCompany &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -338,6 +346,7 @@ class ClientModel {
         notes.hashCode ^
         companyLogoUrl.hashCode ^
         isActive.hashCode ^
+        isCompany.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }
