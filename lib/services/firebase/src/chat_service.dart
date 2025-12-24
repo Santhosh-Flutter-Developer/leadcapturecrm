@@ -424,7 +424,7 @@ class ChatService {
 
       final participantsKey = ([currentUid, userId]..sort()).join('_');
 
-      final existingChat = await firebase.users
+      final existingChatSnapshot = await firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .where('participantsKey', isEqualTo: participantsKey)
@@ -432,39 +432,12 @@ class ChatService {
           .limit(1)
           .get();
 
-      bool exists = existingChat.docs.any((doc) {
-        List participants = doc.data()['participants'];
-        return participants.contains(currentUid) &&
-            participants.contains(userId);
-      });
-
-      if (!exists) {
-        ChatModel chatModel = ChatModel(
-          createdBy: currentUid,
-          participants: [currentUid, userId],
-          createdAt: DateTime.now(),
-          lastMessage: LastMessageModel(
-            message: "Chat started",
-            senderId: currentUid,
-          ),
-          isGroupChat: false,
-          isPinned: false,
-          isFavorite: false,
-          participantsKey: '',
-        );
-
-        var chatDoc = await CommonService.add(
-          '${Collections.users.name}/$cid/${Collections.chats.name}',
-          chatModel.toMap(),
-        );
-
-        await sendNotification(
-          chatId: chatDoc.id,
-          message: "Started chat",
-          isChat: true,
-        );
+      // ✅ If chat already exists → return it
+      if (existingChatSnapshot.docs.isNotEmpty) {
+        return existingChatSnapshot.docs.first.id;
       }
 
+      // ✅ Create chat ONLY if not exists
       final chatModel = ChatModel(
         createdBy: currentUid,
         participants: [currentUid, userId],

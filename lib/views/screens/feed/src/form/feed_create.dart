@@ -277,7 +277,7 @@ class _FeedCreateState extends State<FeedCreate> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 10, bottom: 10),
+            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
@@ -299,6 +299,7 @@ class _FeedCreateState extends State<FeedCreate> {
           ),
         ],
       ),
+
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {

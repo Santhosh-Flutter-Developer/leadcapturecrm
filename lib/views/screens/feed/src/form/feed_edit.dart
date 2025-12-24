@@ -312,7 +312,7 @@ class _FeedEditState extends State<FeedEdit> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 10, bottom: 10),
+            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
@@ -324,7 +324,7 @@ class _FeedEditState extends State<FeedEdit> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
               ),
               child: Text(
-                "Update",
+                "Post",
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.white,

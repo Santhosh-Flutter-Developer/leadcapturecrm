@@ -177,6 +177,7 @@ class _ChatBubbleState extends State<ChatBubble>
   }
 
   void _pinMessage() async {
+    _overlayController.hide();
     await ChatService.togglePin(
       chatId: widget.chatUid,
       messageId: _msg.uid!,
@@ -192,7 +193,6 @@ class _ChatBubbleState extends State<ChatBubble>
         _isPinned = updated.isPinned;
       });
     }
-    _overlayController.hide();
   }
 
   void _handleDeleteMessage() async {
@@ -281,11 +281,13 @@ class _ChatBubbleState extends State<ChatBubble>
                         Clipboard.setData(ClipboardData(text: _msg.message));
                       },
                       "pin": _pinMessage,
-                      "edit": () {
-                        _overlayController.hide();
-                        messageProvider.editMessage(_msg);
-                      },
-                      "delete": _handleDeleteMessage,
+                      if (widget.isSender)
+                        "edit": () {
+                          _overlayController.hide();
+                          messageProvider.editMessage(_msg);
+                        },
+
+                      if (widget.isSender) "delete": _handleDeleteMessage,
                     },
                   ),
                 ),
