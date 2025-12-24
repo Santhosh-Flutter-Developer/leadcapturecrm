@@ -8,20 +8,22 @@ import '/theme/theme.dart';
 import '/utils/utils.dart';
 
 class CalendarEventScreen extends StatelessWidget {
-  const CalendarEventScreen({super.key});
+  final bool showAppbar;
+  const CalendarEventScreen({super.key, this.showAppbar = false});
 
   @override
   Widget build(BuildContext context) {
     // Replace with your actual Bloc construction or injection
     return BlocProvider(
       create: (_) => EventBloc()..add(StreamEvent()),
-      child: const CalendarDisplay(),
+      child: CalendarDisplay(showAppbar: showAppbar),
     );
   }
 }
 
 class CalendarDisplay extends StatefulWidget {
-  const CalendarDisplay({super.key});
+  final bool showAppbar;
+  const CalendarDisplay({super.key, this.showAppbar = true});
 
   @override
   State<CalendarDisplay> createState() => _CalendarDisplayState();
@@ -61,6 +63,25 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: widget.showAppbar
+          ? AppBar(
+              backgroundColor: LogColors.white,
+              elevation: 0,
+              leading: const Padding(
+                padding: EdgeInsets.only(left: 8.0),
+                child: Back(color: AppColors.black),
+              ),
+              centerTitle: false,
+              title: const Text(
+                "Calendar",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: LogColors.textPrimary,
+                  fontSize: 18,
+                ),
+              ),
+            )
+          : null,
       backgroundColor: const Color(0xFFF8F9FE),
       body: BlocBuilder<EventBloc, EventState>(
         builder: (context, state) {

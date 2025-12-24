@@ -366,7 +366,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      "₹${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
+                      "${widget.deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,

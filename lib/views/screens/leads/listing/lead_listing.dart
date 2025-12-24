@@ -534,12 +534,6 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.currency_rupee,
-                  size: 18,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     keyboardType: TextInputType.number,
@@ -550,6 +544,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       hintText: "1000 - 5000",
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
+                      fillColor: Colors.transparent,
                     ),
                   ),
                 ),

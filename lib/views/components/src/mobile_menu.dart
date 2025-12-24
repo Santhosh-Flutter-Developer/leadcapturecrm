@@ -1,8 +1,7 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -22,6 +21,7 @@ class _MobileMenuState extends State<MobileMenu> {
   EmployeeModel? _employeeModel;
   AdminModel? _adminModel;
   RoleModel? _roleModel;
+  UserDataModel? _userDataModel;
   late Future _future;
   VersionModel? _versionModel;
 
@@ -41,6 +41,9 @@ class _MobileMenuState extends State<MobileMenu> {
       } else {
         _adminModel = await AdminService.getAdmin(uid: user.uid);
       }
+
+      _userDataModel = user;
+
       setState(() {});
     }
 
@@ -77,8 +80,23 @@ class _MobileMenuState extends State<MobileMenu> {
                     _buildListTile(
                       icon: Iconsax.activity,
                       title: 'Feed',
-                      onTap: () => Navigate.route(context, const FeedListing()),
+                      onTap: () => Navigate.route(
+                        context,
+                        BlocProvider(
+                          create: (context) => FeedBloc(),
+                          child: FeedListing(),
+                        ),
+                      ),
                     ),
+                    _buildListTile(
+                      icon: Iconsax.calendar_1,
+                      title: 'Calendar',
+                      onTap: () => Navigate.route(
+                        context,
+                        const CalendarEventScreen(showAppbar: true),
+                      ),
+                    ),
+
                     SizedBox(height: 8),
                     if (_adminModel != null ||
                         ((_roleModel?.permissions
@@ -105,21 +123,9 @@ class _MobileMenuState extends State<MobileMenu> {
                             (_roleModel?.permissions
                                     .where((e) => e.page == "Employees")
                                     .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Category")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Status")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Deal Status")
-                                    .isNotEmpty ??
                                 false))) ...[
                       Text(
-                        "Users",
+                        "Creation",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                           color: AppColors.grey500,
                         ),
@@ -196,6 +202,39 @@ class _MobileMenuState extends State<MobileMenu> {
                           onTap: () =>
                               Navigate.route(context, const EmployeeListing()),
                         ),
+                    ],
+                    SizedBox(height: 8),
+                    if (_adminModel != null ||
+                        ((_roleModel?.permissions
+                                    .where((e) => e.page == "Clients")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Projects")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Tasks")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Lead Category")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Lead Status")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Deal Status")
+                                    .isNotEmpty ??
+                                false))) ...[
+                      Text(
+                        "CRM",
+                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          color: AppColors.grey500,
+                        ),
+                      ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
                                   .where((e) => e.page == "Lead Category")
@@ -241,27 +280,6 @@ class _MobileMenuState extends State<MobileMenu> {
                                   .isNotEmpty ??
                               false))
                         SizedBox(height: 8),
-                    ],
-                    SizedBox(height: 8),
-                    if (_adminModel != null ||
-                        ((_roleModel?.permissions
-                                    .where((e) => e.page == "Clients")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Projects")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Tasks")
-                                    .isNotEmpty ??
-                                false))) ...[
-                      Text(
-                        "Tasks",
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
-                        ),
-                      ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
                                   .where((e) => e.page == "Clients")
@@ -371,6 +389,12 @@ class _MobileMenuState extends State<MobileMenu> {
                       showTrailing: false,
                     ),
                     _buildListTile(
+                      icon: Iconsax.setting_2,
+                      title: 'Settings',
+                      onTap: () => Navigate.route(context, const Settings()),
+                      showTrailing: false,
+                    ),
+                    _buildListTile(
                       icon: Iconsax.command,
                       title: 'Developer Area',
                       onTap: () => Navigate.route(context, const Developer()),
@@ -469,56 +493,13 @@ class _MobileMenuState extends State<MobileMenu> {
         padding: const EdgeInsets.all(10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            if (employee?.profileImageUrl != null &&
-                employee!.profileImageUrl!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl: employee.profileImageUrl!,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
-                  ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                  height: 40,
-                  width: 40,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ] else if (admin?.profileImageUrl != null &&
-                admin!.profileImageUrl!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl: admin.profileImageUrl!,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
-                  ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                  height: 40,
-                  width: 40,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ] else ...[
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: AppColors.white,
-                child: const Icon(
-                  Iconsax.user,
-                  size: 35,
-                  color: Color(0xFF2E64C4),
-                ),
-              ),
-            ],
+            if (_userDataModel != null)
+              UserAvatar(userData: _userDataModel!, size: 40),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   employee?.name ?? admin?.name ?? 'User',

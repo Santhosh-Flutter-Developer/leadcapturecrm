@@ -36,7 +36,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
   @override
   void didUpdateWidget(covariant LeadKanbanListing oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     if (oldWidget.leadList != widget.leadList) {
       _future = _initializeBoard();
       setState(() {});
@@ -104,6 +103,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(12.0),
+              physics: const BouncingScrollPhysics(),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: _leadList.entries.map((entry) {
@@ -118,9 +118,8 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
   }
 
   Widget _buildKanbanColumn(LeadStatusModel list, List<LeadModel> leads) {
-    double totalValue = leads.fold(0.0, (sum, item) => sum + item.leadValue);
-
     return DragTarget<LeadModel>(
+      onWillAcceptWithDetails: (details) => details.data.uid != null,
       onAcceptWithDetails: (details) async {
         final lead = details.data;
         if (_draggedFromList != list) {
@@ -133,16 +132,23 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       },
       builder: (context, candidateData, rejectedData) {
         bool isHovering = candidateData.isNotEmpty;
+        double totalValue = leads.fold(
+          0.0,
+          (sum, item) => sum + item.leadValue,
+        );
 
-        return Container(
-          width: 260, // Smaller column width
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 260,
           height: MediaQuery.of(context).size.height * 0.78,
           margin: const EdgeInsets.only(right: 12.0),
           decoration: BoxDecoration(
-            color: Color(list.color).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12.0),
+            color: isHovering
+                ? Color(list.color).withValues(alpha: 0.1)
+                : Color(list.color).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16.0),
             border: Border.all(
-              color: isHovering ? AppColors.blue : AppColors.transparent,
+              color: isHovering ? AppColors.blue : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -153,7 +159,10 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               const Divider(height: 1, color: Color(0xFFEEEEEE)),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(6.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 10,
+                  ),
                   itemCount: leads.length,
                   itemBuilder: (context, index) {
                     return _buildKanbanCard(leads[index], list);
@@ -175,10 +184,10 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: Color(list.color),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -195,12 +204,19 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                   ),
                 ),
               ),
-              Text(
-                '$count',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -208,12 +224,12 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         ),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           color: AppColors.white,
           child: Text(
             _currencyFormat.format(totalValue),
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               fontSize: 12,
               color: AppColors.black87,
             ),
@@ -224,42 +240,71 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
   }
 
   Widget _buildKanbanCard(LeadModel task, LeadStatusModel list) {
-    return Draggable<LeadModel>(
-      data: task,
-      feedback: Material(
-        elevation: 4.0,
-        borderRadius: BorderRadius.circular(8.0),
-        child: Container(
-          width: 248,
-          padding: const EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(8.0),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      // Use Draggable, but handle the click inside the child
+      child: Draggable<LeadModel>(
+        data: task,
+        // The feedback is what follows the finger
+        feedback: Material(
+          elevation: 8.0,
+          borderRadius: BorderRadius.circular(12.0),
+          color: Colors.transparent,
+          child: Transform.rotate(
+            angle: 0.05, // Slight tilt for pro feel
+            child: Container(
+              width: 244,
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12.0),
+                border: Border.all(
+                  color: AppColors.blue.withValues(alpha: 0.5),
+                ),
+              ),
+              child: _buildCardContent(task),
+            ),
           ),
-          child: _buildCardContent(task),
         ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: Card(
-          margin: const EdgeInsets.only(bottom: 6),
-          color: AppColors.grey200,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: const SizedBox(height: 50),
+        // The placeholder widget left in the list while dragging
+        childWhenDragging: Opacity(
+          opacity: 0.2,
+          child: Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.grey200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
-      ),
-      onDragStarted: () => _handleDragStarted(task, list),
-      onDragEnd: _handleDragEnd,
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 6.0),
-        elevation: 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        color: AppColors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: _buildCardContent(task),
+        onDragStarted: () => _handleDragStarted(task, list),
+        onDragEnd: _handleDragEnd,
+        // The actual card in the list
+        child: InkWell(
+          onTap: () {
+            // Open lead view page
+            if (kIsDesktop) {
+              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
+            } else {
+              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12.0),
+            child: _buildCardContent(task),
+          ),
         ),
       ),
     );
@@ -272,12 +317,10 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         Row(
           children: [
             CircleAvatar(
-              radius: 12, // Smallest avatar
+              radius: 12,
               backgroundColor: AppColors.blue100,
               child: Text(
-                lead.leadName.isNotEmpty
-                    ? lead.leadName[0].capitalizeFirst
-                    : '',
+                lead.leadName.isNotEmpty ? lead.leadName[0].toUpperCase() : '?',
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -292,8 +335,8 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.black,
                 ),
               ),
@@ -306,40 +349,45 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
+                color: AppColors.success.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 _currencyFormat.format(lead.leadValue),
                 style: const TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.success,
                 ),
               ),
             ),
             Text(
               DateFormat('dd MMM').format(lead.createdAt),
-              style: const TextStyle(fontSize: 10, color: AppColors.grey),
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.grey600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        if (lead.companyName != null) ...[
-          const SizedBox(height: 4),
+        if (lead.companyName != null && lead.companyName!.isNotEmpty) ...[
+          const SizedBox(height: 6),
           Text(
             lead.companyName!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 10,
-              color: AppColors.blue,
+              color: AppColors.blue700,
+              fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
             ),
           ),

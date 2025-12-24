@@ -372,7 +372,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      "₹${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
+                      "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,

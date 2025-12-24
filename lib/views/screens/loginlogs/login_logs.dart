@@ -1,3 +1,4 @@
+import 'package:aaatp/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
@@ -94,7 +95,7 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
                 elevation: 0,
                 leading: const Padding(
                   padding: EdgeInsets.only(left: 8.0),
-                  child: Back(),
+                  child: Back(color: AppColors.black),
                 ),
                 centerTitle: false,
                 title: const Text(

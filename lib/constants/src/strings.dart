@@ -125,6 +125,7 @@ class AppStrings {
     "Clients",
     "Projects",
     "Tasks",
+    "Developer Area",
   ];
 
   static List<PermissionModel> permissionsTrueMap = List.generate(

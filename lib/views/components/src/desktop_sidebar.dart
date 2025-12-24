@@ -178,6 +178,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool tasks =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Tasks')) != null;
+    bool developerArea =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Developer Area')) != null;
 
     List<Map<String, dynamic>> menus = [
       {'icon': Iconsax.home_2, 'title': 'Dashboard'},
@@ -203,17 +206,19 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
             builder: (context, count, _) {
               if (count == 0 || _isCollapsed) return const SizedBox.shrink();
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 1.5,
+                ),
                 decoration: BoxDecoration(
                   color: DesktopColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   "$count",
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: DesktopColors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall!.copyWith(color: DesktopColors.white),
                 ),
               );
             },
@@ -242,7 +247,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
-      {'icon': Iconsax.command, 'title': 'Developer Area'},
+      if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
       {
         'icon': Iconsax.info_circle,
         'title': 'App Version : ${AppPackageInfo.version}',
@@ -531,7 +536,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           title,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: DesktopColors.lightTextSecondary,
+            color: DesktopColors.lightTextSecondary.withValues(alpha: 0.7),
           ),
         ),
         trailing: Icon(

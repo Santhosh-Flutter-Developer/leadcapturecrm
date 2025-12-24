@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../../../utils/utils.dart';
 import '/views/views.dart';
 import '/models/models.dart';
 import '/constants/constants.dart';
@@ -58,6 +59,7 @@ class _FeedListingState extends State<FeedListing> {
     return Scaffold(
       backgroundColor: FeedAppColors.background,
       appBar: AppBar(
+        leading: Back(color: FeedAppColors.textPrimary),
         backgroundColor: FeedAppColors.white,
         elevation: 0,
         centerTitle: false,
@@ -88,7 +90,13 @@ class _FeedListingState extends State<FeedListing> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: FeedAppColors.primary,
         elevation: 4,
-        onPressed: () {}, // Trigger New Post
+        onPressed: () {
+          if (kIsMobile) {
+            Sheet.showSheet(context, widget: const FeedCreate());
+          } else {
+            GeneralDialog.showRTLSheet(context, const FeedCreate());
+          }
+        },
         child: const Icon(Iconsax.add, color: Colors.white),
       ),
       body: BlocBuilder<FeedBloc, FeedState>(
@@ -235,10 +243,25 @@ class FeedCardState extends State<FeedCard> {
                     ],
                   ),
                 ),
-                const Icon(
-                  Iconsax.more,
-                  size: 16,
-                  color: FeedAppColors.textSecondary,
+                InkWell(
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(
+                        context,
+                        widget: FeedEdit(uid: widget.feed.uid ?? ''),
+                      );
+                    } else {
+                      GeneralDialog.showRTLSheet(
+                        context,
+                        FeedEdit(uid: widget.feed.uid ?? ''),
+                      );
+                    }
+                  },
+                  child: const Icon(
+                    Iconsax.more,
+                    size: 16,
+                    color: FeedAppColors.textSecondary,
+                  ),
                 ),
               ],
             ),

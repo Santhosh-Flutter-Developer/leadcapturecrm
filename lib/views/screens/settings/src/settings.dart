@@ -1,3 +1,4 @@
+import 'package:aaatp/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
@@ -65,7 +66,7 @@ class _SettingsListingState extends State<SettingsListing> {
               centerTitle: false,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 8.0),
-                child: Back(),
+                child: Back(color: AppColors.black),
               ),
               title: const Text(
                 "Preferences",

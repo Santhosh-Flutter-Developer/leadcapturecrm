@@ -1,3 +1,4 @@
+import 'package:aaatp/services/database/database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -360,19 +361,37 @@ Widget _buildRightPanel(
                   icon: Icons.add_circle_outline,
                   label: "Add Lead",
                   color: Colors.blue,
-                  onTap: () => Navigate.route(context, LeadCreate()),
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: const LeadCreate());
+                    } else {
+                      GeneralDialog.showRTLSheet(context, const LeadCreate());
+                    }
+                  },
                 ),
                 QuickActionCard(
                   icon: Icons.work_outline,
                   label: "Add Deal",
                   color: Colors.purple,
-                  onTap: () => Navigate.route(context, DealCreate()),
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: const DealCreate());
+                    } else {
+                      GeneralDialog.showRTLSheet(context, const DealCreate());
+                    }
+                  },
                 ),
                 QuickActionCard(
                   icon: Icons.check_circle_outline,
                   label: "Add Task",
                   color: Colors.orange,
-                  onTap: () => Navigate.route(context, TaskCreate()),
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: const TasksListing());
+                    } else {
+                      GeneralDialog.showRTLSheet(context, const TasksListing());
+                    }
+                  },
                 ),
               ]
             : [
@@ -380,20 +399,44 @@ Widget _buildRightPanel(
                   icon: Icons.person_add_outlined,
                   label: "New Lead",
                   color: Colors.blue,
-                  onTap: () => Navigate.route(context, LeadCreate()),
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: const LeadCreate());
+                    } else {
+                      GeneralDialog.showRTLSheet(context, const LeadCreate());
+                    }
+                  },
                 ),
                 QuickActionCard(
                   icon: Icons.update,
                   label: "Tasks",
                   color: Colors.orange,
-                  onTap: () => Navigate.route(context, TasksListing()),
+                  onTap: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: const TasksListing());
+                    } else {
+                      GeneralDialog.showRTLSheet(context, const TasksListing());
+                    }
+                  },
                 ),
                 QuickActionCard(
                   icon: Icons.chat_bubble_outline,
                   label: "Chat",
                   color: Colors.green,
-                  onTap: () =>
-                      Navigate.route(context, ChatListing(currentUserUid: '')),
+                  onTap: () async {
+                    var uid = await Spdb.getUid() ?? '';
+                    if (kIsMobile) {
+                      Sheet.showSheet(
+                        context,
+                        widget: ChatListing(currentUserUid: uid),
+                      );
+                    } else {
+                      GeneralDialog.showRTLSheet(
+                        context,
+                        ChatListing(currentUserUid: uid),
+                      );
+                    }
+                  },
                 ),
               ],
       ),

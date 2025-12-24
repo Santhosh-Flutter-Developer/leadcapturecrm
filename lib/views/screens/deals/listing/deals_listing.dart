@@ -443,6 +443,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                       hintText: "1000 - 5000",
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
+                      fillColor: Colors.transparent,
                     ),
                   ),
                 ),
