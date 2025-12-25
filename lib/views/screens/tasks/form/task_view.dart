@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
+
+class TaskViewColors {
+  static const Color primary = Color(0xFF2563EB);
+  static const Color secondary = Color(0xFF64748B);
+  static const Color background = Color(0xFFF8FAFC);
+  static const Color white = Colors.white;
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+}
 
 class TaskView extends StatefulWidget {
   final String uid;
@@ -14,15 +27,13 @@ class TaskView extends StatefulWidget {
   State<TaskView> createState() => _TaskViewState();
 }
 
-class _TaskViewState extends State<TaskView> {
+class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
   late Future<TaskModel> _future;
   late TaskModel _taskModel;
-  List<TaskCommentModel>? cachedComments;
-  List<TaskHistoryModel>? cachedHistory;
-  int _commentCount = 0;
-  String? currentUid;
+  late TabController _tabController;
   final TextEditingController _commentController = TextEditingController();
 
+  String? currentUid;
   bool _isSending = false;
   bool isParticipant = false;
   bool _isActionLoading = false;
@@ -31,46 +42,41 @@ class _TaskViewState extends State<TaskView> {
   void initState() {
     super.initState();
     _future = TaskService.getTask(uid: widget.uid);
+    _tabController = TabController(length: 3, vsync: this);
+    Spdb.getUid().then((uid) => setState(() => currentUid = uid));
+  }
 
-    Spdb.getUid().then((uid) {
-      setState(() => currentUid = uid);
-    });
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _commentController.dispose();
+    super.dispose();
   }
 
   Future<void> _addComment(String taskId) async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
-
     setState(() => _isSending = true);
-
     try {
       await TaskService.addComment(taskId: taskId, comment: text);
       _commentController.clear();
     } catch (e) {
-      debugPrint("Failed to add comment: $e");
-
       FlushBar.show(context, 'Failed to add comment', isSuccess: false);
     }
-
     setState(() => _isSending = false);
   }
 
   Future<void> _startTask() async {
     if (_taskModel.uid == null) return;
-
     setState(() => _isActionLoading = true);
-
     try {
       await TaskService.startTask(taskId: _taskModel.uid!);
-
       setState(() {
         _taskModel.hasStarted = true;
         _taskModel.completed = false;
       });
-
       FlushBar.show(context, "Task started", isSuccess: true);
     } catch (e) {
-      debugPrint("Start task failed: $e");
       FlushBar.show(context, "Failed to start task", isSuccess: false);
     } finally {
       setState(() => _isActionLoading = false);
@@ -79,20 +85,12 @@ class _TaskViewState extends State<TaskView> {
 
   Future<void> _completeTask() async {
     if (_taskModel.uid == null) return;
-
     setState(() => _isActionLoading = true);
-
     try {
       await TaskService.completeTask(taskId: _taskModel.uid!);
-
-      setState(() {
-        _taskModel.completed = true;
-        // _taskModel.hasStarted = false;
-      });
-
+      setState(() => _taskModel.completed = true);
       FlushBar.show(context, "Task marked completed", isSuccess: true);
     } catch (e) {
-      debugPrint("Complete task failed: $e");
       FlushBar.show(context, "Failed to complete task", isSuccess: false);
     } finally {
       setState(() => _isActionLoading = false);
@@ -107,713 +105,82 @@ class _TaskViewState extends State<TaskView> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const WaitingLoading();
         }
+        final String cid = snapshot.data ?? '';
 
-        if (snapshot.hasError || !snapshot.hasData) {
-          return ErrorDisplay(
-            error: snapshot.error?.toString() ?? "Unable to fetch company ID",
-          );
-        }
+        return FutureBuilder<TaskModel>(
+          future: _future,
+          builder: (context, taskSnap) {
+            if (taskSnap.connectionState == ConnectionState.waiting) {
+              return const WaitingLoading();
+            }
+            if (!taskSnap.hasData) return ErrorDisplay(error: "Task not found");
 
-        final String cid = snapshot.data!;
-        final String taskId = widget.uid;
+            _taskModel = taskSnap.data!;
+            isParticipant =
+                currentUid != null &&
+                (_taskModel.assignees.contains(currentUid!) ||
+                    _taskModel.createdBy.contains(currentUid!));
 
-        return ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-          ),
-          child: FutureBuilder<TaskModel>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const WaitingLoading();
-              } else if (snapshot.hasError || !snapshot.hasData) {
-                return ErrorDisplay(
-                  error: snapshot.error?.toString() ?? "Task not found",
-                );
-              }
-
-              _taskModel = snapshot.data!;
-              isParticipant =
-                  currentUid != null &&
-                  (_taskModel.assignees.contains(currentUid!) ||
-                      _taskModel.createdBy.contains(currentUid!));
-
-              return Scaffold(
-                backgroundColor: const Color(0xFFF8F9FA),
-                appBar: FormWidgets.buildHeader(
-                  context: context,
-                  title: "Task Details",
+            return Scaffold(
+              backgroundColor: TaskViewColors.background,
+              appBar: AppBar(
+                backgroundColor: TaskViewColors.white,
+                elevation: 0,
+                centerTitle: false,
+                leading: const Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Back(),
                 ),
-                body: LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (kIsMobile) {
-                      return ListView(
+                title: const Text(
+                  "Task Details",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: TaskViewColors.textPrimary,
+                    fontSize: 18,
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(1),
+                  child: Container(color: TaskViewColors.border, height: 1),
+                ),
+              ),
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1400),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 1000;
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              children: [
-                                _sectionCard(child: _taskHeader()),
-                                const SizedBox(height: 18),
-                                _sectionCard(child: _statusSummary()),
-                                const SizedBox(height: 18),
-                                _sectionCard(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  child: _startedBanner(),
-                                ),
-                                // const SizedBox(height: 18),
-                                // _sectionCard(child: _subTasksSection()),
-                                const SizedBox(height: 18),
-                                _sectionCard(
-                                  child: _commentsHistoryTabs(cid, taskId),
-                                ),
-                                const SizedBox(height: 18),
-
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 20),
-                                  child: _rightDetailsPanelMobile(),
-                                ),
-                              ],
+                          Expanded(
+                            flex: isWide ? 7 : 1,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [_buildMainContent(cid)],
+                              ),
                             ),
                           ),
+                          if (isWide)
+                            Container(
+                              width: 380,
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(
+                                    color: TaskViewColors.border,
+                                  ),
+                                ),
+                                color: TaskViewColors.white,
+                              ),
+                              child: _buildSidePanel(),
+                            ),
                         ],
                       );
-                    }
-
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: ListView(
-                              children: [
-                                _sectionCard(child: _taskHeader()),
-                                const SizedBox(height: 18),
-                                _sectionCard(child: _statusSummary()),
-                                const SizedBox(height: 18),
-                                _sectionCard(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  child: _startedBanner(),
-                                ),
-                                // const SizedBox(height: 18),
-                                // _sectionCard(child: _subTasksSection()),
-                                const SizedBox(height: 18),
-                                _sectionCard(
-                                  child: _commentsHistoryTabs(cid, taskId),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 340,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: _rightDetailsPanelDesktop(),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  // PreferredSizeWidget _buildAppBar() {
-  //   return AppBar(
-  //     backgroundColor: AppColors.white,
-  //     elevation: 1,
-  //     // leading: IconButton(
-  //     //   onPressed: () {
-  //     //     if (Navigator.canPop(context)) {
-  //     //       Navigator.pop(context);
-  //     //     }
-  //     //   },
-  //     //   icon: Icon(Icons.close, color: AppColors.black),
-  //     // ),
-  //     title: Text(
-  //       "Task Details",
-  //       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-  //         fontWeight: FontWeight.bold,
-  //         color: AppColors.primary,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _sectionCard({required Widget child, Color? color}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color ?? AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black12,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _taskHeader() {
-    final daysLeft = _taskModel.deadline?.difference(DateTime.now()).inDays;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                _taskModel.taskName,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            if (_taskModel.highPriority) _priorityBadge(),
-            const SizedBox(width: 8),
-            _statusBadge(),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_taskModel.tags.isNotEmpty) _tagsWrap(),
-        if (daysLeft != null) _deadlineText(daysLeft),
-        const Divider(height: 20),
-        Text(
-          _taskModel.description,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.grey700,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _priorityBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.danger,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.priority_high, size: 16, color: AppColors.danger),
-          SizedBox(width: 6),
-          Text(
-            "High Priority",
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: _taskModel.completed ? AppColors.success : AppColors.accent,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        _taskModel.completed ? "Completed" : "In Progress",
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: _taskModel.completed ? AppColors.white : AppColors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _tagsWrap() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: _taskModel.tags
-          .map(
-            (t) => Chip(
-              label: Text(t, style: Theme.of(context).textTheme.bodySmall),
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _deadlineText(int daysLeft) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        daysLeft >= 0 ? "Due in $daysLeft days" : "Overdue",
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: daysLeft >= 0 ? AppColors.blue : AppColors.danger,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _statusSummary() {
-    final createdUser = CacheService.getUserByUid(_taskModel.createdBy.first);
-    final UserDataModel userDataModel;
-
-    if (createdUser is AdminModel) {
-      userDataModel = UserDataModel(
-        name: createdUser.name,
-        profilePic: createdUser.profileImageUrl,
-        uid: createdUser.uid ?? '',
-        userType: UserType.admin,
-        desc: createdUser.email,
-      );
-    } else {
-      userDataModel = UserDataModel(
-        name: createdUser.name,
-        profilePic: createdUser.profileImageUrl,
-        uid: createdUser.uid ?? '',
-        userType: UserType.employee,
-        desc: createdUser.email,
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black12,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              UserAvatar(userData: userDataModel),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      createdUser?.name ?? "Unknown User",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _taskModel.createdAt.listingDateTime,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _statusBadge(),
-                        const SizedBox(width: 8),
-                        if (_taskModel.highPriority) _priorityBadge(),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          if (_taskModel.description.isNotEmpty)
-            Text(
-              _taskModel.description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.grey700,
-                height: 1.5,
-              ),
-            ),
-          const SizedBox(height: 16),
-
-          // Attachments
-          if (_taskModel.attachments.isNotEmpty) ...[
-            Text(
-              "Attachments",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _attachmentsGrid(_taskModel.attachments),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _attachmentsGrid(List<FileModel> attachments) {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: attachments.length,
-      itemBuilder: (context, index) {
-        final file = attachments[index];
-        final isImage =
-            file.name.endsWith(".jpg") ||
-            file.name.endsWith(".png") ||
-            file.name.endsWith(".jpeg") ||
-            file.name.endsWith(".gif");
-        final isPdf = file.name.endsWith(".pdf");
-
-        return GestureDetector(
-          onTap: () {
-            if (isImage) {
-              Navigate.route(
-                context,
-                GalleryScreen(images: [file], initialIndex: 0),
-              );
-            } else if (isPdf) {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (_) => PdfPreviewScreen(url: file.url),
-              //   ),
-              // );
-            }
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.grey100,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.grey300),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isImage
-                      ? Icons.image
-                      : isPdf
-                      ? Icons.picture_as_pdf
-                      : Icons.insert_drive_file,
-                  size: 36,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    file.name,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    },
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _startedBanner() {
-    String statusText;
-    IconData statusIcon;
-
-    if (_taskModel.completed) {
-      statusText = "Completed";
-      statusIcon = Icons.check_circle;
-    } else if (_taskModel.hasStarted) {
-      statusText = "Started";
-      statusIcon = Icons.play_circle_fill;
-    } else {
-      statusText = "Not started";
-      statusIcon = Icons.pause_circle_filled;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(statusIcon, color: AppColors.white),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              statusText,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Text(
-            _taskModel.createdAt.listingDateTime,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget _subTasksSection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text("Subtasks", style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
-  //       const SizedBox(height: 10),
-  //       Container(
-  //         padding: const EdgeInsets.all(12),
-  //         decoration: BoxDecoration(
-  //           color: AppColors.white,
-  //           borderRadius: BorderRadius.circular(8),
-  //         ),
-  //         child: Text("No subtasks"),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  Widget _commentsHistoryTabs(String cid, String taskId) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          const TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.grey,
-            indicatorColor: AppColors.primary,
-            tabs: [
-              Tab(text: "Comments"),
-              Tab(text: "History"),
-              Tab(text: "Time"),
-            ],
-          ),
-          SizedBox(
-            height: 220,
-            child: TabBarView(
-              children: [
-                _commentsTab(taskId, cid),
-                _historyTab(taskId, cid),
-                Center(
-                  child: Text(
-                    "00:00:00",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _commentsTab(String taskId, String cid) {
-    return StreamBuilder<List<TaskCommentModel>>(
-      stream: TaskService.streamComments(cid: cid, taskId: taskId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: WaitingLoading());
-        }
-
-        final comments = snapshot.data ?? [];
-        _commentCount = comments.length;
-
-        return Column(
-          children: [
-            Expanded(
-              child: comments.isEmpty
-                  ? Center(
-                      child: Text(
-                        "No comments yet",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: comments.length,
-                      itemBuilder: (context, index) {
-                        final c = comments[index];
-                        final user = CacheService.getUserByUid(c.userId);
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.grey100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                c.comment,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user?.name ?? c.userId,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.grey600),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                c.timestamp.listingDateTime,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.grey600),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
-
-            const Divider(height: 1),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      decoration: const InputDecoration(
-                        hintText: "Add a comment...",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _isSending ? null : () => _addComment(taskId),
-                    icon: _isSending
-                        ? const WaitingLoading()
-                        : const Icon(Icons.send, color: AppColors.primary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _historyTab(String taskId, String cid) {
-    return StreamBuilder<List<TaskHistoryModel>>(
-      stream: TaskService.streamTaskHistory(cid: cid, taskId: taskId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: WaitingLoading());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Text(
-              "No history available",
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          );
-        }
-
-        final history = snapshot.data!;
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: history.length,
-          itemBuilder: (context, index) {
-            final h = history[index];
-            final user = CacheService.getUserByUid(h.userId);
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.grey100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    h.updateDisposition,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    user?.name ?? h.userId,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (h.update != null && h.update!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      "Info: ${h.update}",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  Text(
-                    h.timestamp.listingDateTime,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                  ),
-                ],
               ),
             );
           },
@@ -822,18 +189,562 @@ class _TaskViewState extends State<TaskView> {
     );
   }
 
-  Widget _rightDetailsPanelDesktop() {
+  Widget _buildMainContent(String cid) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTaskHeader(),
+        const SizedBox(height: 24),
+        _buildInfoGrid(),
+        const SizedBox(height: 32),
+        _buildSectionLabel("TASK DESCRIPTION"),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: TaskViewColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: TaskViewColors.border),
+          ),
+          child: Text(
+            _taskModel.description.isNotEmpty
+                ? _taskModel.description
+                : "No description provided for this task.",
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: TaskViewColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        if (_taskModel.attachments.isNotEmpty) ...[
+          _buildSectionLabel("ATTACHMENTS"),
+          const SizedBox(height: 12),
+          _buildAttachmentsGrid(),
+          const SizedBox(height: 32),
+        ],
+        _buildModernTabs(cid),
+      ],
+    );
+  }
+
+  Widget _buildTaskHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _taskModel.highPriority
+                    ? TaskViewColors.danger.withValues(alpha: 0.1)
+                    : TaskViewColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color:
+                      (_taskModel.highPriority
+                              ? TaskViewColors.danger
+                              : TaskViewColors.primary)
+                          .withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _taskModel.highPriority ? Iconsax.flash : Iconsax.task,
+                    size: 14,
+                    color: _taskModel.highPriority
+                        ? TaskViewColors.danger
+                        : TaskViewColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _taskModel.highPriority ? "URGENT" : "STANDARD",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: _taskModel.highPriority
+                          ? TaskViewColors.danger
+                          : TaskViewColors.primary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _buildStatusBadge(),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _taskModel.taskName,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: TaskViewColors.textPrimary,
+          ),
+        ),
+        if (_taskModel.tags.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: _taskModel.tags
+                .map(
+                  (tag) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: TaskViewColors.background,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: TaskViewColors.border),
+                    ),
+                    child: Text(
+                      "#$tag",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: TaskViewColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    final bool isCompleted = _taskModel.completed;
     return Container(
-      decoration: _boxDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isCompleted
+            ? TaskViewColors.success.withValues(alpha: 0.1)
+            : TaskViewColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: (isCompleted ? TaskViewColors.success : TaskViewColors.warning)
+              .withValues(alpha: 0.2),
+        ),
+      ),
+      child: Text(
+        isCompleted
+            ? "COMPLETED"
+            : (_taskModel.hasStarted ? "IN PROGRESS" : "PENDING"),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          color: isCompleted ? TaskViewColors.success : TaskViewColors.warning,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoGrid() {
+    final daysLeft =
+        _taskModel.deadline?.difference(DateTime.now()).inDays ?? 0;
+    return Row(
+      children: [
+        _infoBox(
+          Iconsax.calendar_1,
+          "Deadline",
+          _taskModel.deadline?.formatDate ?? "No date",
+          daysLeft < 0 ? TaskViewColors.danger : TaskViewColors.primary,
+        ),
+        const SizedBox(width: 16),
+        _infoBox(
+          Iconsax.timer_1,
+          "Reminder",
+          _taskModel.reminder?.listingDateTime ?? "Disabled",
+          TaskViewColors.secondary,
+        ),
+      ],
+    );
+  }
+
+  Widget _infoBox(IconData icon, String label, String val, Color accent) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: TaskViewColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: TaskViewColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: accent),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: TaskViewColors.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  val,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: TaskViewColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+        color: TaskViewColors.textSecondary,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildAttachmentsGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.5,
+      ),
+      itemCount: _taskModel.attachments.length,
+      itemBuilder: (context, index) {
+        final file = _taskModel.attachments[index];
+        return Container(
+          decoration: BoxDecoration(
+            color: TaskViewColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: TaskViewColors.border),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              const Icon(
+                Iconsax.document_text,
+                color: TaskViewColors.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      file.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "${file.size} KB",
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: TaskViewColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Iconsax.arrow_circle_down,
+                size: 18,
+                color: TaskViewColors.secondary,
+              ),
+              const SizedBox(width: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernTabs(String cid) {
+    return Column(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: TaskViewColors.border)),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: TaskViewColors.primary,
+            unselectedLabelColor: TaskViewColors.textSecondary,
+            indicatorColor: TaskViewColors.primary,
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            tabs: const [
+              Tab(text: "Comments"),
+              Tab(text: "Activity History"),
+              Tab(text: "Time Tracking"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 500,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildCommentsTab(cid),
+              _buildHistoryTab(cid),
+              _buildEmptyState(Iconsax.timer_1, "No time logs recorded."),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentsTab(String cid) {
+    return StreamBuilder<List<TaskCommentModel>>(
+      stream: TaskService.streamComments(cid: cid, taskId: _taskModel.uid!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return WaitingLoading();
+        }
+        final comments = snapshot.data ?? [];
+
+        return Column(
+          children: [
+            _buildCommentInput(),
+            const SizedBox(height: 20),
+            Expanded(
+              child: comments.isEmpty
+                  ? _buildEmptyState(Iconsax.slash, "No comments yet.")
+                  : ListView.separated(
+                      itemCount: comments.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) =>
+                          _buildCommentItem(comments[index]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCommentItem(TaskCommentModel comment) {
+    final user = CacheService.getUserByUid(comment.userId);
+    var userData = UserDataModel.fromEmptyMap();
+
+    if (user is EmployeeModel) {
+      userData = UserDataModel(
+        name: user.name,
+        uid: user.uid ?? '',
+        profilePic: user.profileImageUrl,
+        desc: CacheService.designationByUid(user.designation)?.name,
+        userType: UserType.employee,
+      );
+    } else if (user is AdminModel) {
+      userData = UserDataModel(
+        name: user.name,
+        uid: user.uid ?? '',
+        profilePic: user.profileImageUrl,
+        desc: user.email,
+        userType: UserType.admin,
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UserAvatar(userData: userData, size: 32),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: TaskViewColors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: TaskViewColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      user?.name ?? "Collaborator",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      comment.timestamp.listingDateTime,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: TaskViewColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  comment.comment,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: TaskViewColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentInput() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: "Add a progress update...",
+              filled: true,
+              fillColor: TaskViewColors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: TaskViewColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: TaskViewColors.border),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _isSending
+            ? const CircularProgressIndicator()
+            : IconButton(
+                onPressed: () => _addComment(_taskModel.uid!),
+                icon: const Icon(Iconsax.send_1, color: TaskViewColors.primary),
+              ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryTab(String cid) {
+    return StreamBuilder<List<TaskHistoryModel>>(
+      stream: TaskService.streamTaskHistory(cid: cid, taskId: _taskModel.uid!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return WaitingLoading();
+        }
+        final history = snapshot.data ?? [];
+        if (history.isEmpty) {
+          return _buildEmptyState(Iconsax.activity, "No activity recorded.");
+        }
+        return ListView.builder(
+          itemCount: history.length,
+          itemBuilder: (context, index) =>
+              _buildHistoryItem(history[index], index == history.length - 1),
+        );
+      },
+    );
+  }
+
+  Widget _buildHistoryItem(TaskHistoryModel item, bool isLast) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _panelHeader(),
+          Column(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: TaskViewColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(width: 2, color: TaskViewColors.border),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: ListView(
-                children: _panelContent(isParticipant: isParticipant),
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.updateDisposition,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    "By ${CacheService.getUserByUid(item.userId)?.name ?? 'User'} • ${item.timestamp.listingDateTime}",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: TaskViewColors.textSecondary,
+                    ),
+                  ),
+                  if (item.update != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      item.update!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -842,235 +753,148 @@ class _TaskViewState extends State<TaskView> {
     );
   }
 
-  Widget _rightDetailsPanelMobile() {
-    return Container(
-      decoration: _boxDecoration(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _panelHeader(),
-            const SizedBox(height: 10),
-            ..._panelContent(isParticipant: isParticipant),
-          ],
+  Widget _buildSidePanel() {
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        _buildSectionLabel("ASSIGNED TO"),
+        const SizedBox(height: 16),
+        ..._taskModel.assignees.map(
+          (u) => _buildProfileTile(u, "Lead Execution"),
         ),
-      ),
+        const SizedBox(height: 32),
+        _buildSectionLabel("COLLABORATORS"),
+        const SizedBox(height: 16),
+        if (_taskModel.participants.isEmpty)
+          _buildEmptyStateSmall("No participants")
+        else
+          ..._taskModel.participants.map(
+            (u) => _buildProfileTile(u, "Participant"),
+          ),
+        const SizedBox(height: 32),
+        _buildSectionLabel("OBSERVERS"),
+        const SizedBox(height: 16),
+        if (_taskModel.observers.isEmpty)
+          _buildEmptyStateSmall("No observers")
+        else
+          ..._taskModel.observers.map((u) => _buildProfileTile(u, "Viewer")),
+        const SizedBox(height: 40),
+        if (isParticipant) _buildActionButtons(),
+      ],
     );
   }
 
-  BoxDecoration _boxDecoration() => BoxDecoration(
-    color: AppColors.white,
-    borderRadius: BorderRadius.circular(12),
-    boxShadow: [
-      BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
-    ],
-  );
+  Widget _buildProfileTile(String uid, String role) {
+    final user = CacheService.getUserByUid(uid);
+    var userData = UserDataModel.fromEmptyMap();
 
-  Widget _panelHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    if (user is EmployeeModel) {
+      userData = UserDataModel(
+        name: user.name,
+        uid: user.uid ?? '',
+        profilePic: user.profileImageUrl,
+        desc: CacheService.designationByUid(user.designation)?.name,
+        userType: UserType.employee,
+      );
+    } else if (user is AdminModel) {
+      userData = UserDataModel(
+        name: user.name,
+        uid: user.uid ?? '',
+        profilePic: user.profileImageUrl,
+        desc: user.email,
+        userType: UserType.admin,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
         children: [
-          Text(
-            _taskModel.completed
-                ? "Completed"
-                : (_taskModel.hasStarted ? "In Progress" : "Not started"),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _taskModel.updatedAt.listingDateTime,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+          UserAvatar(userData: userData, size: 36),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user?.name ?? "System User",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              Text(
+                role,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: TaskViewColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _panelContent({required bool isParticipant}) {
-    return [
-      _detailItem("Deadline", _taskModel.deadline?.formatDate ?? "-"),
-      const SizedBox(height: 6),
-      _detailItem("Reminder", _taskModel.reminder?.listingDateTime ?? "-"),
-      const Divider(),
-      _sectionHeader("Created by"),
-      for (var u in _taskModel.createdBy) _profileTile(u, subtitle: "Creator"),
-      const Divider(),
-      _sectionHeader("Assignee"),
-      if (_taskModel.assignees.isEmpty)
-        _emptyTile("No assignees")
-      else
-        for (var u in _taskModel.assignees)
-          _profileTile(u, subtitle: "Assignee"),
-      const Divider(),
-      _sectionHeader("Participants"),
-      if (_taskModel.participants.isEmpty)
-        _emptyTile("No participants")
-      else
-        for (var u in _taskModel.participants)
-          _profileTile(u, subtitle: "Participant"),
-      const Divider(),
-      _sectionHeader("Observers"),
-      if (_taskModel.observers.isEmpty)
-        _emptyTile("No observers")
-      else
-        for (var u in _taskModel.observers)
-          _profileTile(u, subtitle: "Observer"),
-      const SizedBox(height: 12),
-
-      if (isParticipant) ...[
-        const SizedBox(height: 12),
-        if (!_taskModel.hasStarted && !_taskModel.completed)
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: AppColors.primary,
-            ),
-            onPressed: _isActionLoading ? null : () => _startTask(),
-            icon: const Icon(Icons.play_arrow),
-            label: _isActionLoading
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Start Task",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      SizedBox(width: 10),
-                      SizedBox(width: 16, height: 16, child: WaitingLoading()),
-                    ],
-                  )
-                : Text(
-                    "Start Task",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+  Widget _buildActionButtons() {
+    if (_taskModel.completed) {
+      return const Center(
+        child: Text(
+          "Task successfully closed.",
+          style: TextStyle(
+            color: TaskViewColors.success,
+            fontWeight: FontWeight.bold,
           ),
-        if (_taskModel.hasStarted && !_taskModel.completed)
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!_taskModel.hasStarted)
           ElevatedButton.icon(
+            onPressed: _isActionLoading ? null : _startTask,
+            icon: const Icon(Iconsax.play),
+            label: const Text("Activate Task"),
             style: ElevatedButton.styleFrom(
+              backgroundColor: TaskViewColors.primary,
               foregroundColor: Colors.white,
-              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.all(16),
+              elevation: 0,
             ),
-            onPressed: _isActionLoading
-                ? null
-                : () {
-                    if (_taskModel.statusSummaryRequired &&
-                        _commentCount == 0) {
-                      FlushBar.show(
-                        context,
-                        "Please add a comment before completing this task",
-                        isSuccess: false,
-                      );
-                      return;
-                    }
-                    _completeTask();
-                  },
-            icon: const Icon(Icons.check_circle),
-            label: _isActionLoading
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "Mark as Completed",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      SizedBox(width: 10),
-                      SizedBox(width: 16, height: 16, child: WaitingLoading()),
-                    ],
-                  )
-                : Text(
-                    "Mark as Completed",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+          ),
+        if (_taskModel.hasStarted)
+          ElevatedButton.icon(
+            onPressed: _isActionLoading ? null : _completeTask,
+            icon: const Icon(Iconsax.tick_circle),
+            label: const Text("Mark as Completed"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskViewColors.success,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(16),
+              elevation: 0,
+            ),
           ),
       ],
-    ];
-  }
-
-  Widget _sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _profileTile(String uid, {String? subtitle}) {
-    final emp = CacheService.getUserByUid(uid);
-    final name = emp?.name ?? "Unknown";
-    final photoUrl = emp?.profileImageUrl;
-
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-            ? NetworkImage(photoUrl)
-            : null,
-        child: (photoUrl == null || photoUrl.isEmpty)
-            ? Text(
-                name.isNotEmpty ? name.toString().capitalizeFirst : "?",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-              )
-            : null,
-      ),
-      title: Text(name, style: Theme.of(context).textTheme.bodySmall),
-      subtitle: subtitle != null
-          ? Text(subtitle, style: Theme.of(context).textTheme.bodySmall)
-          : null,
     );
   }
 
-  Widget _emptyTile(String text) => ListTile(
-    dense: true,
-    contentPadding: EdgeInsets.zero,
-    leading: const CircleAvatar(radius: 18),
-    title: Text(
-      text,
-      style: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+  Widget _buildEmptyState(IconData icon, String msg) => Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 40, color: TaskViewColors.border),
+        const SizedBox(height: 12),
+        Text(msg, style: const TextStyle(color: TaskViewColors.textSecondary)),
+      ],
     ),
   );
-
-  Widget _detailItem(String title, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ],
+  Widget _buildEmptyStateSmall(String msg) => Text(
+    msg,
+    style: const TextStyle(
+      color: TaskViewColors.textSecondary,
+      fontSize: 12,
+      fontStyle: FontStyle.italic,
     ),
   );
 }

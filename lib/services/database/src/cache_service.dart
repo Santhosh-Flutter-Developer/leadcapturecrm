@@ -20,10 +20,7 @@ class CacheService {
   // --- CONFIGURATION MAP ---
   // Maps specific keys to their Box and Firestore Collection names
   static const Map<String, _BoxConfig> _config = {
-    'employee': _BoxConfig(
-      'employees',
-      'employees',
-    ), // Use actual Collection names from Constants if available
+    'employee': _BoxConfig('employees', 'employees'),
     'admin': _BoxConfig('admins', 'admins'),
     'department': _BoxConfig('departments', 'departments'),
     'designation': _BoxConfig('designations', 'designations'),
@@ -131,6 +128,8 @@ class CacheService {
       if (!(await Spdb.checkLogin())) return;
       final cid = await Spdb.getCid();
       if (cid == null) return;
+
+      if (uid.isEmpty) return;
 
       // 2. Fetch from Firestore
       final docSnap = await _firebase.users

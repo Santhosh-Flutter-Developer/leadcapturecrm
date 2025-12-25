@@ -285,15 +285,16 @@ class _RouteScreenState extends State<RouteScreen> {
                               ),
                             ),
                           )
-                        : SliverList(
+                        : SliverGrid(
                             delegate: SliverChildBuilderDelegate((
                               context,
                               index,
                             ) {
-                              var activity = _recentActivityList[index];
+                              final activity = _recentActivityList[index];
+
                               return InkWell(
                                 onTap: () async {
-                                  var isAdmin = await Spdb.isAdminLoggedIn();
+                                  final isAdmin = await Spdb.isAdminLoggedIn();
                                   Navigate.routeReplace(
                                     context,
                                     MainScreen(
@@ -302,79 +303,92 @@ class _RouteScreenState extends State<RouteScreen> {
                                     ),
                                   );
                                 },
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: GlassContainer(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Iconsax.document_text,
-                                            color: Colors.white54,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 15),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                activity.page,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
+                                child: GlassContainer(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.06,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
-                                              Text(
-                                                "Viewed recently",
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: Colors.white
-                                                          .withValues(
-                                                            alpha: 0.4,
-                                                          ),
-                                                    ),
+                                              child: const Icon(
+                                                Iconsax.document_text,
+                                                color: Colors.white70,
+                                                size: 20,
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  activity.page,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  "Viewed recently",
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.4,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                        Text(
-                                          timeago.format(
-                                            activity.visitedAt,
-                                            locale: 'en_short',
-                                          ),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(color: Colors.white38),
+                                      ),
+                                      Text(
+                                        timeago.format(
+                                          activity.visitedAt,
+                                          locale: 'en_short',
                                         ),
-                                      ],
-                                    ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: Colors.white38),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
                             }, childCount: _recentActivityList.length),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: _getGridCount(context),
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 4,
+                                ),
                           ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -417,6 +431,18 @@ class _RouteScreenState extends State<RouteScreen> {
         ),
       ),
     );
+  }
+
+  int _getGridCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    if (width >= 1200) {
+      return 4; // Desktop
+    } else if (width >= 600) {
+      return 3; // Tablet
+    } else {
+      return 3; // Mobile
+    }
   }
 }
 

@@ -546,7 +546,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 ? ElevatedButton.icon(
                     label: Text(
                       "Delete",
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                     ),
                     icon: const Icon(Iconsax.trash),
                     onPressed: () async {
@@ -616,7 +618,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 : ElevatedButton.icon(
                     label: Text(
                       "Delete",
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                     ),
                     icon: const Icon(Iconsax.trash),
                     onPressed: () {},
@@ -708,17 +712,17 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     return;
                   }
 
+                  var groupUsers = [
+                    ..._selectedEmployees
+                        .map((e) => e.uid ?? '')
+                        .where((id) => id.isNotEmpty),
+                    sessionUser.uid,
+                  ];
+
                   final chatModel = ChatModel(
                     createdBy: creatorUid,
-                    participants: _selectedEmployees
-                        .map((e) => e.uid ?? '')
-                        .where((id) => id.isNotEmpty)
-                        .toList(),
-                    participantsKey: _selectedEmployees
-                        .map((e) => e.uid ?? '')
-                        .where((id) => id.isNotEmpty)
-                        .toList()
-                        .join('_'),
+                    participants: groupUsers,
+                    participantsKey: groupUsers.join('_'),
                     title: "Group Chat",
                     description: "",
                     isGroupChat: true,
@@ -752,7 +756,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 _selectedEmployees.length == 1
                     ? 'Chat with ${_selectedEmployees.first.name}'
                     : 'Group Chat (${_selectedEmployees.length})',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -774,7 +780,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               icon: const Icon(Icons.task, size: 18),
               label: Text(
                 "Create Task",
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,

@@ -849,7 +849,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               ),
             );
           }
-          return const Center(child: CircularProgressIndicator());
+          return const WaitingLoading();
         },
       ),
     );

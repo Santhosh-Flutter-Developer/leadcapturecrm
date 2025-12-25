@@ -86,7 +86,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
       body: BlocBuilder<EventBloc, EventState>(
         builder: (context, state) {
           if (state is EventLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const WaitingLoading();
           }
 
           if (state is EventError) {

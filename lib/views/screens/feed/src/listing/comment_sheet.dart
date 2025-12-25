@@ -134,7 +134,7 @@ class CommentSheetState extends State<CommentSheet> {
               future: _future,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const WaitingLoading();
                 }
                 if (_comments.isEmpty) return _buildEmptyState();
 
