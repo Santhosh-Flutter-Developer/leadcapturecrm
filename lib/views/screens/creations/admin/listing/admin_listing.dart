@@ -157,10 +157,17 @@ class _AdminListingViewState extends State<AdminListingView> {
                                     ),
                                     child: DataTable(
                                       showCheckboxColumn: true,
+
+                                      // ✅ MIN WIDTH SETTINGS
+                                      columnSpacing: 12,
+                                      horizontalMargin: 8,
+                                      headingRowHeight: 40,
+
                                       sortColumnIndex:
                                           controllerWatch.sortColumnIndex,
                                       sortAscending:
                                           controllerWatch.sortAscending,
+
                                       headingRowColor: WidgetStateProperty.all(
                                         AppColors.grey100,
                                       ),
@@ -171,71 +178,94 @@ class _AdminListingViewState extends State<AdminListingView> {
                                             fontWeight: FontWeight.bold,
                                             color: AppColors.black,
                                           ),
+
                                       columns: [
                                         DataColumn(
-                                          label: _sortableHeader(
-                                            "Name",
-                                            controllerRead,
+                                          label: IntrinsicWidth(
+                                            child: _sortableHeader(
+                                              "Name",
+                                              controllerRead,
+                                            ),
                                           ),
                                           onSort: controllerRead.setSort,
                                         ),
+
                                         DataColumn(
-                                          label: _sortableHeader(
-                                            "Email",
-                                            controllerRead,
+                                          label: IntrinsicWidth(
+                                            child: _sortableHeader(
+                                              "Email",
+                                              controllerRead,
+                                            ),
                                           ),
                                           onSort: controllerRead.setSort,
                                         ),
+
                                         DataColumn(
-                                          label: _sortableHeader(
-                                            "Mobile No",
-                                            controllerRead,
+                                          label: IntrinsicWidth(
+                                            child: _sortableHeader(
+                                              "Mobile No",
+                                              controllerRead,
+                                            ),
                                           ),
                                           onSort: controllerRead.setSort,
                                         ),
+
                                         DataColumn(
-                                          label: _sortableHeader(
-                                            "Status",
-                                            controllerRead,
+                                          label: IntrinsicWidth(
+                                            child: _sortableHeader(
+                                              "Status",
+                                              controllerRead,
+                                            ),
                                           ),
                                           onSort: controllerRead.setSort,
                                         ),
+
                                         DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text(
-                                                "Created At",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Created At",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                           onSort: controllerRead.setSort,
                                         ),
+
                                         DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Created By",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
                                           ),
                                         ),
+
                                         DataColumn(
-                                          label: Text(
-                                            "Action",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Action",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
                                           ),
                                         ),
                                       ],
+
                                       rows: controllerWatch.paginatedItems
                                           .map(
                                             (admin) => _buildDataRow(

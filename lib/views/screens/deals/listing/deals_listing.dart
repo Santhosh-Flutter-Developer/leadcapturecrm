@@ -82,8 +82,7 @@ class _DealsListingViewState extends State<DealsListingView> {
   String? _selectedStatus;
   String? _selectedCreatedBy;
 
-  double? _minDealValue;
-  double? _maxDealValue;
+  double? _value;
 
   PermissionModel? permissions;
 
@@ -392,7 +391,7 @@ class _DealsListingViewState extends State<DealsListingView> {
               ),
               const SizedBox(width: 10),
 
-              _valueRangeFilter(onChanged: _onDealValueRangeChanged),
+              _valueFilter(onChanged: _onValueChanged),
             ],
           ),
         ),
@@ -400,7 +399,7 @@ class _DealsListingViewState extends State<DealsListingView> {
     );
   }
 
-  Widget _valueRangeFilter({
+  Widget _valueFilter({
     required ValueChanged<String> onChanged,
     double itemWidth = 180,
   }) {
@@ -427,12 +426,12 @@ class _DealsListingViewState extends State<DealsListingView> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.currency_rupee,
-                  size: 18,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
+                // Icon(
+                //   Icons.currency_rupee,
+                //   size: 18,
+                //   color: Colors.grey.shade600,
+                // ),
+                // const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     keyboardType: TextInputType.number,
@@ -440,7 +439,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                     style: Theme.of(context).textTheme.bodySmall,
                     decoration: const InputDecoration(
                       isDense: true,
-                      hintText: "1000 - 5000",
+                      // hintText: "1000 - 5000",
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       fillColor: Colors.transparent,
@@ -455,39 +454,22 @@ class _DealsListingViewState extends State<DealsListingView> {
     );
   }
 
-  void _onDealValueRangeChanged(String value) {
-    _minDealValue = null;
-    _maxDealValue = null;
+  void _onValueChanged(String value) {
+    _value = null;
 
     final cleaned = value.replaceAll(' ', '');
-
-    if (!cleaned.contains('-')) {
+    if (cleaned.isEmpty) {
       _applyFilters();
       return;
     }
 
-    final parts = cleaned.split('-');
-    if (parts.length != 2) {
+    final parsedValue = double.tryParse(cleaned);
+    if (parsedValue == null) {
       _applyFilters();
       return;
     }
 
-    final from = double.tryParse(parts[0]);
-    final to = double.tryParse(parts[1]);
-
-    if (from == null || to == null) {
-      _applyFilters();
-      return;
-    }
-
-    if (from > to) {
-      // invalid range → ignore filter
-      _applyFilters();
-      return;
-    }
-
-    _minDealValue = from;
-    _maxDealValue = to;
+    _value = parsedValue;
 
     _applyFilters();
   }
@@ -605,13 +587,8 @@ class _DealsListingViewState extends State<DealsListingView> {
           .toList();
     }
 
-    if (_minDealValue != null && _maxDealValue != null) {
-      filtered = filtered
-          .where(
-            (e) =>
-                e.dealValue >= _minDealValue! && e.dealValue <= _maxDealValue!,
-          )
-          .toList();
+    if (_value != null) {
+      filtered = filtered.where((e) => e.dealValue == _value!).toList();
     }
 
     setState(() {

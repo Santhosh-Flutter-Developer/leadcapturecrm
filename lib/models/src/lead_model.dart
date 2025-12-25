@@ -29,7 +29,7 @@ class LeadModel {
   final String? clientId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final bool leadsConverted;
+  bool leadsConverted;
   final String? dealId;
 
   LeadModel({
