@@ -86,8 +86,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   String? _selectedCategory;
   String? _selectedCreatedBy;
 
-  double? _minLeadValue;
-  double? _maxLeadValue;
+  double? _value;
 
   @override
   void initState() {
@@ -219,6 +218,11 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
                     showCheckboxColumn: true,
+                    columnSpacing: 12,
+                    horizontalMargin: 8,
+                    // headingRowHeight: 40,
+                    // dataRowMinHeight: 36,
+                    // dataRowMaxHeight: 36,
                     sortColumnIndex: controllerWatch.sortColumnIndex,
                     sortAscending: controllerWatch.sortAscending,
                     headingRowColor: WidgetStateProperty.all(AppColors.grey100),
@@ -229,118 +233,143 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                         ),
                     columns: [
                       DataColumn(
-                        label: Row(
-                          children: [
-                            Text(
-                              "Id",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 14,
-                              color: AppColors.grey400,
-                            ),
-                          ],
+                        label: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Id",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 14,
+                                color: AppColors.grey400,
+                              ),
+                            ],
+                          ),
                         ),
                         onSort: controllerRead.setSort,
                       ),
                       DataColumn(
-                        label: Row(
-                          children: [
-                            Text(
-                              "Name",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 14,
-                              color: AppColors.grey400,
-                            ),
-                          ],
+                        label: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Name",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 14,
+                                color: AppColors.grey400,
+                              ),
+                            ],
+                          ),
                         ),
                         onSort: controllerRead.setSort,
                       ),
                       DataColumn(
-                        label: Row(
-                          children: [
-                            Text(
-                              "Email",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 14,
-                              color: AppColors.grey400,
-                            ),
-                          ],
+                        label: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Email",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 14,
+                                color: AppColors.grey400,
+                              ),
+                            ],
+                          ),
                         ),
                         onSort: controllerRead.setSort,
                       ),
                       DataColumn(
-                        label: Text(
-                          "Mobile No",
-                          style: Theme.of(context).textTheme.bodySmall,
+                        label: IntrinsicWidth(
+                          child: Text(
+                            "Mobile No",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ),
                       ),
                       DataColumn(
-                        label: Row(
-                          children: [
-                            Text(
-                              "Lead Value",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 14,
-                              color: AppColors.grey400,
-                            ),
-                          ],
-                        ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Source",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Status",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      DataColumn(
-                        label: Row(
-                          children: [
-                            Text(
-                              "Created",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 14,
-                              color: AppColors.grey400,
-                            ),
-                          ],
+                        label: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Lead Value",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 14,
+                                color: AppColors.grey400,
+                              ),
+                            ],
+                          ),
                         ),
                         onSort: controllerRead.setSort,
                       ),
                       DataColumn(
-                        label: Text(
-                          "Created By",
-                          style: Theme.of(context).textTheme.bodySmall,
+                        label: IntrinsicWidth(
+                          child: Text(
+                            "Source",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ),
                       ),
                       DataColumn(
-                        label: Text(
-                          "Action",
-                          style: Theme.of(context).textTheme.bodySmall,
+                        label: IntrinsicWidth(
+                          child: Text(
+                            "Status",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: IntrinsicWidth(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Created",
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_upward,
+                                size: 14,
+                                color: AppColors.grey400,
+                              ),
+                            ],
+                          ),
+                        ),
+                        onSort: controllerRead.setSort,
+                      ),
+                      DataColumn(
+                        label: IntrinsicWidth(
+                          child: Text(
+                            "Created By",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: IntrinsicWidth(
+                          child: Text(
+                            "Action",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ),
                       ),
                     ],
@@ -499,7 +528,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
               const SizedBox(width: 10),
 
-              _valueRangeFilter(onChanged: _onValueRangeChanged),
+              _valueFilter(onChanged: _onValueChanged),
             ],
           ),
         ),
@@ -507,7 +536,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     );
   }
 
-  Widget _valueRangeFilter({
+  Widget _valueFilter({
     required ValueChanged<String> onChanged,
     double itemWidth = 180,
   }) {
@@ -534,6 +563,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             ),
             child: Row(
               children: [
+                // Icon(
+                //   Icons.currency_rupee,
+                //   size: 18,
+                //   color: Colors.grey.shade600,
+                // ),
+                // const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     keyboardType: TextInputType.number,
@@ -541,7 +576,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                     style: Theme.of(context).textTheme.bodySmall,
                     decoration: const InputDecoration(
                       isDense: true,
-                      hintText: "1000 - 5000",
+                      // hintText: "1000 - 5000",
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       fillColor: Colors.transparent,
@@ -556,39 +591,22 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     );
   }
 
-  void _onValueRangeChanged(String value) {
-    _minLeadValue = null;
-    _maxLeadValue = null;
+  void _onValueChanged(String value) {
+    _value = null;
 
     final cleaned = value.replaceAll(' ', '');
-
-    if (!cleaned.contains('-')) {
+    if (cleaned.isEmpty) {
       _applyFilters();
       return;
     }
 
-    final parts = cleaned.split('-');
-    if (parts.length != 2) {
+    final parsedValue = double.tryParse(cleaned);
+    if (parsedValue == null) {
       _applyFilters();
       return;
     }
 
-    final from = double.tryParse(parts[0]);
-    final to = double.tryParse(parts[1]);
-
-    if (from == null || to == null) {
-      _applyFilters();
-      return;
-    }
-
-    if (from > to) {
-      // invalid range → ignore filter
-      _applyFilters();
-      return;
-    }
-
-    _minLeadValue = from;
-    _maxLeadValue = to;
+    _value = parsedValue;
 
     _applyFilters();
   }
@@ -712,13 +730,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           .toList();
     }
 
-    if (_minLeadValue != null && _maxLeadValue != null) {
-      filtered = filtered
-          .where(
-            (e) =>
-                e.leadValue >= _minLeadValue! && e.leadValue <= _maxLeadValue!,
-          )
-          .toList();
+    if (_value != null) {
+      filtered = filtered.where((e) => e.leadValue == _value!).toList();
     }
 
     setState(() {
