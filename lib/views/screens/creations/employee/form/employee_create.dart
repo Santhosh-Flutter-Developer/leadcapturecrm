@@ -430,8 +430,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               ),
               const SizedBox(height: 4),
 
-              CustomSearchableDropdown<String>(
-                items: _departmentList.map((e) => e.name).toList(),
+              CustomFutureSearchableDropdown<String>(
+                asyncItems: () async {
+                  var departments = await DepartmentService.getAllDepartments();
+                  return departments.map((e) => e.name).toList();
+                },
                 multiSelect: true,
                 itemAsString: (name) => name,
                 onChangedList: (selectedNames) async {

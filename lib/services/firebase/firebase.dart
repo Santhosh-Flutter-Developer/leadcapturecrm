@@ -33,3 +33,5 @@ export 'src/settings_service.dart';
 export 'src/recent_activity_service.dart';
 export 'src/lead_source_service.dart';
 export 'src/event_service.dart';
+export 'src/lead_priority_service.dart';
+export 'src/reminder_service.dart';

@@ -43,8 +43,9 @@ class AdminService {
     }
   }
 
-  static Future<AdminModel> getAdmin({required String uid}) async {
+  static Future<AdminModel?> getAdmin({required String uid}) async {
     try {
+      if (uid.isEmpty) return null;
       var cid = await Spdb.getCid();
       var snap = await firebase.users
           .doc(cid)

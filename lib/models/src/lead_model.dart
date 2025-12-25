@@ -10,6 +10,7 @@ class LeadModel {
   final String leadEmail;
   final LeadSourceModel leadSource;
   final String leadCategory;
+  final String leadPriority;
   final double leadValue;
   final bool allowFollowUp;
   final String leadStatus;
@@ -39,6 +40,7 @@ class LeadModel {
     required this.leadEmail,
     required this.leadSource,
     required this.leadCategory,
+    required this.leadPriority,
     required this.leadValue,
     required this.allowFollowUp,
     required this.leadStatus,
@@ -70,6 +72,7 @@ class LeadModel {
     String? leadEmail,
     LeadSourceModel? leadSource,
     String? leadCategory,
+    String? leadPriority,
     double? leadValue,
     bool? allowFollowUp,
     String? leadStatus,
@@ -99,6 +102,7 @@ class LeadModel {
       leadEmail: leadEmail ?? this.leadEmail,
       leadSource: leadSource ?? this.leadSource,
       leadCategory: leadCategory ?? this.leadCategory,
+      leadPriority: leadPriority ?? this.leadPriority,
       leadValue: leadValue ?? this.leadValue,
       allowFollowUp: allowFollowUp ?? this.allowFollowUp,
       leadStatus: leadStatus ?? this.leadStatus,
@@ -129,6 +133,7 @@ class LeadModel {
       'leadEmail': leadEmail,
       'leadSource': leadSource.toStoreMap(),
       'leadCategory': leadCategory,
+      'leadPriority': leadPriority,
       'leadValue': leadValue,
       'allowFollowUp': allowFollowUp,
       'leadStatus': leadStatus,
@@ -159,6 +164,7 @@ class LeadModel {
       'leadEmail': leadEmail,
       'leadSource': leadSource.toStoreMap(),
       'leadCategory': leadCategory,
+      'leadPriority': leadPriority,
       'leadValue': leadValue,
       'allowFollowUp': allowFollowUp,
       'leadStatus': leadStatus,
@@ -200,6 +206,9 @@ class LeadModel {
           : LeadSourceModel.fromEmptyMap(),
       leadCategory: map['leadCategory'] is String
           ? map['leadCategory'] as String
+          : '',
+      leadPriority: map['leadPriority'] is String
+          ? map['leadPriority'] as String
           : '',
       leadStatus: map['leadStatus'] is String
           ? map['leadStatus'] as String
@@ -302,24 +311,34 @@ class LeadModel {
 }
 
 class LeadCommentModel {
+  final String? uid;
   final String userId;
   final String comment;
+  final List<FileModel> attachments;
+  final UserDataModel createdBy;
   final DateTime timestamp;
 
   LeadCommentModel({
+    this.uid,
     required this.userId,
     required this.comment,
+    this.attachments = const [],
+    required this.createdBy,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
   LeadCommentModel copyWith({
     String? userId,
     String? comment,
+    List<FileModel>? attachments,
+    UserDataModel? createdBy,
     DateTime? timestamp,
   }) {
     return LeadCommentModel(
       userId: userId ?? this.userId,
       comment: comment ?? this.comment,
+      attachments: attachments ?? this.attachments,
+      createdBy: createdBy ?? this.createdBy,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -327,13 +346,27 @@ class LeadCommentModel {
   Map<String, dynamic> toMap() => {
     'userId': userId,
     'comment': comment,
+    'attachments': attachments.map((x) => x.toMap()).toList(),
+    'createdBy': createdBy.toMap(),
     'timestamp': timestamp.millisecondsSinceEpoch,
   };
 
   factory LeadCommentModel.fromMap(Map<String, dynamic> map) =>
       LeadCommentModel(
+        uid: map['uid'] is String ? map['uid'] as String : null,
         userId: map['userId'] as String,
         comment: map['comment'] as String,
+        attachments: map['attachments'] != null && map['attachments'] is List
+            ? List<FileModel>.from(
+                (map['attachments'] as List)
+                    .whereType<Map<String, dynamic>>()
+                    .map((x) => FileModel.fromMap(x)),
+              )
+            : [],
+        createdBy:
+            map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
+            ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
+            : UserDataModel.fromEmptyMap(),
         timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       );
 }

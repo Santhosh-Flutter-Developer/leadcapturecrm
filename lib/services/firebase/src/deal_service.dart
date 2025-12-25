@@ -56,6 +56,7 @@ class DealService {
       var user = await Spdb.getUser();
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Deal : ${deal.dealName}',
         message: 'New deal created by ${user.name}',
         toFcms: fcmIds,
@@ -106,6 +107,7 @@ class DealService {
       await addDealHistory(dealUid: uid, action: 'Deal Updated');
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Deal : ${deal.dealName}',
         message: 'Deal has been updated by ${user.name}',
         toFcms: fcmIds,

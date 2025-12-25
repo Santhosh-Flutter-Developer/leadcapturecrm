@@ -1,4 +1,3 @@
-import 'package:aaatp/services/firebase/firebase.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -6,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/views/views.dart';
+import '/services/services.dart';
 
 class AttachmentColors {
   static const Color primary = Color(0xFF2563EB);

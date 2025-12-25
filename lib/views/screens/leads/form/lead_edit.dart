@@ -41,9 +41,11 @@ class _LeadEditState extends State<LeadEdit> {
   late Future _future;
 
   List<LeadCategoryModel> _leadCategories = [];
+  List<LeadPriorityModel> _leadPriorities = [];
   List<LeadStatusModel> _leadStatus = [];
 
   LeadCategoryModel? _leadCategory;
+  LeadPriorityModel? _leadPriority;
   LeadStatusModel? _leadStatusModel;
 
   List<RegionModel> _regionsList = [];
@@ -101,10 +103,12 @@ class _LeadEditState extends State<LeadEdit> {
       _uploadedAttachments = _leadModel.attachments;
 
       _leadCategories.clear();
+      _leadPriorities.clear();
       _leadStatus.clear();
       _regionsList.clear();
 
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
+      _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _regionsList = await RegionService.getCountries();
 
@@ -427,6 +431,21 @@ class _LeadEditState extends State<LeadEdit> {
             validator: (value) => value == null ? "* Required" : null,
           ),
         ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            label: 'Lead Priority',
+            initialItem: _leadPriority?.name,
+            items: _leadPriorities.map((e) => e.name).toList(),
+            onChanged: (value) {
+              _leadPriority = _leadPriorities.firstWhere(
+                (element) => element.name == value,
+                orElse: () => _leadPriorities.first,
+              );
+            },
+            validator: (value) => value == null ? "* Required" : null,
+          ),
+        ),
 
         SizedBox(
           width: itemWidth,
@@ -657,6 +676,7 @@ class _LeadEditState extends State<LeadEdit> {
           leadEmail: _leadEmailController.text,
           leadSource: _selectedLeadSource!,
           leadCategory: _leadCategory?.uid ?? '',
+          leadPriority: _leadPriority?.uid ?? '',
           leadValue: double.parse(_leadValueController.text),
           allowFollowUp: _allowFollowUp,
           leadStatus: _leadStatusModel?.uid ?? '',

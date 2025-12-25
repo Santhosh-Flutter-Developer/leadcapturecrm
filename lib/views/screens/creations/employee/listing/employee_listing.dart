@@ -705,9 +705,32 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       return;
                     }
 
-                    await ChatService.createIndividualChat(userId: emp.uid!);
+                    var chatId = await ChatService.createIndividualChat(
+                      userId: emp.uid!,
+                    );
 
                     Navigator.pop(context);
+                    var currentUserUid = await Spdb.getUid();
+                    if (currentUserUid != null) {
+                      if (!mounted) return;
+                      if (kIsDesktop) {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          ChatListing(
+                            currentUserUid: currentUserUid,
+                            selectedChatUid: chatId,
+                          ),
+                        );
+                      } else if (kIsMobile) {
+                        Sheet.showSheet(
+                          context,
+                          widget: ChatListing(
+                            currentUserUid: currentUserUid,
+                            selectedChatUid: chatId,
+                          ),
+                        );
+                      }
+                    }
                     FlushBar.show(context, "Chat created");
                     return;
                   }
@@ -735,9 +758,35 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     ),
                   );
 
-                  await ChatService.createGroupChat(model: chatModel);
-
+                  var chatId = await ChatService.createGroupChat(
+                    model: chatModel,
+                  );
                   Navigator.pop(context);
+
+                  if (chatId != null) {
+                    var currentUserUid = await Spdb.getUid();
+                    if (currentUserUid != null) {
+                      if (!mounted) return;
+                      if (kIsDesktop) {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          ChatListing(
+                            currentUserUid: currentUserUid,
+                            selectedChatUid: chatId,
+                          ),
+                        );
+                      } else if (kIsMobile) {
+                        Sheet.showSheet(
+                          context,
+                          widget: ChatListing(
+                            currentUserUid: currentUserUid,
+                            selectedChatUid: chatId,
+                          ),
+                        );
+                      }
+                    }
+                  }
+
                   FlushBar.show(context, "Group chat created");
                 } catch (e, st) {
                   await ErrorService.recordError(e, st);

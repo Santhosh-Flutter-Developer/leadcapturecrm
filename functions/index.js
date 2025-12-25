@@ -6,6 +6,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
 
@@ -79,8 +80,6 @@ exports.deleteUserByEmail = functions.https.onRequest(async (req, res) => {
     }
 });
 
-const { onSchedule } = require("firebase-functions/v2/scheduler");
-
 exports.removeoldNotifications = onSchedule(
     {
         schedule: "every 24 hours",
@@ -120,4 +119,48 @@ exports.removeoldNotifications = onSchedule(
     }
 );
 
+exports.reminderScheduler = onSchedule("every 1 minutes", async () => {
+    const now = admin.firestore.Timestamp.now();
 
+    const snapshot = await admin.firestore()
+        .collection("reminders")
+        .where("isSent", "==", false)
+        .where("scheduledAt", "<=", now)
+        .get();
+
+    for (const doc of snapshot.docs) {
+        const reminder = doc.data();
+        const notif = reminder.notification;
+
+        // Send FCM
+        if (notif.toFcms && notif.toFcms.length > 0) {
+            await admin.messaging().sendMulticast({
+                tokens: notif.toFcms,
+                notification: {
+                    title: notif.title,
+                    body: notif.message,
+                },
+                data: notif.payload,
+            });
+        }
+
+        // Save notification to sub-collection
+        await admin.firestore()
+            .collection("users")
+            .doc(notif.collectionId)
+            .collection("notifications")
+            .add({
+                title: notif.title,
+                message: notif.message,
+                toFcms: notif.toFcms,
+                toUids: notif.toUids,
+                senderId: notif.senderId,
+                type: notif.type,
+                payload: notif.payload,
+                createdAt: Date.now(),
+            });
+
+        // Mark reminder sent
+        await doc.ref.update({ isSent: true });
+    }
+});

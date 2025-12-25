@@ -31,10 +31,10 @@ class FirestoreNotificationListener {
                   data?['createdAt'],
                 );
 
-                if (DateTime.now().difference(createdAt).inSeconds < 30) {
+                if (DateTime.now().difference(createdAt).inSeconds < 60) {
                   String docId = change.doc.id; // Unique ID of the document
-
                   // Skip past notifications
+
                   if (lastNotificationId != null &&
                       docId == lastNotificationId) {
                     continue;

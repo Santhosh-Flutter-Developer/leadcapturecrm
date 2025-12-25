@@ -71,6 +71,7 @@ class EmployeeService {
   static Future<EmployeeModel?> getEmployee({required String uid}) async {
     try {
       var cid = await Spdb.getCid();
+      if (uid.isEmpty) return null;
       var employeeDoc = await firebase.users
           .doc(cid)
           .collection(Collections.employees.name)

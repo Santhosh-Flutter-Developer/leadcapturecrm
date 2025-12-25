@@ -54,6 +54,7 @@ class TaskService {
       var user = await Spdb.getUser();
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Task : ${task.taskName}',
         message: 'New task created by ${user.name}',
         toFcms: fcmIds,
@@ -121,6 +122,7 @@ class TaskService {
       var user = await Spdb.getUser();
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Task : ${task.taskName}',
         message: 'Task has updated by ${user.name}',
         toFcms: fcmIds,

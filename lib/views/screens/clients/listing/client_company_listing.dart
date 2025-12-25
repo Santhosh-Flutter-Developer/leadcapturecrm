@@ -1,5 +1,3 @@
-import 'package:aaatp/models/models.dart';
-import 'package:aaatp/theme/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +7,8 @@ import '/constants/constants.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
+import '/models/models.dart';
+import '/theme/theme.dart';
 import 'bloc/client_bloc.dart';
 
 class ClientCompanyListing extends StatelessWidget {
@@ -20,14 +20,14 @@ class ClientCompanyListing extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => ClientCompanyBloc()..add(StreamClientCompany()),
-      child: ClientListView(section: section),
+      child: ClientCompanyListView(section: section),
     );
   }
 }
 
-class ClientListView extends StatelessWidget {
+class ClientCompanyListView extends StatelessWidget {
   final ClientSection section;
-  const ClientListView({super.key, required this.section});
+  const ClientCompanyListView({super.key, required this.section});
 
   @override
   Widget build(BuildContext context) {
@@ -74,21 +74,22 @@ class ClientListView extends StatelessWidget {
         },
         getItemId: (client) => client.uid ?? '',
       ),
-      child: ClientListingView(section: section),
+      child: ClientCompanyListingView(section: section),
     );
   }
 }
 
-class ClientListingView extends StatefulWidget {
+class ClientCompanyListingView extends StatefulWidget {
   final ClientSection section;
 
-  const ClientListingView({super.key, required this.section});
+  const ClientCompanyListingView({super.key, required this.section});
 
   @override
-  State<ClientListingView> createState() => _ClientListingViewState();
+  State<ClientCompanyListingView> createState() =>
+      _ClientCompanyListingViewState();
 }
 
-class _ClientListingViewState extends State<ClientListingView> {
+class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
   final List<ClientModel> _selectedClientCompany = [];
   PermissionModel? permissions;
   String get pageTitle {

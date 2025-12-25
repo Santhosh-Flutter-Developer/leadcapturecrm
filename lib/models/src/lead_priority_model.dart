@@ -1,43 +1,46 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/utils/utils.dart';
-import 'user_data_model.dart';
+import '/models/models.dart';
 
-class LeadCategoryModel {
+class LeadPriorityModel {
   final String? uid;
   final String name;
   final String lowercaseName;
   final String description;
+  final int color;
   final UserDataModel createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  LeadCategoryModel({
+  LeadPriorityModel({
     this.uid,
     required this.name,
-    String? lowercaseName,
     required this.description,
+    required this.color,
     required this.createdBy,
+    String? lowercaseName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : lowercaseName = lowercaseName ?? name.toLowerCase(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
-  LeadCategoryModel copyWith({
+  LeadPriorityModel copyWith({
     String? uid,
     String? name,
     String? lowercaseName,
     String? description,
+    int? color,
     UserDataModel? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return LeadCategoryModel(
+    return LeadPriorityModel(
       uid: uid ?? this.uid,
       name: name ?? this.name,
       lowercaseName: lowercaseName ?? this.lowercaseName,
       description: description ?? this.description,
+      color: color ?? this.color,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -49,6 +52,7 @@ class LeadCategoryModel {
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
+      'color': color,
       'createdBy': createdBy.toMap(),
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -60,24 +64,25 @@ class LeadCategoryModel {
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
+      'color': color,
       'createdBy': createdBy.toMap(),
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
   }
 
-  factory LeadCategoryModel.fromMap(String uid, Map<String, dynamic> map) {
-    return LeadCategoryModel(
+  factory LeadPriorityModel.fromMap(String uid, Map<String, dynamic> map) {
+    return LeadPriorityModel(
       uid: uid,
-      name: map['name'] != null && map['name'] is String
-          ? (map['name'] as String).decrypt
-          : '',
-      lowercaseName:
-          map['lowercaseName'] != null && map['lowercaseName'] is String
+      name: map['name'] is String ? (map['name'] as String).decrypt : '',
+      lowercaseName: map['lowercaseName'] is String
           ? (map['lowercaseName'] as String).decrypt
           : '',
-      description: map['description'] != null && map['description'] is String
+      description: map['description'] is String
           ? (map['description'] as String).decrypt
           : '',
+      color: map['color'] != null && map['color'] is int
+          ? map['color'] as int
+          : 0,
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
@@ -95,41 +100,29 @@ class LeadCategoryModel {
     );
   }
 
-  factory LeadCategoryModel.fromEmptyMap() {
-    return LeadCategoryModel(
-      uid: '',
-      name: '',
-      lowercaseName: '',
-      description: '',
-      createdBy: UserDataModel.fromEmptyMap(),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-  }
-
   String toJson() => json.encode(toMap());
 
-  factory LeadCategoryModel.fromJson(String uid, String source) =>
-      LeadCategoryModel.fromMap(
+  factory LeadPriorityModel.fromJson(String uid, String source) =>
+      LeadPriorityModel.fromMap(
         uid,
         json.decode(source) as Map<String, dynamic>,
       );
 
   @override
   String toString() {
-    return 'LeadCategoryModel(uid: $uid, name: $name, lowercaseName: $lowercaseName, description: $description, createdAt: $createdAt, createdBy: $createdBy, updatedAt: $updatedAt)';
+    return 'LeadPriorityModel(uid: $uid, name: $name, lowercaseName: $lowercaseName, description: $description, color: $color, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
-  bool operator ==(covariant LeadCategoryModel other) {
+  bool operator ==(covariant LeadPriorityModel other) {
     if (identical(this, other)) return true;
 
     return other.uid == uid &&
         other.name == name &&
         other.lowercaseName == lowercaseName &&
         other.description == description &&
+        other.color == color &&
         other.createdAt == createdAt &&
-        other.createdBy == createdBy &&
         other.updatedAt == updatedAt;
   }
 
@@ -139,7 +132,7 @@ class LeadCategoryModel {
         name.hashCode ^
         lowercaseName.hashCode ^
         description.hashCode ^
-        createdBy.hashCode ^
+        color.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

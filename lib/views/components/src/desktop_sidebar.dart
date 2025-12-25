@@ -151,6 +151,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool leadSource =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Lead Source')) != null;
+    bool leadPriority =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Lead Priority')) != null;
     bool dealStatus =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Deal Status')) != null;
@@ -229,8 +232,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         'title': 'CRM',
         'children': [
           if (dealCategory) 'Lead Category',
-          if (leadStatus) 'Lead Status',
           if (leadSource) 'Lead Source',
+          if (leadPriority) 'Lead Priority',
+          if (leadStatus) 'Lead Status',
           if (dealStatus) 'Deal Status',
           if (leads) 'Leads',
           if (deals) 'Deals',

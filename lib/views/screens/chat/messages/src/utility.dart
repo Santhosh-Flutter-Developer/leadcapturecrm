@@ -94,6 +94,7 @@ class AttachmentPreview extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: attachments.map((e) {
             if (e.mimeType.contains('image')) {
               return GestureDetector(

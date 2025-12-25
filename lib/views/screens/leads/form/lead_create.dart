@@ -48,6 +48,8 @@ class _LeadCreateState extends State<LeadCreate> {
 
   List<LeadCategoryModel> _leadCategories = [];
   LeadCategoryModel? _selectedLeadCategory;
+  List<LeadPriorityModel> _leadPriorities = [];
+  LeadPriorityModel? _selectedLeadPriority;
   List<LeadStatusModel> _leadStatus = [];
   LeadStatusModel? _leadStatusModel;
   List<LeadSourceModel> _leadSource = [];
@@ -71,10 +73,12 @@ class _LeadCreateState extends State<LeadCreate> {
   Future<void> _init() async {
     try {
       _leadCategories.clear();
+      _leadPriorities.clear();
       _leadStatus.clear();
       _leadSource.clear();
       _regionsList.clear();
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
+      _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
       _regionsList = await RegionService.getCountries();
@@ -360,6 +364,20 @@ class _LeadCreateState extends State<LeadCreate> {
         ),
         SizedBox(
           width: itemWidth,
+          child: FormDropdownSearch(
+            label: 'Lead Priority',
+            items: _leadPriorities.map((e) => e.name).toList(),
+            onChanged: (value) {
+              _selectedLeadPriority = _leadPriorities.firstWhere(
+                (cat) => cat.name == value,
+                orElse: () => _leadPriorities.first,
+              );
+            },
+            validator: (value) => value == null ? "* Required" : null,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
           child: FormFields(
             label:
                 'Lead Value ${_regionModel != null ? '(${_regionModel?.currencySymbol})' : ''}',
@@ -578,6 +596,7 @@ class _LeadCreateState extends State<LeadCreate> {
           leadEmail: _leadEmailController.text.trim(),
           leadSource: _selectedLeadSource!,
           leadCategory: _selectedLeadCategory?.uid ?? '',
+          leadPriority: _selectedLeadPriority?.uid ?? '',
           leadValue: double.tryParse(_leadValueController.text) ?? 0.0,
           allowFollowUp: _allowFollowUp,
           leadStatus: _leadStatusModel?.uid ?? '',

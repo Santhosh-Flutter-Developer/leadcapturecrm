@@ -57,6 +57,7 @@ class LeadService {
       var user = await Spdb.getUser();
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
         message: 'New lead created by ${user.name}',
         toFcms: fcmIds,
@@ -111,6 +112,7 @@ class LeadService {
       var user = await Spdb.getUser();
 
       var notif = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
         message: 'Lead has been updated by ${user.name}',
         toFcms: fcmIds,
@@ -273,7 +275,7 @@ class LeadService {
 
   static Future<void> addLeadComment({
     required String leadUid,
-    required String commentText,
+    required LeadCommentModel comment,
   }) async {
     try {
       final cid = await Spdb.getCid();
@@ -287,20 +289,46 @@ class LeadService {
           .doc(leadUid)
           .collection('comments');
 
-      final commentData = {
-        'comment': commentText,
-        'createdBy': {'uid': uid, 'name': (await Spdb.getUser()).name},
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      await commentsRef.add(commentData);
+      await commentsRef.add(comment.toMap());
       await addLeadHistory(
         leadUid: leadUid,
-        action: 'Comment Added: $commentText',
+        action: 'Comment Added: ${comment.comment}',
       );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("Error adding lead comment: $e\n$st");
+      rethrow;
+    }
+  }
+
+  static Future<void> editLeadComment({
+    required String leadUid,
+    required String commentUid,
+    required String commentText,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
+
+      if (cid == null || uid == null) throw "Missing cid or uid";
+
+      final commentsRef = firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(leadUid)
+          .collection('comments')
+          .doc(commentUid);
+
+      final commentData = {'comment': commentText};
+
+      await commentsRef.update(commentData);
+      await addLeadHistory(
+        leadUid: leadUid,
+        action: 'Comment Updated: $commentText',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error updating lead comment: $e\n$st");
       rethrow;
     }
   }

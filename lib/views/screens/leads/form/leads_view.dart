@@ -1,15 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:mime/mime.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '/utils/utils.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
+import '/theme/theme.dart';
 import '/constants/constants.dart';
+import 'package:path/path.dart' as path;
 
 class LeadsViewAppColors {
   static const Color primary = Color(0xFF2563EB);
@@ -59,9 +62,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    widgetLeadCategory = CacheService.leadCategoryByUid(
-      widget.lead.leadCategory,
-    )!;
+    var leadCategory = CacheService.leadCategoryByUid(widget.lead.leadCategory);
+    widgetLeadCategory =
+        leadCategory ??
+        LeadCategoryModel.fromEmptyMap(); // Fallback to empty model
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -666,13 +670,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCommentItem(Map<String, dynamic> comment) {
-    final name = comment['createdBy']['name'] ?? 'System';
-    final date = comment['createdAt'] != null
-        ? (comment['createdAt'] as Timestamp).toDate()
-        : DateTime.now();
+  Widget _buildCommentItem(LeadCommentModel comment) {
+    final name = comment.createdBy.name;
+    final date = comment.timestamp;
 
-    var userId = comment['createdBy']['uid'];
+    var userId = comment.createdBy.uid;
     var user = CacheService.getUserByUid(userId);
 
     UserDataModel userDataModel = UserDataModel.fromEmptyMap();
@@ -706,33 +708,103 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: LeadsViewAppColors.textPrimary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: LeadsViewAppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          comment.comment,
+                          style: const TextStyle(
+                            height: 1.5,
+                            fontSize: 13,
+                            color: LeadsViewAppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    DateFormat('MMM dd, hh:mm a').format(date),
-                    style: const TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        DateFormat('MMM dd, hh:mm a').format(date),
+                        style: const TextStyle(
+                          color: LeadsViewAppColors.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          showMenu(
+                            context: context,
+                            color: Colors.white, // popup background
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            position: const RelativeRect.fromLTRB(
+                              100,
+                              100,
+                              0,
+                              0,
+                            ),
+                            items: [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.edit, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: const [
+                                    Icon(
+                                      Icons.delete,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Delete'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ).then((value) {
+                            if (value == 'edit') {
+                              _editComment(comment);
+                            } else if (value == 'delete') {
+                              _deleteComment(comment);
+                            }
+                          });
+                        },
+                        child: Icon(
+                          Iconsax.more,
+                          color: LeadsViewAppColors.primary,
+                          size: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                comment['comment'] ?? '',
-                style: const TextStyle(
-                  height: 1.5,
-                  fontSize: 13,
-                  color: LeadsViewAppColors.textPrimary,
-                ),
-              ),
+
+              if (comment.attachments.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                AttachmentPreview(attachments: comment.attachments),
+              ],
             ],
           ),
         ),
@@ -774,6 +846,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               filled: true,
               fillColor: LeadsViewAppColors.background,
               contentPadding: const EdgeInsets.all(16),
+              suffixIcon: IconButton(
+                tooltip: 'Add Attachment',
+                icon: Icon(Iconsax.document),
+                onPressed: () {
+                  _uploadFiles();
+                },
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1014,5 +1093,234 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         ]),
       ],
     );
+  }
+
+  void _editComment(LeadCommentModel comment) {
+    final TextEditingController controller = TextEditingController(
+      text: comment.comment,
+    );
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Edit",
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.50,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Edit",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+
+                  /// Textbox
+                  FormFields(
+                    controller: controller,
+                    label: "Comment",
+                    hintText: "Edit your comment here...",
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text("Cancel"),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final value = controller.text.trim();
+
+                          if (value.isNotEmpty) {
+                            await LeadService.editLeadComment(
+                              leadUid: widget.lead.uid ?? '',
+                              commentUid: comment.uid ?? '',
+                              commentText: value,
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: LeadsViewAppColors.primary,
+                        ),
+                        child: Text(
+                          "Submit",
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+
+      /// Animation
+      transitionBuilder: (context, anim1, anim2, child) {
+        return Transform.scale(
+          scale: anim1.value,
+          child: Opacity(opacity: anim1.value, child: child),
+        );
+      },
+    );
+  }
+
+  void _deleteComment(LeadCommentModel comment) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Comment"),
+        content: const Text("Are you sure you want to delete this comment?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(
+              "Delete",
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await LeadService.deleteLeadComment(
+        leadUid: widget.lead.uid ?? '',
+        commentUid: comment.uid ?? '',
+      );
+    }
+  }
+
+  void _uploadFiles() async {
+    var files = await FilePick.pickFiles(context);
+
+    if (files?.isNotEmpty ?? false) {
+      final int count = files!.length;
+
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: Colors.white, // 👈 force white background
+            title: const Text(
+              "Confirm Upload",
+              style: TextStyle(color: Colors.black),
+            ),
+            content: Text(
+              "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
+              style: const TextStyle(color: Colors.black),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: LeadsViewAppColors.primary,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  "Upload",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm == true) {
+        _startUpload(files);
+      }
+    }
+  }
+
+  void _startUpload(List<File> files) async {
+    try {
+      futureLoading(context);
+      List<FileModel> attachments = [];
+
+      if (files.isNotEmpty) {
+        List<String> urls = await StorageService.uploadFilesInBatch(
+          files: files,
+          folder: StorageFolder.leadAttachments,
+        );
+
+        for (var i = 0; i < files.length; i++) {
+          var file = files[i];
+          var mimeType = lookupMimeType(file.path) ?? '';
+
+          attachments.add(
+            FileModel(
+              name: path.basename(file.path),
+              extension: path.extension(file.path).replaceAll('.', ''),
+              size: file.lengthSync(),
+              url: urls[i],
+              mimeType: mimeType,
+            ),
+          );
+        }
+      }
+
+      var user = await Spdb.getUser();
+
+      LeadCommentModel leadCommentModel = LeadCommentModel(
+        userId: user.uid,
+        comment:
+            "Added ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}",
+        attachments: attachments,
+        timestamp: DateTime.now(),
+        createdBy: user,
+      );
+
+      await LeadService.addLeadComment(
+        leadUid: widget.lead.uid ?? '',
+        comment: leadCommentModel,
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      FlushBar.show(
+        context,
+        "Failed to upload files: ${e.toString()}",
+        isSuccess: false,
+      );
+    }
   }
 }

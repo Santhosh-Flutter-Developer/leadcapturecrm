@@ -11,6 +11,7 @@ enum Collections {
   leadCategory,
   leadSource,
   leadStatus,
+  leadPriority,
   dealStatus,
   leads,
   clients,

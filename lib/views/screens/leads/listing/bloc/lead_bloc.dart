@@ -13,7 +13,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   List<LeadModel> allLeads = [];
   List<LeadStatusModel> allStatus = [];
-  List<Map<String, dynamic>> _comments = [];
+  List<LeadCommentModel> _comments = [];
   List<LeadHistoryModel> _history = [];
 
   LeadBloc() : super(LeadLoading()) {
@@ -123,9 +123,15 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           .collection(Collections.leads.name)
           .doc(event.leadUid)
           .collection('comments')
-          .orderBy('createdAt', descending: true)
+          .orderBy('timestamp', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+          .map(
+            (snapshot) => snapshot.docs.map((doc) {
+              var data = doc.data();
+              data['uid'] = doc.id;
+              return LeadCommentModel.fromMap(data);
+            }).toList(),
+          );
 
       await emit.forEach(
         commentsStream,
@@ -151,11 +157,13 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       final cid = await Spdb.getCid();
       final user = await Spdb.getUser();
 
-      final comment = {
-        'comment': event.commentText,
-        'createdBy': {'uid': user.uid, 'name': user.name},
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+      LeadCommentModel comment = LeadCommentModel(
+        userId: user.uid,
+        comment: event.commentText,
+        attachments: [],
+        timestamp: DateTime.now(),
+        createdBy: user,
+      );
 
       await firestore
           .collection(Collections.users.name)
@@ -163,7 +171,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           .collection(Collections.leads.name)
           .doc(event.leadUid)
           .collection('comments')
-          .add(comment);
+          .add(comment.toMap());
 
       // Add history entry
       await LeadService.addLeadHistory(

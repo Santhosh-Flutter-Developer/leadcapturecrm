@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import '../../clients/listing/client_company_listing.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';

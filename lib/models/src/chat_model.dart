@@ -171,7 +171,7 @@ class MessagesModel {
   final DateTime? timestamp;
   final Map<String, List<String>> reactions;
   final bool isPinned;
-  final String searchKeywords;
+  final List<String> searchKeywords;
 
   MessagesModel({
     this.uid,
@@ -186,7 +186,7 @@ class MessagesModel {
     this.timestamp,
     this.reactions = const {},
     this.isPinned = false,
-    this.searchKeywords = '',
+    this.searchKeywords = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -203,9 +203,9 @@ class MessagesModel {
       'reactions': reactions,
       'isPinned': isPinned,
       'searchKeywords': [
-        message,
-        attachments.map((x) => x.name).toList().join(', '),
-      ].join(', '),
+        ...buildSearchKeywords(message),
+        ...attachments.expand((file) => buildSearchKeywords(file.name)),
+      ],
     };
   }
 
@@ -300,4 +300,14 @@ class MessagesEditHistory {
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
     );
   }
+}
+
+List<String> buildSearchKeywords(String text) {
+  return text
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\w\s]'), '')
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .toSet() // avoid duplicates
+      .toList();
 }

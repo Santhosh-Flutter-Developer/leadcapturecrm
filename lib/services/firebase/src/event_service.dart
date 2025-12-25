@@ -15,6 +15,21 @@ class EventService {
         event.toMap(),
         activity: '${event.eventName} has been added as a event',
       );
+
+      var fcmIds = await AuthService.getUserFcmIds(uid: event.createdBy.uid);
+
+      ReminderService.createReminder(
+        scheduledAt: event.eventDateTime,
+        notification: NotificationModel(
+          title: 'Event Reminder',
+          message: 'You have an upcoming event: ${event.eventName}',
+          collectionId: cid ?? '',
+          toFcms: fcmIds,
+          toUids: [event.createdBy.uid],
+          payload: {},
+          type: 'event_reminder',
+        ),
+      );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("${e.toString()}, ${st.toString()}");

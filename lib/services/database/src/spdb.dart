@@ -86,11 +86,12 @@ class Spdb {
         profilePic:
             employeeModel?.profileImageUrl ?? adminModel?.profileImageUrl ?? '',
         desc:
-            CacheService.designationByUid(
-              employeeModel?.designation ?? '',
-            )?.name ??
-            adminModel?.email ??
-            '',
+            employeeModel?.designation != null &&
+                (employeeModel?.designation.isNotEmpty ?? false)
+            ? CacheService.designationByUid(
+                employeeModel?.designation ?? '',
+              )?.name
+            : adminModel?.email ?? '',
         userType: employeeModel != null
             ? UserType.employee
             : adminModel != null

@@ -5,9 +5,8 @@ import '/views/views.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/theme/theme.dart';
-import '/utils/utils.dart';
 
-class UserAvatar extends StatelessWidget {
+class UserAvatar extends StatefulWidget {
   final UserDataModel userData;
   final double size;
   final bool showCrown;
@@ -15,70 +14,314 @@ class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
     required this.userData,
-    this.size = 32, // IMPORTANT for rail
+    this.size = 32,
     this.showCrown = true,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: userData.name,
-      child: InkWell(
-        onTap: () async {
-          var chatId = await ChatService.getChatUid(userData.uid);
-          var currentUserUid = await Spdb.getUid();
-          if (chatId != null && currentUserUid != null) {
-            GeneralDialog.showRTLSheet(
-              context,
-              ChatListing(
-                currentUserUid: currentUserUid,
-                selectedChatUid: chatId,
-              ),
-            );
-          }
-        },
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              /// Avatar
-              ClipOval(
-                child: Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    color: LetterColors.getColor(userData.name.first),
-                  ),
-                  child:
-                      userData.profilePic != null &&
-                          userData.profilePic!.isNotEmpty
-                      ? Image.network(userData.profilePic!, fit: BoxFit.cover)
-                      : Center(
-                          child: Text(
-                            _getInitials(userData.name),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                          ),
-                        ),
-                ),
-              ),
+  State<UserAvatar> createState() => _UserAvatarState();
+}
 
-              if (userData.userType == UserType.admin && showCrown)
-                Positioned(
-                  top: -3,
-                  right: -3,
-                  child: Icon(
-                    Iconsax.crown_15,
-                    color: Color(0xFFFFC107),
-                    size: 15,
+class _UserAvatarState extends State<UserAvatar> {
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+  bool _isHoveringAvatar = false;
+  bool _isHoveringCard = false;
+
+  void _showHoverCard() {
+    if (_overlayEntry != null) return;
+
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        width: 280,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(
+            widget.size + 12,
+            -40,
+          ), // Positioned to the right of avatar
+          child: MouseRegion(
+            onEnter: (_) {
+              _isHoveringCard = true;
+            },
+            onExit: (_) {
+              _isHoveringCard = false;
+              _hideHoverCard();
+            },
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 200),
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.scale(
+                    scale: 0.95 + (0.05 * value),
+                    child: child,
+                  ),
+                );
+              },
+              child: _buildInfoCard(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _hideHoverCard() {
+    // Small delay to check if mouse moved to the card or back to avatar
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      if (!_isHoveringAvatar && !_isHoveringCard) {
+        _overlayEntry?.remove();
+        _overlayEntry = null;
+      }
+    });
+  }
+
+  Widget _buildInfoCard() {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: FutureBuilder(
+          future: _fetchUserDetails(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 80,
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-            ],
+              );
+            }
+
+            final dynamic model = snapshot.data;
+            final String name = widget.userData.name;
+            final String role = _getRoleText(model);
+            final String? email = model?.email;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(
+                        0xFF2563EB,
+                      ).withValues(alpha: 0.1),
+                      backgroundImage:
+                          widget.userData.profilePic != null &&
+                              widget.userData.profilePic!.isNotEmpty
+                          ? NetworkImage(widget.userData.profilePic!)
+                          : null,
+                      child:
+                          widget.userData.profilePic == null ||
+                              (widget.userData.profilePic?.isEmpty ?? true)
+                          ? Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2563EB),
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            role,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2563EB),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (email != null) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  ),
+                  _buildMetaRow(Iconsax.sms, email),
+                  if (model is EmployeeModel && model.mobileNumber.isNotEmpty)
+                    _buildMetaRow(Iconsax.call, model.mobileNumber),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF64748B)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<dynamic> _fetchUserDetails() async {
+    if (widget.userData.userType == UserType.employee) {
+      return await EmployeeService.getEmployee(uid: widget.userData.uid);
+    } else if (widget.userData.userType == UserType.admin) {
+      return await AdminService.getAdmin(uid: widget.userData.uid);
+    }
+    return null;
+  }
+
+  String _getRoleText(dynamic model) {
+    if (model is AdminModel) return "ADMINISTRATOR";
+    if (model is EmployeeModel) {
+      return CacheService.designationByUid(
+            model.designation,
+          )?.name.toUpperCase() ??
+          "EMPLOYEE";
+    }
+    return "USER";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          _isHoveringAvatar = true;
+          _showHoverCard();
+        },
+        onExit: (_) {
+          _isHoveringAvatar = false;
+          _hideHoverCard();
+        },
+        child: Tooltip(
+          message: widget.userData.name,
+          child: InkWell(
+            onTap: () async {
+              var chatId = await ChatService.getChatUid(widget.userData.uid);
+              var currentUserUid = await Spdb.getUid();
+              if (chatId != null && currentUserUid != null) {
+                if (!mounted) return;
+                GeneralDialog.showRTLSheet(
+                  context,
+                  ChatListing(
+                    currentUserUid: currentUserUid,
+                    selectedChatUid: chatId,
+                  ),
+                );
+              }
+            },
+            child: SizedBox(
+              width: widget.size,
+              height: widget.size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipOval(
+                    child: Container(
+                      width: widget.size,
+                      height: widget.size,
+                      decoration: BoxDecoration(
+                        color: LetterColors.getColor(
+                          widget.userData.name.isNotEmpty
+                              ? widget.userData.name[0]
+                              : '?',
+                        ),
+                      ),
+                      child:
+                          widget.userData.profilePic != null &&
+                              widget.userData.profilePic!.isNotEmpty
+                          ? Image.network(
+                              widget.userData.profilePic!,
+                              fit: BoxFit.cover,
+                            )
+                          : Center(
+                              child: Text(
+                                _getInitials(widget.userData.name),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: widget.size * 0.4,
+                                    ),
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (widget.userData.userType == UserType.admin &&
+                      widget.showCrown)
+                    Positioned(
+                      top: -widget.size * 0.1,
+                      right: -widget.size * 0.1,
+                      child: Icon(
+                        Iconsax.crown_15,
+                        color: const Color(0xFFFFC107),
+                        size: widget.size * 0.45,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

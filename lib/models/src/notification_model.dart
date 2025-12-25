@@ -1,5 +1,6 @@
 class NotificationModel {
   final String? uid;
+  final String collectionId;
   final String title;
   final String message;
   final List<String> toFcms;
@@ -10,6 +11,7 @@ class NotificationModel {
   final DateTime? createdAt;
   NotificationModel({
     this.uid,
+    required this.collectionId,
     required this.title,
     required this.message,
     required this.toFcms,
@@ -22,6 +24,7 @@ class NotificationModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'collectionId': collectionId,
       'title': title,
       'message': message,
       'toFcms': toFcms,
@@ -36,6 +39,9 @@ class NotificationModel {
   factory NotificationModel.fromMap(String uid, Map<String, dynamic> map) {
     return NotificationModel(
       uid: uid,
+      collectionId: map['collectionId'] != null && map['collectionId'] is String
+          ? map['collectionId']
+          : '',
       title: map['title'] != null && map['title'] is String ? map['title'] : '',
       message: map['message'] != null && map['message'] is String
           ? map['message']

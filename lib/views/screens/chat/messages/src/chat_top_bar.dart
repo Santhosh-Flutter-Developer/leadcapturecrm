@@ -3,7 +3,6 @@ part of 'chat_messages.dart';
 class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String userUid;
   final String lastSeen;
-  final VoidCallback onCall;
   final VoidCallback? onBack;
   final ChatModel chat;
 
@@ -11,7 +10,6 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.userUid,
     required this.lastSeen,
-    required this.onCall,
     this.onBack,
     required this.chat,
   });
@@ -154,10 +152,15 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.call_outlined, color: AppColors.white),
-          onPressed: onCall,
+          icon: const Icon(Iconsax.search_normal, color: AppColors.primary),
+          onPressed: () {
+            if (kIsMobile) {
+              Sheet.showSheet(context, widget: SearchChat(chat: chat));
+            } else {
+              GeneralDialog.showRTLSheet(context, SearchChat(chat: chat));
+            }
+          },
         ),
-        const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.info_outline, color: AppColors.white),
           onPressed: () {
@@ -178,7 +181,6 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
   final String userUid;
   final String lastSeen;
-  final VoidCallback onCall;
   final VoidCallback? onBack;
   final ChatModel chat;
 
@@ -186,7 +188,6 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.userUid,
     required this.lastSeen,
-    required this.onCall,
     this.onBack,
     required this.chat,
   });
@@ -295,6 +296,45 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Iconsax.search_normal,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: SearchChat(chat: chat));
+                    } else {
+                      GeneralDialog.showRTLSheet(
+                        context,
+                        SearchChat(chat: chat),
+                      );
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Iconsax.info_circle,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(
+                        context,
+                        widget: AboutChat(chat: chat, userUid: userUid),
+                      );
+                    } else {
+                      GeneralDialog.showRTLSheet(
+                        context,
+                        AboutChat(chat: chat, userUid: userUid),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
           ] else ...[
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,14 +383,23 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 IconButton(
                   icon: const Icon(
-                    Icons.call_outlined,
+                    Iconsax.search_normal,
                     color: AppColors.primary,
                   ),
-                  onPressed: onCall,
+                  onPressed: () {
+                    if (kIsMobile) {
+                      Sheet.showSheet(context, widget: SearchChat(chat: chat));
+                    } else {
+                      GeneralDialog.showRTLSheet(
+                        context,
+                        SearchChat(chat: chat),
+                      );
+                    }
+                  },
                 ),
                 IconButton(
                   icon: const Icon(
-                    Icons.info_outline,
+                    Iconsax.info_circle,
                     color: AppColors.primary,
                   ),
                   onPressed: () {

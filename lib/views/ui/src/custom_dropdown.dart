@@ -664,3 +664,444 @@ class _CustomSearchableDropdownState<T>
     );
   }
 }
+
+/// A searchable dropdown that loads its items from a [Future].
+/// Supports both single-select and multi-select modes with a professional UI.
+class CustomFutureSearchableDropdown<T> extends StatefulWidget {
+  final Future<List<T>> Function() asyncItems;
+  final T? initialValue;
+  final List<T>? initialValues; // For multi-select
+  final ValueChanged<T?>? onChanged;
+  final ValueChanged<List<T>>? onChangedList; // For multi-select
+  final bool multiSelect;
+  final String Function(T)? itemAsString;
+  final String hintText;
+  final double maxPanelHeight;
+  final BorderRadius borderRadius;
+  final EdgeInsetsGeometry padding;
+  final Widget? emptyWidget;
+  final Widget? loadingWidget;
+
+  const CustomFutureSearchableDropdown({
+    super.key,
+    required this.asyncItems,
+    this.initialValue,
+    this.initialValues,
+    this.onChanged,
+    this.onChangedList,
+    this.multiSelect = false,
+    this.itemAsString,
+    this.hintText = 'Select',
+    this.maxPanelHeight = 280,
+    this.borderRadius = const BorderRadius.all(Radius.circular(8)),
+    this.padding = const EdgeInsets.symmetric(horizontal: 10),
+    this.emptyWidget,
+    this.loadingWidget,
+  });
+
+  @override
+  State<CustomFutureSearchableDropdown<T>> createState() =>
+      _CustomFutureSearchableDropdownState<T>();
+}
+
+class _CustomFutureSearchableDropdownState<T>
+    extends State<CustomFutureSearchableDropdown<T>> {
+  final LayerLink _layerLink = LayerLink();
+  final FocusNode _focusNode = FocusNode();
+  final FocusNode _searchFocus = FocusNode();
+  final FocusNode _panelFocus = FocusNode();
+  final TextEditingController _searchController = TextEditingController();
+
+  OverlayEntry? _overlayEntry;
+  bool _isOpen = false;
+  bool _isLoading = false;
+
+  List<T> _allItems = [];
+  List<T> _filtered = [];
+  T? _selected;
+  List<T> _selectedList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialValue;
+    _selectedList = widget.initialValues != null
+        ? List<T>.from(widget.initialValues!)
+        : [];
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _focusNode.dispose();
+    _searchFocus.dispose();
+    _panelFocus.dispose();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  Future<void> _loadItems() async {
+    if (_allItems.isNotEmpty) return;
+
+    setState(() => _isLoading = true);
+    _overlayEntry?.markNeedsBuild();
+
+    try {
+      final items = await widget.asyncItems();
+      if (mounted) {
+        setState(() {
+          _allItems = items;
+          _filtered = List<T>.from(_allItems);
+          _isLoading = false;
+        });
+        _overlayEntry?.markNeedsBuild();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _overlayEntry?.markNeedsBuild();
+      }
+    }
+  }
+
+  void _open() {
+    if (_isOpen) return;
+
+    _filtered = List<T>.from(_allItems);
+
+    _overlayEntry = _createOverlay();
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() => _isOpen = true);
+
+    _loadItems();
+
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (mounted) {
+        _panelFocus.requestFocus();
+        _searchFocus.requestFocus();
+      }
+    });
+  }
+
+  void _close({bool returnFocus = true}) {
+    if (!_isOpen) return;
+    _removeOverlay();
+    setState(() {
+      _isOpen = false;
+      _searchController.clear();
+    });
+    if (returnFocus) _focusNode.requestFocus();
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _toggle() {
+    if (_isOpen) {
+      _close();
+    } else {
+      _open();
+    }
+  }
+
+  void _onItemSelected(T item) {
+    if (widget.multiSelect) {
+      setState(() {
+        if (_selectedList.contains(item)) {
+          _selectedList.remove(item);
+        } else {
+          _selectedList.add(item);
+        }
+      });
+      _overlayEntry?.markNeedsBuild();
+      widget.onChangedList?.call(List<T>.from(_selectedList));
+    } else {
+      widget.onChanged?.call(item);
+      setState(() {
+        _selected = item;
+      });
+      _close();
+    }
+  }
+
+  void _onSearchChanged() {
+    final q = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        _filtered = List<T>.from(_allItems);
+      } else {
+        _filtered = _allItems.where((it) {
+          final s = (widget.itemAsString?.call(it) ?? it.toString())
+              .toLowerCase();
+          return s.contains(q);
+        }).toList();
+      }
+    });
+
+    if (_overlayEntry != null) _overlayEntry!.markNeedsBuild();
+  }
+
+  OverlayEntry _createOverlay() {
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final globalTopLeft = renderBox.localToGlobal(Offset.zero);
+    final media = MediaQuery.of(context);
+
+    final availableBelow =
+        media.size.height - (globalTopLeft.dy + size.height) - 8.0;
+    final availableAbove = globalTopLeft.dy - media.padding.top - 8.0;
+    final preferBelow =
+        availableBelow >= math.min(widget.maxPanelHeight, availableAbove);
+    final double panelHeight = preferBelow
+        ? math.min(widget.maxPanelHeight, availableBelow)
+        : math.min(widget.maxPanelHeight, availableAbove);
+
+    return OverlayEntry(
+      builder: (context) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => _close(returnFocus: false),
+              behavior: HitTestBehavior.translucent,
+              child: Container(color: Colors.transparent),
+            ),
+            CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              targetAnchor: preferBelow
+                  ? Alignment.bottomLeft
+                  : Alignment.topLeft,
+              followerAnchor: preferBelow
+                  ? Alignment.topLeft
+                  : Alignment.bottomLeft,
+              offset: Offset(0, preferBelow ? 6.0 : -6.0),
+              child: Material(
+                elevation: 8,
+                borderRadius: widget.borderRadius,
+                child: Container(
+                  width: size.width,
+                  constraints: BoxConstraints(maxHeight: panelHeight),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: widget.borderRadius,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: SizedBox(
+                          height: 36,
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocus,
+                            style: Theme.of(context).textTheme.bodySmall,
+                            decoration: InputDecoration(
+                              hintText: 'Search...',
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_isLoading)
+                        Expanded(
+                          child:
+                              widget.loadingWidget ??
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                        )
+                      else if (_filtered.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child:
+                              widget.emptyWidget ??
+                              const Text('No items found'),
+                        )
+                      else
+                        Flexible(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: _filtered.length,
+                            itemBuilder: (context, index) {
+                              final item = _filtered[index];
+                              final label =
+                                  widget.itemAsString?.call(item) ??
+                                  item.toString();
+                              final bool isSelected = widget.multiSelect
+                                  ? _selectedList.contains(item)
+                                  : item == _selected;
+
+                              return ListTile(
+                                dense: true,
+                                title: Text(
+                                  label,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                trailing: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        color: Theme.of(context).primaryColor,
+                                        size: 18,
+                                      )
+                                    : null,
+                                selected: isSelected,
+                                onTap: () => _onItemSelected(item),
+                              );
+                            },
+                          ),
+                        ),
+                      if (widget.multiSelect &&
+                          !_isLoading &&
+                          _allItems.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => _close(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                              ),
+                              child: const Text(
+                                "Done",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActivatorContent(String? displayText, bool hasSelection) {
+    if (widget.multiSelect) {
+      if (_selectedList.isEmpty) {
+        return Text(
+          widget.hintText,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          overflow: TextOverflow.ellipsis,
+        );
+      }
+
+      // Show chips for multi-select to match fixed dropdown UI
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _selectedList.map((item) {
+            final label = widget.itemAsString?.call(item) ?? item.toString();
+            return Container(
+              margin: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 11),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    } else {
+      return Text(
+        displayText ?? widget.hintText,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: hasSelection ? AppColors.black : Colors.grey,
+        ),
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayText = _selected != null
+        ? (widget.itemAsString?.call(_selected as T) ?? _selected.toString())
+        : null;
+    final bool hasSelection = widget.multiSelect
+        ? _selectedList.isNotEmpty
+        : _selected != null;
+
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Focus(
+        focusNode: _focusNode,
+        onFocusChange: (hasFocus) => setState(() {}),
+        child: GestureDetector(
+          onTap: _toggle,
+          child: Container(
+            padding: widget.padding,
+            height: 33, // Match fixed dropdown size
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: _focusNode.hasFocus
+                    ? Theme.of(context).primaryColor
+                    : AppColors.grey500,
+                width: _focusNode.hasFocus
+                    ? 2
+                    : 1, // Match fixed dropdown border logic
+              ),
+              borderRadius: widget.borderRadius,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildActivatorContent(displayText, hasSelection),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  _isOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                  color: Colors.grey,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

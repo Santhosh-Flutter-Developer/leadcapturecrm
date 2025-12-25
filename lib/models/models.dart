@@ -30,3 +30,5 @@ export 'src/user_data_model.dart';
 export 'src/recent_activity_model.dart';
 export 'src/lead_source_model.dart';
 export 'src/event_model.dart';
+export 'src/lead_priority_model.dart';
+export 'src/reminder_model.dart';

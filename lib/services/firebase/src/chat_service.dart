@@ -55,6 +55,30 @@ class ChatService {
         .first;
   }
 
+  static Future<List<MessagesModel>> searchMessages({
+    required String chatId,
+    required String searchTerm,
+  }) async {
+    var cid = await Spdb.getCid();
+
+    return await firebase.users
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(chatId)
+        .collection(Collections.messages.name)
+        .where('searchKeywords', arrayContains: searchTerm.toLowerCase())
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            var data = doc.data();
+            data['uid'] = doc.id;
+            return MessagesModel.fromMap(data);
+          }).toList();
+        })
+        .first;
+  }
+
   static Future<void> updateSeenChat({
     required String chatId,
     required String messageId,
@@ -349,6 +373,7 @@ class ChatService {
       }
 
       NotificationModel notification = NotificationModel(
+        collectionId: await Spdb.getCid() ?? '',
         title: name,
         message: message,
         toUids: receivers,
@@ -437,7 +462,7 @@ class ChatService {
         return existingChatSnapshot.docs.first.id;
       }
 
-      // ✅ Create chat ONLY if not exists
+      // Create chat ONLY if not exists
       final chatModel = ChatModel(
         createdBy: currentUid,
         participants: [currentUid, userId],

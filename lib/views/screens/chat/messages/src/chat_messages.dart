@@ -98,13 +98,11 @@ class _ChatMessagesState extends State<ChatMessages> {
             ? ChatTopBar(
                 userUid: widget.opponentUid,
                 lastSeen: DateTime.now().formatTime,
-                onCall: () {},
                 chat: widget.chat,
               )
             : ChatTopBarDesktop(
                 userUid: widget.opponentUid,
                 lastSeen: DateTime.now().formatTime,
-                onCall: () {},
                 chat: widget.chat,
               ),
         body: SafeArea(

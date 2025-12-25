@@ -31,7 +31,7 @@ class LeadError extends LeadState {
 }
 
 class LeadDetailLoaded extends LeadState {
-  final List<Map<String, dynamic>> comments;
+  final List<LeadCommentModel> comments;
   final List<LeadHistoryModel> history;
 
   LeadDetailLoaded({required this.comments, required this.history});

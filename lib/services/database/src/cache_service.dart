@@ -28,6 +28,7 @@ class CacheService {
     'subDepartment': _BoxConfig('subDepartments', 'subDepartments'),
     'leadCategory': _BoxConfig('leadCategory', 'leadCategory'),
     'leadStatus': _BoxConfig('leadStatus', 'leadStatus'),
+    'leadPriority': _BoxConfig('leadPriority', 'leadPriority'),
     'dealStatus': _BoxConfig('dealStatus', 'dealStatus'),
   };
 
@@ -222,6 +223,14 @@ class CacheService {
       uid: uid,
       configKey: 'leadCategory',
       fromMap: LeadCategoryModel.fromMap,
+    );
+  }
+
+  static LeadPriorityModel? leadPriorityByUid(String uid) {
+    return _getEntity<LeadPriorityModel>(
+      uid: uid,
+      configKey: 'leadPriority',
+      fromMap: LeadPriorityModel.fromMap,
     );
   }
 
