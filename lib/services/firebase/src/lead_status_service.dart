@@ -188,4 +188,12 @@ class LeadStatusService {
       throw 'Error deleting leadStatus: $e';
     }
   }
+
+  static Future<bool> hasFinalStatus({String? excludeUid}) async {
+    List<LeadStatusModel> statuses = await getAllLeadStatus();
+
+    return statuses.any(
+      (s) => s.isFinal && (excludeUid == null || s.uid != excludeUid),
+    );
+  }
 }

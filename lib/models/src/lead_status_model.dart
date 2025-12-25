@@ -12,7 +12,7 @@ class LeadStatusModel {
   final int orderNumber;
   final UserDataModel createdBy;
   final bool isMoveToDeal;
-
+  final bool isFinal;
   final DateTime createdAt;
   final DateTime updatedAt;
   LeadStatusModel({
@@ -22,6 +22,7 @@ class LeadStatusModel {
     required this.color,
     required this.orderNumber,
     this.isMoveToDeal = false,
+    this.isFinal = false,
     required this.createdBy,
     String? lowercaseName,
     DateTime? createdAt,
@@ -38,6 +39,7 @@ class LeadStatusModel {
     int? color,
     int? orderNumber,
     bool? isMoveToDeal,
+    bool? isFinal,
     UserDataModel? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -50,6 +52,7 @@ class LeadStatusModel {
       color: color ?? this.color,
       orderNumber: orderNumber ?? this.orderNumber,
       isMoveToDeal: isMoveToDeal ?? this.isMoveToDeal,
+      isFinal: isFinal ?? this.isFinal,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -64,6 +67,7 @@ class LeadStatusModel {
       'color': color,
       'orderNumber': orderNumber,
       'isMoveToDeal': isMoveToDeal,
+      'isFinal': isFinal,
       'createdBy': createdBy.toMap(),
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -77,6 +81,7 @@ class LeadStatusModel {
       'description': description.encrypt,
       'color': color,
       'isMoveToDeal': isMoveToDeal,
+      'isFinal': isFinal,
       'createdBy': createdBy.toMap(),
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
@@ -100,6 +105,9 @@ class LeadStatusModel {
           : 0,
       isMoveToDeal: map['isMoveToDeal'] != null && map['isMoveToDeal'] is bool
           ? map['isMoveToDeal'] as bool
+          : false,
+      isFinal: map['isFinal'] != null && map['isFinal'] is bool
+          ? map['isFinal'] as bool
           : false,
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>

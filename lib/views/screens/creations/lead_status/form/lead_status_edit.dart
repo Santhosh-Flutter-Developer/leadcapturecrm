@@ -22,6 +22,8 @@ class _LeadStatusEditState extends State<LeadStatusEdit> {
 
   late Future _future;
   LeadStatusModel? _leadStatusModel;
+  bool _isFinal = false;
+  bool _showFinalWarning = false;
 
   @override
   void initState() {
@@ -34,6 +36,7 @@ class _LeadStatusEditState extends State<LeadStatusEdit> {
     _nameController.text = _leadStatusModel?.name ?? '';
     _descriptionController.text = _leadStatusModel?.description ?? '';
     _selectedColor = Color(_leadStatusModel?.color ?? 0);
+    _isFinal = _leadStatusModel?.isFinal ?? false;
     setState(() {});
   }
 
@@ -188,6 +191,45 @@ class _LeadStatusEditState extends State<LeadStatusEdit> {
             },
             readOnly: true,
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Checkbox(
+                value: _isFinal,
+                onChanged: (val) async {
+                  if (val == true && !_isFinal) {
+                    bool exists = await LeadStatusService.hasFinalStatus();
+                    if (exists) {
+                      setState(() {
+                        _showFinalWarning = true;
+                        _isFinal = false;
+                      });
+                      return;
+                    }
+                  }
+
+                  setState(() {
+                    _isFinal = val ?? false;
+                    _showFinalWarning = false;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Final Lead Status',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          if (_showFinalWarning) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Final status is already assigned',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.red),
+            ),
+          ],
         ],
       ),
     );
@@ -202,6 +244,7 @@ class _LeadStatusEditState extends State<LeadStatusEdit> {
           description: _descriptionController.text.trim(),
           color: _selectedColor.toARGB32(),
           orderNumber: 0,
+          isFinal: _isFinal,
           createdBy: await Spdb.getUser(),
         );
 

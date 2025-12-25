@@ -185,14 +185,22 @@ class LeadService {
   static Future<void> updateLeadStatus({
     required String uid,
     required String leadStatus,
+    bool? leadsConverted,
   }) async {
     try {
       var cid = await Spdb.getCid();
+
+      final updateData = <String, dynamic>{'leadStatus': leadStatus};
+
+      if (leadsConverted != null) {
+        updateData['leadsConverted'] = leadsConverted;
+      }
+
       await firebase.users
           .doc(cid)
           .collection(Collections.leads.name)
           .doc(uid)
-          .update({'leadStatus': leadStatus});
+          .update(updateData);
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("${e.toString()}, ${st.toString()}");

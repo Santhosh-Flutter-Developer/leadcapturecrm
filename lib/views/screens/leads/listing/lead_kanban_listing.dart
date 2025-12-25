@@ -71,22 +71,22 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     });
   }
 
-  Future<void> _updateStatus(String leadUid, LeadStatusModel leadStatus) async {
-    try {
-      futureLoading(context);
-      await LeadService.updateLeadStatus(
-        uid: leadUid,
-        leadStatus: leadStatus.uid ?? '',
-      );
-      if (Navigator.canPop(context)) Navigator.pop(context);
-      FlushBar.show(context, 'Status updated');
-    } catch (e, st) {
-      if (Navigator.canPop(context)) Navigator.pop(context);
-      debugPrint('$e, $st');
-      await ErrorService.recordError(e, st);
-      FlushBar.show(context, e.toString(), isSuccess: false);
-    }
-  }
+  // Future<void> _updateStatus(String leadUid, LeadStatusModel leadStatus) async {
+  //   try {
+  //     futureLoading(context);
+  //     await LeadService.updateLeadStatus(
+  //       uid: leadUid,
+  //       leadStatus: leadStatus.uid ?? '',
+  //     );
+  //     if (Navigator.canPop(context)) Navigator.pop(context);
+  //     FlushBar.show(context, 'Status updated');
+  //   } catch (e, st) {
+  //     if (Navigator.canPop(context)) Navigator.pop(context);
+  //     debugPrint('$e, $st');
+  //     await ErrorService.recordError(e, st);
+  //     FlushBar.show(context, e.toString(), isSuccess: false);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -119,17 +119,67 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
 
   Widget _buildKanbanColumn(LeadStatusModel list, List<LeadModel> leads) {
     return DragTarget<LeadModel>(
-      onWillAcceptWithDetails: (details) => details.data.uid != null,
+      onWillAcceptWithDetails: (details) {
+        return details.data.uid != null && details.data.leadsConverted != true;
+      },
       onAcceptWithDetails: (details) async {
         final lead = details.data;
-        if (_draggedFromList != list) {
-          _leadList[_draggedFromList]!.removeWhere((t) => t.uid == lead.uid);
+
+        if (_draggedFromList == list) return;
+
+        _leadList[_draggedFromList]!.removeWhere((t) => t.uid == lead.uid);
+
+        setState(() {
+          leads.add(lead);
+        });
+
+        try {
+          if (list.isFinal) {
+            final result = await showDialog<bool>(
+              context: context,
+              builder: (context) {
+                return const ConfirmDialog(
+                  title: 'Convert Lead',
+                  content:
+                      'Are you sure you want to convert this lead to a deal?',
+                );
+              },
+            );
+
+            if (result == null || !result) {
+              setState(() {
+                leads.removeWhere((l) => l.uid == lead.uid);
+                _leadList[_draggedFromList]!.add(lead);
+              });
+              return;
+            }
+          }
+
+          await LeadService.updateLeadStatus(
+            uid: lead.uid!,
+            leadStatus: list.uid!,
+            leadsConverted: list.isFinal ? true : null,
+          );
+
+          if (list.isFinal) {
+            await _convertLeadToDeal(context, lead);
+
+            setState(() {
+              _leadList[list] = List.from(leads)
+                ..removeWhere((l) => l.uid == lead.uid)
+                ..add(lead.copyWith(leadsConverted: true));
+            });
+          }
+        } catch (e) {
           setState(() {
-            leads.add(lead);
+            leads.removeWhere((l) => l.uid == lead.uid);
+            _leadList[_draggedFromList]!.add(lead);
           });
-          await _updateStatus(lead.uid ?? '', list);
+
+          FlushBar.show(context, e.toString(), isSuccess: false);
         }
       },
+
       builder: (context, candidateData, rejectedData) {
         bool isHovering = candidateData.isNotEmpty;
         double totalValue = leads.fold(
@@ -174,6 +224,43 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         );
       },
     );
+  }
+
+  Future<void> _convertLeadToDeal(BuildContext context, LeadModel lead) async {
+    try {
+      futureLoading(context);
+
+      final leadDetails = await LeadService.getLead(uid: lead.uid ?? '');
+
+      final dealData = {
+        'dealName': leadDetails.leadName,
+        'dealEmail': leadDetails.leadEmail,
+        'companyName': leadDetails.companyName,
+        'companyMobile': leadDetails.companyMobile,
+        'companyAddress': leadDetails.companyAddress,
+        'dealValue': leadDetails.leadValue,
+        'notes': leadDetails.notes,
+      };
+
+      await LeadService.convertLeadToDeal(lead: leadDetails);
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      Navigate.route(
+        context,
+        DealCreate(
+          isFromLead: true,
+          prefillDeal: DealModel.fromMap(lead.uid ?? '', dealData),
+        ),
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
   }
 
   Widget _buildKanbanColumnHeader(
@@ -240,71 +327,88 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
   }
 
   Widget _buildKanbanCard(LeadModel task, LeadStatusModel list) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      // Use Draggable, but handle the click inside the child
-      child: Draggable<LeadModel>(
-        data: task,
-        // The feedback is what follows the finger
-        feedback: Material(
-          elevation: 8.0,
-          borderRadius: BorderRadius.circular(12.0),
-          color: Colors.transparent,
-          child: Transform.rotate(
-            angle: 0.05, // Slight tilt for pro feel
-            child: Container(
-              width: 244,
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(
-                  color: AppColors.blue.withValues(alpha: 0.5),
-                ),
+    // 🔒 Converted lead → NOT draggable
+    if (task.leadsConverted == true) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.grey200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCardContent(task),
+              const SizedBox(height: 6),
+              Row(
+                children: const [
+                  Icon(Icons.lock, size: 12, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text(
+                    'Converted to Deal',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              child: _buildCardContent(task),
-            ),
+            ],
           ),
         ),
-        // The placeholder widget left in the list while dragging
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Draggable<LeadModel>(
+        data: task,
+        feedback: _buildDragFeedback(task),
         childWhenDragging: Opacity(
           opacity: 0.2,
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.grey200,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+          child: _buildCardContent(task),
         ),
         onDragStarted: () => _handleDragStarted(task, list),
         onDragEnd: _handleDragEnd,
-        // The actual card in the list
         child: InkWell(
           onTap: () {
-            // Open lead view page
             if (kIsDesktop) {
               GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
             } else {
               Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
             }
           },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          child: _buildCardContent(task),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragFeedback(LeadModel lead) {
+    return Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 260,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              lead.leadName,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
-            padding: const EdgeInsets.all(12.0),
-            child: _buildCardContent(task),
-          ),
+            const SizedBox(height: 4),
+            Text(lead.companyName ?? '', style: const TextStyle(fontSize: 12)),
+          ],
         ),
       ),
     );

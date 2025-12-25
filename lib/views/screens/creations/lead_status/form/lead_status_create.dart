@@ -17,6 +17,8 @@ class _LeadStatusCreateState extends State<LeadStatusCreate> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _colorController = TextEditingController();
   Color _selectedColor = const Color(0x0fffffff);
+  bool _isFinal = false;
+  bool _showFinalWarning = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
@@ -147,6 +149,45 @@ class _LeadStatusCreateState extends State<LeadStatusCreate> {
             },
             readOnly: true,
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Checkbox(
+                value: _isFinal,
+                onChanged: (val) async {
+                  if (val == true) {
+                    bool exists = await LeadStatusService.hasFinalStatus();
+                    if (exists) {
+                      setState(() {
+                        _showFinalWarning = true;
+                        _isFinal = false;
+                      });
+                      return;
+                    }
+                  }
+
+                  setState(() {
+                    _isFinal = val ?? false;
+                    _showFinalWarning = false;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Final Lead Status',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          if (_showFinalWarning) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Final status is already assigned',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.red),
+            ),
+          ],
         ],
       ),
     );
@@ -161,6 +202,7 @@ class _LeadStatusCreateState extends State<LeadStatusCreate> {
           description: _descriptionController.text.trim(),
           color: _selectedColor.toARGB32(),
           orderNumber: 0,
+          isFinal: _isFinal,
           createdBy: await Spdb.getUser(),
         );
 
