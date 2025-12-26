@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '/models/models.dart';
 
 class TaskModel {
@@ -30,7 +31,7 @@ class TaskModel {
   final DateTime updatedAt;
 
   TaskModel({
-    this.uid,
+    String? uid,
     required this.taskName,
     required this.description,
     this.deadline,
@@ -54,7 +55,8 @@ class TaskModel {
     required this.taskCreatedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) : createdAt = createdAt ?? DateTime.now(),
+  }) : uid = uid ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
   TaskModel copyWith({
@@ -163,6 +165,7 @@ class TaskModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'taskName': taskName,
       'description': description,
       'deadline': deadline?.millisecondsSinceEpoch,

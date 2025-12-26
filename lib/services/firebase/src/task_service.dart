@@ -65,6 +65,21 @@ class TaskService {
       );
 
       PostNotificationService.sendNotification(model: notif);
+
+      if (task.deadlineRequired && task.deadline != null) {
+        ReminderService.createReminder(
+          scheduledAt: task.deadline!,
+          notification: NotificationModel(
+            title: 'Task Deadline Reminder',
+            message: 'Task "${task.taskName}" is due soon',
+            collectionId: cid ?? '',
+            toFcms: fcmIds,
+            toUids: users,
+            type: 'task_deadline_reminder',
+            payload: {'taskId': taskDoc.id},
+          ),
+        );
+      }
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       throw 'Error creating task: $e';
@@ -133,6 +148,20 @@ class TaskService {
       );
 
       PostNotificationService.sendNotification(model: notif);
+      if (task.deadlineRequired && task.deadline != null) {
+        ReminderService.createReminder(
+          scheduledAt: task.deadline!,
+          notification: NotificationModel(
+            title: 'Task Deadline Reminder',
+            message: 'Task "${task.taskName}" is due soon',
+            collectionId: cid ?? '',
+            toFcms: fcmIds,
+            toUids: users,
+            type: 'task_deadline_reminder',
+            payload: {'taskId': uid},
+          ),
+        );
+      }
     } catch (e, st) {
       debugPrint("Error updating task: $e\n$st");
       await ErrorService.recordError(e, st);

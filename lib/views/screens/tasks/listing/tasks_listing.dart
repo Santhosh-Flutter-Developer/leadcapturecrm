@@ -174,6 +174,13 @@ class _TaskListingViewState extends State<TaskListingView> {
                                       columns: [
                                         DataColumn(
                                           label: _sortableHeader(
+                                            "TaskId",
+                                            controllerRead,
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: _sortableHeader(
                                             "Name",
                                             controllerRead,
                                           ),
@@ -432,6 +439,15 @@ class _TaskListingViewState extends State<TaskListingView> {
         setState(() {});
       },
       cells: [
+        DataCell(
+          SelectableText(
+            task.uid ?? '-',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 11),
+          ),
+        ),
+
         DataCell(
           InkWell(
             onTap: () {
