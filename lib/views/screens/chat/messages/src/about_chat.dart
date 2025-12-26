@@ -1,3 +1,5 @@
+import 'package:aaatp/constants/src/enum.dart';
+import 'package:aaatp/views/components/src/edit_group_chat.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -18,17 +20,55 @@ class AboutChatColors {
   static const Color surface = Colors.white;
 }
 
-class AboutChat extends StatelessWidget {
+class AboutChat extends StatefulWidget {
   final ChatModel chat;
   final String userUid;
+  final UserType? userType;
 
-  const AboutChat({super.key, required this.chat, required this.userUid});
+  const AboutChat({
+    super.key,
+    required this.chat,
+    required this.userUid,
+    this.userType,
+  });
+
+  @override
+  State<AboutChat> createState() => _AboutChatState();
+}
+
+class _AboutChatState extends State<AboutChat> {
+  bool canEditGroup = false;
+  @override
+  void initState() {
+    super.initState();
+    _canEditGroup();
+  }
+
+  Future<void> _canEditGroup() async {
+    if (!widget.chat.isGroupChat) return;
+
+    final currentUserUid = await Spdb.getUid();
+    final currentUser = await Spdb.getUser();
+    final isAdmin = currentUser.userType == UserType.admin;
+    final isCreator = widget.chat.createdBy == currentUserUid;
+
+    setState(() {
+      canEditGroup = isAdmin || isCreator;
+    });
+
+    debugPrint(
+      'isAdmin: $isAdmin, isCreator: $isCreator, isGroup: ${widget.chat.isGroupChat}',
+    );
+    debugPrint(
+      'chat.createdBy: "${widget.chat.createdBy}", userUid: "$currentUserUid"',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final title = chat.isGroupChat
-        ? chat.title ?? 'Group Chat'
-        : CacheService.getUserByUid(userUid)?.name ?? 'User Details';
+    final title = widget.chat.isGroupChat
+        ? widget.chat.title ?? 'Group Chat'
+        : CacheService.getUserByUid(widget.userUid)?.name ?? 'User Details';
 
     return Container(
       decoration: const BoxDecoration(
@@ -61,7 +101,7 @@ class AboutChat extends StatelessWidget {
                     _buildHeader(context, title),
                     const SizedBox(height: 32),
 
-                    if (chat.isGroupChat) ...[
+                    if (widget.chat.isGroupChat) ...[
                       _buildSectionLabel("PARTICIPANTS"),
                       const SizedBox(height: 12),
                       _buildParticipantsCard(context),
@@ -97,7 +137,7 @@ class AboutChat extends StatelessWidget {
             child: CircleAvatar(
               radius: 48,
               backgroundColor: AboutChatColors.primary.withValues(alpha: 0.08),
-              child: chat.isGroupChat
+              child: widget.chat.isGroupChat
                   ? const Icon(
                       Iconsax.people,
                       size: 40,
@@ -123,7 +163,7 @@ class AboutChat extends StatelessWidget {
               color: AboutChatColors.textPrimary,
             ),
           ),
-          if (chat.isGroupChat)
+          if (widget.chat.isGroupChat)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Container(
@@ -136,7 +176,7 @@ class AboutChat extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${chat.participants.length} Active Members',
+                  '${widget.chat.participants.length} Active Members',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -177,13 +217,13 @@ class AboutChat extends StatelessWidget {
         child: ListView.separated(
           shrinkWrap: true,
           padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: chat.participants.length,
+          itemCount: widget.chat.participants.length,
           separatorBuilder: (_, _) => Container(
             margin: const EdgeInsets.only(left: 72),
             child: const Divider(height: 1, thickness: 0.5),
           ),
           itemBuilder: (context, index) {
-            final uid = chat.participants[index];
+            final uid = widget.chat.participants[index];
             final user = CacheService.getUserByUid(uid);
             String name = 'Workspace User';
             String? image;
@@ -210,7 +250,7 @@ class AboutChat extends StatelessWidget {
                   color: AboutChatColors.textPrimary,
                 ),
               ),
-              subtitle: uid == chat.createdBy
+              subtitle: uid == widget.chat.createdBy
                   ? const Text(
                       "Group Owner",
                       style: TextStyle(
@@ -285,19 +325,37 @@ class AboutChat extends StatelessWidget {
       ),
       child: Column(
         children: [
+          if (canEditGroup) ...[
+            _buildActionTile(
+              context,
+              icon: Iconsax.edit,
+              iconColor: AboutChatColors.primary,
+              title: 'Edit group chat',
+              showChevron: true,
+              onTap: () {
+                Navigator.pop(context);
+                Sheet.showSheet(
+                  context,
+                  widget: EditGroupChat(chat: widget.chat),
+                );
+              },
+            ),
+            _buildDivider(),
+          ],
+
           _buildActionTile(
             context,
-            icon: chat.isPinned == true
+            icon: widget.chat.isPinned == true
                 ? Icons.push_pin
                 : Iconsax.percentage_circle,
             iconColor: Colors.orangeAccent,
-            title: chat.isPinned == true
+            title: widget.chat.isPinned == true
                 ? 'Unpin this conversation'
                 : 'Pin to top',
             onTap: () async {
               await ChatService.toggleChatPin(
-                chatId: chat.uid!,
-                value: !chat.isPinned,
+                chatId: widget.chat.uid!,
+                value: !widget.chat.isPinned,
               );
               if (context.mounted) Navigator.pop(context);
             },
@@ -305,15 +363,17 @@ class AboutChat extends StatelessWidget {
           _buildDivider(),
           _buildActionTile(
             context,
-            icon: chat.isFavorite == true ? Iconsax.heart5 : Iconsax.heart,
+            icon: widget.chat.isFavorite == true
+                ? Iconsax.heart5
+                : Iconsax.heart,
             iconColor: Colors.redAccent,
-            title: chat.isFavorite == true
+            title: widget.chat.isFavorite == true
                 ? 'Remove from favorites'
                 : 'Add to favorites',
             onTap: () async {
               await ChatService.toggleChatFavorite(
-                chatId: chat.uid!,
-                value: !chat.isFavorite,
+                chatId: widget.chat.uid!,
+                value: !widget.chat.isFavorite,
               );
               if (context.mounted) Navigator.pop(context);
             },
@@ -330,12 +390,12 @@ class AboutChat extends StatelessWidget {
               if (kIsMobile) {
                 Sheet.showSheet(
                   context,
-                  widget: ChatAttachment(chatId: chat.uid ?? ''),
+                  widget: ChatAttachment(chatId: widget.chat.uid ?? ''),
                 );
               } else {
                 GeneralDialog.showRTLSheet(
                   context,
-                  ChatAttachment(chatId: chat.uid ?? ''),
+                  ChatAttachment(chatId: widget.chat.uid ?? ''),
                 );
               }
             },

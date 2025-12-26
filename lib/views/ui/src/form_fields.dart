@@ -1,8 +1,10 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 // Flutter imports:
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '/theme/theme.dart';
 import '/views/views.dart';
 
@@ -194,12 +196,14 @@ class FormMultiDropdowns extends StatefulWidget {
   final String? label;
   final bool? isRequired;
   final List<Object>? items;
+  final List<Object>? selectedItems;
   final dynamic Function(List<dynamic>)? onListChanged;
   const FormMultiDropdowns({
     super.key,
     this.label,
     this.isRequired,
     this.items,
+    this.selectedItems,
     this.onListChanged,
   });
 
@@ -214,6 +218,7 @@ class _FormMultiDropdownsState extends State<FormMultiDropdowns> {
 
     field = CustomDropdown.multiSelectSearch(
       items: widget.items,
+
       closedHeaderPadding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 11,

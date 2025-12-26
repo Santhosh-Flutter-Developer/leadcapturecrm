@@ -676,4 +676,44 @@ class ChatService {
     var chatId = await createIndividualChat(userId: opponentUserId);
     return chatId;
   }
+
+  static Future<void> updateGroupChat({
+    required String chatId,
+    required String title,
+    String? description,
+    required List<String> participantIds,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
+
+      if (cid == null || uid == null) {
+        throw 'Invalid session';
+      }
+
+      final participantsKey = (participantIds..sort()).join('_');
+
+      await FirebaseFirestore.instance
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .doc(chatId)
+          .update({
+            'title': title,
+            'description': description,
+            'participants': participantIds,
+            'participantsKey': participantsKey,
+            'updatedAt': DateTime.now(),
+            'lastMessage': LastMessageModel(
+              message: 'Group details updated',
+              senderId: uid,
+              timestamp: DateTime.now(),
+            ).toMap(),
+          });
+    } catch (e, st) {
+      debugPrint('updateGroupChat error: $e\n$st');
+      await ErrorService.recordError(e, st);
+      throw 'Failed to update group chat';
+    }
+  }
 }
