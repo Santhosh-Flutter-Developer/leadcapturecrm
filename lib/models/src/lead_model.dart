@@ -286,6 +286,46 @@ class LeadModel {
     );
   }
 
+  factory LeadModel.quick({
+    required String leadName,
+    required double leadValue,
+    required String leadStatus,
+    required UserDataModel createdBy,
+    List<String> workflow = const [],
+    LeadSourceModel? leadSource,
+  }) {
+    return LeadModel(
+      uid: null,
+      leadNumber: null,
+      salutation: null,
+      leadName: leadName,
+      leadValue: leadValue,
+      leadStatus: leadStatus,
+      leadEmail: '',
+      leadSource: leadSource ?? LeadSourceModel.fromEmptyMap(),
+      leadCategory: '',
+      leadPriority: '',
+      allowFollowUp: true,
+      attachments: const [],
+      notes: '',
+      companyName: null,
+      companyWebsite: null,
+      companyMobile: null,
+      companyCountry: null,
+      companyState: null,
+      companyCity: null,
+      companyAddress: null,
+      companyZipCode: null,
+      createdBy: createdBy,
+      workflow: workflow,
+      clientId: null,
+      dealId: null,
+      leadsConverted: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
   String toJson() => json.encode(toMap());
 
   factory LeadModel.fromJson(String uid, String source) =>

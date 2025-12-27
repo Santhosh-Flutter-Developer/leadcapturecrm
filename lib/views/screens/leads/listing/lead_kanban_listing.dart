@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
@@ -291,20 +292,39 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () => Sheet.showSheet(
+                      context,
+                      widget: quickLead(context, list),
+                    ),
+                    child: const Icon(
+                      Icons.add_circle_outline,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -326,8 +346,157 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     );
   }
 
+  Widget quickLead(BuildContext context, LeadStatusModel status) {
+    final GlobalKey<FormState> quickFormKey = GlobalKey<FormState>();
+    final TextEditingController leadNameCtrl = TextEditingController();
+    final TextEditingController leadValueCtrl = TextEditingController();
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(30),
+        topRight: Radius.circular(30),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: quickFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Color(
+                        status.color,
+                      ).withValues(alpha: 0.15),
+                      child: Icon(
+                        Iconsax.flash_1,
+                        color: Color(status.color),
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Quick Lead',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            status.name,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.grey600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Divider(height: 32),
+
+                /// Lead Name
+                Text(
+                  'Lead Name',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                FormFields(
+                  controller: leadNameCtrl,
+                  hintText: 'Enter lead name',
+                  isRequired: true,
+                  valid: (v) =>
+                      v == null || v.isEmpty ? 'Lead name is required' : null,
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Lead Value
+                Text(
+                  'Lead Value',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                FormFields(
+                  controller: leadValueCtrl,
+                  hintText: 'Enter amount',
+                  keyboardType: TextInputType.number,
+                ),
+
+                const SizedBox(height: 28),
+
+                /// Create Button (minimized width)
+                Center(
+                  child: SizedBox(
+                    width: 200,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (!quickFormKey.currentState!.validate()) return;
+
+                        try {
+                          futureLoading(context);
+
+                          final lead = LeadModel.quick(
+                            leadName: leadNameCtrl.text.trim(),
+                            leadValue: double.tryParse(leadValueCtrl.text) ?? 0,
+                            leadStatus: status.uid!,
+                            createdBy: await Spdb.getUser(),
+                            workflow: await EmployeeService.getUserWorkflow(),
+                          );
+
+                          await LeadService.createLead(lead: lead);
+
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          FlushBar.show(context, 'Lead created successfully');
+                        } catch (e) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                          );
+                        }
+                      },
+                      icon: const Icon(Iconsax.add_circle, size: 18),
+                      label: const Text(
+                        'Create Lead',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        elevation: 2,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildKanbanCard(LeadModel task, LeadStatusModel list) {
-    // 🔒 Converted lead → NOT draggable
     if (task.leadsConverted == true) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
