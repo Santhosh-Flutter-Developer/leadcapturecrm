@@ -1,16 +1,10 @@
-import 'package:aaatp/models/src/chat_model.dart';
-import 'package:aaatp/services/firebase/src/admin_service.dart';
-import 'package:aaatp/services/firebase/src/chat_service.dart';
-import 'package:aaatp/services/firebase/src/common_service.dart';
-import 'package:aaatp/services/firebase/src/employee_service.dart';
-import 'package:aaatp/theme/src/app_colors.dart';
-import 'package:aaatp/views/ui/src/error_display.dart';
-import 'package:aaatp/views/ui/src/flush_bar.dart';
-import 'package:aaatp/views/ui/src/form_fields.dart';
-import 'package:aaatp/views/ui/src/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:path/path.dart';
+import '/models/models.dart';
+import '/services/services.dart';
+import '/theme/theme.dart';
+import '/views/views.dart';
 
 class EditGroupChat extends StatefulWidget {
   final ChatModel chat;

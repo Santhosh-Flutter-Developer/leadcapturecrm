@@ -6,6 +6,7 @@ import '/models/models.dart';
 
 class TaskModel {
   final String? uid;
+  final int? taskNumber;
   final String taskName;
   final String description;
   final DateTime? deadline;
@@ -32,6 +33,7 @@ class TaskModel {
 
   TaskModel({
     String? uid,
+    this.taskNumber,
     required this.taskName,
     required this.description,
     this.deadline,
@@ -61,6 +63,7 @@ class TaskModel {
 
   TaskModel copyWith({
     String? uid,
+    int? taskNumber,
     String? taskName,
     String? description,
     DateTime? deadline,
@@ -87,6 +90,7 @@ class TaskModel {
   }) {
     return TaskModel(
       uid: uid ?? this.uid,
+      taskNumber: taskNumber ?? this.taskNumber,
       taskName: taskName ?? this.taskName,
       description: description ?? this.description,
       deadline: deadline ?? this.deadline,
@@ -117,6 +121,7 @@ class TaskModel {
   factory TaskModel.fromMap(String uid, Map<String, dynamic> map) {
     return TaskModel(
       uid: uid,
+      taskNumber: map['taskNumber'] as int?,
       taskName: map['taskName'] as String,
       description: map['description'] as String,
       deadline: map['deadline'] != null

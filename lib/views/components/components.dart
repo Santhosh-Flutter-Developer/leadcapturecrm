@@ -16,3 +16,4 @@ export 'src/xlsx_writer.dart';
 export 'src/android_update.dart';
 export 'src/install_info.dart';
 export 'src/trash_screen.dart';
+export 'src/edit_group_chat.dart';

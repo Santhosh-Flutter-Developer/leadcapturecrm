@@ -15,10 +15,24 @@ class TaskService {
         task.createdBy.add(uid!);
       }
 
-      var taskDoc = await firebase.users
-          .doc(cid)
-          .collection(Collections.tasks.name)
-          .add(task.toMap());
+      final userDoc = firebase.users.doc(cid);
+      final tasksRef = userDoc.collection(Collections.tasks.name);
+
+      // Generate task number if not provided
+      int taskNumber = task.taskNumber ?? 1;
+      var lastTaskSnapshot = await tasksRef
+          .orderBy('taskNumber', descending: true)
+          .limit(1)
+          .get();
+      if (lastTaskSnapshot.docs.isNotEmpty) {
+        taskNumber =
+            (lastTaskSnapshot.docs.first.data()['taskNumber'] ?? 0) + 1;
+      }
+
+      var taskData = task.toMap();
+      taskData['taskNumber'] = taskNumber;
+
+      var taskDoc = await tasksRef.add(taskData);
 
       // Task History
       TaskHistoryModel taskHistoryModel = TaskHistoryModel(
