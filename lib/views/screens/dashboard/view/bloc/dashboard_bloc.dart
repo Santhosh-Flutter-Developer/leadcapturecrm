@@ -21,12 +21,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         final data = await dashboard.fetchDashboardData(
           isAdmin: isAdmin,
           userId: userId,
+          filter: event.filter,
+          range: event.range,
         );
 
         emit(DashboardLoaded(data));
       } catch (e) {
         debugPrint("DashboardError: $e");
-        emit(DashboardError("Failed to fetch dashboard data: $e"));
+        emit(DashboardError("Failed to fetch dashboard data"));
       }
     });
   }

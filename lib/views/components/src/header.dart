@@ -18,7 +18,7 @@ class Header extends StatefulWidget {
 }
 
 class _HeaderState extends State<Header> {
-  String _selectedFilter = "Today";
+  // String _selectedFilter = "Today";
   DateTime _lastSyncTime = DateTime.now();
   bool _isRefreshing = false;
 
@@ -86,8 +86,7 @@ class _HeaderState extends State<Header> {
           const SizedBox(width: 16),
 
           // --- Date Filter ---
-          _buildDateFilter(isDark),
-
+          // _buildDateFilter(isDark),
           const SizedBox(width: 16),
 
           // --- Action Buttons ---
@@ -185,69 +184,68 @@ class _HeaderState extends State<Header> {
     );
   }
 
-  // --- Date Filter Pill ---
-  Widget _buildDateFilter(bool isDark) {
-    return StatefulBuilder(
-      builder: (context, setStateSB) {
-        return Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: isDark ? Color(0xff303030) : AppColors.grey50,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.grey200),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedFilter,
-              icon: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  Iconsax.arrow_down_1,
-                  size: 16,
-                  color: isDark ? Colors.white : AppColors.grey600,
-                ),
-              ),
-              dropdownColor: isDark ? Color(0xff303030) : AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              elevation: 2,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isDark ? Colors.white : AppColors.grey800,
-                fontWeight: FontWeight.w600,
-              ),
-              onTap: () {}, // Handled by onChanged
-              items: ["Today", "This Week", "This Month", "Custom Date"]
-                  .map(
-                    (item) => DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(
-                        item,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) async {
-                if (value == null) return;
-                setState(() => _selectedFilter = value);
+  // Widget _buildDateFilter(bool isDark) {
+  //   return StatefulBuilder(
+  //     builder: (context, setStateSB) {
+  //       return Container(
+  //         height: 38,
+  //         padding: const EdgeInsets.symmetric(horizontal: 12),
+  //         decoration: BoxDecoration(
+  //           color: isDark ? Color(0xff303030) : AppColors.grey50,
+  //           borderRadius: BorderRadius.circular(20),
+  //           border: Border.all(color: AppColors.grey200),
+  //         ),
+  //         child: DropdownButtonHideUnderline(
+  //           child: DropdownButton<String>(
+  //             value: _selectedFilter,
+  //             icon: Padding(
+  //               padding: const EdgeInsets.only(left: 8),
+  //               child: Icon(
+  //                 Iconsax.arrow_down_1,
+  //                 size: 16,
+  //                 color: isDark ? Colors.white : AppColors.grey600,
+  //               ),
+  //             ),
+  //             dropdownColor: isDark ? Color(0xff303030) : AppColors.white,
+  //             borderRadius: BorderRadius.circular(16),
+  //             elevation: 2,
+  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //               color: isDark ? Colors.white : AppColors.grey800,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //             onTap: () {}, // Handled by onChanged
+  //             items: ["Today", "This Week", "This Month", "Custom Date"]
+  //                 .map(
+  //                   (item) => DropdownMenuItem<String>(
+  //                     value: item,
+  //                     child: Text(
+  //                       item,
+  //                       style: Theme.of(context).textTheme.bodySmall,
+  //                     ),
+  //                   ),
+  //                 )
+  //                 .toList(),
+  //             onChanged: (value) async {
+  //               if (value == null) return;
+  //               setState(() => _selectedFilter = value);
 
-                if (value == "Custom Date") {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2035),
-                  );
-                  if (picked != null) debugPrint("Custom date: $picked");
-                }
-                HeaderFilterBus.broadcast(_selectedFilter);
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
+  //               if (value == "Custom Date") {
+  //                 DateTime? picked = await showDatePicker(
+  //                   context: context,
+  //                   initialDate: DateTime.now(),
+  //                   firstDate: DateTime(2020),
+  //                   lastDate: DateTime(2035),
+  //                 );
+  //                 if (picked != null) debugPrint("Custom date: $picked");
+  //               }
+  //               HeaderFilterBus.broadcast(_selectedFilter);
+  //             },
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   // --- Notification Button with Badge ---
   Widget _buildNotificationButton(bool isDark) {
@@ -376,14 +374,14 @@ class _HeaderState extends State<Header> {
   }
 }
 
-// --- Event Bus ---
-class HeaderFilterBus {
-  static final StreamController<String> _controller =
-      StreamController.broadcast();
+// // --- Event Bus ---
+// class HeaderFilterBus {
+//   static final StreamController<String> _controller =
+//       StreamController.broadcast();
 
-  static Stream<String> get stream => _controller.stream;
+//   static Stream<String> get stream => _controller.stream;
 
-  static void broadcast(String filter) {
-    _controller.add(filter);
-  }
-}
+//   static void broadcast(String filter) {
+//     _controller.add(filter);
+//   }
+// }
