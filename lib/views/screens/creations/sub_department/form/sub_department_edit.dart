@@ -15,13 +15,10 @@ class SubDepartmentEdit extends StatefulWidget {
 class _SubDepartmentEditState extends State<SubDepartmentEdit> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final List<DepartmentModel> _departmentList = [];
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   SubDepartmentModel? _subDepartmentModel;
-  String? _selectedDepartmentName;
-  String? _selectedDepartmentUid;
-
+  DepartmentModel? _selectedDepartment;
   late Future _future;
 
   @override
@@ -37,16 +34,9 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
 
     _nameController.text = _subDepartmentModel?.name ?? '';
     _descriptionController.text = _subDepartmentModel?.description ?? '';
-    _selectedDepartmentUid = _subDepartmentModel?.department;
-
-    final departments = await DepartmentService.getAllDepartments();
-    var selectedDepartment = departments.firstWhere(
-      (element) => element.uid == _selectedDepartmentUid,
+    _selectedDepartment = await DepartmentService.getDepartment(
+      uid: _subDepartmentModel?.department ?? '',
     );
-    _selectedDepartmentName = selectedDepartment.name;
-    setState(() {
-      _departmentList.addAll(departments);
-    });
   }
 
   @override
@@ -179,29 +169,56 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
           ),
           SizedBox(
             width: itemWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      "Department",
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: AppColors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '*',
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                CustomFutureSearchableDropdown<DepartmentModel>(
+                  initialValue: _selectedDepartment,
+                  asyncItems: () async {
+                    var departments =
+                        await DepartmentService.getAllDepartments();
+                    return departments;
+                  },
+                  itemAsString: (departments) => departments.name,
+                  onChanged: (selectedDep) async {
+                    if (selectedDep != null) {
+                      _selectedDepartment = selectedDep;
+                    }
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: itemWidth,
             child: FormFields(
               label: 'Description',
               controller: _descriptionController,
               hintText: 'Enter description (optional)',
               maxLines: 4,
               keyboardType: TextInputType.multiline,
-            ),
-          ),
-          SizedBox(
-            width: itemWidth,
-            child: FormDropdownSearch(
-              label: 'Select Department',
-              isRequired: true,
-              items: _departmentList.map((e) => e.name).toList(),
-              initialItem: _selectedDepartmentName,
-              onChanged: (value) {
-                if (value != null) {
-                  _selectedDepartmentName = value.toString();
-                  _selectedDepartmentUid = _departmentList
-                      .firstWhere((element) => element.name == value.toString())
-                      .uid;
-                }
-              },
             ),
           ),
         ],
@@ -217,7 +234,7 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
         final subDepartmentModel = SubDepartmentModel(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
-          department: _selectedDepartmentUid ?? '',
+          department: _selectedDepartment?.uid ?? '',
           createdBy: await Spdb.getUser(),
         );
 
