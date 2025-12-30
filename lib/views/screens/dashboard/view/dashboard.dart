@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -287,18 +286,6 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     trend: 12.5,
                   ),
                 ),
-                // const SizedBox(width: 10),
-                // SizedBox(
-                //   width: 200,
-                //   child: KpiCard(
-                //     title: "Total Leads",
-                //     value: data.totalLeads.toString(),
-                //     icon: Icons.bar_chart_rounded,
-                //     progress: _calculateProgress(data.totalLeads, 200),
-                //     gradientColors: blueGradient,
-                //     trend: 12.5,
-                //   ),
-                // ),
                 const SizedBox(width: 10),
                 SizedBox(
                   width: 200,
@@ -601,8 +588,6 @@ Widget _buildRightPanel(
   );
 }
 
-// --- REDESIGNED WIDGETS ---
-
 class KpiCard extends StatelessWidget {
   final String title;
   final String value;
@@ -877,6 +862,19 @@ class _ChartCardState extends State<ChartCard>
     const Color(0xff9C27B0),
   ];
 
+  double _getMaxY(int tab) {
+    switch (tab) {
+      case 0: // Leads
+        return widget.data.totalLeads.toDouble() * 1.2;
+      case 1: // Deals
+        return widget.data.ongoingDeals.toDouble() * 1.2;
+      case 2: // Tasks
+        return widget.data.assignedTasks.toDouble() * 1.2;
+      default:
+        return 10;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -891,98 +889,152 @@ class _ChartCardState extends State<ChartCard>
 
   List<double> _getValuesForTitle(int titleIndex) {
     switch (titleIndex) {
-      case 0:
+      case 0: // Leads
         return [
           widget.data.totalLeads.toDouble(),
           widget.data.convertedLeads.toDouble(),
           widget.data.leadsAssigned.toDouble(),
         ];
-      case 1:
+
+      case 1: // Deals
         return [
           widget.data.ongoingDeals.toDouble(),
           widget.data.convertedLeads.toDouble(),
-          widget.data.totalLeads.toDouble(),
         ];
-      case 2:
+
+      case 2: // Tasks
         return [
-          widget.data.pendingTasks.toDouble(),
           widget.data.assignedTasks.toDouble(),
+          widget.data.pendingTasks.toDouble(),
           widget.data.pendingFollowUps.toDouble(),
         ];
+
       default:
-        return [0, 0, 0];
+        return [];
     }
   }
 
   Widget _buildChart(int titleIndex, int chartIndex) {
     final values = _getValuesForTitle(titleIndex);
+    List<String> getLabels(int tab) {
+      switch (tab) {
+        case 0:
+          return ["Total", "Converted", "Assigned"];
+        case 1:
+          return ["Ongoing", "Converted"];
+        case 2:
+          return ["Assigned", "Pending", "Follow-ups"];
+        default:
+          return [];
+      }
+    }
 
     switch (_chartTypes[chartIndex]['name']) {
       case 'Line':
+        final labels = getLabels(titleIndex);
+
+        final rawMaxY = values.isEmpty
+            ? 5
+            : values.reduce((a, b) => a > b ? a : b).ceil();
+
+        final maxY = (rawMaxY * 1.2).ceilToDouble();
+        final yInterval = (maxY / 5).ceilToDouble();
+
         return Padding(
-          padding: const EdgeInsets.only(
-            right: 20.0,
-            left: 10,
-            top: 20,
-            bottom: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: LineChart(
             LineChartData(
+              minX: 0,
+              maxX: (values.length - 1).toDouble(),
+              minY: 0,
+              maxY: maxY,
+
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
-                },
+                horizontalInterval: yInterval, // 👈 INTEGER GRID
+                getDrawingHorizontalLine: (value) =>
+                    FlLine(color: Colors.grey.shade200, strokeWidth: 1),
               ),
+
               titlesData: FlTitlesData(
-                show: true,
                 topTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
                 ),
                 rightTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
                 ),
+
+                /// ✅ INTEGER Y-AXIS
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: yInterval,
+                    reservedSize: 20,
+                    getTitlesWidget: (value, meta) {
+                      if (value % 1 != 0) return const SizedBox.shrink();
+                      return Text(
+                        value.toInt().toString(),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+                      );
+                    },
+                  ),
+                ),
+
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
+                    interval: 1,
+                    reservedSize: 65,
                     getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (value % 1 != 0 ||
+                          index < 0 ||
+                          index >= labels.length) {
+                        return const SizedBox.shrink();
+                      }
                       return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          "D${value.toInt() + 1}",
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: kTextSecondary),
+                        padding: const EdgeInsets.only(top: 10),
+                        child: SizedBox(
+                          width: 70,
+                          child: Text(
+                            labels[index],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: kTextSecondary),
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
               ),
-              borderData: FlBorderData(show: false),
+
+              borderData: FlBorderData(
+                show: true,
+                border: const Border(
+                  bottom: BorderSide(color: Colors.grey),
+                  left: BorderSide(color: Colors.grey),
+                ),
+              ),
+
               lineBarsData: [
                 LineChartBarData(
                   spots: List.generate(
                     values.length,
                     (i) => FlSpot(i.toDouble(), values[i]),
                   ),
-                  isCurved: true,
-                  barWidth: 4,
+                  isCurved: values.length > 2,
                   color: _gradientColors.first,
-                  dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, percent, barData, index) {
-                      return FlDotCirclePainter(
-                        radius: 6,
-                        color: Colors.white,
-                        strokeWidth: 3,
-                        strokeColor: _gradientColors.first,
-                      );
-                    },
-                  ),
+                  barWidth: 4,
+                  dotData: FlDotData(show: true),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: _gradientColors.first.withValues(alpha: 0.1),
+                    color: _gradientColors.first.withOpacity(0.1),
                   ),
                 ),
               ],
@@ -1008,10 +1060,16 @@ class _ChartCardState extends State<ChartCard>
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+
+                      if (index < 0 || index >= values.length) {
+                        return const SizedBox();
+                      }
+
                       return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          "Cat ${value.toInt() + 1}",
+                          getLabels(_titleController.index)[index],
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: kTextSecondary),
                         ),
@@ -1032,7 +1090,7 @@ class _ChartCardState extends State<ChartCard>
                       borderRadius: BorderRadius.circular(6),
                       backDrawRodData: BackgroundBarChartRodData(
                         show: true,
-                        toY: values.reduce(math.max) * 1.2,
+                        toY: _getMaxY(titleIndex),
                         color: kBgColor,
                       ),
                     ),
@@ -1053,10 +1111,11 @@ class _ChartCardState extends State<ChartCard>
               sections: List.generate(values.length, (i) {
                 return PieChartSectionData(
                   value: values[i],
+                  title: getLabels(_titleController.index)[i],
                   radius: 60,
                   titleStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                   color: _gradientColors[i % _gradientColors.length],
                 );

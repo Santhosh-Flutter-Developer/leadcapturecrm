@@ -47,6 +47,11 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     _leadList = await LeadService.getLeadByGroup(leadList: widget.leadList);
   }
 
+  Future<void> _refreshKanban() async {
+    _future = _initializeBoard();
+    setState(() {});
+  }
+
   void _handleDragStarted(LeadModel task, LeadStatusModel fromList) {
     setState(() {
       _draggedLead = task;
@@ -71,23 +76,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       _draggedFromList = null;
     });
   }
-
-  // Future<void> _updateStatus(String leadUid, LeadStatusModel leadStatus) async {
-  //   try {
-  //     futureLoading(context);
-  //     await LeadService.updateLeadStatus(
-  //       uid: leadUid,
-  //       leadStatus: leadStatus.uid ?? '',
-  //     );
-  //     if (Navigator.canPop(context)) Navigator.pop(context);
-  //     FlushBar.show(context, 'Status updated');
-  //   } catch (e, st) {
-  //     if (Navigator.canPop(context)) Navigator.pop(context);
-  //     debugPrint('$e, $st');
-  //     await ErrorService.recordError(e, st);
-  //     FlushBar.show(context, e.toString(), isSuccess: false);
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -128,30 +116,34 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
 
         if (_draggedFromList == list) return;
 
-        _leadList[_draggedFromList]!.removeWhere((t) => t.uid == lead.uid);
+        final originalLead = lead.copyWith();
 
-        setState(() {
-          leads.add(lead);
-        });
+        _leadList[_draggedFromList!] = List.from(_leadList[_draggedFromList]!)
+          ..removeWhere((t) => t.uid == lead.uid);
+
+        _leadList[list] = List.from(_leadList[list]!)..add(lead);
+
+        setState(() {});
 
         try {
           if (list.isFinal) {
             final result = await showDialog<bool>(
               context: context,
-              builder: (context) {
-                return const ConfirmDialog(
-                  title: 'Convert Lead',
-                  content:
-                      'Are you sure you want to convert this lead to a deal?',
-                );
-              },
+              builder: (context) => const ConfirmDialog(
+                title: 'Convert Lead',
+                content:
+                    'Are you sure you want to convert this lead to a deal?',
+              ),
             );
 
             if (result == null || !result) {
-              setState(() {
-                leads.removeWhere((l) => l.uid == lead.uid);
-                _leadList[_draggedFromList]!.add(lead);
-              });
+              _leadList[_draggedFromList!] = List.from(
+                _leadList[_draggedFromList]!,
+              )..add(originalLead);
+              _leadList[list] = List.from(_leadList[list]!)
+                ..removeWhere((l) => l.uid == lead.uid);
+
+              setState(() {});
               return;
             }
           }
@@ -165,22 +157,23 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           if (list.isFinal) {
             await _convertLeadToDeal(context, lead);
 
-            setState(() {
-              _leadList[list] = List.from(leads)
-                ..removeWhere((l) => l.uid == lead.uid)
-                ..add(lead.copyWith(leadsConverted: true));
-            });
+            _leadList[list] = List.from(_leadList[list]!)
+              ..removeWhere((l) => l.uid == lead.uid)
+              ..add(lead.copyWith(leadsConverted: true));
+
+            setState(() {});
           }
         } catch (e) {
-          setState(() {
-            leads.removeWhere((l) => l.uid == lead.uid);
-            _leadList[_draggedFromList]!.add(lead);
-          });
+          _leadList[_draggedFromList!] = List.from(_leadList[_draggedFromList]!)
+            ..add(originalLead);
+          _leadList[list] = List.from(_leadList[list]!)
+            ..removeWhere((l) => l.uid == lead.uid);
+
+          setState(() {});
 
           FlushBar.show(context, e.toString(), isSuccess: false);
         }
       },
-
       builder: (context, candidateData, rejectedData) {
         bool isHovering = candidateData.isNotEmpty;
         double totalValue = leads.fold(
@@ -320,6 +313,36 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                     ),
                     child: const Icon(
                       Icons.add_circle_outline,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () async {
+                      final leadStatusList = _leadList.keys.toList();
+                      bool? result;
+
+                      if (kIsMobile) {
+                        result = await Sheet.showSheet(
+                          context,
+                          widget: LeadStatusReorder(
+                            leadStatusList: leadStatusList,
+                          ),
+                        );
+                      } else {
+                        result = await GeneralDialog.showRTLSheet(
+                          context,
+                          LeadStatusReorder(leadStatusList: leadStatusList),
+                        );
+                      }
+
+                      if (result == true) {
+                        await _refreshKanban();
+                      }
+                    },
+                    child: const Icon(
+                      Icons.reorder,
                       size: 18,
                       color: Colors.white,
                     ),
@@ -498,16 +521,26 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
 
   Widget _buildKanbanCard(LeadModel task, LeadStatusModel list) {
     if (task.leadsConverted == true) {
+      // Converted leads are shown as static cards
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.grey200,
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: AppColors.blue.withOpacity(0.5)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               _buildCardContent(task),
               const SizedBox(height: 6),
@@ -531,14 +564,38 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       );
     }
 
+    // Draggable card for unconverted leads
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Draggable<LeadModel>(
         data: task,
-        feedback: _buildDragFeedback(task),
+        feedback: Material(
+          elevation: 8.0,
+          borderRadius: BorderRadius.circular(12.0),
+          color: Colors.transparent,
+          child: Transform.rotate(
+            angle: 0.05,
+            child: Container(
+              width: 244,
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12.0),
+                border: Border.all(color: AppColors.blue.withOpacity(0.5)),
+              ),
+              child: _buildCardContent(task),
+            ),
+          ),
+        ),
         childWhenDragging: Opacity(
           opacity: 0.2,
-          child: _buildCardContent(task),
+          child: Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.grey200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
         onDragStarted: () => _handleDragStarted(task, list),
         onDragEnd: _handleDragEnd,
@@ -550,34 +607,22 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
             }
           },
-          child: _buildCardContent(task),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDragFeedback(LeadModel lead) {
-    return Material(
-      elevation: 6,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 260,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              lead.leadName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(lead.companyName ?? '', style: const TextStyle(fontSize: 12)),
-          ],
+            padding: const EdgeInsets.all(12.0),
+            child: _buildCardContent(task),
+          ),
         ),
       ),
     );
@@ -587,85 +632,172 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        /// HEADER ROW (Avatar + Name + Value)
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 12,
+              radius: 14,
               backgroundColor: AppColors.blue100,
               child: Text(
                 lead.leadName.isNotEmpty ? lead.leadName[0].toUpperCase() : '?',
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.blue700,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
+
+            /// Name + Email + Company
             Expanded(
-              child: Text(
-                lead.leadName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.black,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lead.leadName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.black,
+                    ),
+                  ),
+
+                  if (lead.leadEmail.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      lead.leadEmail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.grey700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+
+                  if (lead.companyName?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      lead.companyName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.grey600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            /// Lead Value
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _currencyFormat.format(lead.leadValue),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.success,
+                  ),
                 ),
               ),
             ),
-            if (lead.leadEmail.isNotEmpty || lead.companyMobile != null)
-              const Icon(
-                Icons.contact_mail_outlined,
-                size: 12,
-                color: AppColors.grey,
-              ),
           ],
         ),
-        const SizedBox(height: 8),
+
+        const SizedBox(height: 12),
+
+        /// STATUS & SOURCE
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _chip(
+              CacheService.leadStatusByUid(lead.leadStatus)?.name ?? '',
+              AppColors.blue,
+            ),
+            _chip(lead.leadSource.name, AppColors.orange),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        /// FOOTER META
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                _currencyFormat.format(lead.leadValue),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.success,
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today,
+                  size: 12,
+                  color: AppColors.grey600,
                 ),
-              ),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat('dd MMM').format(lead.createdAt),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              DateFormat('dd MMM').format(lead.createdAt),
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.grey600,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: AppColors.grey600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  lead.createdBy.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        if (lead.companyName != null && lead.companyName!.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            lead.companyName!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.blue700,
-              fontWeight: FontWeight.w500,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
       ],
+    );
+  }
+
+  Widget _chip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
