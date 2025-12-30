@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:local_notifier/local_notifier.dart';
@@ -6,6 +7,8 @@ import '/services/services.dart';
 import '/app/app.dart';
 import '/constants/constants.dart';
 import '/views/views.dart';
+
+final AudioPlayer _player = AudioPlayer();
 
 class FirestoreNotificationListener {
   static final FirebaseConfig firebase = FirebaseConfig();
@@ -82,14 +85,18 @@ class FirestoreNotificationListener {
                         // }
                       }
                     };
-
                     notification.show();
+                    _playSound();
                   }
                 }
               }
             }
           });
     }
+  }
+
+  static void _playSound() async {
+    await _player.play(AssetSource('audio/notify.mp3'), volume: 1.0);
   }
 
   static Future<void> sendTestNotification() async {

@@ -288,36 +288,20 @@ class _EventCreateState extends State<EventCreate> {
 
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Members',
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 8),
-              CustomSearchableDropdown(
-                items: _employeesList.map((e) => e.name).toList(),
-                multiSelect: true,
-                onChangedList: (list) {
-                  for (var i in list) {
-                    final emp = _employeesList.firstWhere(
-                      (element) => element.name == i,
-                    );
-
-                    if (emp.uid != null) {
-                      if (!_selectedEventAttendes.contains(emp.uid)) {
-                        _selectedEventAttendes.add(emp.uid!);
-                      }
-                    }
-                  }
-                },
-                itemAsString: (s) => s,
-              ),
-            ],
+          child: UsersListDropdown(
+            label: 'Attendees',
+            onChangedList: (list) {
+              _selectedEventAttendes.clear();
+              for (var i in list) {
+                if (i is EmployeeModel || i is AdminModel) {
+                  _selectedEventAttendes.addAll(list.map((e) => e.uid!));
+                } else if (i is ChatModel) {
+                  _selectedEventAttendes.addAll(i.participants);
+                }
+              }
+            },
+            includeCurrentUser: false,
+            includeGroups: true,
           ),
         ),
       ],
@@ -342,7 +326,7 @@ class _EventCreateState extends State<EventCreate> {
                 (_selectedRepeatType ??
                     EventRepeatType.none.name.capitalizeFirst),
           ),
-          eventAttendes: _selectedEventAttendes,
+          eventAttendes: _selectedEventAttendes.toSet().toList(),
           createdBy: await Spdb.getUser(),
         );
 

@@ -129,45 +129,26 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
           ),
           SizedBox(
             width: itemWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      "Department",
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: AppColors.black,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '*',
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: AppColors.danger,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                CustomFutureSearchableDropdown<DepartmentModel>(
-                  asyncItems: () async {
-                    var departments =
-                        await DepartmentService.getAllDepartments();
-                    return departments;
-                  },
-                  itemAsString: (departments) => departments.name,
-                  onChanged: (selectedDep) async {
-                    if (selectedDep != null) {
-                      _selectedDepartment = selectedDep;
-                    }
-                    setState(() {});
-                  },
-                ),
-              ],
+            child: CustomFutureSearchableDropdown<DepartmentModel>(
+              label: 'Department',
+              isRequired: true,
+              validator: (value) {
+                if (value == null) {
+                  return 'Department is required';
+                }
+                return null;
+              },
+              asyncItems: () async {
+                var departments = await DepartmentService.getAllDepartments();
+                return departments;
+              },
+              itemAsString: (departments) => departments.name,
+              onChanged: (selectedDep) async {
+                if (selectedDep != null) {
+                  _selectedDepartment = selectedDep;
+                }
+                setState(() {});
+              },
             ),
           ),
           SizedBox(

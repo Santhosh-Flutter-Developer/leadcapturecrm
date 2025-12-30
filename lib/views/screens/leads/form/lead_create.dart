@@ -464,93 +464,54 @@ class _LeadCreateState extends State<LeadCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Country",
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              CustomFutureSearchableDropdown<RegionModel>(
-                asyncItems: () async {
-                  var countries = await RegionService.getCountries();
-                  return countries;
-                },
-                itemAsString: (countries) => countries.name,
-                onChanged: (selectedCountry) async {
-                  _regionModel = selectedCountry;
-                  setState(() {});
-                },
-              ),
-            ],
+          child: CustomFutureSearchableDropdown<RegionModel>(
+            label: 'Country',
+            asyncItems: () async {
+              var countries = await RegionService.getCountries();
+              return countries;
+            },
+            itemAsString: (countries) => countries.name,
+            onChanged: (selectedCountry) async {
+              _regionModel = selectedCountry;
+              setState(() {});
+            },
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "State",
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              CustomFutureSearchableDropdown<StateModel>(
-                asyncItems: () async {
-                  if (_regionModel == null) return [];
-                  var states = await RegionService.getStates(
-                    regionId: _regionModel?.uid ?? '',
-                  );
-                  return states;
-                },
-                itemAsString: (countries) => countries.name,
-                onChanged: (selectedState) async {
-                  _stateModel = selectedState;
-                  setState(() {});
-                },
-              ),
-            ],
+          child: CustomFutureSearchableDropdown<StateModel>(
+            label: 'State',
+            asyncItems: () async {
+              if (_regionModel == null) return [];
+              var states = await RegionService.getStates(
+                regionId: _regionModel?.uid ?? '',
+              );
+              return states;
+            },
+            itemAsString: (countries) => countries.name,
+            onChanged: (selectedState) async {
+              _stateModel = selectedState;
+              setState(() {});
+            },
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "City",
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              CustomFutureSearchableDropdown<CityModel>(
-                asyncItems: () async {
-                  if (_regionModel == null || _stateModel == null) return [];
-                  var cities = await RegionService.getCities(
-                    regionId: _regionModel?.uid ?? '',
-                    stateId: _stateModel?.uid ?? '',
-                  );
-                  return cities;
-                },
-                itemAsString: (cities) => cities.name,
-                onChanged: (selectedCity) async {
-                  _cityModel = selectedCity;
-                  setState(() {});
-                },
-              ),
-            ],
+          child: CustomFutureSearchableDropdown<CityModel>(
+            label: 'City',
+            asyncItems: () async {
+              if (_regionModel == null || _stateModel == null) return [];
+              var cities = await RegionService.getCities(
+                regionId: _regionModel?.uid ?? '',
+                stateId: _stateModel?.uid ?? '',
+              );
+              return cities;
+            },
+            itemAsString: (cities) => cities.name,
+            onChanged: (selectedCity) async {
+              _cityModel = selectedCity;
+              setState(() {});
+            },
           ),
         ),
         SizedBox(

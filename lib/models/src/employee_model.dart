@@ -129,7 +129,7 @@ class EmployeeModel {
       lastActive: lastActive ?? this.lastActive,
       devices: devices ?? this.devices,
       isInitialPasswordChanged:
-          isInitialPasswordChanged ?? this.isInitialPasswordChanged,      
+          isInitialPasswordChanged ?? this.isInitialPasswordChanged,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -299,66 +299,5 @@ class EmployeeModel {
   @override
   String toString() {
     return 'EmployeeModel(..., reportingTo: $reportingTo, createdAt: $createdAt, updatedAt: $updatedAt)';
-  }
-
-  @override
-  bool operator ==(covariant EmployeeModel other) {
-    if (identical(this, other)) return true;
-
-    return other.uid == uid &&
-        other.employeeId == employeeId &&
-        other.lowercaseEmployeeId == lowercaseEmployeeId &&
-        other.name == name &&
-        other.email == email &&
-        other.password == password &&
-        other.designation == designation &&
-        other.department == department &&
-        other.subDepartment == subDepartment &&
-        other.mobileNumber == mobileNumber &&
-        other.profileImageUrl == profileImageUrl &&
-        other.gender == gender &&
-        other.dateOfJoining == dateOfJoining &&
-        other.dateOfBirth == dateOfBirth &&
-        other.role == role &&
-        other.address == address &&
-        other.about == about &&
-        other.loginAllowed == loginAllowed &&
-        other.receiveEmailNotifications == receiveEmailNotifications &&
-        other.skills == skills &&
-        other.employeeType == employeeType &&
-        other.reportingTo == reportingTo &&
-        other.maritalStatus == maritalStatus &&
-        other.createdBy == createdBy &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
-  }
-
-  @override
-  int get hashCode {
-    return uid.hashCode ^
-        employeeId.hashCode ^
-        lowercaseEmployeeId.hashCode ^
-        name.hashCode ^
-        email.hashCode ^
-        password.hashCode ^
-        designation.hashCode ^
-        department.hashCode ^
-        subDepartment.hashCode ^
-        mobileNumber.hashCode ^
-        profileImageUrl.hashCode ^
-        gender.hashCode ^
-        dateOfJoining.hashCode ^
-        dateOfBirth.hashCode ^
-        role.hashCode ^
-        address.hashCode ^
-        about.hashCode ^
-        loginAllowed.hashCode ^
-        receiveEmailNotifications.hashCode ^
-        skills.hashCode ^
-        employeeType.hashCode ^
-        maritalStatus.hashCode ^
-        createdBy.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
   }
 }

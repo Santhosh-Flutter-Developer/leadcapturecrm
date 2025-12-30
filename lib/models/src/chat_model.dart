@@ -1,8 +1,5 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '/models/models.dart';
 
 class ChatModel {
@@ -127,34 +124,6 @@ class ChatModel {
   @override
   String toString() {
     return 'ChatModel(uid: $uid, createdBy: $createdBy, participants: $participants, title: $title, description: $description, isGroupChat: $isGroupChat, lastMessage: $lastMessage, createdAt: $createdAt, updatedAt: $updatedAt)';
-  }
-
-  @override
-  bool operator ==(covariant ChatModel other) {
-    if (identical(this, other)) return true;
-
-    return other.uid == uid &&
-        other.createdBy == createdBy &&
-        listEquals(other.participants, participants) &&
-        other.title == title &&
-        other.description == description &&
-        other.isGroupChat == isGroupChat &&
-        other.lastMessage == lastMessage &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
-  }
-
-  @override
-  int get hashCode {
-    return uid.hashCode ^
-        createdBy.hashCode ^
-        participants.hashCode ^
-        title.hashCode ^
-        description.hashCode ^
-        isGroupChat.hashCode ^
-        lastMessage.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
   }
 }
 

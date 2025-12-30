@@ -39,7 +39,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   List<DepartmentModel> _departmentList = [];
   final List<String> _department = [];
   final List<SubDepartmentModel> _subDepartmentList = [];
-  List<EmployeeModel> _employeesList = [];
   final List<String> _reportingTo = [];
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -72,7 +71,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
       _rolesList = await RoleService.getAllRoles();
       _designationList = await DesignationService.getAllDesignations();
       _departmentList = await DepartmentService.getAllDepartments();
-      _employeesList = await EmployeeService.getAllEmployees();
 
       setState(() {});
     } catch (e, st) {
@@ -355,7 +353,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-            isRequired: true,
+            // isRequired: true,
             // valid: (input) =>
             //     input == null || input.isEmpty ? 'Email is required' : null,
           ),
@@ -387,130 +385,79 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Designation",
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '*',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              CustomFutureSearchableDropdown<DesignationModel>(
-                asyncItems: () async {
-                  var designations =
-                      await DesignationService.getAllDesignations();
-                  return designations;
-                },
-                itemAsString: (desigantion) => desigantion.name,
-                onChanged: (selectedDes) async {
-                  if (selectedDes != null) {
-                    _designationModel = selectedDes;
-                  }
-                  setState(() {});
-                },
-              ),
-            ],
+          child: CustomFutureSearchableDropdown<DesignationModel>(
+            label: 'Designation',
+            isRequired: true,
+            validator: (value) {
+              if (_designationModel == null) {
+                return 'Designation is required';
+              }
+              return null;
+            },
+            asyncItems: () async {
+              var designations = await DesignationService.getAllDesignations();
+              return designations;
+            },
+            itemAsString: (desigantion) => desigantion.name,
+            onChanged: (selectedDes) async {
+              if (selectedDes != null) {
+                _designationModel = selectedDes;
+              }
+              setState(() {});
+            },
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Department",
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '*',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+          child: CustomFutureSearchableDropdown<DepartmentModel>(
+            label: 'Department',
+            isRequired: true,
+            validator: (value) {
+              if (_department.isEmpty) {
+                return 'Department is required';
+              }
+              return null;
+            },
+            asyncItems: () async {
+              var departments = await DepartmentService.getAllDepartments();
+              return departments;
+            },
+            multiSelect: true,
+            itemAsString: (department) => department.name,
+            onChangedList: (selectedDeps) async {
+              _department.clear();
+              for (var d in selectedDeps) {
+                _department.add(d.uid ?? '');
+              }
 
-              CustomFutureSearchableDropdown<DepartmentModel>(
-                asyncItems: () async {
-                  var departments = await DepartmentService.getAllDepartments();
-                  return departments;
-                },
-                multiSelect: true,
-                itemAsString: (department) => department.name,
-                onChangedList: (selectedDeps) async {
-                  _department.clear();
-
-                  for (var d in selectedDeps) {
-                    _department.add(d.uid ?? '');
-                  }
-
-                  setState(() {});
-                },
-              ),
-            ],
+              setState(() {});
+            },
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Sub Department",
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: AppColors.black,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
+          child: CustomFutureSearchableDropdown<SubDepartmentModel>(
+            label: 'Sub Department',
+            asyncItems: () async {
+              List<SubDepartmentModel> subDepartmentList = [];
+              for (var depId in _department) {
+                final list =
+                    await SubDepartmentService.getSubDepartmentsByDepId(
+                      depId: depId,
+                    );
+                subDepartmentList.addAll(list);
+              }
 
-              CustomFutureSearchableDropdown<SubDepartmentModel>(
-                asyncItems: () async {
-                  List<SubDepartmentModel> subDepartmentList = [];
-                  for (var depId in _department) {
-                    final list =
-                        await SubDepartmentService.getSubDepartmentsByDepId(
-                          depId: depId,
-                        );
-                    subDepartmentList.addAll(list);
-                  }
+              return subDepartmentList;
+            },
+            itemAsString: (subDepartment) => subDepartment.name,
+            onChanged: (subDepartment) async {
+              if (subDepartment != null) {
+                _subDepartmentModel = subDepartment;
+              }
 
-                  return subDepartmentList;
-                },
-                itemAsString: (subDepartment) => subDepartment.name,
-                onChanged: (subDepartment) async {
-                  if (subDepartment != null) {
-                    _subDepartmentModel = subDepartment;
-                  }
-
-                  setState(() {});
-                },
-              ),
-            ],
+              setState(() {});
+            },
           ),
         ),
         SizedBox(
@@ -577,103 +524,37 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Role",
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '*',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              CustomFutureSearchableDropdown<RoleModel>(
-                asyncItems: () async {
-                  var roles = await RoleService.getAllRoles();
-                  return roles;
-                },
-                itemAsString: (role) => role.name,
-                onChanged: (selectedRole) async {
-                  if (selectedRole != null) {
-                    _roleModel = selectedRole;
-                  }
-                  setState(() {});
-                },
-              ),
-            ],
+          child: CustomFutureSearchableDropdown<RoleModel>(
+            label: 'Role',
+            isRequired: true,
+            validator: (value) {
+              if (_roleModel == null) {
+                return 'Role is required';
+              }
+              return null;
+            },
+            asyncItems: () async {
+              var roles = await RoleService.getAllRoles();
+              return roles;
+            },
+            itemAsString: (role) => role.name,
+            onChanged: (selectedRole) async {
+              if (selectedRole != null) {
+                _roleModel = selectedRole;
+              }
+              setState(() {});
+            },
           ),
-
-          // FormDropdownSearch(
-          //   items: _rolesList.map((e) => e.name.toString()).toList(),
-          //   label: 'Role',
-          //   isRequired: true,
-          //   onChanged: (value) {
-          //     _roleModel = _rolesList.firstWhere(
-          //       (element) => element.name == value,
-          //     );
-          //   },
-          //   validator: (value) {
-          //     if (value == null) {
-          //       return "* Required";
-          //     }
-          //     return null;
-          //   },
-          // ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: SizedBox(
-            width: itemWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Reporting To",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 4),
-                CustomSearchableDropdown<String>(
-                  items: _employeesList.map((e) => e.name).toList(),
-                  multiSelect: true,
-                  onChangedList: (selectedNames) {
-                    // if (selectedNames.length > 2) {
-                    //   ScaffoldMessenger.of(context).showSnackBar(
-                    //     const SnackBar(
-                    //       content: Text('You can select only 2 employees.'),
-                    //       duration: Duration(seconds: 2),
-                    //     ),
-                    //   );
-                    //   return;
-                    // }
-                    _reportingTo.clear();
-
-                    for (var name in selectedNames) {
-                      final emp = _employeesList.firstWhere(
-                        (e) => e.name == name,
-                      );
-                      if (!_reportingTo.contains(emp.uid) && emp.uid != null) {
-                        _reportingTo.add(emp.uid!);
-                      }
-                    }
-                  },
-                  itemAsString: (s) => s,
-                ),
-              ],
-            ),
+        SizedBox(
+          width: itemWidth,
+          child: UsersListDropdown(
+            label: 'Reporting To',
+            onChangedList: (list) {
+              _reportingTo.clear();
+              _reportingTo.addAll(list.map((e) => e.uid!));
+            },
+            includeCurrentUser: false,
           ),
         ),
       ],

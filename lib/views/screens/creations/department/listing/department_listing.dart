@@ -61,6 +61,7 @@ class DepartmentListingView extends StatefulWidget {
 class _DepartmentListingViewState extends State<DepartmentListingView> {
   final List<DepartmentModel> _selectedDepartments = [];
   PermissionModel? permissions;
+  final ScrollController _hScrollController = ScrollController();
 
   @override
   void initState() {
@@ -129,86 +130,99 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
                           children: [
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                return Scrollbar(
+                                  controller: _hScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(6),
+                                  scrollbarOrientation:
+                                      ScrollbarOrientation.bottom,
+                                  child: SingleChildScrollView(
+                                    controller: _hScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
-                                          ),
-                                      columns: [
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Name"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Desc"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Created"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        const DataColumn(
-                                          label: Text("Created By"),
-                                        ),
-                                        const DataColumn(label: Text("Action")),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (department) => _buildDataRow(
-                                              context,
-                                              department,
-                                              controllerWatch,
-                                              controllerRead,
+                                      child: DataTable(
+                                        showCheckboxColumn: true,
+                                        sortColumnIndex:
+                                            controllerWatch.sortColumnIndex,
+                                        sortAscending:
+                                            controllerWatch.sortAscending,
+                                        headingRowColor:
+                                            WidgetStateProperty.all(
+                                              AppColors.grey100,
                                             ),
-                                          )
-                                          .toList(),
+                                        headingTextStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.black,
+                                            ),
+                                        columns: [
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Name"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Desc"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Created"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          const DataColumn(
+                                            label: Text("Created By"),
+                                          ),
+                                          const DataColumn(
+                                            label: Text("Action"),
+                                          ),
+                                        ],
+                                        rows: controllerWatch.paginatedItems
+                                            .map(
+                                              (department) => _buildDataRow(
+                                                context,
+                                                department,
+                                                controllerWatch,
+                                                controllerRead,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
                                   ),
                                 );

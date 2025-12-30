@@ -64,8 +64,16 @@ class _EventEditState extends State<EventEdit> {
 
       for (var i in _eventModel.eventAttendes) {
         _selectedEventAttendes.add(i);
-        final emp = _employeesList.firstWhere((element) => element.uid == i);
-        _selectedEventAttendesNames.add(emp.name);
+
+        var employee = await EmployeeService.getEmployee(uid: i);
+        if (employee != null) {
+          _selectedEventAttendesNames.add(employee.name);
+        } else {
+          var admin = await AdminService.getAdmin(uid: i);
+          if (admin != null) {
+            _selectedEventAttendesNames.add(admin.name);
+          }
+        }
       }
 
       _selectedRepeatType = _eventModel.eventRepeatType.name.capitalizeFirst;
@@ -374,7 +382,7 @@ class _EventEditState extends State<EventEdit> {
                 (_selectedRepeatType ??
                     EventRepeatType.none.name.capitalizeFirst),
           ),
-          eventAttendes: _selectedEventAttendes,
+          eventAttendes: _selectedEventAttendes.toSet().toList(),
           completed: _completed,
           createdBy: await Spdb.getUser(),
         );

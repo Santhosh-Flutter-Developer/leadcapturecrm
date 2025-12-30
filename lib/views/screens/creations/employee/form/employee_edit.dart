@@ -39,7 +39,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   List<DesignationModel> _designationList = [];
   List<DepartmentModel> _departmentList = [];
   List<SubDepartmentModel> _subDepartmentList = [];
-  List<EmployeeModel> _employeesList = [];
+  final List<dynamic> _initialReportingTo = [];
 
   final List<String> _reportingTo = [];
   final List<String> _department = [];
@@ -128,12 +128,17 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         );
       }
 
-      _employeesList = await EmployeeService.getAllEmployees();
-      _employeesList.removeWhere((e) => e.uid == widget.uid);
-      if (_employeeModel!.reportingTo != null &&
-          _employeeModel!.reportingTo!.isNotEmpty) {
-        _reportingTo.clear();
-        _reportingTo.addAll(_employeeModel!.reportingTo!);
+      _initialReportingTo.clear();
+      for (var i in (_employeeModel?.reportingTo ?? [])) {
+        var employee = await EmployeeService.getEmployee(uid: i);
+        if (employee != null) {
+          _initialReportingTo.add(employee);
+        } else {
+          var admin = await AdminService.getAdmin(uid: i);
+          if (admin != null) {
+            _initialReportingTo.add(admin);
+          }
+        }
       }
 
       setState(() {});
@@ -435,7 +440,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-            isRequired: true,
+            // isRequired: true,
             // valid: (input) =>
             //     input == null || input.isEmpty ? 'Email is required' : null,
           ),
@@ -655,47 +660,14 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         ),
         SizedBox(
           width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Reporting To",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 4),
-              CustomSearchableDropdown<String>(
-                items: _employeesList.map((e) => e.name).toList(),
-                multiSelect: true,
-                initialValues: _employeesList
-                    .where((e) => _reportingTo.contains(e.uid))
-                    .map((e) => e.name)
-                    .toList(),
-                onChangedList: (selectedNames) {
-                  // if (selectedNames.length > 2) {
-                  //   ScaffoldMessenger.of(context).showSnackBar(
-                  //     const SnackBar(
-                  //       content: Text('You can select only 2 employees.'),
-                  //       duration: Duration(seconds: 2),
-                  //     ),
-                  //   );
-                  //   return;
-                  // }
-
-                  _reportingTo.clear();
-
-                  for (var name in selectedNames) {
-                    final emp = _employeesList.firstWhere(
-                      (e) => e.name == name,
-                    );
-
-                    if (!_reportingTo.contains(emp.uid) && emp.uid != null) {
-                      _reportingTo.add(emp.uid!);
-                    }
-                  }
-                },
-                itemAsString: (s) => s,
-              ),
-            ],
+          child: UsersListDropdown(
+            label: 'Reporting To',
+            initialValues: _initialReportingTo,
+            onChangedList: (list) {
+              _reportingTo.clear();
+              _reportingTo.addAll(list.map((e) => e.uid!));
+            },
+            includeCurrentUser: false,
           ),
         ),
       ],

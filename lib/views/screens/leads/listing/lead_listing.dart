@@ -75,6 +75,7 @@ class LeadsListingView extends StatefulWidget {
 }
 
 class _LeadsListingViewState extends State<LeadsListingView> {
+  final ScrollController _hScrollController = ScrollController();
   String _selectedView = 'Grid';
   final List<LeadModel> _selectedLeads = [];
   List<LeadModel> _filteredLeads = [];
@@ -212,175 +213,186 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    showCheckboxColumn: true,
-                    columnSpacing: 12,
-                    horizontalMargin: 8,
-                    // headingRowHeight: 40,
-                    // dataRowMinHeight: 36,
-                    // dataRowMaxHeight: 36,
-                    sortColumnIndex: controllerWatch.sortColumnIndex,
-                    sortAscending: controllerWatch.sortAscending,
-                    headingRowColor: WidgetStateProperty.all(AppColors.grey100),
-                    headingTextStyle: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black,
+              return Scrollbar(
+                controller: _hScrollController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                thickness: 4,
+                radius: const Radius.circular(6),
+                scrollbarOrientation: ScrollbarOrientation.bottom,
+                child: SingleChildScrollView(
+                  controller: _hScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      showCheckboxColumn: true,
+                      columnSpacing: 12,
+                      horizontalMargin: 8,
+                      // headingRowHeight: 40,
+                      // dataRowMinHeight: 36,
+                      // dataRowMaxHeight: 36,
+                      sortColumnIndex: controllerWatch.sortColumnIndex,
+                      sortAscending: controllerWatch.sortAscending,
+                      headingRowColor: WidgetStateProperty.all(
+                        AppColors.grey100,
+                      ),
+                      headingTextStyle: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                      columns: [
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Id",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 14,
+                                  color: AppColors.grey400,
+                                ),
+                              ],
+                            ),
+                          ),
+                          onSort: controllerRead.setSort,
                         ),
-                    columns: [
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Id",
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 14,
-                                color: AppColors.grey400,
-                              ),
-                            ],
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Name",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 14,
+                                  color: AppColors.grey400,
+                                ),
+                              ],
+                            ),
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Email",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 14,
+                                  color: AppColors.grey400,
+                                ),
+                              ],
+                            ),
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Text(
+                              "Mobile No",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
                         ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Name",
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 14,
-                                color: AppColors.grey400,
-                              ),
-                            ],
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Lead Value",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 14,
+                                  color: AppColors.grey400,
+                                ),
+                              ],
+                            ),
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Text(
+                              "Source",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
                         ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Email",
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 14,
-                                color: AppColors.grey400,
-                              ),
-                            ],
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Text(
+                              "Status",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
                         ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Text(
-                            "Mobile No",
-                            style: Theme.of(context).textTheme.bodySmall,
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Created",
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_upward,
+                                  size: 14,
+                                  color: AppColors.grey400,
+                                ),
+                              ],
+                            ),
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Text(
+                              "Created By",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
                         ),
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Lead Value",
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 14,
-                                color: AppColors.grey400,
-                              ),
-                            ],
+                        DataColumn(
+                          label: IntrinsicWidth(
+                            child: Text(
+                              "Action",
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
                         ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Text(
-                            "Source",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Text(
-                            "Status",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Created",
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_upward,
-                                size: 14,
-                                color: AppColors.grey400,
-                              ),
-                            ],
-                          ),
-                        ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Text(
-                            "Created By",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ),
-                      DataColumn(
-                        label: IntrinsicWidth(
-                          child: Text(
-                            "Action",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ),
-                    ],
-                    rows: controllerWatch.paginatedItems.map((lead) {
-                      return _buildDataRow(
-                        context,
-                        lead,
-                        controllerWatch,
-                        controllerRead,
-                      );
-                    }).toList(),
+                      ],
+                      rows: controllerWatch.paginatedItems.map((lead) {
+                        return _buildDataRow(
+                          context,
+                          lead,
+                          controllerWatch,
+                          controllerRead,
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               );

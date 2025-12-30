@@ -83,6 +83,8 @@ class _TaskListingViewState extends State<TaskListingView> {
     setState(() {});
   }
 
+  final ScrollController _hScrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<TaskModel>>();
@@ -149,109 +151,120 @@ class _TaskListingViewState extends State<TaskListingView> {
                                 //   );
                                 // }
 
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                return Scrollbar(
+                                  controller: _hScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(6),
+                                  scrollbarOrientation:
+                                      ScrollbarOrientation.bottom,
+                                  child: SingleChildScrollView(
+                                    controller: _hScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
-                                          ),
-                                      columns: [
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "TaskId",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "Name",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Active",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "Deadline",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Assignee",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Tags",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Action",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (task) => _buildDataRow(
-                                              context,
-                                              task,
-                                              controllerWatch,
+                                      child: DataTable(
+                                        showCheckboxColumn: true,
+                                        sortColumnIndex:
+                                            controllerWatch.sortColumnIndex,
+                                        sortAscending:
+                                            controllerWatch.sortAscending,
+                                        headingRowColor:
+                                            WidgetStateProperty.all(
+                                              AppColors.grey100,
+                                            ),
+                                        headingTextStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.black,
+                                            ),
+                                        columns: [
+                                          DataColumn(
+                                            label: _sortableHeader(
+                                              "Task No",
                                               controllerRead,
                                             ),
-                                          )
-                                          .toList(),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: _sortableHeader(
+                                              "Name",
+                                              controllerRead,
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Active",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: _sortableHeader(
+                                              "Deadline",
+                                              controllerRead,
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Task Created By",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Assignee",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Tags",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Created By",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Action",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ],
+                                        rows: controllerWatch.paginatedItems
+                                            .map(
+                                              (task) => _buildDataRow(
+                                                context,
+                                                task,
+                                                controllerWatch,
+                                                controllerRead,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -441,7 +454,7 @@ class _TaskListingViewState extends State<TaskListingView> {
       cells: [
         DataCell(
           SelectableText(
-            task.uid ?? '-',
+            '#${task.taskNumber ?? '0'}',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontSize: 11),

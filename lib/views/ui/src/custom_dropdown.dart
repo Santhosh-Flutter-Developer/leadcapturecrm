@@ -681,6 +681,9 @@ class CustomFutureSearchableDropdown<T> extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final Widget? emptyWidget;
   final Widget? loadingWidget;
+  final String? Function(T?)? validator;
+  final String? label;
+  final bool? isRequired;
 
   const CustomFutureSearchableDropdown({
     super.key,
@@ -697,6 +700,9 @@ class CustomFutureSearchableDropdown<T> extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 10),
     this.emptyWidget,
     this.loadingWidget,
+    this.validator,
+    this.label,
+    this.isRequired = false,
   });
 
   @override
@@ -1064,44 +1070,92 @@ class _CustomFutureSearchableDropdownState<T>
         ? _selectedList.isNotEmpty
         : _selected != null;
 
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: Focus(
-        focusNode: _focusNode,
-        onFocusChange: (hasFocus) => setState(() {}),
-        child: GestureDetector(
-          onTap: _toggle,
-          child: Container(
-            padding: widget.padding,
-            height: 33, // Match fixed dropdown size
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(
-                color: _focusNode.hasFocus
-                    ? Theme.of(context).primaryColor
-                    : AppColors.grey500,
-                width: _focusNode.hasFocus
-                    ? 2
-                    : 1, // Match fixed dropdown border logic
+    return FormField<T>(
+      validator: widget.validator,
+      builder: (field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Label
+            if (widget.label != null) ...[
+              Row(
+                children: [
+                  Text(
+                    widget.label!,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (widget.isRequired == true)
+                    Text(
+                      ' *',
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
               ),
-              borderRadius: widget.borderRadius,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildActivatorContent(displayText, hasSelection),
+              const SizedBox(height: 8),
+            ],
+            CompositedTransformTarget(
+              link: _layerLink,
+              child: Focus(
+                focusNode: _focusNode,
+                onFocusChange: (hasFocus) => setState(() {}),
+                child: GestureDetector(
+                  onTap: _toggle,
+                  child: Container(
+                    padding: widget.padding,
+                    height: 33, // Match fixed dropdown size
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: _focusNode.hasFocus
+                            ? Theme.of(context).primaryColor
+                            : AppColors.grey500,
+                        width: _focusNode.hasFocus
+                            ? 2
+                            : 1, // Match fixed dropdown border logic
+                      ),
+                      borderRadius: widget.borderRadius,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildActivatorContent(
+                            displayText,
+                            hasSelection,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          _isOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                          color: Colors.grey,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 6),
-                Icon(
-                  _isOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                  color: Colors.grey,
-                  size: 18,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
+
+            // Error message
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  field.errorText!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

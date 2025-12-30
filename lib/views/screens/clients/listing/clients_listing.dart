@@ -95,6 +95,8 @@ class _ClientListingViewState extends State<ClientListingView> {
     return widget.section == ClientSection.contacts ? 'Contacts' : 'Company';
   }
 
+  final ScrollController _hScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -163,39 +165,50 @@ class _ClientListingViewState extends State<ClientListingView> {
                           children: [
                             LayoutBuilder(
                               builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                return Scrollbar(
+                                  controller: _hScrollController,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(6),
+                                  scrollbarOrientation:
+                                      ScrollbarOrientation.bottom,
+                                  child: SingleChildScrollView(
+                                    controller: _hScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
-                                          ),
-                                      columns: _buildColumns(controllerRead),
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (client) => _buildDataRow(
-                                              context,
-                                              client,
-                                              controllerWatch,
-                                              controllerRead,
+                                      child: DataTable(
+                                        showCheckboxColumn: true,
+                                        sortColumnIndex:
+                                            controllerWatch.sortColumnIndex,
+                                        sortAscending:
+                                            controllerWatch.sortAscending,
+                                        headingRowColor:
+                                            WidgetStateProperty.all(
+                                              AppColors.grey100,
                                             ),
-                                          )
-                                          .toList(),
+                                        headingTextStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.black,
+                                            ),
+                                        columns: _buildColumns(controllerRead),
+                                        rows: controllerWatch.paginatedItems
+                                            .map(
+                                              (client) => _buildDataRow(
+                                                context,
+                                                client,
+                                                controllerWatch,
+                                                controllerRead,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
                                   ),
                                 );

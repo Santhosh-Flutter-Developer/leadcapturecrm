@@ -195,11 +195,11 @@ class EmployeeService {
     }
   }
 
-  static Future<List<String>> getUserWorkflow() async {
+  static Future<List<String>> getUserWorkflow({String? userId}) async {
     try {
       List<String> workflow = [];
       var currentUid = await Spdb.getUid();
-      String? uid = currentUid;
+      String? uid = userId ?? currentUid;
 
       Set<String> visited = {};
 

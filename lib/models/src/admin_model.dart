@@ -123,34 +123,4 @@ class AdminModel {
   String toString() {
     return 'AdminModel(uid: $uid, name: $name, email: $email, password: $password, mobileNumber: $mobileNumber, profileImageUrl: $profileImageUrl, isActive: $isActive, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
-
-  @override
-  bool operator ==(covariant AdminModel other) {
-    if (identical(this, other)) return true;
-
-    return other.uid == uid &&
-        other.name == name &&
-        other.email == email &&
-        other.password == password &&
-        other.mobileNumber == mobileNumber &&
-        other.profileImageUrl == profileImageUrl &&
-        other.isActive == isActive &&
-        other.createdBy == createdBy &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
-  }
-
-  @override
-  int get hashCode {
-    return uid.hashCode ^
-        name.hashCode ^
-        email.hashCode ^
-        password.hashCode ^
-        mobileNumber.hashCode ^
-        profileImageUrl.hashCode ^
-        isActive.hashCode ^
-        createdBy.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
-  }
 }

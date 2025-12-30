@@ -72,6 +72,8 @@ class DealsListingView extends StatefulWidget {
 }
 
 class _DealsListingViewState extends State<DealsListingView> {
+  final ScrollController _hScrollController = ScrollController();
+
   String _selectedView = 'Grid';
   final List<DealModel> _selectedDeals = [];
   List<DealModel> _filteredDeals = [];
@@ -200,84 +202,95 @@ class _DealsListingViewState extends State<DealsListingView> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    showCheckboxColumn: true,
-                    sortColumnIndex: controllerWatch.sortColumnIndex,
-                    sortAscending: controllerWatch.sortAscending,
-                    headingRowColor: WidgetStateProperty.all(AppColors.grey100),
-                    headingTextStyle: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black,
-                        ),
-                    columns: [
-                      DataColumn(
-                        label: Text(
-                          "Id",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        onSort: controllerRead.setSort,
+              return Scrollbar(
+                controller: _hScrollController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                thickness: 4,
+                radius: const Radius.circular(6),
+                scrollbarOrientation: ScrollbarOrientation.bottom,
+                child: SingleChildScrollView(
+                  controller: _hScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      showCheckboxColumn: true,
+                      sortColumnIndex: controllerWatch.sortColumnIndex,
+                      sortAscending: controllerWatch.sortAscending,
+                      headingRowColor: WidgetStateProperty.all(
+                        AppColors.grey100,
                       ),
-                      DataColumn(
-                        label: Text(
-                          "Name",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Email",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Value",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Status",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Created",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        onSort: controllerRead.setSort,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Created By",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          "Action",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
-                    rows: controllerWatch.paginatedItems
-                        .map(
-                          (deal) => _buildDataRow(
-                            context,
-                            deal,
-                            controllerWatch,
-                            controllerRead,
+                      headingTextStyle: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
                           ),
-                        )
-                        .toList(),
+                      columns: [
+                        DataColumn(
+                          label: Text(
+                            "Id",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Name",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Email",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Value",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Status",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Created",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Created By",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Action",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                      rows: controllerWatch.paginatedItems
+                          .map(
+                            (deal) => _buildDataRow(
+                              context,
+                              deal,
+                              controllerWatch,
+                              controllerRead,
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
                 ),
               );

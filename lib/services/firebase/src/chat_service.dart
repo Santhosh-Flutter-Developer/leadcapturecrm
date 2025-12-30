@@ -414,6 +414,30 @@ class ChatService {
     }
   }
 
+  static Future<List<ChatModel>> getChatGroups() async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var doc = await firebase.users
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .where('isGroupChat', isEqualTo: true)
+          .get();
+
+      List<ChatModel> result = [];
+
+      for (var i in doc.docs) {
+        result.add(ChatModel.fromMap(i.id, i.data()));
+      }
+
+      return result;
+    } catch (e, st) {
+      debugPrint("${e.toString()}, ${st.toString()}");
+      await ErrorService.recordError(e, st);
+      throw e.toString();
+    }
+  }
+
   static Future<String?> createGroupChat({required ChatModel model}) async {
     try {
       var cid = await Spdb.getCid();
@@ -457,7 +481,7 @@ class ChatService {
           .limit(1)
           .get();
 
-      // ✅ If chat already exists → return it
+      // If chat already exists → return it
       if (existingChatSnapshot.docs.isNotEmpty) {
         return existingChatSnapshot.docs.first.id;
       }

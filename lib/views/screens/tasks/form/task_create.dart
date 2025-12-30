@@ -22,22 +22,21 @@ class TaskCreate extends StatefulWidget {
 class _TaskCreateState extends State<TaskCreate> {
   late Future _future;
   bool _highPriority = false;
-  bool _taskStatusSummary = false;
+  final bool _taskStatusSummary = false;
   final TextEditingController _taskName = TextEditingController();
   final TextEditingController _description = TextEditingController();
   final TextEditingController _deadLine = TextEditingController();
   final TextEditingController _tags = TextEditingController();
   final TextEditingController _reminder = TextEditingController();
-  List<EmployeeModel> _employeeList = [];
+
   List<ProjectModel> _projectList = [];
   List<LeadModel> _leadList = [];
   List<TaskModel> _taskList = [];
+
   final List<String> _selectedAssignees = [];
   final List<String> _selectedCreatedBy = [];
   final List<String> _selectedObservers = [];
   final List<String> _selectedParticipants = [];
-
-  late final List<EmployeeModel> _initialAssignees;
 
   String? _selectedProject;
   String? _selectedLead;
@@ -47,7 +46,7 @@ class _TaskCreateState extends State<TaskCreate> {
   final List<File> _selectedAttachments = [];
   DateTime? _selectedDeadLine;
   DateTime? _selectedReminder;
-  bool _deadlineRequired = false;
+  bool _deadlineRequired = true;
 
   @override
   void initState() {
@@ -55,26 +54,18 @@ class _TaskCreateState extends State<TaskCreate> {
     _future = _init();
 
     if (widget.employees != null && widget.employees!.isNotEmpty) {
-      _initialAssignees = widget.employees!;
       for (final emp in widget.employees!) {
         if (emp.uid != null) {
           _selectedAssignees.add(emp.uid!);
         }
       }
-    } else {
-      _initialAssignees = [];
     }
   }
 
   Future<void> _init() async {
     try {
-      _employeeList.clear();
-      _employeeList = await EmployeeService.getAllEmployees();
-      _projectList.clear();
       _projectList = await ProjectService.getAllProjects();
-      _leadList.clear();
       _leadList = await LeadService.getAllLeads();
-      _taskList.clear();
       _taskList = await TaskService.getAllTasks();
     } catch (e) {
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -83,731 +74,552 @@ class _TaskCreateState extends State<TaskCreate> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(16),
-        bottomLeft: Radius.circular(16),
-      ),
-      child: Scaffold(
-        appBar: FormWidgets.buildHeader(context: context, title: "Create Task"),
-        body: FutureBuilder(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const WaitingLoading();
-            } else if (snapshot.hasError) {
-              return ErrorDisplay(error: snapshot.error.toString());
-            } else {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isDesktop = constraints.maxWidth > 900;
+
+        return Scaffold(
+          backgroundColor: AppColors.grey100,
+          appBar: FormWidgets.buildHeader(
+            context: context,
+            title: "Create New Task",
+          ),
+          body: FutureBuilder(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const WaitingLoading();
+              } else if (snapshot.hasError) {
+                return ErrorDisplay(error: snapshot.error.toString());
+              }
+
               return Form(
                 key: _formKey,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SingleChildScrollView(
-                    child: Container(
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _taskName,
-                                  style: Theme.of(context).textTheme.bodyMedium!
-                                      .copyWith(
-                                        color: AppColors.black,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter Task Name',
-                                    hintStyle: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(color: AppColors.grey400),
-                                    filled: true,
-                                    fillColor: AppColors.transparent,
-                                  ),
-                                  validator: (value) =>
-                                      Validation.commonValidation(
-                                        input: value,
-                                        label: 'Task Name',
-                                        isReq: true,
-                                      ),
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Transform.scale(
-                                    scale: 0.75,
-                                    child: Checkbox(
-                                      value: _highPriority,
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() => _highPriority = val);
-                                        }
-                                      },
-                                      visualDensity: VisualDensity.compact,
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      activeColor: AppColors.primary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'High Priority',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.whatshot_outlined,
-                                    color: _highPriority
-                                        ? AppColors.danger
-                                        : AppColors.grey400,
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Divider(indent: 0, endIndent: 0, height: 0),
-                          TextFormField(
-                            controller: _description,
-                            style: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(
-                                  color: AppColors.black,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText: 'Enter Description',
-                              hintStyle: Theme.of(context).textTheme.bodyMedium!
-                                  .copyWith(color: AppColors.grey400),
-                              filled: true,
-                              fillColor: AppColors.transparent,
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              TextButton.icon(
-                                label: Text(
-                                  "Attach File",
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                icon: Icon(Iconsax.attach_circle),
-                                onPressed: () async {
-                                  var files = await FilePick.pickFiles(context);
-                                  if (files != null && files.isNotEmpty) {
-                                    _selectedAttachments.addAll(files);
-                                    setState(() {});
-                                  }
-                                },
-                              ),
-                              Wrap(
-                                alignment: WrapAlignment.start,
-                                children: _selectedAttachments
-                                    .map(
-                                      (e) => Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Chip(
-                                          label: Text(
-                                            path.basename(e.path),
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                          deleteIcon: Icon(Icons.close),
-                                          onDeleted: () {
-                                            _selectedAttachments.remove(e);
-                                            setState(() {});
-                                          },
-                                          side: BorderSide(
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Assignee",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CustomSearchableDropdown<String>(
-                                    initialValues: _initialAssignees
-                                        .map((e) => e.name)
-                                        .toList(),
-                                    items: _employeeList
-                                        .map((e) => e.name)
-                                        .toList(),
-                                    multiSelect: true,
-                                    onChangedList: (list) {
-                                      for (var name in list) {
-                                        final emp = _employeeList.firstWhere(
-                                          (e) => e.name == name,
-                                        );
-                                        if (emp.uid != null &&
-                                            !_selectedAssignees.contains(
-                                              emp.uid,
-                                            )) {
-                                          _selectedAssignees.add(emp.uid!);
-                                        }
-                                      }
-                                    },
-                                    itemAsString: (s) => s,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Participants",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CustomSearchableDropdown<String>(
-                                    items: _employeeList
-                                        .map((e) => e.name)
-                                        .toList(),
-                                    multiSelect: true,
-                                    onChangedList: (list) {
-                                      for (var i in list) {
-                                        final emp = _employeeList.firstWhere(
-                                          (element) => element.name == i,
-                                        );
-
-                                        if (emp.uid != null) {
-                                          if (!_selectedParticipants.contains(
-                                            emp.uid,
-                                          )) {
-                                            _selectedParticipants.add(emp.uid!);
-                                          }
-                                        }
-                                      }
-                                    },
-                                    itemAsString: (s) => s,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Created By",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CustomSearchableDropdown<String>(
-                                    items: _employeeList
-                                        .map((e) => e.name)
-                                        .toList(),
-                                    multiSelect: true,
-                                    onChangedList: (list) {
-                                      for (var i in list) {
-                                        final emp = _employeeList.firstWhere(
-                                          (element) => element.name == i,
-                                        );
-
-                                        if (emp.uid != null) {
-                                          if (!_selectedCreatedBy.contains(
-                                            emp.uid,
-                                          )) {
-                                            _selectedCreatedBy.add(emp.uid!);
-                                          }
-                                        }
-                                      }
-                                    },
-                                    itemAsString: (s) => s,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Observers",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: CustomSearchableDropdown<String>(
-                                    items: _employeeList
-                                        .map((e) => e.name)
-                                        .toList(),
-                                    multiSelect: true,
-                                    onChangedList: (list) {
-                                      for (var i in list) {
-                                        final emp = _employeeList.firstWhere(
-                                          (element) => element.name == i,
-                                        );
-
-                                        if (emp.uid != null) {
-                                          if (!_selectedObservers.contains(
-                                            emp.uid,
-                                          )) {
-                                            _selectedObservers.add(emp.uid!);
-                                          }
-                                        }
-                                      }
-                                    },
-                                    itemAsString: (s) => s,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isMobile = constraints.maxWidth < 600;
-
-                                if (isMobile) {
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Deadline",
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      FormFields(
-                                        enabled: _deadlineRequired,
-                                        controller: _deadLine,
-                                        readOnly: true,
-                                        onTap: () async {
-                                          var date = await datePicker(context);
-                                          if (date != null) {
-                                            var time = await pickTime(
-                                              context,
-                                              null,
-                                            );
-                                            if (time != null) {
-                                              _deadLine.text =
-                                                  '${date.formatDate} ${time.hour}:${time.minute}:00';
-                                              _selectedDeadLine = date.copyWith(
-                                                hour: time.hour,
-                                                minute: time.minute,
-                                              );
-                                              setState(() {});
-                                            }
-                                          }
-                                        },
-                                        hintText: 'Select Deadline',
-                                        suffixIcon: const Icon(
-                                          Iconsax.calendar,
-                                        ),
-                                      ),
-
-                                      const SizedBox(height: 12),
-
-                                      Row(
-                                        children: [
-                                          Transform.scale(
-                                            scale: 0.8,
-                                            child: Checkbox(
-                                              value: _deadlineRequired,
-                                              onChanged: (val) {
-                                                if (val != null) {
-                                                  setState(
-                                                    () =>
-                                                        _deadlineRequired = val,
-                                                  );
-                                                }
-                                              },
-                                              activeColor: AppColors.primary,
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "Deadline Required",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  );
-                                }
-
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 180,
-                                      child: Text(
-                                        "Deadline",
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-
-                                    Expanded(
-                                      child: FormFields(
-                                        enabled: _deadlineRequired,
-                                        controller: _deadLine,
-                                        readOnly: true,
-                                        onTap: () async {
-                                          var date = await datePicker(context);
-                                          if (date != null) {
-                                            var time = await pickTime(
-                                              context,
-                                              null,
-                                            );
-                                            if (time != null) {
-                                              _deadLine.text =
-                                                  '${date.formatDate} ${time.hour}:${time.minute}:00';
-                                              _selectedDeadLine = date.copyWith(
-                                                hour: time.hour,
-                                                minute: time.minute,
-                                              );
-                                              setState(() {});
-                                            }
-                                          }
-                                        },
-                                        hintText: 'Select Deadline',
-                                        suffixIcon: const Icon(
-                                          Iconsax.calendar,
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 16),
-
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Transform.scale(
-                                          scale: 0.75,
-                                          child: Checkbox(
-                                            value: _deadlineRequired,
-                                            onChanged: (val) {
-                                              if (val != null) {
-                                                setState(
-                                                  () => _deadlineRequired = val,
-                                                );
-                                              }
-                                            },
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            activeColor: AppColors.primary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Deadline Required',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Task Status Summary",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Transform.scale(
-                                        scale: 0.75,
-                                        child: Checkbox(
-                                          value: _taskStatusSummary,
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              setState(
-                                                () => _taskStatusSummary = val,
-                                              );
-                                            }
-                                          },
-                                          visualDensity: VisualDensity.compact,
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          activeColor: AppColors.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          'Task Status Summary Required',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          SizedBox(height: 40),
-                          Text(
-                            'Other Details',
-                            style: Theme.of(context).textTheme.titleMedium!
-                                .copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Project",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FormDropdownSearch(
-                                    items: _projectList
-                                        .map((e) => e.projectName)
-                                        .toList(),
-                                    onChanged: (value) {
-                                      final project = _projectList.firstWhere(
-                                        (element) =>
-                                            element.projectName == value,
-                                      );
-
-                                      if (project.uid != null) {
-                                        _selectedProject = project.uid!;
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Sub Task Of",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FormDropdownSearch(
-                                    items: _taskList
-                                        .map((e) => e.taskName)
-                                        .toList(),
-                                    onChanged: (value) {
-                                      final task = _taskList.firstWhere(
-                                        (element) => element.taskName == value,
-                                      );
-
-                                      if (task.uid != null) {
-                                        _selectedSubTaskOf = task.uid!;
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Lead",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FormDropdownSearch(
-                                    items: _leadList
-                                        .map((e) => e.leadName)
-                                        .toList(),
-                                    onChanged: (value) {
-                                      final lead = _leadList.firstWhere(
-                                        (element) => element.leadName == value,
-                                      );
-
-                                      if (lead.uid != null) {
-                                        _selectedLead = lead.uid!;
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Tags",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FormFields(
-                                    hintText: 'Enter Tags',
-                                    controller: _tags,
-                                    maxLines: 2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Divider(indent: 0, endIndent: 0),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 180,
-                                  child: Text(
-                                    "Reminder",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FormFields(
-                                    controller: _reminder,
-                                    readOnly: true,
-                                    onTap: () async {
-                                      var date = await datePicker(context);
-                                      if (date != null) {
-                                        var time = await pickTime(
-                                          context,
-                                          null,
-                                        );
-                                        if (time != null) {
-                                          _reminder.text =
-                                              '${date.formatDate} ${time.hour}:${time.minute}:00';
-                                          _selectedReminder = date.copyWith(
-                                            hour: time.hour,
-                                            minute: time.minute,
-                                          );
-                                          setState(() {});
-                                        }
-                                      }
-                                    },
-                                    hintText: 'Select Reminder',
-                                    suffixIcon: Icon(Iconsax.calendar),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                child: Center(
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: isDesktop ? 1200 : double.infinity,
                     ),
+                    padding: const EdgeInsets.all(24.0),
+                    child: isDesktop
+                        ? _buildDesktopLayout()
+                        : _buildMobileLayout(),
                   ),
                 ),
               );
-            }
+            },
+          ),
+          bottomNavigationBar: _buildActionBottomBar(),
+        );
+      },
+    );
+  }
+
+  /// DESKTOP LAYOUT: Two columns
+  Widget _buildDesktopLayout() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // LEFT COLUMN: Primary Info
+        Expanded(
+          flex: 2,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionCard(
+                  title: "Task Details",
+                  icon: Iconsax.document_text,
+                  child: Column(
+                    children: [
+                      _buildTaskNameField(),
+                      const SizedBox(height: 20),
+                      _buildDescriptionField(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildSectionCard(
+                  title: "Assignments",
+                  icon: Iconsax.user_add,
+                  child: _buildAssignmentGrid(),
+                ),
+                const SizedBox(height: 20),
+                _buildAttachmentSection(),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 24),
+        // RIGHT COLUMN: Settings & Metadata
+        Expanded(
+          flex: 1,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildSectionCard(
+                  title: "Planning",
+                  icon: Iconsax.calendar_1,
+                  child: Column(
+                    children: [
+                      _buildPriorityToggle(),
+                      const Divider(height: 32),
+                      _buildDeadlinePicker(),
+                      const SizedBox(height: 16),
+                      _buildReminderPicker(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildSectionCard(
+                  title: "Context",
+                  icon: Iconsax.hierarchy,
+                  child: Column(
+                    children: [
+                      _buildDropdownField(
+                        "Project",
+                        _projectList.map((e) => e.projectName).toList(),
+                        (val) {
+                          _selectedProject = _projectList
+                              .firstWhere((e) => e.projectName == val)
+                              .uid;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDropdownField(
+                        "Subtask of",
+                        _taskList.map((e) => e.taskName).toList(),
+                        (val) {
+                          _selectedSubTaskOf = _taskList
+                              .firstWhere((e) => e.taskName == val)
+                              .uid;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDropdownField(
+                        "Lead",
+                        _leadList.map((e) => e.leadName).toList(),
+                        (val) {
+                          _selectedLead = _leadList
+                              .firstWhere((e) => e.leadName == val)
+                              .uid;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTagsField(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// MOBILE LAYOUT: Single Column
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildSectionCard(
+            title: "Task Details",
+            icon: Iconsax.document_text,
+            child: Column(
+              children: [
+                _buildTaskNameField(),
+                const SizedBox(height: 16),
+                _buildDescriptionField(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            title: "Planning",
+            icon: Iconsax.calendar_1,
+            child: Column(
+              children: [
+                _buildPriorityToggle(),
+                _buildDeadlinePicker(),
+                _buildReminderPicker(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSectionCard(
+            title: "Assignments",
+            icon: Iconsax.user_add,
+            child: _buildAssignmentGrid(),
+          ),
+          const SizedBox(height: 16),
+          _buildAttachmentSection(),
+        ],
+      ),
+    );
+  }
+
+  // --- REUSABLE COMPONENT BUILDERS ---
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskNameField() {
+    return TextFormField(
+      controller: _taskName,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        hintText: 'Enter Task Title...',
+        hintStyle: TextStyle(color: AppColors.grey400),
+        border: UnderlineInputBorder(
+          borderSide: BorderSide(color: AppColors.grey200),
+        ),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: AppColors.grey200),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+      ),
+      validator: (v) => Validation.commonValidation(
+        input: v,
+        label: 'Task Name',
+        isReq: true,
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return TextFormField(
+      controller: _description,
+      maxLines: 5,
+      decoration: InputDecoration(
+        hintText: 'Describe the requirements and objectives...',
+        fillColor: AppColors.grey100.withValues(alpha: 0.5),
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriorityToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _highPriority
+                ? AppColors.danger.withValues(alpha: 0.15)
+                : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.priority_high,
+                size: 16,
+                color: _highPriority ? AppColors.danger : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "High Priority",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _highPriority ? AppColors.danger : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Switch.adaptive(
+          value: _highPriority,
+          activeTrackColor: AppColors.danger.withValues(alpha: 0.4),
+          onChanged: (val) => setState(() => _highPriority = val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssignmentGrid() {
+    return Column(
+      children: [
+        UsersListDropdown(
+          label: 'Assign To',
+          onChangedList: (list) {
+            _selectedAssignees.clear();
+            _selectedAssignees.addAll(list.map((e) => e.uid!));
           },
         ),
-        bottomNavigationBar: FormWidgets.buildBottomBar(
-          context: context,
-          onSubmit: _submitForm,
-          isEdit: false,
+        const SizedBox(height: 12),
+        UsersListDropdown(
+          label: 'Participants',
+          onChangedList: (list) {
+            _selectedParticipants.clear();
+            _selectedParticipants.addAll(list.map((e) => e.uid!));
+          },
         ),
+        const SizedBox(height: 12),
+        UsersListDropdown(
+          label: 'Observers',
+          onChangedList: (list) {
+            _selectedObservers.clear();
+            _selectedObservers.addAll(list.map((e) => e.uid!));
+          },
+        ),
+        const SizedBox(height: 12),
+        UsersListDropdown(
+          label: 'Created By',
+          onChangedList: (list) {
+            _selectedCreatedBy.clear();
+            _selectedCreatedBy.addAll(list.map((e) => e.uid!));
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeadlinePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Checkbox(
+              value: _deadlineRequired,
+              onChanged: (val) => setState(() => _deadlineRequired = val!),
+            ),
+            const Text("Deadline Required"),
+          ],
+        ),
+        FormFields(
+          enabled: _deadlineRequired,
+          controller: _deadLine,
+          readOnly: true,
+          onTap: () async {
+            var date = await datePicker(context);
+            if (date != null) {
+              var time = await pickTime(context, null);
+              if (time != null) {
+                setState(() {
+                  _selectedDeadLine = DateTime(
+                    date.year,
+                    date.month,
+                    date.day,
+                    time.hour,
+                    time.minute,
+                  );
+                  _deadLine.text = "${date.formatDate} ${time.format(context)}";
+                });
+              }
+            }
+          },
+          hintText: 'Select date & time',
+          suffixIcon: const Icon(Iconsax.calendar_edit),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReminderPicker() {
+    return FormFields(
+      controller: _reminder,
+      readOnly: true,
+      onTap: () async {
+        var date = await datePicker(context);
+        if (date != null) {
+          var time = await pickTime(context, null);
+          if (time != null) {
+            setState(() {
+              _selectedReminder = DateTime(
+                date.year,
+                date.month,
+                date.day,
+                time.hour,
+                time.minute,
+              );
+              _reminder.text = "${date.formatDate} ${time.format(context)}";
+            });
+          }
+        }
+      },
+      hintText: 'Set Reminder',
+      suffixIcon: const Icon(Iconsax.notification),
+    );
+  }
+
+  Widget _buildDropdownField(
+    String label,
+    List<String> items,
+    Function(dynamic) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        FormDropdownSearch(items: items, onChanged: onChanged),
+      ],
+    );
+  }
+
+  Widget _buildTagsField() {
+    return FormFields(
+      hintText: 'Tag1, Tag2...',
+      controller: _tags,
+      label: 'Tags',
+    );
+  }
+
+  Widget _buildAttachmentSection() {
+    return _buildSectionCard(
+      title: "Attachments",
+      icon: Iconsax.paperclip,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () async {
+              var files = await FilePick.pickFiles(context);
+              if (files != null) {
+                setState(() => _selectedAttachments.addAll(files));
+              }
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  style: BorderStyle.none,
+                ),
+                color: AppColors.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(Iconsax.cloud_plus, color: AppColors.primary, size: 32),
+                  const SizedBox(height: 8),
+                  const Text("Click to upload or drag and drop"),
+                  Text(
+                    "Support for PDF, DOC, images up to 10MB",
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_selectedAttachments.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedAttachments
+                  .map(
+                    (file) => Chip(
+                      avatar: const Icon(Iconsax.document, size: 16),
+                      label: Text(
+                        path.basename(file.path),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onDeleted: () =>
+                          setState(() => _selectedAttachments.remove(file)),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionBottomBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Discard"),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Iconsax.add_circle),
+            label: const Text(
+              "Create Task",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: _submitForm,
+          ),
+        ],
       ),
     );
   }
@@ -816,7 +628,6 @@ class _TaskCreateState extends State<TaskCreate> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
-
         List<FileModel> attachments = [];
 
         if (_selectedAttachments.isNotEmpty) {
@@ -824,18 +635,15 @@ class _TaskCreateState extends State<TaskCreate> {
             files: _selectedAttachments,
             folder: StorageFolder.taskAttachments,
           );
-
           for (var i = 0; i < _selectedAttachments.length; i++) {
-            var file = File(_selectedAttachments[i].path);
-            var mimeType = lookupMimeType(file.path) ?? '';
-
+            var file = _selectedAttachments[i];
             attachments.add(
               FileModel(
                 name: path.basename(file.path),
                 extension: path.extension(file.path).replaceAll('.', ''),
                 size: file.lengthSync(),
                 url: urls[i],
-                mimeType: mimeType,
+                mimeType: lookupMimeType(file.path) ?? '',
               ),
             );
           }
@@ -862,27 +670,13 @@ class _TaskCreateState extends State<TaskCreate> {
         );
 
         await TaskService.createTask(task: task);
-
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-        Navigator.pop(context, true); // Close page
-
+        Navigator.pop(context); // Pop loading
+        Navigator.pop(context, true); // Close form
         FlushBar.show(context, 'Task created successfully', isSuccess: true);
       } catch (e, st) {
-        await ErrorService.recordError(e, st);
-        debugPrint("$e, $st");
-
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-        FlushBar.show(
-          context,
-          e.toString(),
-          isSuccess: false,
-          error: e,
-          stackTrace: st,
-        );
+        Navigator.pop(context); // Pop loading
+        ErrorService.recordError(e, st);
+        FlushBar.show(context, e.toString(), isSuccess: false);
       }
     }
   }
