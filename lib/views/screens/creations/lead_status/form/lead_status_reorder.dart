@@ -31,18 +31,10 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
     _updateOrderNumbers();
   }
 
-  /// Iterates through the list and assigns a new, sequential order number
   void _updateOrderNumbers() {
-    final List<LeadStatusModel> updatedList = [];
     for (int i = 0; i < _leadStatusList.length; i++) {
-      // Create a new instance with the updated order number
-      updatedList.add(_leadStatusList[i].copyWith(orderNumber: i + 1));
+      _leadStatusList[i] = _leadStatusList[i].copyWith(orderNumber: i + 1);
     }
-    // Replace the old list with the new, correctly-ordered list
-    setState(() {
-      _leadStatusList.clear();
-      _leadStatusList.addAll(updatedList);
-    });
   }
 
   @override
@@ -53,43 +45,13 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F9FB), // Soft background
+        backgroundColor: const Color(0xFFF7F9FB),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.close, color: AppColors.black),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Reorder Lead Status",
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+            FormWidgets.buildHeader(
+              context: context,
+              title: "Reorder Lead Status",
             ),
 
             const SizedBox(height: 8),
@@ -104,13 +66,14 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
                   onReorder: (int oldIndex, int newIndex) {
                     setState(() {
                       if (newIndex > oldIndex) newIndex -= 1;
-                      final LeadStatusModel item = _leadStatusList.removeAt(
-                        oldIndex,
-                      );
+
+                      final item = _leadStatusList.removeAt(oldIndex);
                       _leadStatusList.insert(newIndex, item);
+
                       _updateOrderNumbers();
                     });
                   },
+
                   children: [
                     for (final (index, status) in _leadStatusList.indexed)
                       Card(
@@ -217,7 +180,7 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
                     onPressed: _submitForm,
                     icon: const Icon(Icons.add, size: 20),
                     label: Text(
-                      "Create",
+                      "Save Order",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -251,18 +214,17 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
       await LeadStatusService.updateLeadStatusReorder(
         leadStatusList: _leadStatusList,
       );
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
       Navigator.pop(context, true);
 
       FlushBar.show(context, 'Status updated successfully', isSuccess: true);
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("${e.toString()}, ${st.toString()}");
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+
+      if (Navigator.canPop(context)) Navigator.pop(context);
+
       FlushBar.show(
         context,
         e.toString(),
