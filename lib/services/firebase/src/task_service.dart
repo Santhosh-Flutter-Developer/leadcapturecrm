@@ -416,4 +416,21 @@ class TaskService {
       throw 'Error adding comment: $e';
     }
   }
+
+  static Future<int> getUserTaskCount({required String userId}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .where('createdBy', arrayContains: userId)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      throw 'Error getting user task count: $e';
+    }
+  }
 }

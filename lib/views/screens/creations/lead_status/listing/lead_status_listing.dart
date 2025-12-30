@@ -447,7 +447,34 @@ class _LeadStatusListingViewState extends State<LeadStatusListingView> {
                         foregroundColor: AppColors.white,
                       ),
                     ),
+              SizedBox(width: 10),
             ],
+            ElevatedButton.icon(
+              label: Text(
+                "Reorder",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              ),
+              icon: Icon(Iconsax.arrange_circle),
+              onPressed: () async {
+                if (kIsMobile) {
+                  Sheet.showSheet(
+                    context,
+                    widget: LeadStatusReorder(leadStatusList: leadStatusList),
+                  );
+                } else {
+                  GeneralDialog.showRTLSheet(
+                    context,
+                    LeadStatusReorder(leadStatusList: leadStatusList),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.blue,
+                foregroundColor: AppColors.white,
+              ),
+            ),
           ],
         ),
       ],

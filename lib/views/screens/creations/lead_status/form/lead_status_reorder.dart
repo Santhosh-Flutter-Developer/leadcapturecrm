@@ -183,6 +183,7 @@ class _LeadStatusReorderState extends State<LeadStatusReorder> {
                       "Save Order",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.white,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(

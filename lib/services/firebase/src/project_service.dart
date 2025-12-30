@@ -178,4 +178,21 @@ class ProjectService {
       throw 'Error deleting project: $e';
     }
   }
+
+  static Future<int> getUserProjectsCount({required String userId}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.projects.name)
+          .where('createdBy.uid', isEqualTo: userId)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      throw 'Error getting user project count: $e';
+    }
+  }
 }

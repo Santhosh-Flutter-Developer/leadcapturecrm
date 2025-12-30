@@ -71,23 +71,6 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
     });
   }
 
-  Future<void> _updateStatus(String dealUid, DealStatusModel dealStatus) async {
-    try {
-      futureLoading(context);
-      await DealService.updateDealStatus(
-        uid: dealUid,
-        dealStatus: dealStatus.uid ?? '',
-      );
-      if (Navigator.canPop(context)) Navigator.pop(context);
-      FlushBar.show(context, 'Status updated');
-    } catch (e, st) {
-      if (Navigator.canPop(context)) Navigator.pop(context);
-      debugPrint('$e, $st');
-      await ErrorService.recordError(e, st);
-      FlushBar.show(context, e.toString(), isSuccess: false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -119,15 +102,37 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
 
   Widget _buildKanbanColumn(DealStatusModel list, List<DealModel> deals) {
     return DragTarget<DealModel>(
-      onWillAcceptWithDetails: (details) => details.data.uid != null,
+      onWillAcceptWithDetails: (details) {
+        return details.data.uid != null;
+      },
       onAcceptWithDetails: (details) async {
         final deal = details.data;
-        if (_draggedFromList != list) {
-          _dealList[_draggedFromList]!.removeWhere((t) => t.uid == deal.uid);
-          setState(() {
-            deals.add(deal);
-          });
-          await _updateStatus(deal.uid ?? '', list);
+
+        if (_draggedFromList == list) return;
+
+        final originalDeal = deal.copyWith();
+
+        _dealList[_draggedFromList!] = List.from(_dealList[_draggedFromList]!)
+          ..removeWhere((t) => t.uid == deal.uid);
+
+        _dealList[list] = List.from(_dealList[list]!)..add(deal);
+
+        setState(() {});
+
+        try {
+          await DealService.updateDealStatus(
+            uid: deal.uid!,
+            dealStatus: list.uid!,
+          );
+        } catch (e) {
+          _dealList[_draggedFromList!] = List.from(_dealList[_draggedFromList]!)
+            ..add(originalDeal);
+          _dealList[list] = List.from(_dealList[list]!)
+            ..removeWhere((l) => l.uid == deal.uid);
+
+          setState(() {});
+
+          FlushBar.show(context, e.toString(), isSuccess: false);
         }
       },
       builder: (context, candidateData, rejectedData) {
@@ -204,20 +209,27 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -240,18 +252,17 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
   }
 
   Widget _buildKanbanCard(DealModel task, DealStatusModel list) {
+    // Draggable card for unconverted deals
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      // Use Draggable, but handle the click inside the child
       child: Draggable<DealModel>(
         data: task,
-        // The feedback is what follows the finger
         feedback: Material(
           elevation: 8.0,
           borderRadius: BorderRadius.circular(12.0),
           color: Colors.transparent,
           child: Transform.rotate(
-            angle: 0.05, // Slight tilt for pro feel
+            angle: 0.05,
             child: Container(
               width: 244,
               padding: const EdgeInsets.all(12.0),
@@ -266,7 +277,6 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
             ),
           ),
         ),
-        // The placeholder widget left in the list while dragging
         childWhenDragging: Opacity(
           opacity: 0.2,
           child: Container(
@@ -279,10 +289,8 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
         ),
         onDragStarted: () => _handleDragStarted(task, list),
         onDragEnd: _handleDragEnd,
-        // The actual card in the list
         child: InkWell(
           onTap: () {
-            // Open deal view page
             if (kIsDesktop) {
               GeneralDialog.showRTLSheet(context, DealsViewPage(deal: task));
             } else {
@@ -314,85 +322,171 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        /// HEADER ROW (Avatar + Name + Value)
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 12,
+              radius: 14,
               backgroundColor: AppColors.blue100,
               child: Text(
                 deal.dealName.isNotEmpty ? deal.dealName[0].toUpperCase() : '?',
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.blue700,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
+
+            /// Name + Email + Company
             Expanded(
-              child: Text(
-                deal.dealName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.black,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    deal.dealName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.black,
+                    ),
+                  ),
+
+                  if (deal.dealEmail.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      deal.dealEmail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.grey700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+
+                  if (deal.companyName?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      deal.companyName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.grey600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            /// Deal Value
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _currencyFormat.format(deal.dealValue),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.success,
+                  ),
                 ),
               ),
             ),
-            if (deal.dealEmail.isNotEmpty || deal.companyMobile != null)
-              const Icon(
-                Icons.contact_mail_outlined,
-                size: 12,
-                color: AppColors.grey,
-              ),
           ],
         ),
-        const SizedBox(height: 8),
+
+        const SizedBox(height: 12),
+
+        /// STATUS & SOURCE
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _chip(
+              CacheService.dealStatusByUid(deal.dealStatus ?? '')?.name ?? '',
+              AppColors.blue,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        /// FOOTER META
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                _currencyFormat.format(deal.dealValue),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.success,
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today,
+                  size: 12,
+                  color: AppColors.grey600,
                 ),
-              ),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat('dd MMM').format(deal.createdAt),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              DateFormat('dd MMM').format(deal.createdAt),
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.grey600,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: AppColors.grey600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  deal.createdBy.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        if (deal.companyName != null && deal.companyName!.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(
-            deal.companyName!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.blue700,
-              fontWeight: FontWeight.w500,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
       ],
+    );
+  }
+
+  Widget _chip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }

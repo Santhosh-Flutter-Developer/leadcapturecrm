@@ -448,4 +448,21 @@ class LeadService {
       rethrow;
     }
   }
+
+  static Future<int> getUserLeadsCount({required String userId}) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .where('createdBy.uid', isEqualTo: userId)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      throw 'Error getting user lead count: $e';
+    }
+  }
 }

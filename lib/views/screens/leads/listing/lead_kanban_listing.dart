@@ -47,11 +47,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     _leadList = await LeadService.getLeadByGroup(leadList: widget.leadList);
   }
 
-  Future<void> _refreshKanban() async {
-    _future = _initializeBoard();
-    setState(() {});
-  }
-
   void _handleDragStarted(LeadModel task, LeadStatusModel fromList) {
     setState(() {
       _draggedLead = task;
@@ -312,37 +307,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                       widget: quickLead(context, list),
                     ),
                     child: const Icon(
-                      Icons.add_circle_outline,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () async {
-                      final leadStatusList = _leadList.keys.toList();
-                      bool? result;
-
-                      if (kIsMobile) {
-                        result = await Sheet.showSheet(
-                          context,
-                          widget: LeadStatusReorder(
-                            leadStatusList: leadStatusList,
-                          ),
-                        );
-                      } else {
-                        result = await GeneralDialog.showRTLSheet(
-                          context,
-                          LeadStatusReorder(leadStatusList: leadStatusList),
-                        );
-                      }
-
-                      if (result == true) {
-                        await _refreshKanban();
-                      }
-                    },
-                    child: const Icon(
-                      Icons.reorder,
+                      Iconsax.add_circle,
                       size: 18,
                       color: Colors.white,
                     ),

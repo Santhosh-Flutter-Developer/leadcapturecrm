@@ -72,15 +72,6 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.close, color: AppColors.black),
-                  ),
-                  const SizedBox(width: 8),
                   Text(
                     "Reorder Deal Status",
                     style: Theme.of(context).textTheme.titleLarge!.copyWith(
@@ -217,9 +208,10 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                     onPressed: _submitForm,
                     icon: const Icon(Icons.add, size: 20),
                     label: Text(
-                      "Create",
+                      "Save Order",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.white,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(

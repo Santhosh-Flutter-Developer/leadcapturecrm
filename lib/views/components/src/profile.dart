@@ -79,10 +79,8 @@ class _ProfileState extends State<Profile> {
         return Iconsax.user_square;
       case "Official Information":
         return Iconsax.briefcase;
-      case "Contact Details":
-        return Iconsax.call;
-      case "Settings & Security":
-        return Iconsax.setting_2;
+      case "Contact & Security":
+        return Iconsax.shield_tick;
       default:
         return Iconsax.element_3;
     }
@@ -181,15 +179,11 @@ class _ProfileState extends State<Profile> {
       appBar: AppBar(
         backgroundColor: ProfileColors.white,
         elevation: 0,
-        centerTitle: false,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8.0),
-          child: Back(color: AppColors.black),
-        ),
+        leading: const Back(color: AppColors.black),
         title: const Text(
           "My Profile",
           style: TextStyle(
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             color: ProfileColors.textPrimary,
             fontSize: 18,
           ),
@@ -201,37 +195,70 @@ class _ProfileState extends State<Profile> {
       ),
       body: isLoading
           ? const Center(child: WaitingLoading())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildProfileHeader(),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        int crossAxisCount = constraints.maxWidth > 1200
-                            ? 3
-                            : (constraints.maxWidth > 800 ? 2 : 1);
-                        return Column(
-                          children: [
-                            if (!isAdmin)
-                              _buildEmployeeGrid(crossAxisCount)
-                            else
-                              _buildAdminView(),
-                            const SizedBox(height: 40),
-                            _buildFooter(),
-                          ],
-                        );
-                      },
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isDesktop = constraints.maxWidth > 1000;
+                return SingleChildScrollView(
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 1400),
+                      padding: EdgeInsets.all(isDesktop ? 40 : 16),
+                      child: isDesktop
+                          ? _buildDesktopLayout()
+                          : _buildMobileLayout(),
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  /// DESKTOP LAYOUT: Sticky Side Card + Main Content
+  Widget _buildDesktopLayout() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column: Profile Card
+        SizedBox(
+          width: 350,
+          child: Column(
+            children: [
+              _buildStickyProfileCard(),
+              const SizedBox(height: 24),
+              _buildStatsCard(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        // Right Column: Information Sections
+        Expanded(
+          child: Column(
+            children: [
+              _buildEmployeeGrid(2), // 2 columns for sections on desktop
+              const SizedBox(height: 40),
+              _buildFooter(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// MOBILE LAYOUT: Vertical Stack
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildProfileHeader(),
+        const SizedBox(height: 24),
+        _buildEmployeeGrid(1),
+        const SizedBox(height: 40),
+        _buildFooter(),
+      ],
+    );
+  }
+
+  Widget _buildStickyProfileCard() {
     final name = isAdmin ? admin?.name ?? "-" : employee?.name ?? "-";
     final role = isAdmin
         ? "System Administrator"
@@ -240,143 +267,191 @@ class _ProfileState extends State<Profile> {
     final image = isAdmin ? admin?.profileImageUrl : employee?.profileImageUrl;
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: ProfileColors.white,
-        border: const Border(bottom: BorderSide(color: ProfileColors.border)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ProfileColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Row(
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
             children: [
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: ProfileColors.primary.withValues(alpha: 0.2),
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: ProfileColors.background,
-                      backgroundImage: image != null
-                          ? NetworkImage(image)
-                          : null,
-                      child: image == null
-                          ? Text(
-                              name[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.w900,
-                                color: ProfileColors.primary,
-                              ),
-                            )
-                          : null,
-                    ),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ProfileColors.primary.withValues(alpha: 0.1),
+                    width: 4,
                   ),
-                  if (!isAdmin)
-                    Positioned(
-                      bottom: 4,
-                      right: 4,
-                      child: InkWell(
-                        onTap: _changeProfileImage,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
+                ),
+                child: CircleAvatar(
+                  radius: 70,
+                  backgroundColor: ProfileColors.background,
+                  backgroundImage: image != null ? NetworkImage(image) : null,
+                  child: image == null
+                      ? Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : "?",
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w800,
                             color: ProfileColors.primary,
-                            shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Iconsax.camera,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 32),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: ProfileColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: ProfileColors.success.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            "ACTIVE",
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: ProfileColors.success,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      role,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: ProfileColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (!isAdmin)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ProfileColors.background,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: ProfileColors.border),
-                        ),
-                        child: Text(
-                          "ID: ${employee?.employeeId ?? 'N/A'}",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: ProfileColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                  ],
+                        )
+                      : null,
                 ),
               ),
+              if (!isAdmin)
+                Material(
+                  color: ProfileColors.primary,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _changeProfileImage,
+                    customBorder: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(10.0),
+                      child: Icon(
+                        Iconsax.camera,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: 24),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: ProfileColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            role,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              color: ProfileColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 24),
+          _buildInfoTile(
+            Iconsax.personalcard,
+            "Employee ID",
+            employee?.employeeId ?? "N/A",
+          ),
+          _buildInfoTile(
+            Iconsax.sms,
+            "Corporate Email",
+            employee?.email ?? admin?.email ?? "-",
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildStatsCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: ProfileColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ProfileColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem("Status", "Active", ProfileColors.success),
+          Container(width: 1, height: 40, color: ProfileColors.border),
+          _buildStatItem(
+            "Joined",
+            employee?.dateOfJoining.formatDate.split(' ').first ?? "-",
+            ProfileColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: ProfileColors.textSecondary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: ProfileColors.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: ProfileColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: ProfileColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile fallback header
+  Widget _buildProfileHeader() {
+    return _buildStickyProfileCard();
   }
 
   Widget _buildEmployeeGrid(int crossAxisCount) {
@@ -435,30 +510,12 @@ class _ProfileState extends State<Profile> {
                 .join(', '),
             editable: false,
           ),
-          _buildDataPoint(
-            "Joined Date",
-            "joined",
-            employee?.dateOfJoining.formatDate,
-            editable: false,
-          ),
         ], crossAxisCount),
         _buildResponsiveSection("Contact & Security", [
-          _buildDataPoint(
-            "Corporate Email",
-            "email",
-            employee?.email,
-            editable: false,
-          ),
           _buildDataPoint("Phone Number", "mobile", employee?.mobileNumber),
           _buildDataPoint("Residential Address", "address", employee?.address),
           _buildDataPoint(
-            "Account Status",
-            "active",
-            employee?.isActive == true ? "Enabled" : "Disabled",
-            editable: false,
-          ),
-          _buildDataPoint(
-            "Email Alerts",
+            "Email Notifications",
             "notif",
             employee?.receiveEmailNotifications == true
                 ? "Subscribed"
@@ -470,20 +527,6 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Widget _buildAdminView() {
-    return _buildResponsiveSection("Administrator Account", [
-      _buildDataPoint("Name", "name", admin?.name, editable: false),
-      _buildDataPoint("Email", "email", admin?.email, editable: false),
-      _buildDataPoint("Mobile", "mobile", admin?.mobileNumber, editable: false),
-      _buildDataPoint(
-        "System Access",
-        "active",
-        admin?.isActive == true ? "Superuser" : "Inactive",
-        editable: false,
-      ),
-    ], 1);
-  }
-
   Widget _buildResponsiveSection(
     String title,
     List<Widget> items,
@@ -493,13 +536,13 @@ class _ProfileState extends State<Profile> {
       builder: (context, constraints) {
         double width = gridCount == 1
             ? double.infinity
-            : (constraints.maxWidth / gridCount) - (12 * (gridCount - 1));
+            : (constraints.maxWidth / gridCount) - 12;
         return Container(
           width: width,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: ProfileColors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: ProfileColors.border),
           ),
           child: Column(
@@ -507,12 +550,19 @@ class _ProfileState extends State<Profile> {
             children: [
               Row(
                 children: [
-                  Icon(
-                    getSectionIcon(title),
-                    size: 20,
-                    color: ProfileColors.primary,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ProfileColors.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      getSectionIcon(title),
+                      size: 20,
+                      color: ProfileColors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Text(
                     title,
                     style: const TextStyle(
@@ -523,7 +573,7 @@ class _ProfileState extends State<Profile> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               ...items,
             ],
           ),
@@ -540,9 +590,9 @@ class _ProfileState extends State<Profile> {
   }) {
     bool isEditing = editingField == key;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -554,16 +604,16 @@ class _ProfileState extends State<Profile> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: ProfileColors.textSecondary,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 if (isEditing)
                   TextField(
                     controller: controllers[key],
                     autofocus: true,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: const InputDecoration(
@@ -575,9 +625,9 @@ class _ProfileState extends State<Profile> {
                   Text(
                     value != null && value.isNotEmpty ? value : "Not Specified",
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: value == null
+                      color: (value == null || value.isEmpty)
                           ? ProfileColors.textSecondary
                           : ProfileColors.textPrimary,
                     ),
@@ -606,23 +656,29 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildFooter() {
-    return const Center(
-      child: Column(
-        children: [
-          Text(
-            "Last synchronized with server",
-            style: TextStyle(
-              fontSize: 11,
-              color: ProfileColors.textSecondary,
-              fontWeight: FontWeight.bold,
+    return Center(
+      child: Opacity(
+        opacity: 0.5,
+        child: Column(
+          children: [
+            Text(
+              "Data synchronized with secure server",
+              style: TextStyle(
+                fontSize: 11,
+                color: ProfileColors.textSecondary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            "Security Patch: Dec 2023",
-            style: TextStyle(fontSize: 10, color: ProfileColors.textSecondary),
-          ),
-        ],
+            SizedBox(height: 4),
+            Text(
+              "Security Patch: ${VersionService.version?.version} • ${DateTime.now().monthYearFormat}",
+              style: TextStyle(
+                fontSize: 10,
+                color: ProfileColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
