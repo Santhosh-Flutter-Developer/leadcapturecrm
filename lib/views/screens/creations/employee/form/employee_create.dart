@@ -387,21 +387,45 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            items: _designationList.map((e) => e.name.toString()).toList(),
-            label: 'Designation',
-            isRequired: true,
-            onChanged: (value) {
-              _designationModel = _designationList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
-            validator: (value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "Designation",
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '*',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<DesignationModel>(
+                asyncItems: () async {
+                  var designations =
+                      await DesignationService.getAllDesignations();
+                  return designations;
+                },
+                itemAsString: (desigantion) => desigantion.name,
+                onChanged: (selectedDes) async {
+                  if (selectedDes != null) {
+                    _designationModel = selectedDes;
+                  }
+                  setState(() {});
+                },
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -413,7 +437,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                 children: [
                   Text(
                     "Department",
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: AppColors.black,
                       fontWeight: FontWeight.w500,
                     ),
@@ -421,39 +445,27 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                   const SizedBox(width: 4),
                   Text(
                     '*',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: AppColors.danger,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
 
-              CustomFutureSearchableDropdown<String>(
+              CustomFutureSearchableDropdown<DepartmentModel>(
                 asyncItems: () async {
                   var departments = await DepartmentService.getAllDepartments();
-                  return departments.map((e) => e.name).toList();
+                  return departments;
                 },
                 multiSelect: true,
-                itemAsString: (name) => name,
-                onChangedList: (selectedNames) async {
+                itemAsString: (department) => department.name,
+                onChangedList: (selectedDeps) async {
                   _department.clear();
 
-                  for (var name in selectedNames) {
-                    final dep = _departmentList.firstWhere(
-                      (d) => d.name == name,
-                    );
-                    _department.add(dep.uid!);
-                  }
-
-                  _subDepartmentList.clear();
-                  for (var depId in _department) {
-                    final list =
-                        await SubDepartmentService.getSubDepartmentsByDepId(
-                          depId: depId,
-                        );
-                    _subDepartmentList.addAll(list);
+                  for (var d in selectedDeps) {
+                    _department.add(d.uid ?? '');
                   }
 
                   setState(() {});
@@ -462,17 +474,43 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             ],
           ),
         ),
-
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            items: _subDepartmentList.map((e) => e.name.toString()).toList(),
-            label: 'Sub Department',
-            onChanged: (value) {
-              _subDepartmentModel = _subDepartmentList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Sub Department",
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<SubDepartmentModel>(
+                asyncItems: () async {
+                  List<SubDepartmentModel> subDepartmentList = [];
+                  for (var depId in _department) {
+                    final list =
+                        await SubDepartmentService.getSubDepartmentsByDepId(
+                          depId: depId,
+                        );
+                    subDepartmentList.addAll(list);
+                  }
+
+                  return subDepartmentList;
+                },
+                itemAsString: (subDepartment) => subDepartment.name,
+                onChanged: (subDepartment) async {
+                  if (subDepartment != null) {
+                    _subDepartmentModel = subDepartment;
+                  }
+
+                  setState(() {});
+                },
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -539,22 +577,62 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            items: _rolesList.map((e) => e.name.toString()).toList(),
-            label: 'Role',
-            isRequired: true,
-            onChanged: (value) {
-              _roleModel = _rolesList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
-            validator: (value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "Role",
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '*',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<RoleModel>(
+                asyncItems: () async {
+                  var roles = await RoleService.getAllRoles();
+                  return roles;
+                },
+                itemAsString: (role) => role.name,
+                onChanged: (selectedRole) async {
+                  if (selectedRole != null) {
+                    _roleModel = selectedRole;
+                  }
+                  setState(() {});
+                },
+              ),
+            ],
           ),
+
+          // FormDropdownSearch(
+          //   items: _rolesList.map((e) => e.name.toString()).toList(),
+          //   label: 'Role',
+          //   isRequired: true,
+          //   onChanged: (value) {
+          //     _roleModel = _rolesList.firstWhere(
+          //       (element) => element.name == value,
+          //     );
+          //   },
+          //   validator: (value) {
+          //     if (value == null) {
+          //       return "* Required";
+          //     }
+          //     return null;
+          //   },
+          // ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),

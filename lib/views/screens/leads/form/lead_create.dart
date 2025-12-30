@@ -54,9 +54,6 @@ class _LeadCreateState extends State<LeadCreate> {
   LeadStatusModel? _leadStatusModel;
   List<LeadSourceModel> _leadSource = [];
   LeadSourceModel? _selectedLeadSource;
-  List<RegionModel> _regionsList = [];
-  List<StateModel> _statesList = [];
-  List<CityModel> _citiesList = [];
   RegionModel? _regionModel;
   StateModel? _stateModel;
   CityModel? _cityModel;
@@ -76,12 +73,10 @@ class _LeadCreateState extends State<LeadCreate> {
       _leadPriorities.clear();
       _leadStatus.clear();
       _leadSource.clear();
-      _regionsList.clear();
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
-      _regionsList = await RegionService.getCountries();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -469,51 +464,93 @@ class _LeadCreateState extends State<LeadCreate> {
         ),
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'Country',
-            items: _regionsList.map((e) => e.name).toList(),
-            onChanged: (value) async {
-              _regionModel = _regionsList.firstWhere(
-                (element) => element.name == value,
-              );
-              if (_regionModel != null) {
-                _statesList = await RegionService.getStates(
-                  regionId: _regionModel?.uid ?? '',
-                );
-                setState(() {});
-              }
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Country",
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<RegionModel>(
+                asyncItems: () async {
+                  var countries = await RegionService.getCountries();
+                  return countries;
+                },
+                itemAsString: (countries) => countries.name,
+                onChanged: (selectedCountry) async {
+                  _regionModel = selectedCountry;
+                  setState(() {});
+                },
+              ),
+            ],
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'State',
-            items: _statesList.map((e) => e.name).toList(),
-            onChanged: (value) async {
-              _stateModel = _statesList.firstWhere(
-                (element) => element.name == value,
-              );
-              if (_regionModel != null && _stateModel != null) {
-                _citiesList = await RegionService.getCities(
-                  regionId: _regionModel?.uid ?? '',
-                  stateId: _stateModel?.uid ?? '',
-                );
-                setState(() {});
-              }
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "State",
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<StateModel>(
+                asyncItems: () async {
+                  if (_regionModel == null) return [];
+                  var states = await RegionService.getStates(
+                    regionId: _regionModel?.uid ?? '',
+                  );
+                  return states;
+                },
+                itemAsString: (countries) => countries.name,
+                onChanged: (selectedState) async {
+                  _stateModel = selectedState;
+                  setState(() {});
+                },
+              ),
+            ],
           ),
         ),
         SizedBox(
           width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'City',
-            items: _citiesList.map((e) => e.name).toList(),
-            onChanged: (value) async {
-              _cityModel = _citiesList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "City",
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: AppColors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              CustomFutureSearchableDropdown<CityModel>(
+                asyncItems: () async {
+                  if (_regionModel == null || _stateModel == null) return [];
+                  var cities = await RegionService.getCities(
+                    regionId: _regionModel?.uid ?? '',
+                    stateId: _stateModel?.uid ?? '',
+                  );
+                  return cities;
+                },
+                itemAsString: (cities) => cities.name,
+                onChanged: (selectedCity) async {
+                  _cityModel = selectedCity;
+                  setState(() {});
+                },
+              ),
+            ],
           ),
         ),
         SizedBox(
