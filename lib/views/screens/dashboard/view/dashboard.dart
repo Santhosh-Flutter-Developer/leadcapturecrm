@@ -27,6 +27,7 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  String _selectedFilter = "Today";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,6 +57,8 @@ class _DashboardState extends State<Dashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(widget.isAdmin),
+                    const SizedBox(height: 16),
+                    _buildDateFilter(context),
                     const SizedBox(height: 30),
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -152,6 +155,59 @@ class _DashboardState extends State<Dashboard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDateFilter(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xff303030) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedFilter,
+            icon: const Icon(Icons.arrow_drop_down),
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            style: Theme.of(context).textTheme.bodySmall,
+            items: const [
+              DropdownMenuItem(value: "Today", child: Text("Today")),
+              DropdownMenuItem(value: "This Week", child: Text("This Week")),
+              DropdownMenuItem(value: "This Month", child: Text("This Month")),
+              DropdownMenuItem(
+                value: "Custom Date",
+                child: Text("Custom Date"),
+              ),
+            ],
+            onChanged: (value) async {
+              if (value == null) return;
+
+              setState(() => _selectedFilter = value);
+
+              DateTimeRange? range;
+
+              if (value == "Custom Date") {
+                range = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2035),
+                );
+              }
+              context.read<DashboardBloc>().add(
+                LoadDashboardEvent(filter: value, range: range),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 

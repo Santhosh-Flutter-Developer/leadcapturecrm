@@ -7,22 +7,60 @@ import '/services/services.dart';
 class DashboardService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  DateTimeRange _resolveDateRange(String filter, DateTimeRange? customRange) {
+    final now = DateTime.now();
+
+    switch (filter) {
+      case "Today":
+        return DateTimeRange(
+          start: DateTime(now.year, now.month, now.day),
+          end: now,
+        );
+
+      case "This Week":
+        final start = now.subtract(Duration(days: now.weekday - 1));
+        return DateTimeRange(start: start, end: now);
+
+      case "This Month":
+        return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+
+      case "Custom Date":
+        if (customRange != null) {
+          return customRange;
+        } else {
+          debugPrint("Custom date range is null, defaulting to today");
+          return DateTimeRange(
+            start: DateTime(now.year, now.month, now.day),
+            end: now,
+          );
+        }
+
+      default:
+        return DateTimeRange(start: DateTime(2000), end: now);
+    }
+  }
+
   Future<DashboardModel> fetchDashboardData({
     required bool isAdmin,
     required String userId,
+    required String filter,
+    DateTimeRange? range,
   }) async {
     try {
       final cid = await Spdb.getCid();
       if (cid == null) throw "CollectionId cannot be null";
 
-      final totalLeads = await _fetchTotalLeads(cid);
-      final convertedLeads = await _fetchConvertedLeads(cid);
-      final ongoingDeals = await _fetchOngoingDeals(cid);
-      final pendingTasks = await _fetchPendingTasks(cid);
-      final activeEmployees = await _fetchActiveEmployees(cid);
-      final assignedTasks = await _fetchAssignedTasks(cid, userId);
-      final pendingFollowUps = await _fetchPendingFollowUps(cid);
-      final leadsAssigned = await _fetchLeadsAssigned(cid, userId);
+      final dateRange = _resolveDateRange(filter, range);
+
+      final totalLeads = await _fetchTotalLeads(cid, dateRange);
+      final convertedLeads = await _fetchConvertedLeads(cid, dateRange);
+      final ongoingDeals = await _fetchOngoingDeals(cid, dateRange);
+      final pendingTasks = await _fetchPendingTasks(cid, dateRange);
+      final activeEmployees = await _fetchActiveEmployees(cid, dateRange);
+      final assignedTasks = await _fetchAssignedTasks(cid, userId, dateRange);
+      final pendingFollowUps = await _fetchPendingFollowUps(cid, dateRange);
+      final leadsAssigned = await _fetchLeadsAssigned(cid, userId, dateRange);
+
       // final recentActivities = await _fetchRecentActivities(userId);
       // final personalActivities = await _fetchPersonalActivities(userId);
       final notifications = await _fetchNotifications(cid, userId);
@@ -48,131 +86,170 @@ class DashboardService {
     }
   }
 
-  Future<int> _fetchTotalLeads(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.leads.name)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching total leads: $e\n$st");
-      throw 'Error fetching total leads: $e';
-    }
+  Future<int> _fetchTotalLeads(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.leads.name)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchConvertedLeads(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.leads.name)
-          .where("leadsConversion", isEqualTo: true)
-          .count()
-          .get();
+  Future<int> _fetchConvertedLeads(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.leads.name)
+        .where("leadsConversion", isEqualTo: true)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
 
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching converted leads: $e\n$st");
-      throw 'Error fetching converted leads: $e';
-    }
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchOngoingDeals(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.deals.name)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching ongoing deals: $e\n$st");
-      throw 'Error fetching ongoing deals: $e';
-    }
+  Future<int> _fetchOngoingDeals(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.deals.name)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchPendingTasks(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.tasks.name)
-          .where("completed", isEqualTo: false)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching pending tasks: $e\n$st");
-      throw 'Error fetching pending tasks: $e';
-    }
+  Future<int> _fetchPendingTasks(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.tasks.name)
+        .where("completed", isEqualTo: false)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchActiveEmployees(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.employees.name)
-          .where("isActive", isEqualTo: true)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching active employees: $e\n$st");
-      throw 'Error fetching active employees: $e';
-    }
+  Future<int> _fetchActiveEmployees(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.employees.name)
+        .where("isActive", isEqualTo: true)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchAssignedTasks(String cid, String userId) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.tasks.name)
-          .where("assignees", arrayContains: userId)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching assigned tasks: $e\n$st");
-      throw 'Error fetching assigned tasks: $e';
-    }
+  Future<int> _fetchAssignedTasks(
+    String cid,
+    String userId,
+    DateTimeRange range,
+  ) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.tasks.name)
+        .where("assignees", arrayContains: userId)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchLeadsAssigned(String cid, String userId) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.leads.name)
-          .where("assignedTo", isEqualTo: userId)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching lead assigned: $e\n$st");
-      throw 'Error fetching lead assigned: $e';
-    }
+  Future<int> _fetchLeadsAssigned(
+    String cid,
+    String userId,
+    DateTimeRange range,
+  ) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.leads.name)
+        .where("assignedTo", isEqualTo: userId)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
-  Future<int> _fetchPendingFollowUps(String cid) async {
-    try {
-      final snap = await _firestore
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.leads.name)
-          .where("allowFollowUp", isEqualTo: true)
-          .count()
-          .get();
-      return snap.count ?? 0;
-    } catch (e, st) {
-      debugPrint("Error fetching pending followups: $e\n$st");
-      throw 'Error fetching pending followups: $e';
-    }
+  Future<int> _fetchPendingFollowUps(String cid, DateTimeRange range) async {
+    final snap = await _firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.leads.name)
+        .where("allowFollowUp", isEqualTo: true)
+        .where(
+          "createdAt",
+          isGreaterThanOrEqualTo: range.start.millisecondsSinceEpoch,
+        )
+        .where(
+          "createdAt",
+          isLessThanOrEqualTo: range.end.millisecondsSinceEpoch,
+        )
+        .count()
+        .get();
+
+    return snap.count ?? 0;
   }
 
   // Future<List<String>> _fetchRecentActivities(String userId) async {
