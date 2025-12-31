@@ -261,7 +261,11 @@ class TaskService {
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.tasks.name}',
         taskId,
-        {"hasStarted": true, "completed": false},
+        {
+          "hasStarted": true,
+          "completed": false,
+          "startedTime": DateTime.now().millisecondsSinceEpoch,
+        },
         activity: 'Task has been updated',
       );
       // Add history
@@ -288,7 +292,11 @@ class TaskService {
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.tasks.name}',
         taskId,
-        {"completed": true, "hasStarted": false},
+        {
+          "completed": true,
+          "hasStarted": false,
+          "completedTime": DateTime.now().millisecondsSinceEpoch,
+        },
         activity: 'Task has been updated',
       );
       // Add history

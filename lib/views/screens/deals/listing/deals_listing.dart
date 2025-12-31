@@ -3,12 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
 import '/services/services.dart';
-import 'package:collection/collection.dart';
 
 const String _pageTitle = "Deals";
 
@@ -102,7 +102,7 @@ class _DealsListingViewState extends State<DealsListingView> {
   List<String> statusItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
       final data = box.get(key) ?? {};
-      final model = LeadStatusModel.fromMap(
+      final model = DealStatusModel.fromMap(
         key,
         Map<String, dynamic>.from(data),
       );
@@ -157,6 +157,8 @@ class _DealsListingViewState extends State<DealsListingView> {
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
                         DealKanbanListing(dealList: _filteredDeals),
+                      ] else if (_selectedView == 'Calendar') ...[
+                        DealsCalendarListing(dealList: _filteredDeals),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -748,6 +750,17 @@ class _DealsListingViewState extends State<DealsListingView> {
                 },
                 icon: const Icon(Icons.list),
                 color: _selectedView == 'List'
+                    ? AppColors.blue
+                    : AppColors.grey700,
+              ),
+              Container(width: 1, color: Colors.grey.shade300),
+              IconButton(
+                onPressed: () {
+                  _selectedView = 'Calendar';
+                  setState(() {});
+                },
+                icon: const Icon(Iconsax.calendar_1, size: 18),
+                color: _selectedView == 'Calendar'
                     ? AppColors.blue
                     : AppColors.grey700,
               ),

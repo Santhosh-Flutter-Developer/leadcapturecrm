@@ -1,0 +1,215 @@
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import '/models/models.dart';
+
+class LeadsSourcePieChart extends StatefulWidget {
+  final List<LeadModel> leads;
+
+  const LeadsSourcePieChart({super.key, required this.leads});
+
+  @override
+  State<LeadsSourcePieChart> createState() => _LeadsSourcePieChartState();
+}
+
+class _LeadsSourcePieChartState extends State<LeadsSourcePieChart> {
+  int touchedIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Group data by Lead Source
+    final Map<String, int> sourceCounts = {};
+    for (var lead in widget.leads) {
+      final sourceName = lead.leadSource.name;
+      sourceCounts[sourceName] = (sourceCounts[sourceName] ?? 0) + 1;
+    }
+
+    final totalLeads = widget.leads.length;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 600;
+
+        return Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFF2B3674).withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Leads by Source",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Distribution across $totalLeads total leads",
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 24),
+              // We use a SizedBox instead of Expanded so it can fit inside a Column/ListView
+              SizedBox(
+                height: isDesktop ? 300 : 450,
+                child: isDesktop
+                    ? Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: _buildPieChart(sourceCounts, totalLeads),
+                          ),
+                          const SizedBox(width: 40),
+                          Expanded(
+                            flex: 1,
+                            child: _buildLegend(sourceCounts, totalLeads),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: _buildPieChart(sourceCounts, totalLeads),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildLegend(sourceCounts, totalLeads),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPieChart(Map<String, int> data, int total) {
+    return PieChart(
+      PieChartData(
+        pieTouchData: PieTouchData(
+          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+            setState(() {
+              if (!event.isInterestedForInteractions ||
+                  pieTouchResponse == null ||
+                  pieTouchResponse.touchedSection == null) {
+                touchedIndex = -1;
+                return;
+              }
+              touchedIndex =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
+            });
+          },
+        ),
+        borderData: FlBorderData(show: false),
+        sectionsSpace: 4,
+        centerSpaceRadius: 50,
+        sections: _generateSections(data, total),
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _generateSections(
+    Map<String, int> data,
+    int total,
+  ) {
+    final List<Color> palette = [
+      const Color(0xFF2563EB),
+      const Color(0xFF10B981),
+      const Color(0xFFF59E0B),
+      const Color(0xFFEF4444),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEC4899),
+    ];
+
+    int index = 0;
+    return data.entries.map((entry) {
+      final isTouched = index == touchedIndex;
+      final fontSize = isTouched ? 18.0 : 12.0;
+      final radius = isTouched ? 70.0 : 60.0;
+      final percentage = (entry.value / total * 100).toStringAsFixed(1);
+      final color = palette[index % palette.length];
+
+      index++;
+
+      return PieChartSectionData(
+        color: color,
+        value: entry.value.toDouble(),
+        title: '$percentage%',
+        radius: radius,
+        titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildLegend(Map<String, int> data, int total) {
+    final List<Color> palette = [
+      const Color(0xFF2563EB),
+      const Color(0xFF10B981),
+      const Color(0xFFF59E0B),
+      const Color(0xFFEF4444),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEC4899),
+    ];
+
+    int index = 0;
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: data.entries.map((entry) {
+          final color = palette[index % palette.length];
+          index++;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    entry.key,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                ),
+                Text(
+                  entry.value.toString(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}

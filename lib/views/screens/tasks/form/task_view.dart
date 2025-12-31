@@ -446,52 +446,57 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
       itemCount: _taskModel.attachments.length,
       itemBuilder: (context, index) {
         final file = _taskModel.attachments[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: TaskViewColors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: TaskViewColors.border),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 12),
-              const Icon(
-                Iconsax.document_text,
-                color: TaskViewColors.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      "${file.size} KB",
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: TaskViewColors.textSecondary,
-                      ),
-                    ),
-                  ],
+        return InkWell(
+          onTap: () async {
+            await Download.downloadFromUrl(context, file.url, file.name);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: TaskViewColors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: TaskViewColors.border),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                const Icon(
+                  Iconsax.document_text,
+                  color: TaskViewColors.primary,
+                  size: 24,
                 ),
-              ),
-              const Icon(
-                Iconsax.arrow_circle_down,
-                size: 18,
-                color: TaskViewColors.secondary,
-              ),
-              const SizedBox(width: 12),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "${file.size} KB",
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: TaskViewColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Iconsax.arrow_circle_down,
+                  size: 18,
+                  color: TaskViewColors.secondary,
+                ),
+                const SizedBox(width: 12),
+              ],
+            ),
           ),
         );
       },

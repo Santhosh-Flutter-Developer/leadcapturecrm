@@ -371,4 +371,26 @@ class DealService {
       throw 'Error getting user deals count: $e';
     }
   }
+
+  static Future<List<DealModel>> getAllDeals() async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .get();
+
+      List<DealModel> deals = querySnapshot.docs.map((doc) {
+        return DealModel.fromMap(doc.id, doc.data());
+      }).toList();
+
+      deals.sort((a, b) => a.dealName.compareTo(b.dealName));
+
+      return deals;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error fetching projects: $e';
+    }
+  }
 }

@@ -61,10 +61,14 @@ class DashboardService {
       final pendingFollowUps = await _fetchPendingFollowUps(cid, dateRange);
       final leadsAssigned = await _fetchLeadsAssigned(cid, userId, dateRange);
 
-      // final recentActivities = await _fetchRecentActivities(userId);
-      // final personalActivities = await _fetchPersonalActivities(userId);
+      final recentActivities = await RecentActivityService()
+          .getRecentActivities();
       final notifications = await _fetchNotifications(cid, userId);
       final upcomingTasks = await _fetchUpcomingTasks(cid);
+
+      final allLeads = await LeadService.getAllLeads();
+      final allDeals = await DealService.getAllDeals();
+      final allTasks = await TaskService.getAllTasks();
 
       return DashboardModel(
         totalLeads: totalLeads,
@@ -75,10 +79,12 @@ class DashboardService {
         assignedTasks: assignedTasks,
         pendingFollowUps: pendingFollowUps,
         leadsAssigned: leadsAssigned,
-        // recentActivities: recentActivities,
-        // personalActivities: personalActivities,
+        recentActivities: recentActivities,
         notifications: notifications,
         upcomingTasks: upcomingTasks,
+        allLeads: allLeads,
+        allDeals: allDeals,
+        allTasks: allTasks,
       );
     } catch (e, st) {
       debugPrint("Error fetching dashboard: $e\n$st");
@@ -251,16 +257,6 @@ class DashboardService {
 
     return snap.count ?? 0;
   }
-
-  // Future<List<String>> _fetchRecentActivities(String userId) async {
-  //   final snap = await _firestore
-  //       .collection("activities")
-  //       .where("userId", isEqualTo: userId)
-  //       .orderBy("createdAt", descending: true)
-  //       .limit(5)
-  //       .get();
-  //   return snap.docs.map((d) => d.data()['activity'].toString()).toList();
-  // }
 
   // Future<List<String>> _fetchPersonalActivities(String userId) async {
   //   final snap = await _firestore

@@ -9,10 +9,13 @@ class DashboardModel {
   final int assignedTasks;
   final int pendingFollowUps;
   final int leadsAssigned;
-  final List<String> recentActivities;
+  final List<ActivityItem> recentActivities;
   final List<String> personalActivities;
   final List<NotificationModel> notifications;
   final List<TaskModel> upcomingTasks;
+  final List<LeadModel> allLeads;
+  final List<DealModel> allDeals;
+  final List<TaskModel> allTasks;
 
   DashboardModel({
     required this.totalLeads,
@@ -27,6 +30,9 @@ class DashboardModel {
     this.personalActivities = const [],
     this.notifications = const [],
     this.upcomingTasks = const [],
+    required this.allLeads,
+    required this.allDeals,
+    required this.allTasks,
   });
 
   factory DashboardModel.fromMap(Map<String, dynamic> map) {
@@ -57,8 +63,10 @@ class DashboardModel {
           : int.tryParse(map['leadsAssigned']?.toString() ?? '0') ?? 0,
       recentActivities:
           map['recentActivities'] != null && map['recentActivities'] is List
-          ? List<String>.from(
-              (map['recentActivities'] as List).map((e) => e.toString()),
+          ? List<ActivityItem>.from(
+              (map['recentActivities'] as List).map(
+                (e) => ActivityItem.fromMap(e),
+              ),
             )
           : [],
       personalActivities:
@@ -79,6 +87,27 @@ class DashboardModel {
             )
           : [],
       upcomingTasks: const [],
+      allLeads: map['allLeads'] != null && map['allLeads'] is List
+          ? List<LeadModel>.from(
+              (map['allLeads'] as List).map(
+                (e) => LeadModel.fromMap(e['uid'], e as Map<String, dynamic>),
+              ),
+            )
+          : [],
+      allDeals: map['allDeals'] != null && map['allDeals'] is List
+          ? List<DealModel>.from(
+              (map['allDeals'] as List).map(
+                (e) => DealModel.fromMap(e['uid'], e as Map<String, dynamic>),
+              ),
+            )
+          : [],
+      allTasks: map['allTasks'] != null && map['allTasks'] is List
+          ? List<TaskModel>.from(
+              (map['allTasks'] as List).map(
+                (e) => TaskModel.fromMap(e['uid'], e as Map<String, dynamic>),
+              ),
+            )
+          : [],
     );
   }
 

@@ -9,7 +9,6 @@ import '/models/models.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 import '/theme/theme.dart';
-import 'lead_kanban_listing.dart';
 
 const String _pageTitle = "Leads";
 
@@ -168,6 +167,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
                         LeadKanbanListing(leadList: _filteredLeads),
+                      ] else if (_selectedView == 'Calendar') ...[
+                        LeadCalendarListing(leadList: _filteredLeads),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -917,6 +918,17 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 },
                 icon: const Icon(Icons.list),
                 color: _selectedView == 'List'
+                    ? AppColors.blue
+                    : AppColors.grey700,
+              ),
+              Container(width: 1, color: Colors.grey.shade300),
+              IconButton(
+                onPressed: () {
+                  _selectedView = 'Calendar';
+                  setState(() {});
+                },
+                icon: const Icon(Iconsax.calendar_1, size: 18),
+                color: _selectedView == 'Calendar'
                     ? AppColors.blue
                     : AppColors.grey700,
               ),

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/gestures.dart';
@@ -10,6 +9,7 @@ import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 const Color kBgColor = Color(0xFFF4F7FE);
 const Color kCardColor = Colors.white;
@@ -57,9 +57,7 @@ class _DashboardState extends State<Dashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(widget.isAdmin),
-                    const SizedBox(height: 16),
-                    _buildDateFilter(context),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         // Mobile Layout
@@ -67,18 +65,22 @@ class _DashboardState extends State<Dashboard> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildKpiGrid(widget.isAdmin, data),
-                              const SizedBox(height: 30),
+                              _buildKpiGrid(context, widget.isAdmin, data),
+                              const SizedBox(height: 20),
                               if (widget.isAdmin) ...[
-                                ChartCard(data: data),
-                                const SizedBox(height: 30),
+                                LeadsSourcePieChart(leads: data.allLeads),
+                                const SizedBox(height: 20),
+                                DealsTimelineChart(deals: data.allDeals),
+                                const SizedBox(height: 20),
+                                TaskStatusPieChart(tasks: data.allTasks),
+                                const SizedBox(height: 20),
                               ],
                               _buildActivitySection(
                                 context,
                                 widget.isAdmin,
                                 data,
                               ),
-                              const SizedBox(height: 30),
+                              const SizedBox(height: 20),
                               _buildRightPanel(context, widget.isAdmin, data),
                             ],
                           );
@@ -93,11 +95,15 @@ class _DashboardState extends State<Dashboard> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildKpiGrid(widget.isAdmin, data),
-                                  const SizedBox(height: 30),
+                                  _buildKpiGrid(context, widget.isAdmin, data),
+                                  const SizedBox(height: 20),
                                   if (widget.isAdmin) ...[
-                                    ChartCard(data: data),
-                                    const SizedBox(height: 30),
+                                    LeadsSourcePieChart(leads: data.allLeads),
+                                    const SizedBox(height: 20),
+                                    DealsTimelineChart(deals: data.allDeals),
+                                    const SizedBox(height: 20),
+                                    TaskStatusPieChart(tasks: data.allTasks),
+                                    const SizedBox(height: 20),
                                   ],
                                   _buildActivitySection(
                                     context,
@@ -133,27 +139,34 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Widget _buildHeader(bool isAdmin) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        if (VersionService.version?.isUpdateNeed ?? false)
-          _buildAppUpdateContainer(),
-        Text(
-          "Dashboard",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            color: kTextSecondary,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (VersionService.version?.isUpdateNeed ?? false)
+                _buildAppUpdateContainer(),
+              Text(
+                "Dashboard",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: kTextSecondary,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                isAdmin ? "Overview Analytics" : "My Workspace",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: kTextPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          isAdmin ? "Overview Analytics" : "My Workspace",
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: kTextPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
+        _buildDateFilter(context),
       ],
     );
   }
@@ -317,7 +330,7 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
-Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
+Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
   // Define distinct colors for visual separation
   final blueGradient = [const Color(0xFF4285F4), const Color(0xFF6A88E5)];
   final purpleGradient = [const Color(0xFF8E2DE2), const Color(0xFF4A00E0)];
@@ -340,6 +353,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     progress: _calculateProgress(data.totalLeads, 200),
                     gradientColors: blueGradient,
                     trend: 12.5,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const LeadsListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const LeadsListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -355,6 +378,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     ),
                     gradientColors: greenGradient,
                     trend: 5.2,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const DealsListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const DealsListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -367,6 +400,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     progress: _calculateProgress(data.ongoingDeals, 50),
                     gradientColors: orangeGradient,
                     trend: -2.4,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const DealsListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const DealsListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -378,6 +421,19 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     icon: Icons.people_outline_rounded,
                     progress: _calculateProgress(data.activeEmployees, 50),
                     gradientColors: purpleGradient,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(
+                          context,
+                          widget: const EmployeeListing(),
+                        );
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const EmployeeListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
               ]
@@ -390,6 +446,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     icon: Icons.task,
                     progress: _calculateProgress(data.assignedTasks, 20),
                     gradientColors: blueGradient,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const TasksListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const TasksListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -401,6 +467,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     icon: Icons.history,
                     progress: _calculateProgress(data.pendingFollowUps, 20),
                     gradientColors: greenGradient,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const LeadsListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const LeadsListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -412,6 +488,16 @@ Widget _buildKpiGrid(bool isAdmin, DashboardModel data) {
                     icon: Icons.person_search,
                     progress: _calculateProgress(data.leadsAssigned, 30),
                     gradientColors: purpleGradient,
+                    onTap: () {
+                      if (kIsMobile) {
+                        Sheet.showSheet(context, widget: const LeadsListing());
+                      } else {
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          const LeadsListing(),
+                        );
+                      }
+                    },
                   ),
                 ),
               ],
@@ -431,7 +517,7 @@ Widget _buildActivitySection(
   bool isAdmin,
   DashboardModel data,
 ) {
-  final activities = isAdmin ? data.recentActivities : data.personalActivities;
+  final List<ActivityItem> activities = data.recentActivities;
 
   return Container(
     padding: const EdgeInsets.all(20),
@@ -479,7 +565,7 @@ Widget _buildActivitySection(
           itemCount: activities.length,
           separatorBuilder: (_, _) => const SizedBox(height: 15),
           itemBuilder: (context, index) => ActivityTimelineTile(
-            text: activities[index],
+            activity: activities[index],
             isFirst: index == 0,
           ),
         ),
@@ -593,7 +679,7 @@ Widget _buildRightPanel(
               ],
       ),
 
-      const SizedBox(height: 30),
+      const SizedBox(height: 20),
 
       // Notifications Section
       Text(
@@ -613,7 +699,7 @@ Widget _buildRightPanel(
         ),
       ...notifications.map((msg) => NotificationTile(notification: msg)),
 
-      const SizedBox(height: 30),
+      const SizedBox(height: 20),
 
       // Tasks Section
       Text(
@@ -651,6 +737,7 @@ class KpiCard extends StatelessWidget {
   final double progress;
   final List<Color> gradientColors;
   final double? trend;
+  final VoidCallback onTap;
 
   const KpiCard({
     super.key,
@@ -660,142 +747,146 @@ class KpiCard extends StatelessWidget {
     required this.progress,
     required this.gradientColors,
     this.trend,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final isPositive = (trend ?? 0) >= 0;
 
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [
-            kCardColor.withValues(alpha: 0.95),
-            kCardColor.withValues(alpha: 0.85),
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 200,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              kCardColor.withValues(alpha: 0.95),
+              kCardColor.withValues(alpha: 0.85),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ─── HEADER ───────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradientColors),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: Colors.white, size: 22),
-              ),
-
-              if (trend != null)
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ─── HEADER ───────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isPositive
-                        ? Colors.green.withValues(alpha: 0.12)
-                        : Colors.red.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(30),
+                    gradient: LinearGradient(colors: gradientColors),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isPositive ? Icons.trending_up : Icons.trending_down,
-                        size: 16,
-                        color: isPositive ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${trend!.abs()}%",
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: isPositive ? Colors.green : Colors.red,
-                            ),
-                      ),
-                    ],
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+
+                if (trend != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? Colors.green.withValues(alpha: 0.12)
+                          : Colors.red.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isPositive ? Icons.trending_up : Icons.trending_down,
+                          size: 16,
+                          color: isPositive ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${trend!.abs()}%",
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isPositive ? Colors.green : Colors.red,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            /// ─── VALUE ───────────────────────────────
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: kTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+            ),
+
+            const Spacer(),
+
+            /// ─── PROGRESS ────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Target",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                ),
+                Text(
+                  "${(progress * 100).toInt()}%",
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: gradientColors.first,
                   ),
                 ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          /// ─── VALUE ───────────────────────────────
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: kTextPrimary,
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
-          ),
-
-          const Spacer(),
-
-          /// ─── PROGRESS ────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Target",
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: progress),
+                duration: const Duration(milliseconds: 800),
+                builder: (context, value, _) {
+                  return LinearProgressIndicator(
+                    value: value,
+                    minHeight: 6,
+                    backgroundColor: kBgColor,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      gradientColors.first,
+                    ),
+                  );
+                },
               ),
-              Text(
-                "${(progress * 100).toInt()}%",
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: gradientColors.first,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 800),
-              builder: (context, value, _) {
-                return LinearProgressIndicator(
-                  value: value,
-                  minHeight: 6,
-                  backgroundColor: kBgColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    gradientColors.first,
-                  ),
-                );
-              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -890,395 +981,6 @@ class QuickActionCard extends StatelessWidget {
   }
 }
 
-class ChartCard extends StatefulWidget {
-  final DashboardModel data;
-
-  const ChartCard({super.key, required this.data});
-
-  @override
-  State<ChartCard> createState() => _ChartCardState();
-}
-
-class _ChartCardState extends State<ChartCard>
-    with SingleTickerProviderStateMixin {
-  late TabController _titleController;
-  int _selectedChartIndex = 0;
-
-  final List<String> _titles = ["Leads", "Deals", "Tasks"];
-
-  final List<Map<String, dynamic>> _chartTypes = [
-    {"name": "Line", "icon": Icons.show_chart},
-    {"name": "Bar", "icon": Icons.bar_chart},
-    {"name": "Pie", "icon": Icons.pie_chart},
-  ];
-
-  final List<Color> _gradientColors = [
-    const Color(0xff4285F4),
-    const Color(0xff6A88E5),
-    const Color(0xff9C27B0),
-  ];
-
-  double _getMaxY(int tab) {
-    switch (tab) {
-      case 0: // Leads
-        return widget.data.totalLeads.toDouble() * 1.2;
-      case 1: // Deals
-        return widget.data.ongoingDeals.toDouble() * 1.2;
-      case 2: // Tasks
-        return widget.data.assignedTasks.toDouble() * 1.2;
-      default:
-        return 10;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TabController(length: _titles.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
-  }
-
-  List<double> _getValuesForTitle(int titleIndex) {
-    switch (titleIndex) {
-      case 0: // Leads
-        return [
-          widget.data.totalLeads.toDouble(),
-          widget.data.convertedLeads.toDouble(),
-          widget.data.leadsAssigned.toDouble(),
-        ];
-
-      case 1: // Deals
-        return [
-          widget.data.ongoingDeals.toDouble(),
-          widget.data.convertedLeads.toDouble(),
-        ];
-
-      case 2: // Tasks
-        return [
-          widget.data.assignedTasks.toDouble(),
-          widget.data.pendingTasks.toDouble(),
-          widget.data.pendingFollowUps.toDouble(),
-        ];
-
-      default:
-        return [];
-    }
-  }
-
-  Widget _buildChart(int titleIndex, int chartIndex) {
-    final values = _getValuesForTitle(titleIndex);
-    List<String> getLabels(int tab) {
-      switch (tab) {
-        case 0:
-          return ["Total", "Converted", "Assigned"];
-        case 1:
-          return ["Ongoing", "Converted"];
-        case 2:
-          return ["Assigned", "Pending", "Follow-ups"];
-        default:
-          return [];
-      }
-    }
-
-    switch (_chartTypes[chartIndex]['name']) {
-      case 'Line':
-        final labels = getLabels(titleIndex);
-
-        final rawMaxY = values.isEmpty
-            ? 5
-            : values.reduce((a, b) => a > b ? a : b).ceil();
-
-        final maxY = (rawMaxY * 1.2).ceilToDouble();
-        final yInterval = (maxY / 5).ceilToDouble();
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: LineChart(
-            LineChartData(
-              minX: 0,
-              maxX: (values.length - 1).toDouble(),
-              minY: 0,
-              maxY: maxY,
-
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: yInterval, // 👈 INTEGER GRID
-                getDrawingHorizontalLine: (value) =>
-                    FlLine(color: Colors.grey.shade200, strokeWidth: 1),
-              ),
-
-              titlesData: FlTitlesData(
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-
-                /// INTEGER Y-AXIS
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: yInterval,
-                    reservedSize: 20,
-                    getTitlesWidget: (value, meta) {
-                      if (value % 1 != 0) return const SizedBox.shrink();
-                      return Text(
-                        value.toInt().toString(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
-                      );
-                    },
-                  ),
-                ),
-
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 1,
-                    reservedSize: 65,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (value % 1 != 0 ||
-                          index < 0 ||
-                          index >= labels.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: SizedBox(
-                          width: 70,
-                          child: Text(
-                            labels[index],
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: kTextSecondary),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              borderData: FlBorderData(
-                show: true,
-                border: const Border(
-                  bottom: BorderSide(color: Colors.grey),
-                  left: BorderSide(color: Colors.grey),
-                ),
-              ),
-
-              lineBarsData: [
-                LineChartBarData(
-                  spots: List.generate(
-                    values.length,
-                    (i) => FlSpot(i.toDouble(), values[i]),
-                  ),
-                  isCurved: values.length > 2,
-                  color: _gradientColors.first,
-                  barWidth: 4,
-                  dotData: FlDotData(show: true),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: _gradientColors.first.withValues(alpha: 0.1),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-
-      case 'Bar':
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: BarChart(
-            BarChartData(
-              gridData: FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-
-                      if (index < 0 || index >= values.length) {
-                        return const SizedBox();
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          getLabels(_titleController.index)[index],
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: kTextSecondary),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              barGroups: List.generate(
-                values.length,
-                (i) => BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: values[i],
-                      color: _gradientColors[i % _gradientColors.length],
-                      width: 20,
-                      borderRadius: BorderRadius.circular(6),
-                      backDrawRodData: BackgroundBarChartRodData(
-                        show: true,
-                        toY: _getMaxY(titleIndex),
-                        color: kBgColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-
-      case 'Pie':
-        return Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: PieChart(
-            PieChartData(
-              sectionsSpace: 4,
-              centerSpaceRadius: 40,
-              sections: List.generate(values.length, (i) {
-                return PieChartSectionData(
-                  value: values[i],
-                  title: getLabels(_titleController.index)[i],
-                  radius: 60,
-                  titleStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  color: _gradientColors[i % _gradientColors.length],
-                );
-              }),
-            ),
-          ),
-        );
-
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kCardColor,
-        borderRadius: BorderRadius.circular(kBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: kTextPrimary.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: kBgColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: TabBar(
-                      controller: _titleController,
-                      indicator: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      labelColor: kTextPrimary,
-                      unselectedLabelColor: kTextSecondary,
-                      labelStyle: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                      dividerColor: AppColors.transparent,
-                      padding: const EdgeInsets.all(4),
-                      tabs: _titles.map((t) => Tab(text: t)).toList(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Tiny Chart Type Toggles
-                Row(
-                  children: List.generate(_chartTypes.length, (index) {
-                    final isSelected = _selectedChartIndex == index;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedChartIndex = index),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? kTextPrimary
-                              : kTextPrimary.withValues(alpha: 0.05),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _chartTypes[index]['icon'],
-                          size: 16,
-                          color: isSelected ? Colors.white : kTextPrimary,
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: kBgColor),
-          SizedBox(
-            height: 300,
-            child: AnimatedBuilder(
-              animation: _titleController,
-              builder: (context, child) {
-                return _buildChart(_titleController.index, _selectedChartIndex);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class NotificationTile extends StatelessWidget {
   final NotificationModel notification;
 
@@ -1360,30 +1062,16 @@ class NotificationTile extends StatelessWidget {
                   ),
                 ),
 
-                if (notification.type != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.type!.capitalizeFirst,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
-                  ),
-                ],
+                const SizedBox(height: 4),
+                Text(
+                  notification.createdAt!.formatDateMonthTime,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                ),
               ],
             ),
           ),
-
-          // /// UNREAD DOT (optional)
-          // if (notification.isUnread == true)
-          //   Container(
-          //     margin: const EdgeInsets.only(top: 4),
-          //     width: 8,
-          //     height: 8,
-          //     decoration: const BoxDecoration(
-          //       color: Colors.blue,
-          //       shape: BoxShape.circle,
-          //     ),
-          //   ),
         ],
       ),
     );
@@ -1509,12 +1197,12 @@ class TaskReminderTile extends StatelessWidget {
 }
 
 class ActivityTimelineTile extends StatelessWidget {
-  final String text;
+  final ActivityItem activity;
   final bool isFirst;
 
   const ActivityTimelineTile({
     super.key,
-    required this.text,
+    required this.activity,
     this.isFirst = false,
   });
 
@@ -1542,19 +1230,31 @@ class ActivityTimelineTile extends StatelessWidget {
                 ],
               ),
             ),
-            Container(width: 2, height: 30, color: Colors.grey.shade200),
+            Container(width: 2, height: 20, color: Colors.grey.shade200),
           ],
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 0), // Align with dot
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isFirst ? kTextPrimary : kTextSecondary,
-                fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.page,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+                Text(
+                  timeago.format(activity.visitedAt, locale: 'en_short'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -71,6 +71,7 @@ class TaskListingView extends StatefulWidget {
 class _TaskListingViewState extends State<TaskListingView> {
   final List<TaskModel> _selectedTasks = [];
   PermissionModel? permissions;
+  String _selectedView = 'Grid';
 
   @override
   void initState() {
@@ -122,164 +123,11 @@ class _TaskListingViewState extends State<TaskListingView> {
                       const SizedBox(height: 10),
                       _buildActionRow(context),
                       const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                // if (tasks.isEmpty) {
-                                //   return const Padding(
-                                //     padding: EdgeInsets.all(20.0),
-                                //     child: Center(
-                                //       child: Text(
-                                //         "No tasks found.",
-                                //         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey),
-                                //       ),
-                                //     ),
-                                //   );
-                                // }
-
-                                return Scrollbar(
-                                  controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
-                                      ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: _sortableHeader(
-                                              "Task No",
-                                              controllerRead,
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: _sortableHeader(
-                                              "Name",
-                                              controllerRead,
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Active",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: _sortableHeader(
-                                              "Deadline",
-                                              controllerRead,
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Task Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Assignee",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Tags",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (task) => _buildDataRow(
-                                                context,
-                                                task,
-                                                controllerWatch,
-                                                controllerRead,
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<TaskModel>(),
-                            ),
-                          ],
-                        ),
-                      ),
+                      if (_selectedView == 'Calendar') ...[
+                        TaskCalendarListing(tasks: state.tasks),
+                      ] else ...[
+                        _buildMainBody(controllerWatch, controllerRead),
+                      ],
                     ],
                   ),
                 ),
@@ -301,6 +149,138 @@ class _TaskListingViewState extends State<TaskListingView> {
     );
   }
 
+  Container _buildMainBody(
+    PaginatedDataController<TaskModel> controllerWatch,
+    PaginatedDataController<TaskModel> controllerRead,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.grey.withValues(alpha: 0.1),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // if (tasks.isEmpty) {
+              //   return const Padding(
+              //     padding: EdgeInsets.all(20.0),
+              //     child: Center(
+              //       child: Text(
+              //         "No tasks found.",
+              //         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+              //       ),
+              //     ),
+              //   );
+              // }
+
+              return Scrollbar(
+                controller: _hScrollController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                thickness: 4,
+                radius: const Radius.circular(6),
+                scrollbarOrientation: ScrollbarOrientation.bottom,
+                child: SingleChildScrollView(
+                  controller: _hScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: DataTable(
+                      showCheckboxColumn: true,
+                      sortColumnIndex: controllerWatch.sortColumnIndex,
+                      sortAscending: controllerWatch.sortAscending,
+                      headingRowColor: WidgetStateProperty.all(
+                        AppColors.grey100,
+                      ),
+                      headingTextStyle: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                      columns: [
+                        DataColumn(
+                          label: _sortableHeader("Task No", controllerRead),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: _sortableHeader("Name", controllerRead),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Active",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: _sortableHeader("Deadline", controllerRead),
+                          onSort: controllerRead.setSort,
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Task Created By",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Assignee",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Tags",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Created By",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            "Action",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                      rows: controllerWatch.paginatedItems
+                          .map(
+                            (task) => _buildDataRow(
+                              context,
+                              task,
+                              controllerWatch,
+                              controllerRead,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: PaginationControls<TaskModel>(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -309,10 +289,12 @@ class _TaskListingViewState extends State<TaskListingView> {
   }
 
   Widget _buildActionRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // final bool isMobile = constraints.maxWidth < 600;
+
+        final addDeleteButtons = Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (permissions?.canCreate ?? false) ...[
               ElevatedButton.icon(
@@ -328,7 +310,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                   "Add $_pageTitle",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
@@ -353,15 +335,15 @@ class _TaskListingViewState extends State<TaskListingView> {
               ),
             ],
             if (permissions?.canDelete ?? false) ...[
-              if (_selectedTasks.isNotEmpty) ...[
+              if (_selectedTasks.isNotEmpty)
                 ElevatedButton.icon(
                   label: Text(
                     "Delete",
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                   ),
-                  icon: Icon(Iconsax.trash),
+                  icon: const Icon(Iconsax.trash),
                   onPressed: () async {
                     var result = await showDialog(
                       context: context,
@@ -400,14 +382,13 @@ class _TaskListingViewState extends State<TaskListingView> {
                     foregroundColor: AppColors.white,
                   ),
                 ),
-              ],
             ] else ...[
               ElevatedButton.icon(
                 label: Text(
                   "Delete",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                 ),
                 icon: Icon(Iconsax.trash),
                 onPressed: () {},
@@ -418,8 +399,62 @@ class _TaskListingViewState extends State<TaskListingView> {
               ),
             ],
           ],
-        ),
-      ],
+        );
+
+        final viewToggle = Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () {
+                  _selectedView = 'List';
+                  setState(() {});
+                },
+                icon: const Icon(Icons.list),
+                color: _selectedView == 'List'
+                    ? AppColors.blue
+                    : AppColors.grey700,
+              ),
+              Container(width: 1, color: Colors.grey.shade300),
+              IconButton(
+                onPressed: () {
+                  _selectedView = 'Calendar';
+                  setState(() {});
+                },
+                icon: const Icon(Iconsax.calendar_1, size: 18),
+                color: _selectedView == 'Calendar'
+                    ? AppColors.blue
+                    : AppColors.grey700,
+              ),
+            ],
+          ),
+        );
+
+        if (kIsMobile) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: addDeleteButtons,
+              ),
+              const SizedBox(height: 8),
+              viewToggle,
+            ],
+          );
+        } else {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [addDeleteButtons, viewToggle],
+          );
+        }
+      },
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:iconsax/iconsax.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
+import '/views/views.dart';
 
 class DesktopColors {
   static const Color primary = AppColors.primary;
@@ -373,14 +374,19 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                       size: 28,
                       color: DesktopColors.white,
                     )
-                  : Image.asset(
-                      ImageAssets.logoTransparent,
-                      height: 36,
-                      color: DesktopColors.white,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Iconsax.buildings,
-                        size: 30,
+                  : InkWell(
+                      onTap: () =>
+                          Navigate.routeReplace(context, RouteScreen()),
+                      child: Image.asset(
+                        ImageAssets.logoTransparent,
+                        height: 36,
                         color: DesktopColors.white,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Iconsax.buildings,
+                              size: 30,
+                              color: DesktopColors.white,
+                            ),
                       ),
                     ),
             ),

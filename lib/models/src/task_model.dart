@@ -23,7 +23,9 @@ class TaskModel {
   final String? lead;
   final String? subTaskOf;
   bool hasStarted;
+  final DateTime? startedTime;
   bool completed;
+  final DateTime? completedTime;
   final List<FileModel> attachments;
   final List<TaskCommentModel> comments;
   final List<TaskHistoryModel> history;
@@ -50,7 +52,9 @@ class TaskModel {
     this.lead,
     this.subTaskOf,
     this.hasStarted = false,
+    this.startedTime,
     this.completed = false,
+    this.completedTime,
     this.attachments = const [],
     this.comments = const [],
     this.history = const [],
@@ -60,63 +64,6 @@ class TaskModel {
   }) : uid = uid ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
-
-  TaskModel copyWith({
-    String? uid,
-    int? taskNumber,
-    String? taskName,
-    String? description,
-    DateTime? deadline,
-    bool? deadlineRequired,
-    bool? highPriority,
-    bool? statusSummaryRequired,
-    List<String>? assignees,
-    List<String>? createdBy,
-    List<String>? observers,
-    List<String>? participants,
-    List<String>? tags,
-    DateTime? reminder,
-    String? project,
-    String? lead,
-    String? subTaskOf,
-    List<TaskCommentModel>? comments,
-    List<TaskHistoryModel>? history,
-    bool? hasStarted,
-    bool? completed,
-    List<FileModel>? attachments,
-    UserDataModel? taskCreatedBy,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return TaskModel(
-      uid: uid ?? this.uid,
-      taskNumber: taskNumber ?? this.taskNumber,
-      taskName: taskName ?? this.taskName,
-      description: description ?? this.description,
-      deadline: deadline ?? this.deadline,
-      deadlineRequired: deadlineRequired ?? this.deadlineRequired,
-      highPriority: highPriority ?? this.highPriority,
-      statusSummaryRequired:
-          statusSummaryRequired ?? this.statusSummaryRequired,
-      assignees: assignees ?? this.assignees,
-      createdBy: createdBy ?? this.createdBy,
-      observers: observers ?? this.observers,
-      participants: participants ?? this.participants,
-      tags: tags ?? this.tags,
-      reminder: reminder ?? this.reminder,
-      project: project ?? this.project,
-      lead: lead ?? this.lead,
-      subTaskOf: subTaskOf ?? this.subTaskOf,
-      hasStarted: hasStarted ?? this.hasStarted,
-      completed: completed ?? this.completed,
-      attachments: attachments ?? this.attachments,
-      comments: comments ?? this.comments,
-      history: history ?? this.history,
-      taskCreatedBy: taskCreatedBy ?? this.taskCreatedBy,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 
   factory TaskModel.fromMap(String uid, Map<String, dynamic> map) {
     return TaskModel(
@@ -142,7 +89,9 @@ class TaskModel {
       lead: map['lead'] as String?,
       subTaskOf: map['subTaskOf'] as String?,
       hasStarted: map['hasStarted'] as bool? ?? false,
+      startedTime: map['startedTime'] as DateTime?,
       completed: map['completed'] as bool? ?? false,
+      completedTime: map['completedTime'] as DateTime?,
       attachments: map['attachments'] != null
           ? List<FileModel>.from(
               (map['attachments'] as List).map((x) => FileModel.fromMap(x)),
@@ -187,7 +136,9 @@ class TaskModel {
       'lead': lead,
       'subTaskOf': subTaskOf,
       'hasStarted': hasStarted,
+      'startedTime': startedTime,
       'completed': completed,
+      'completedTime': completedTime,
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'comments': comments.map((c) => c.toMap()).toList(),
       'history': history.map((h) => h.toMap()).toList(),
@@ -214,7 +165,9 @@ class TaskModel {
       'lead': lead,
       'subTaskOf': subTaskOf,
       'hasStarted': hasStarted,
+      'startedTime': startedTime,
       'completed': completed,
+      'completedTime': completedTime,
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'comments': comments.map((c) => c.toMap()).toList(),
       'history': history.map((h) => h.toMap()).toList(),
