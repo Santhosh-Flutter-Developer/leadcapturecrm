@@ -551,12 +551,12 @@ class _AdminListingViewState extends State<AdminListingView> {
                   height: 30,
                   width: 30,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Shimmer.fromColors(
+                  placeholder: (_, _) => Shimmer.fromColors(
                     baseColor: AppColors.grey300,
                     highlightColor: AppColors.grey200,
                     child: Container(color: AppColors.white),
                   ),
-                  errorWidget: (_, __, ___) => const Icon(Iconsax.danger),
+                  errorWidget: (_, _, _) => const Icon(Iconsax.danger),
                 ),
               ),
               const SizedBox(width: 8),

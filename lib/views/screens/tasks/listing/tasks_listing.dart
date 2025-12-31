@@ -123,155 +123,11 @@ class _TaskListingViewState extends State<TaskListingView> {
                       const SizedBox(height: 10),
                       _buildActionRow(context),
                       const SizedBox(height: 20),
-<<<<<<< HEAD
                       if (_selectedView == 'Calendar') ...[
                         TaskCalendarListing(tasks: state.tasks),
                       ] else ...[
                         _buildMainBody(controllerWatch, controllerRead),
                       ],
-=======
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                // if (tasks.isEmpty) {
-                                //   return const Padding(
-                                //     padding: EdgeInsets.all(20.0),
-                                //     child: Center(
-                                //       child: Text(
-                                //         "No tasks found.",
-                                //         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey),
-                                //       ),
-                                //     ),
-                                //   );
-                                // }
-
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      columnSpacing: 12,
-                                      horizontalMargin: 8,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
-                                      ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
-                                          ),
-                                      columns: [
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "TaskId",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "Name",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Active",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: _sortableHeader(
-                                            "Deadline",
-                                            controllerRead,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Assignee",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Action",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (task) => _buildDataRow(
-                                              context,
-                                              task,
-                                              controllerWatch,
-                                              controllerRead,
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<TaskModel>(),
-                            ),
-                          ],
-                        ),
-                      ),
->>>>>>> frontend
                     ],
                   ),
                 ),
@@ -685,11 +541,7 @@ class _TaskListingViewState extends State<TaskListingView> {
         dataCell(
           context,
           SelectableText(
-<<<<<<< HEAD
-            '#${task.taskNumber ?? '0'}',
-=======
             task.taskNumber?.toString() ?? '-',
->>>>>>> frontend
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontSize: 11),

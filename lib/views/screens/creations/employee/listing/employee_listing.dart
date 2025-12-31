@@ -1133,15 +1133,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         setState(() {});
       },
       cells: [
-<<<<<<< HEAD
-        DataCell(
-          SelectableText(
-=======
         /// Employee ID
         dataCell(
           context,
           Text(
->>>>>>> frontend
             employee.employeeId,
             style: Theme.of(
               context,
@@ -1163,7 +1158,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   height: 32,
                   width: 32,
                   fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => const Icon(Iconsax.user),
+                  errorWidget: (_, _, _) => const Icon(Iconsax.user),
                 ),
               ),
               const SizedBox(width: 8),
