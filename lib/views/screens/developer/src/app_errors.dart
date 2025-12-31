@@ -28,6 +28,7 @@ class _AppErrorsState extends State<AppErrors> {
   FirebaseFirestore firebase = FirebaseFirestore.instance;
   bool _loading = false;
   List<Map<String, dynamic>> _errors = [];
+  Map<String, dynamic>? _selectedError;
 
   @override
   void initState() {
@@ -62,6 +63,10 @@ class _AppErrorsState extends State<AppErrors> {
       setState(() {
         _errors = list;
         _loading = false;
+        // Auto-select first error on desktop if available
+        if (_errors.isNotEmpty && _selectedError == null) {
+          _selectedError = _errors.first;
+        }
       });
     } catch (e) {
       setState(() => _loading = false);
@@ -89,10 +94,7 @@ class _AppErrorsState extends State<AppErrors> {
         backgroundColor: DevColors.white,
         elevation: 0,
         centerTitle: false,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8.0),
-          child: Back(color: AppColors.black),
-        ),
+        leading: const Back(color: AppColors.black),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -136,17 +138,99 @@ class _AppErrorsState extends State<AppErrors> {
           ? const Center(child: WaitingLoading())
           : _errors.isEmpty
           ? _buildEmptyState()
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _errors.length,
-                  itemBuilder: (context, index) =>
-                      _buildErrorCard(_errors[index]),
-                ),
-              ),
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isDesktop = constraints.maxWidth > 1100;
+                return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
+              },
             ),
+    );
+  }
+
+  /// DESKTOP LAYOUT: Master-Detail Split Pane
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        // Left Side: Error Feed
+        Container(
+          width: 400,
+          decoration: const BoxDecoration(
+            color: DevColors.white,
+            border: Border(right: BorderSide(color: DevColors.border)),
+          ),
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: _errors.length,
+            separatorBuilder: (_, _) =>
+                const Divider(height: 1, indent: 16, endIndent: 16),
+            itemBuilder: (context, index) {
+              final item = _errors[index];
+              final isSelected = _selectedError?["id"] == item["id"];
+              return ListTile(
+                selected: isSelected,
+                selectedTileColor: DevColors.primary.withValues(alpha: 0.05),
+                onTap: () => setState(() => _selectedError = item),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                title: Text(
+                  item["error"] ?? "Unknown Exception",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 13,
+                    color: isSelected
+                        ? DevColors.primary
+                        : DevColors.textPrimary,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _formatTime(item["time"]),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: DevColors.textSecondary,
+                    ),
+                  ),
+                ),
+                trailing: isSelected
+                    ? const Icon(
+                        Iconsax.arrow_right_3,
+                        size: 14,
+                        color: DevColors.primary,
+                      )
+                    : null,
+              );
+            },
+          ),
+        ),
+        // Right Side: Detailed View
+        Expanded(
+          child: _selectedError == null
+              ? const Center(child: Text("Select a log to view details"))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(40),
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: _buildLogDetails(_selectedError!),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// MOBILE LAYOUT: Traditional Expansion List
+  Widget _buildMobileLayout() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _errors.length,
+      itemBuilder: (context, index) => _buildErrorCard(_errors[index]),
     );
   }
 
@@ -176,13 +260,6 @@ class _AppErrorsState extends State<AppErrors> {
         color: DevColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: DevColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -240,58 +317,56 @@ class _AppErrorsState extends State<AppErrors> {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetailSection(
-                    "EXCEPTION",
-                    errorData["error"],
-                    copy: true,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDetailSection(
-                    "STACK TRACE",
-                    errorData["stackTrace"],
-                    copy: true,
-                    isCode: true,
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "METADATA",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: DevColors.textSecondary,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: DevColors.background,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: DevColors.border),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildMetadataRow("Collection ID", errorData["cid"]),
-                        const Divider(height: 16, thickness: 0.5),
-                        _buildMetadataRow("User ID", errorData["uid"]),
-                        const Divider(height: 16, thickness: 0.5),
-                        _buildMetadataRow(
-                          "Device info",
-                          errorData["device"]?.toString(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              child: _buildLogDetails(errorData),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// REUSABLE COMPONENT: Detailed log content
+  Widget _buildLogDetails(Map<String, dynamic> errorData) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDetailSection("EXCEPTION", errorData["error"], copy: true),
+        const SizedBox(height: 16),
+        _buildDetailSection(
+          "STACK TRACE",
+          errorData["stackTrace"],
+          copy: true,
+          isCode: true,
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          "METADATA",
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: DevColors.textSecondary,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: DevColors.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: DevColors.border),
+          ),
+          child: Column(
+            children: [
+              _buildMetadataRow("Collection ID", errorData["cid"]),
+              const Divider(height: 20, thickness: 0.5),
+              _buildMetadataRow("User ID", errorData["uid"]),
+              const Divider(height: 20, thickness: 0.5),
+              _buildMetadataRow("Device info", errorData["device"]?.toString()),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -319,33 +394,39 @@ class _AppErrorsState extends State<AppErrors> {
             if (copy && value != null)
               InkWell(
                 onTap: () => _copy(value),
-                child: const Row(
-                  children: [
-                    Icon(Iconsax.copy, size: 12, color: DevColors.primary),
-                    SizedBox(width: 4),
-                    Text(
-                      "Copy",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: DevColors.primary,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Iconsax.copy, size: 12, color: DevColors.primary),
+                      const SizedBox(width: 4),
+                      const Text(
+                        "Copy",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: DevColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isCode ? const Color(0xFF1E293B) : DevColors.background,
+            color: isCode ? const Color(0xFF0F172A) : DevColors.background,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: DevColors.border),
           ),
-          child: Text(
+          child: SelectableText(
             value ?? "-",
             style: TextStyle(
               fontSize: 12,

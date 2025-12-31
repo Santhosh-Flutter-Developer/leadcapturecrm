@@ -1021,7 +1021,7 @@ class _ChartCardState extends State<ChartCard>
                   sideTitles: SideTitles(showTitles: false),
                 ),
 
-                /// ✅ INTEGER Y-AXIS
+                /// INTEGER Y-AXIS
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,

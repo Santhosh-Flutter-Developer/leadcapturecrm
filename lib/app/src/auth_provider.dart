@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '/services/services.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
+
+const _channel = MethodChannel('runtime.check');
 
 class AuthProvider with ChangeNotifier {
   bool _isLoggedIn = false;
@@ -13,33 +16,37 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> checkLoginStatus() async {
     var isLogin = await Spdb.checkLogin();
-    // var vs = await Versions.checkVersion();
 
-    // if (vs["status"]) {
+    bool isUpdateNeed = VersionService.version?.isUpdateNeed ?? false;
 
-    if (Platform.isWindows) {
-      var isInstalled = await runtimeInstalled();
-      if (!isInstalled) {
-        _homeWidget = const RuntimeInstall();
-        _isLoggedIn = true;
-        notifyListeners();
-        return;
+    if (!isUpdateNeed) {
+      if (Platform.isWindows) {
+        var isInstalled = await runtimeInstalled();
+        if (!isInstalled) {
+          _homeWidget = const RuntimeInstall();
+          _isLoggedIn = true;
+          notifyListeners();
+          return;
+        }
       }
-    }
 
-    if (isLogin) {
-      var isAdmin = await Spdb.isAdminLoggedIn();
-      if (kIsDesktop) {
-        _homeWidget = RouteScreen();
+      if (isLogin) {
+        var isAdmin = await Spdb.isAdminLoggedIn();
+        if (kIsDesktop) {
+          _homeWidget = RouteScreen();
+        } else {
+          _homeWidget = MainScreen(isAdmin: isAdmin);
+        }
       } else {
-        _homeWidget = MainScreen(isAdmin: isAdmin);
+        _homeWidget = const Login();
       }
     } else {
-      _homeWidget = const Login();
+      if (Platform.isWindows) {
+        _homeWidget = WindowsUpdate();
+      } else {
+        _homeWidget = AndroidUpdate();
+      }
     }
-    // } else {
-    //   _homeWidget = Update(uD: vs["vd"]);
-    // }
 
     _isLoggedIn = true;
     notifyListeners();
@@ -48,8 +55,7 @@ class AuthProvider with ChangeNotifier {
 
 Future<bool> runtimeInstalled() async {
   try {
-    final path = "C:\\Windows\\System32\\vcruntime140.dll";
-    return File(path).existsSync();
+    return await _channel.invokeMethod<bool>('isVCRuntimeInstalled') ?? false;
   } catch (e) {
     return false;
   }

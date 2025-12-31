@@ -671,7 +671,7 @@ class _ProfileState extends State<Profile> {
             ),
             SizedBox(height: 4),
             Text(
-              "Security Patch: ${VersionService.version?.version} • ${DateTime.now().monthYearFormat}",
+              "Security Patch: ${AppPackageInfo.version} • ${DateTime.now().monthYearFormat}",
               style: TextStyle(
                 fontSize: 10,
                 color: ProfileColors.textSecondary,

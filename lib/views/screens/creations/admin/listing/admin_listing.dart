@@ -168,7 +168,7 @@ class _AdminListingViewState extends State<AdminListingView> {
                                       child: DataTable(
                                         showCheckboxColumn: true,
 
-                                        // ✅ MIN WIDTH SETTINGS
+                                        // MIN WIDTH SETTINGS
                                         columnSpacing: 12,
                                         horizontalMargin: 8,
                                         headingRowHeight: 40,

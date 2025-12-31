@@ -99,26 +99,4 @@ class DepartmentModel {
   String toString() {
     return 'DepartmentModel(uid: $uid, name: $name, lowercaseName: $lowercaseName, description: $description, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
-
-  @override
-  bool operator ==(covariant DepartmentModel other) {
-    if (identical(this, other)) return true;
-
-    return other.uid == uid &&
-        other.name == name &&
-        other.lowercaseName == lowercaseName &&
-        other.description == description &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
-  }
-
-  @override
-  int get hashCode {
-    return uid.hashCode ^
-        name.hashCode ^
-        lowercaseName.hashCode ^
-        description.hashCode ^
-        createdAt.hashCode ^
-        updatedAt.hashCode;
-  }
 }

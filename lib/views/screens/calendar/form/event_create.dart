@@ -297,11 +297,18 @@ class _EventCreateState extends State<EventCreate> {
                   _selectedEventAttendes.addAll(list.map((e) => e.uid!));
                 } else if (i is ChatModel) {
                   _selectedEventAttendes.addAll(i.participants);
+                } else if (i is Map<DepartmentModel, List<String?>>) {
+                  var depEmployees = i.entries.first.value
+                      .map((e) => e ?? '')
+                      .toList();
+                  depEmployees.removeWhere((element) => element.isEmpty);
+                  _selectedEventAttendes.addAll(depEmployees);
                 }
               }
             },
             includeCurrentUser: false,
             includeGroups: true,
+            includeDepartments: true,
           ),
         ),
       ],

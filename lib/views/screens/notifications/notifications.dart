@@ -30,6 +30,7 @@ class NotificationsListing extends StatefulWidget {
 class _NotificationsListingState extends State<NotificationsListing> {
   final TextEditingController _searchController = TextEditingController();
   String _search = '';
+  NotificationModel? _selectedNotification;
 
   @override
   void initState() {
@@ -49,7 +50,6 @@ class _NotificationsListingState extends State<NotificationsListing> {
 
   Future<void> _refresh(BuildContext context) async {
     context.read<NotificationsBloc>().add(StreamNotifications());
-    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Map<String, List<NotificationModel>> _groupByDay(
@@ -73,7 +73,6 @@ class _NotificationsListingState extends State<NotificationsListing> {
       } else {
         label = DateFormat('dd MMM yyyy').format(dt);
       }
-
       map.putIfAbsent(label, () => []).add(item);
     }
     return map;
@@ -96,13 +95,10 @@ class _NotificationsListingState extends State<NotificationsListing> {
         appBar: AppBar(
           backgroundColor: NotifyColors.white,
           elevation: 0,
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 8.0),
-            child: Back(color: AppColors.black),
-          ),
+          leading: const Back(color: AppColors.black),
           centerTitle: false,
           title: const Text(
-            "Notifications",
+            "Notifications Center",
             style: TextStyle(
               fontWeight: FontWeight.w800,
               color: NotifyColors.textPrimary,
@@ -110,8 +106,8 @@ class _NotificationsListingState extends State<NotificationsListing> {
             ),
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(70),
-            child: _buildHeaderSearch(),
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: NotifyColors.border, height: 1),
           ),
         ),
         body: BlocBuilder<NotificationsBloc, NotificationsState>(
@@ -119,51 +115,23 @@ class _NotificationsListingState extends State<NotificationsListing> {
             if (state is NotificationsLoading) {
               return const Center(child: WaitingLoading());
             }
+
             if (state is NotificationsError) {
               return ErrorDisplay(error: state.message);
             }
+
             if (state is NotificationsLoaded) {
-              final filteredList = state.notification.where((it) {
-                if (_search.isEmpty) return true;
-                final t = it.title.toLowerCase();
-                final m = it.message.toLowerCase();
-                return t.contains(_search) || m.contains(_search);
-              }).toList();
-
-              if (filteredList.isEmpty) {
-                return RefreshIndicator(
-                  onRefresh: () => _refresh(context),
-                  child: ListView(
-                    children: const [
-                      SizedBox(height: 100),
-                      NoData(text: "No notifications found"),
-                    ],
-                  ),
-                );
-              }
-
-              final grouped = _groupByDay(filteredList);
-
-              return RefreshIndicator(
-                onRefresh: () => _refresh(context),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: grouped.length,
-                      itemBuilder: (context, index) {
-                        final entry = grouped.entries.elementAt(index);
-                        return _buildSection(entry.key, entry.value);
-                      },
-                    ),
-                  ),
-                ),
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isDesktop = constraints.maxWidth > 1100;
+                  final notifications = state.notification;
+                  return isDesktop
+                      ? _buildDesktopLayout(notifications)
+                      : _buildMobileLayout(notifications);
+                },
               );
             }
+
             return const SizedBox.shrink();
           },
         ),
@@ -171,62 +139,159 @@ class _NotificationsListingState extends State<NotificationsListing> {
     );
   }
 
-  Widget _buildHeaderSearch() {
+  /// DESKTOP LAYOUT: Master-Detail Split Pane
+  Widget _buildDesktopLayout(List<NotificationModel> notifications) {
+    final filteredList = _filterList(notifications);
+    final grouped = _groupByDay(filteredList);
+
+    return Row(
+      children: [
+        // Left Side: Search & List
+        Container(
+          width: 400,
+          decoration: const BoxDecoration(
+            color: NotifyColors.white,
+            border: Border(right: BorderSide(color: NotifyColors.border)),
+          ),
+          child: Column(
+            children: [
+              _buildHeaderSearch(),
+              Expanded(
+                child: filteredList.isEmpty
+                    ? const NoData(text: "No matches found")
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: grouped.length,
+                        itemBuilder: (context, index) {
+                          final entry = grouped.entries.elementAt(index);
+                          return _buildSection(
+                            entry.key,
+                            entry.value,
+                            isDesktop: true,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+        // Right Side: Detail View
+        Expanded(
+          child: _selectedNotification == null
+              ? _buildEmptyDetailView()
+              : _buildDetailContent(_selectedNotification!),
+        ),
+      ],
+    );
+  }
+
+  /// MOBILE LAYOUT: Traditional List
+  Widget _buildMobileLayout(List<NotificationModel> notifications) {
+    final filteredList = _filterList(notifications);
+    final grouped = _groupByDay(filteredList);
+
     return Column(
       children: [
-        Container(color: NotifyColors.border, height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Material(
-            borderRadius: BorderRadius.circular(12),
-            color: NotifyColors.background,
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(
-                  Iconsax.search_normal,
-                  size: 18,
-                  color: NotifyColors.textSecondary,
-                ),
-                hintText: 'Search title or message contents...',
-                hintStyle: TextStyle(
-                  fontSize: 14,
-                  color: NotifyColors.textSecondary,
-                ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
+        _buildHeaderSearch(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _refresh(context),
+            child: filteredList.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 100),
+                      NoData(text: "No notifications found"),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: grouped.length,
+                    itemBuilder: (context, index) {
+                      final entry = grouped.entries.elementAt(index);
+                      return _buildSection(
+                        entry.key,
+                        entry.value,
+                        isDesktop: false,
+                      );
+                    },
+                  ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSection(String label, List<NotificationModel> items) {
+  List<NotificationModel> _filterList(List<NotificationModel> list) {
+    return list.where((it) {
+      if (_search.isEmpty) return true;
+      return it.title.toLowerCase().contains(_search) ||
+          it.message.toLowerCase().contains(_search);
+    }).toList();
+  }
+
+  Widget _buildHeaderSearch() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: NotifyColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: NotifyColors.border),
+        ),
+        child: TextField(
+          controller: _searchController,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(
+              Iconsax.search_normal,
+              size: 18,
+              color: NotifyColors.textSecondary,
+            ),
+            hintText: 'Search alerts...',
+            hintStyle: TextStyle(
+              fontSize: 14,
+              color: NotifyColors.textSecondary,
+            ),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(
+    String label,
+    List<NotificationModel> items, {
+    required bool isDesktop,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Text(
             label.toUpperCase(),
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w800,
               color: NotifyColors.textSecondary,
-              letterSpacing: 1.5,
+              letterSpacing: 1.2,
             ),
           ),
         ),
-        ...items.map((item) => _buildNotificationCard(item)),
+        ...items.map((item) => _buildNotificationCard(item, isDesktop)),
       ],
     );
   }
 
-  Widget _buildNotificationCard(NotificationModel item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+  Widget _buildNotificationCard(NotificationModel item, bool isDesktop) {
+    final isSelected = _selectedNotification?.uid == item.uid;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Dismissible(
         key: ValueKey(item.uid ?? item.hashCode),
         direction: DismissDirection.endToStart,
@@ -237,92 +302,85 @@ class _NotificationsListingState extends State<NotificationsListing> {
         background: Container(
           decoration: BoxDecoration(
             color: NotifyColors.danger,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24),
+          padding: const EdgeInsets.only(right: 20),
           child: const Icon(Iconsax.trash, color: Colors.white, size: 20),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: NotifyColors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: NotifyColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        child: InkWell(
+          onTap: () {
+            if (isDesktop) {
+              setState(() => _selectedNotification = item);
+            } else {
+              _openDetailSheet(item);
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? NotifyColors.primary.withValues(alpha: 0.05)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? NotifyColors.primary.withValues(alpha: 0.2)
+                    : Colors.transparent,
               ),
-            ],
-          ),
-          child: InkWell(
-            onTap: () => _openDetailSheet(item),
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _smallAvatar(item.title, item.type ?? ''),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.title.isNotEmpty
-                                    ? item.title
-                                    : (item.type ?? 'Alert'),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: NotifyColors.textPrimary,
-                                  fontSize: 14,
-                                ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _smallAvatar(item.title, item.type ?? ''),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title.isNotEmpty
+                                  ? item.title
+                                  : (item.type ?? 'Alert'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: isSelected
+                                    ? NotifyColors.primary
+                                    : NotifyColors.textPrimary,
+                                fontSize: 14,
                               ),
                             ),
-                            Text(
-                              item.createdAt != null
-                                  ? _timeAgo(item.createdAt!)
-                                  : '',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: NotifyColors.textSecondary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: NotifyColors.textSecondary,
-                            height: 1.4,
                           ),
+                          Text(
+                            item.createdAt != null
+                                ? _timeAgo(item.createdAt!)
+                                : '',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: NotifyColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.message,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: NotifyColors.textSecondary,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // Unread indicator dot
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: NotifyColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -330,24 +388,187 @@ class _NotificationsListingState extends State<NotificationsListing> {
     );
   }
 
-  Widget _smallAvatar(String title, String type) {
+  Widget _buildEmptyDetailView() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Iconsax.notification_bing, size: 64, color: NotifyColors.border),
+          SizedBox(height: 16),
+          Text(
+            "Select a notification to view details",
+            style: TextStyle(
+              color: NotifyColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailContent(NotificationModel item) {
+    return Container(
+      color: NotifyColors.white,
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _smallAvatar(item.title, item.type ?? '', size: 56),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: NotifyColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      item.type ?? "System Alert",
+                      style: const TextStyle(
+                        color: NotifyColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                DateFormat(
+                  'MMMM dd, yyyy • hh:mm a',
+                ).format(item.createdAt ?? DateTime.now()),
+                style: const TextStyle(
+                  color: NotifyColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          const Text(
+            "MESSAGE CONTENT",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: NotifyColors.textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item.message,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.6,
+              color: NotifyColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          // const SizedBox(height: 40),
+          // ...[
+          //   const Text(
+          //     "TECHNICAL PAYLOAD",
+          //     style: TextStyle(
+          //       fontSize: 11,
+          //       fontWeight: FontWeight.w800,
+          //       color: NotifyColors.textSecondary,
+          //       letterSpacing: 1,
+          //     ),
+          //   ),
+          //   const SizedBox(height: 12),
+          //   Container(
+          //     width: double.infinity,
+          //     padding: const EdgeInsets.all(20),
+          //     decoration: BoxDecoration(
+          //       color: NotifyColors.background,
+          //       borderRadius: BorderRadius.circular(16),
+          //       border: Border.all(color: NotifyColors.border),
+          //     ),
+          //     child: SelectableText(
+          //       const JsonEncoder.withIndent('  ').convert(item.payload),
+          //       style: const TextStyle(
+          //         fontFamily: 'monospace',
+          //         fontSize: 12,
+          //         height: 1.5,
+          //       ),
+          //     ),
+          //   ),
+          // ],
+          const Spacer(),
+          Row(
+            children: [
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(
+                    ClipboardData(text: json.encode(item.payload)),
+                  );
+                  FlushBar.show(context, 'Payload copied');
+                },
+                icon: const Icon(Iconsax.copy),
+                label: const Text("Copy Data"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() => _selectedNotification = null);
+                },
+                icon: const Icon(Iconsax.tick_circle),
+                label: const Text("Dismiss Detail"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: NotifyColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallAvatar(String title, String type, {double size = 40}) {
     final initial = title.isNotEmpty
         ? title[0]
         : (type.isNotEmpty ? type[0] : '?');
     return Container(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: NotifyColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size / 3.3),
       ),
       alignment: Alignment.center,
       child: Text(
         initial.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           color: NotifyColors.primary,
           fontWeight: FontWeight.w900,
-          fontSize: 16,
+          fontSize: size * 0.4,
         ),
       ),
     );
@@ -358,25 +579,25 @@ class _NotificationsListingState extends State<NotificationsListing> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _buildDetailSheet(item, ctx),
+      builder: (ctx) => _buildMobileDetailSheet(item, ctx),
     );
   }
 
-  Widget _buildDetailSheet(NotificationModel item, BuildContext ctx) {
+  Widget _buildMobileDetailSheet(NotificationModel item, BuildContext ctx) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
+      initialChildSize: 0.7,
+      maxChildSize: 0.95,
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
           color: NotifyColors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
+        child: ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(24),
           children: [
             Center(
               child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
@@ -385,189 +606,39 @@ class _NotificationsListingState extends State<NotificationsListing> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  _smallAvatar(item.title, item.type ?? ''),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 18,
-                            color: NotifyColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          item.type ?? 'System Notification',
-                          style: const TextStyle(
-                            color: NotifyColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    icon: const Icon(
-                      Iconsax.close_circle,
-                      color: NotifyColors.textSecondary,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 24),
+            Text(
+              item.title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: NotifyColors.textPrimary,
               ),
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  const Text(
-                    "MESSAGE",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      color: NotifyColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.message,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: NotifyColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    "PAYLOAD DATA",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      color: NotifyColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: NotifyColors.background,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: NotifyColors.border),
-                    ),
-                    child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(item.payload),
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    "RECIPIENTS",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      color: NotifyColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: item.toUids.map((u) {
-                      final user = CacheService.getUserByUid(u);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: NotifyColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: NotifyColors.border),
-                        ),
-                        child: Text(
-                          user?.name ?? u,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: NotifyColors.textPrimary,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+            const SizedBox(height: 8),
+            Text(
+              item.message,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: NotifyColors.textPrimary,
               ),
             ),
-            _buildSheetFooter(item),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSheetFooter(NotificationModel item) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: NotifyColors.border)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Clipboard.setData(
-                  ClipboardData(text: json.encode(item.payload)),
-                );
-                FlushBar.show(context, 'Payload copied to clipboard');
-              },
-              icon: const Icon(Iconsax.copy, size: 18),
-              label: const Text("Copy Payload"),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Iconsax.tick_circle, size: 18),
-              label: const Text("Acknowledge"),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
                 backgroundColor: NotifyColors.primary,
                 foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              child: const Text("Close"),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

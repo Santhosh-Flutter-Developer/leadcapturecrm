@@ -31,10 +31,9 @@ class BackupListing extends StatefulWidget {
 
 class _BackupListingState extends State<BackupListing> {
   final BackupTrigger _trigger = BackupTrigger();
-  // final BackupImportService _importer = BackupImportService();
-
   String _search = '';
   bool _busy = false;
+  BackupModel? _selectedBackup;
 
   final Map<String, List<String>> _exampleSubcollectionsMap = {
     'users': [
@@ -104,13 +103,13 @@ class _BackupListingState extends State<BackupListing> {
     return '${diff.inDays}d ago';
   }
 
-  Widget _avatar(String text) {
+  Widget _avatar(String text, {double size = 48}) {
     final initial = (text.isNotEmpty)
         ? text.trim().substring(0, 1).toUpperCase()
         : '?';
     return Container(
-      width: 48,
-      height: 48,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -120,15 +119,15 @@ class _BackupListingState extends State<BackupListing> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(size * 0.3),
       ),
       alignment: Alignment.center,
       child: Text(
         initial,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w900,
-          fontSize: 18,
+          fontSize: size * 0.4,
         ),
       ),
     );
@@ -146,7 +145,7 @@ class _BackupListingState extends State<BackupListing> {
 
       if (url.isNotEmpty) {
         if (!mounted) return;
-        await _showDialog(
+        await _showResultDialog(
           context,
           'Backup Success',
           'A new data snapshot has been created and uploaded to the secure vault.',
@@ -160,7 +159,517 @@ class _BackupListingState extends State<BackupListing> {
     }
   }
 
-  Future<void> _showDialog(
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => BackupBloc()..add(StreamBackup()),
+      child: Scaffold(
+        backgroundColor: BackupColors.background,
+        appBar: AppBar(
+          backgroundColor: BackupColors.white,
+          elevation: 0,
+          leading: const Back(color: AppColors.black),
+          centerTitle: false,
+          title: const Text(
+            "Security Vault",
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: BackupColors.textPrimary,
+              fontSize: 18,
+            ),
+          ),
+          actions: [
+            if (_busy)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else
+              IconButton(
+                onPressed: () => context.read<BackupBloc>().add(StreamBackup()),
+                icon: const Icon(
+                  Iconsax.refresh,
+                  color: BackupColors.primary,
+                  size: 20,
+                ),
+              ),
+            const SizedBox(width: 8),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: BackupColors.border, height: 1),
+          ),
+        ),
+        body: BlocBuilder<BackupBloc, BackupState>(
+          builder: (context, state) {
+            if (state is BackupLoading) {
+              return const Center(child: WaitingLoading());
+            }
+            if (state is BackupError) return _buildErrorState(state.message);
+            if (state is BackupLoaded) {
+              final items = state.backups.where((b) {
+                if (_search.isEmpty) return true;
+                final s = _search.toLowerCase();
+                return b.path.toLowerCase().contains(s) ||
+                    b.url.toLowerCase().contains(s);
+              }).toList();
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isDesktop = constraints.maxWidth > 1100;
+                  return isDesktop
+                      ? _buildDesktopLayout(items)
+                      : _buildMobileLayout(items);
+                },
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// DESKTOP LAYOUT: Master-Detail Split Pane
+  Widget _buildDesktopLayout(List<BackupModel> backups) {
+    final grouped = _groupByDay(backups);
+
+    return Row(
+      children: [
+        // Master List
+        Container(
+          width: 420,
+          decoration: const BoxDecoration(
+            color: BackupColors.white,
+            border: Border(right: BorderSide(color: BackupColors.border)),
+          ),
+          child: Column(
+            children: [
+              _buildSearchBar(),
+              Expanded(
+                child: backups.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: grouped.length,
+                        itemBuilder: (context, index) {
+                          final entry = grouped.entries.elementAt(index);
+                          return _buildGroupSection(
+                            entry.key,
+                            entry.value,
+                            isDesktop: true,
+                          );
+                        },
+                      ),
+              ),
+              _buildExportBar(),
+            ],
+          ),
+        ),
+        // Detail View
+        Expanded(
+          child: _selectedBackup == null
+              ? _buildEmptyDetailView()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(60),
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: _buildDetailContent(_selectedBackup!),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// MOBILE LAYOUT: Traditional List View
+  Widget _buildMobileLayout(List<BackupModel> backups) {
+    final grouped = _groupByDay(backups);
+
+    return Column(
+      children: [
+        _buildSearchBar(),
+        Expanded(
+          child: backups.isEmpty
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: () => _refresh(context),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: grouped.length,
+                    itemBuilder: (context, index) {
+                      final entry = grouped.entries.elementAt(index);
+                      return _buildGroupSection(
+                        entry.key,
+                        entry.value,
+                        isDesktop: false,
+                      );
+                    },
+                  ),
+                ),
+        ),
+        _buildExportBar(isMobile: true),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: BackupColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: BackupColors.border),
+        ),
+        child: TextField(
+          onChanged: (v) => setState(() => _search = v.trim()),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(
+              Iconsax.search_normal,
+              size: 18,
+              color: BackupColors.textSecondary,
+            ),
+            hintText: 'Filter registry...',
+            hintStyle: TextStyle(
+              fontSize: 14,
+              color: BackupColors.textSecondary,
+            ),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportBar({bool isMobile = false}) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, isMobile ? 32 : 12),
+      decoration: const BoxDecoration(
+        color: BackupColors.white,
+        border: Border(top: BorderSide(color: BackupColors.border)),
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _busy ? null : () => exportBackup(context),
+        icon: const Icon(Iconsax.export_3, size: 18),
+        label: const Text("Create New Snapshot"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: BackupColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupSection(
+    String label,
+    List<BackupModel> items, {
+    required bool isDesktop,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: BackupColors.textSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        ...items.map((item) => _buildBackupItem(item, isDesktop)),
+      ],
+    );
+  }
+
+  Widget _buildBackupItem(BackupModel item, bool isDesktop) {
+    final isSelected = _selectedBackup?.uid == item.uid;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: InkWell(
+        onTap: () {
+          if (isDesktop) {
+            setState(() => _selectedBackup = item);
+          } else {
+            _showMobileDetailSheet(item);
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? BackupColors.primary.withValues(alpha: 0.05)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? BackupColors.primary.withValues(alpha: 0.2)
+                  : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            children: [
+              _avatar(item.type, size: 40),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.path,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? BackupColors.primary
+                            : BackupColors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _timeAgo(item.timestamp),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: BackupColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                const Icon(
+                  Iconsax.arrow_right_3,
+                  size: 14,
+                  color: BackupColors.primary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailContent(BackupModel item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _avatar(item.type, size: 64),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.path,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: BackupColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    "Snapshot Type: ${item.type}",
+                    style: const TextStyle(
+                      color: BackupColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 40),
+        _buildDetailSection("REGISTRY DETAILS", [
+          _detailRow(
+            "Timestamp",
+            DateFormat('MMMM dd, yyyy • hh:mm:ss a').format(item.timestamp),
+          ),
+          _detailRow("UID", item.uid ?? ''),
+        ]),
+        const SizedBox(height: 32),
+        _buildDetailSection("STORAGE VAULT URL", [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: BackupColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: BackupColors.border),
+            ),
+            child: SelectableText(
+              item.url,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: item.url));
+              FlushBar.show(context, 'Link copied to clipboard');
+            },
+            icon: const Icon(Iconsax.copy, size: 16),
+            label: const Text("Copy Link"),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 60),
+        const Divider(),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _confirmDelete(item),
+              icon: const Icon(Iconsax.trash, size: 18),
+              label: const Text("Delete Record"),
+              style: TextButton.styleFrom(foregroundColor: BackupColors.danger),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: BackupColors.textSecondary,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: BackupColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: BackupColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyDetailView() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Iconsax.cloud_sunny, size: 64, color: BackupColors.border),
+          SizedBox(height: 16),
+          Text(
+            "Select a backup to view technical metadata",
+            style: TextStyle(color: BackupColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMobileDetailSheet(BackupModel item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: BackupColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.all(24),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: BackupColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildDetailContent(item),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showResultDialog(
     BuildContext context,
     String title,
     String message, {
@@ -186,7 +695,6 @@ class _BackupListingState extends State<BackupListing> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
                   color: BackupColors.textSecondary,
                 ),
               ),
@@ -209,305 +717,9 @@ class _BackupListingState extends State<BackupListing> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c),
-            child: const Text(
-              'Close',
-              style: TextStyle(
-                color: BackupColors.textSecondary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('Close'),
           ),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => BackupBloc()..add(StreamBackup()),
-      child: Scaffold(
-        backgroundColor: BackupColors.background,
-        appBar: AppBar(
-          backgroundColor: BackupColors.white,
-          elevation: 0,
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 8.0),
-            child: Back(color: AppColors.black),
-          ),
-          centerTitle: false,
-          title: const Text(
-            "Data Backups",
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: BackupColors.textPrimary,
-              fontSize: 18,
-            ),
-          ),
-          actions: [
-            if (_busy)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else
-              IconButton(
-                onPressed: () => _refresh(context),
-                icon: const Icon(
-                  Iconsax.refresh,
-                  color: BackupColors.primary,
-                  size: 20,
-                ),
-              ),
-            const SizedBox(width: 8),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(70),
-            child: Column(
-              children: [
-                Container(color: BackupColors.border, height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          onChanged: (v) => setState(() => _search = v.trim()),
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(
-                              Iconsax.search_normal,
-                              size: 18,
-                              color: BackupColors.textSecondary,
-                            ),
-                            hintText: 'Filter logs by path or URL...',
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: BackupColors.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: BackupColors.background,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      _headerActionButton(
-                        Iconsax.export_3,
-                        "Export",
-                        () => exportBackup(context),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        body: BlocBuilder<BackupBloc, BackupState>(
-          builder: (context, state) {
-            if (state is BackupLoading) {
-              return const Center(child: WaitingLoading());
-            }
-            if (state is BackupError) return _buildErrorState(state.message);
-            if (state is BackupLoaded) {
-              final items = state.backups.where((b) {
-                if (_search.isEmpty) return true;
-                final s = _search.toLowerCase();
-                return b.path.toLowerCase().contains(s) ||
-                    b.url.toLowerCase().contains(s);
-              }).toList();
-
-              if (items.isEmpty) return _buildEmptyState();
-              final grouped = _groupByDay(items);
-
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: RefreshIndicator(
-                    onRefresh: () => _refresh(context),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: grouped.length,
-                      itemBuilder: (context, index) {
-                        final entry = grouped.entries.elementAt(index);
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
-                              child: Text(
-                                entry.key.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: BackupColors.textSecondary,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                            ...entry.value.map(_buildBackupCard),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _headerActionButton(IconData icon, String label, VoidCallback onTap) {
-    return ElevatedButton.icon(
-      onPressed: _busy ? null : onTap,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: BackupColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  Widget _buildBackupCard(BackupModel item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: BackupColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BackupColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _avatar(item.type),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.path,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: BackupColors.textPrimary,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BackupColors.background,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: BackupColors.border),
-                        ),
-                        child: Text(
-                          _timeAgo(item.timestamp),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: BackupColors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.url,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: BackupColors.textSecondary,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _smallAction(Iconsax.copy, "Copy Link", () {
-                        Clipboard.setData(ClipboardData(text: item.url));
-                        FlushBar.show(context, 'URL copied');
-                      }),
-                      const Spacer(),
-                      _smallAction(
-                        Iconsax.trash,
-                        "Delete",
-                        () => _confirmDelete(item),
-                        isDanger: true,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _smallAction(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    bool isDanger = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isDanger ? BackupColors.danger : BackupColors.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isDanger ? BackupColors.danger : BackupColors.primary,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -522,16 +734,13 @@ class _BackupListingState extends State<BackupListing> {
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         content: const Text(
-          'This will remove the backup record from the registry. The physical storage file will not be affected.',
+          'This will remove the backup record from the registry. The storage file remains unaffected.',
           style: TextStyle(color: BackupColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: BackupColors.textSecondary),
-            ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
@@ -550,7 +759,11 @@ class _BackupListingState extends State<BackupListing> {
           .doc(item.uid)
           .delete();
       if (!mounted) return;
+      if (_selectedBackup?.uid == item.uid) {
+        setState(() => _selectedBackup = null);
+      }
       context.read<BackupBloc>().add(StreamBackup());
+      FlushBar.show(context, 'Record removed successfully');
     }
   }
 
@@ -559,7 +772,7 @@ class _BackupListingState extends State<BackupListing> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.cloud_cross, size: 64, color: BackupColors.border),
+          const Icon(Iconsax.cloud_cross, size: 64, color: BackupColors.border),
           const SizedBox(height: 16),
           const Text(
             "Registry is empty",
@@ -571,7 +784,7 @@ class _BackupListingState extends State<BackupListing> {
           ),
           const SizedBox(height: 8),
           const Text(
-            "Try creating a new snapshot or checking your filters.",
+            "Create a new snapshot to begin.",
             style: TextStyle(color: BackupColors.textSecondary),
           ),
         ],

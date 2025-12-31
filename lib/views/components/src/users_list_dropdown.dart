@@ -12,6 +12,7 @@ class UsersListDropdown extends StatelessWidget {
   final List<dynamic> initialValues;
   final bool includeCurrentUser;
   final bool includeGroups;
+  final bool includeDepartments;
   const UsersListDropdown({
     super.key,
     required this.label,
@@ -21,6 +22,7 @@ class UsersListDropdown extends StatelessWidget {
     this.initialValues = const [],
     this.includeCurrentUser = true,
     this.includeGroups = false,
+    this.includeDepartments = false,
   });
 
   @override
@@ -57,6 +59,21 @@ class UsersListDropdown extends StatelessWidget {
           result.addAll(groups);
         }
 
+        if (includeDepartments) {
+          var allDeps = await DepartmentService.getAllDepartments();
+          if (allDeps.isNotEmpty) {
+            for (DepartmentModel i in allDeps) {
+              var depEmployees = await EmployeeService.getEmployeesByDepartment(
+                depId: i.uid ?? '',
+              );
+              if (depEmployees.isNotEmpty) {
+                var depResult = depEmployees.map((e) => e.uid).toList();
+                result.add({i: depResult});
+              }
+            }
+          }
+        }
+
         return result;
       },
       multiSelect: true,
@@ -67,6 +84,8 @@ class UsersListDropdown extends StatelessWidget {
           return '${users.name} (${users.employeeId})';
         } else if (users is ChatModel) {
           return '${users.title ?? ''} (${users.participants.length} Members)';
+        } else if (users is Map<DepartmentModel, List<String?>>) {
+          return '${users.keys.first.name} (${users.values.length})';
         }
         return "";
       },

@@ -27,11 +27,18 @@ class _SharedprefsDataState extends State<SharedprefsData> {
   Map<String, Object?> _filteredPrefs = {};
   bool _loading = false;
   String _query = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadAll();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAll() async {
@@ -76,6 +83,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
         content: Text('Removed "$key"', style: const TextStyle(fontSize: 12)),
         action: SnackBarAction(
           label: 'UNDO',
@@ -166,12 +174,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       appBar: AppBar(
         backgroundColor: SharedPrefsColors.white,
         elevation: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8.0),
-          child: Back(color: AppColors.black),
-        ),
+        leading: const Back(color: AppColors.black),
         title: const Text(
-          "Shared Prefs",
+          "Storage Inspector",
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: SharedPrefsColors.textPrimary,
@@ -198,81 +203,121 @@ class _SharedprefsDataState extends State<SharedprefsData> {
           const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
-          child: Column(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: SharedPrefsColors.border, height: 1),
+        ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isDesktop = constraints.maxWidth > 1000;
+
+          return Column(
             children: [
-              Container(color: SharedPrefsColors.border, height: 1),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+              _buildHeaderSearch(items.length, isDesktop),
+              Expanded(
+                child: _loading
+                    ? const Center(child: WaitingLoading())
+                    : items.isEmpty
+                    ? _buildEmptyState()
+                    : isDesktop
+                    ? _buildDesktopGrid(items)
+                    : _buildMobileList(items),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderSearch(int count, bool isDesktop) {
+    return Container(
+      color: SharedPrefsColors.white,
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 40 : 16,
+        vertical: 16,
+      ),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (s) {
+                    setState(() {
+                      _query = s;
+                      _applyFilter();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Search keys or values...",
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: SharedPrefsColors.textSecondary,
+                    ),
+                    prefixIcon: const Icon(
+                      Iconsax.search_normal,
+                      size: 18,
+                      color: SharedPrefsColors.textSecondary,
+                    ),
+                    filled: true,
+                    fillColor: SharedPrefsColors.background,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        onChanged: (s) {
-                          setState(() {
-                            _query = s;
-                            _applyFilter();
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Search keys or values...",
-                          hintStyle: const TextStyle(
-                            fontSize: 14,
-                            color: SharedPrefsColors.textSecondary,
-                          ),
-                          prefixIcon: const Icon(
-                            Iconsax.search_normal,
-                            size: 18,
-                            color: SharedPrefsColors.textSecondary,
-                          ),
-                          filled: true,
-                          fillColor: SharedPrefsColors.background,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${items.length} matched',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: SharedPrefsColors.textSecondary,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(width: 16),
+              Text(
+                '$count pairs',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: SharedPrefsColors.textSecondary,
                 ),
               ),
             ],
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: WaitingLoading())
-          : items.isEmpty
-          ? _buildEmptyState()
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final e = items[index];
-                    return _buildPrefCard(e.key, e.value);
-                  },
-                ),
-              ),
-            ),
+    );
+  }
+
+  Widget _buildDesktopGrid(List<MapEntry<String, Object?>> items) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1300),
+        child: GridView.builder(
+          padding: const EdgeInsets.all(40),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 450,
+            mainAxisExtent: 200,
+            crossAxisSpacing: 24,
+            mainAxisSpacing: 24,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final e = items[index];
+            return _buildPrefCard(e.key, e.value, isDesktop: true);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileList(List<MapEntry<String, Object?>> items) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final e = items[index];
+        return _buildPrefCard(e.key, e.value, isDesktop: false);
+      },
     );
   }
 
@@ -281,7 +326,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Iconsax.document_filter,
             size: 48,
             color: SharedPrefsColors.border,
@@ -299,16 +344,22 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     );
   }
 
-  Widget _buildPrefCard(String key, Object? value) {
+  Widget _buildPrefCard(String key, Object? value, {required bool isDesktop}) {
     final typeColor = _getTypeColor(value);
     final valStr = value?.toString() ?? 'null';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    Widget cardContent = Container(
       decoration: BoxDecoration(
         color: SharedPrefsColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: SharedPrefsColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => _showDetailDialog(key, value),
@@ -343,6 +394,8 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                   Expanded(
                     child: Text(
                       key,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: SharedPrefsColors.textPrimary,
@@ -350,43 +403,56 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => _removeKey(key),
-                    icon: const Icon(
-                      Iconsax.close_circle,
-                      color: SharedPrefsColors.border,
-                      size: 18,
+                  if (!isDesktop)
+                    IconButton(
+                      onPressed: () => _removeKey(key),
+                      icon: const Icon(
+                        Iconsax.close_circle,
+                        color: SharedPrefsColors.border,
+                        size: 18,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: SharedPrefsColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  valStr,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: SharedPrefsColors.textPrimary,
-                    fontFamily: 'monospace',
+              Expanded(
+                flex: isDesktop ? 1 : 0,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: SharedPrefsColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    valStr,
+                    maxLines: isDesktop ? 4 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: SharedPrefsColors.textPrimary,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              if (isDesktop) const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (isDesktop)
+                    _actionButton(
+                      Iconsax.trash,
+                      "Delete",
+                      () => _removeKey(key),
+                      color: SharedPrefsColors.danger,
+                    ),
+                  const SizedBox(width: 8),
                   _actionButton(Iconsax.copy, "Copy", () {
                     Clipboard.setData(ClipboardData(text: valStr));
+                    FlushBar.show(context, 'Copied to clipboard');
                   }),
                 ],
               ),
@@ -395,23 +461,51 @@ class _SharedprefsDataState extends State<SharedprefsData> {
         ),
       ),
     );
+
+    if (isDesktop) return cardContent;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Dismissible(
+        key: ValueKey(key),
+        direction: DismissDirection.endToStart,
+        onDismissed: (_) => _removeKey(key),
+        background: Container(
+          decoration: BoxDecoration(
+            color: SharedPrefsColors.danger,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          child: const Icon(Iconsax.trash, color: Colors.white, size: 20),
+        ),
+        child: cardContent,
+      ),
+    );
   }
 
-  Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _actionButton(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    Color color = SharedPrefsColors.primary,
+  }) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: SharedPrefsColors.primary),
+            Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: SharedPrefsColors.primary,
+                color: color,
               ),
             ),
           ],
@@ -429,56 +523,59 @@ class _SharedprefsDataState extends State<SharedprefsData> {
           key,
           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "DATA TYPE",
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: SharedPrefsColors.textSecondary,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value.runtimeType.toString(),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: SharedPrefsColors.primary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "VALUE",
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: SharedPrefsColors.textSecondary,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: SharedPrefsColors.background,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: SharedPrefsColors.border),
-              ),
-              child: SelectableText(
-                value?.toString() ?? 'null',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  height: 1.5,
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "DATA TYPE",
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: SharedPrefsColors.textSecondary,
+                  letterSpacing: 1,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                value.runtimeType.toString(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: SharedPrefsColors.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "VALUE",
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: SharedPrefsColors.textSecondary,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: SharedPrefsColors.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: SharedPrefsColors.border),
+                ),
+                child: SelectableText(
+                  value?.toString() ?? 'null',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -494,6 +591,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                 ClipboardData(text: value?.toString() ?? 'null'),
               );
               Navigator.pop(context);
+              FlushBar.show(context, 'Copied');
             },
             icon: const Icon(Iconsax.copy, size: 16),
             label: const Text("Copy Value"),

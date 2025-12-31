@@ -7,29 +7,28 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 import '/services/services.dart';
 
-class AndroidUpdate extends StatefulWidget {
-  const AndroidUpdate({super.key});
+class WindowsUpdate extends StatefulWidget {
+  const WindowsUpdate({super.key});
 
   @override
-  State<AndroidUpdate> createState() => _AndroidUpdateState();
+  State<WindowsUpdate> createState() => _WindowsUpdateState();
 }
 
-class _AndroidUpdateState extends State<AndroidUpdate> {
+class _WindowsUpdateState extends State<WindowsUpdate> {
   VersionModel? _versionModel;
 
   @override
   void initState() {
     _versionModel = VersionService.version;
-    if (Platform.isAndroid) {
+    if (Platform.isWindows) {
       _init();
     }
     super.initState();
@@ -37,7 +36,7 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
 
   void _init() async {
     _installedLocation =
-        "${await _getFolderPath()}/${_versionModel?.version ?? 'aaatp'}.apk";
+        "${await _getFolderPath()}/${_versionModel?.version ?? 'aaatp'}.exe";
     _readyToInstall = await _checkFileExists();
     setState(() {});
   }
@@ -110,7 +109,7 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
                         ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                       ),
                       onPressed: () async {
-                        _downloadApkAndInstall();
+                        _downloadExeAndInstall();
                       },
                     ),
                   ),
@@ -133,25 +132,10 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
                           context,
                         ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                       ),
-                      onPressed: () async => _installApk(_installedLocation),
+                      onPressed: () async => _installExe(_installedLocation),
                     ),
                   ),
                 ],
-              ),
-            ),
-            Visibility(
-              visible: _readyToInstall,
-              child: TextButton.icon(
-                label: Text(
-                  "How to install?",
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                icon: Icon(Iconsax.info_circle),
-                onPressed: () async => await Sheet.showSheet(
-                  context,
-                  size: 0.6,
-                  widget: const InstallInfo(),
-                ),
               ),
             ),
           ],
@@ -164,9 +148,8 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
   bool _readyToInstall = false;
   double _progress = 0.0;
   String _installedLocation = "";
-  static const platform = MethodChannel('com.srisoftwarez.aaatp/install_apk');
 
-  Future<void> _downloadApkAndInstall() async {
+  Future<void> _downloadExeAndInstall() async {
     try {
       setState(() {
         _isLoading = true;
@@ -190,7 +173,7 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
           .onDone(() async {
             await saveFileToDownloads(
               Uint8List.fromList(bytes),
-              fileName: "${_versionModel?.version ?? 'aaatp'}.apk",
+              fileName: "${_versionModel?.version ?? 'aaatp'}.exe",
             );
             _isLoading = false;
             _readyToInstall = true;
@@ -208,11 +191,27 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
     }
   }
 
-  Future<void> _installApk(String filePath) async {
+  Future<void> _installExe(String filePath) async {
     try {
-      await platform.invokeMethod('installApk', {'filePath': filePath});
+      final file = File(filePath);
+
+      if (!file.existsSync()) {
+        FlushBar.show(context, "Installer not found", isSuccess: false);
+        return;
+      }
+
+      // Launch installer
+      await Process.start(
+        filePath,
+        [],
+        mode: ProcessStartMode.detached,
+        runInShell: true,
+      );
+
+      // Exit current Flutter app
+      exit(0);
     } catch (e, st) {
-      debugPrint('Error $e, $st');
+      debugPrint('Install error: $e\n$st');
       FlushBar.show(context, e.toString(), isSuccess: false);
     }
   }
@@ -224,10 +223,10 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
 
   Future<String> _getFolderPath() async {
     var folderPath = "";
-    final Directory? directory = await path.getExternalStorageDirectory();
-    if (directory != null) {
-      folderPath = directory.path;
-    }
-    return '$folderPath/Download';
+    Directory? dir;
+    dir = await getDownloadsDirectory();
+    dir ??= await getApplicationDocumentsDirectory();
+    folderPath = dir.path;
+    return folderPath;
   }
 }

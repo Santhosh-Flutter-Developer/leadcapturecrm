@@ -353,4 +353,30 @@ class EmployeeService {
       throw e.toString();
     }
   }
+
+  static Future<List<EmployeeModel>> getEmployeesByDepartment({
+    required String depId,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      var query = firebase.users
+          .doc(cid)
+          .collection(Collections.employees.name)
+          .where('department', arrayContains: depId);
+
+      var querySnapshot = await query.get();
+
+      List<EmployeeModel> employees = querySnapshot.docs.map((doc) {
+        return EmployeeModel.fromMap(doc.id, doc.data());
+      }).toList();
+
+      employees.sort((a, b) => a.name.compareTo(b.name));
+
+      return employees;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error fetching reporting-to employees: $e';
+    }
+  }
 }

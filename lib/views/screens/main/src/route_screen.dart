@@ -133,10 +133,16 @@ class _RouteScreenState extends State<RouteScreen> {
                           SizedBox(),
                           Row(
                             children: [
-                              const Icon(
-                                Iconsax.notification,
-                                color: Colors.white,
-                                size: 22,
+                              InkWell(
+                                onTap: () => Navigate.route(
+                                  context,
+                                  NotificationsListing(),
+                                ),
+                                child: const Icon(
+                                  Iconsax.notification,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                               ),
                               const SizedBox(width: 15),
                               UserAvatar(userData: _userDataModel),
