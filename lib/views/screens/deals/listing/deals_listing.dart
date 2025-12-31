@@ -797,6 +797,34 @@ class _DealsListingViewState extends State<DealsListingView> {
     PaginatedDataController<DealModel> controllerRead,
   ) {
     bool isSelected = controllerWatch.selectedIds.contains(deal.uid);
+
+    /// Open Deal View
+    void openDeal(BuildContext context, DealModel deal) {
+      final view = BlocProvider(
+        create: (_) => DealBloc()..add(StreamDealComments(deal.uid!)),
+        child: DealsView(deal: deal),
+      );
+
+      if (kIsMobile) {
+        Sheet.showSheet(context, widget: view);
+      } else {
+        GeneralDialog.showRTLSheet(context, view);
+      }
+    }
+
+    /// Reusable tappable DataCell
+    DataCell dataCell(BuildContext context, Widget child) {
+      return DataCell(
+        InkWell(
+          onTap: () => openDeal(context, deal),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: child,
+          ),
+        ),
+      );
+    }
+
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
@@ -809,7 +837,9 @@ class _DealsListingViewState extends State<DealsListingView> {
         setState(() {});
       },
       cells: [
-        DataCell(
+        /// Deal Number
+        dataCell(
+          context,
           Text(
             deal.dealNumber.toString(),
             style: Theme.of(
@@ -817,65 +847,63 @@ class _DealsListingViewState extends State<DealsListingView> {
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        DataCell(
-          InkWell(
-            onTap: () {
-              if (kIsMobile) {
-                Sheet.showSheet(
-                  context,
-                  widget: BlocProvider(
-                    create: (_) =>
-                        DealBloc()..add(StreamDealComments(deal.uid!)),
-                    child: DealsView(deal: deal),
-                  ),
-                );
-              } else {
-                GeneralDialog.showRTLSheet(
-                  context,
-                  BlocProvider(
-                    create: (_) =>
-                        DealBloc()..add(StreamDealComments(deal.uid!)),
-                    child: DealsView(deal: deal),
-                  ),
-                );
-              }
-            },
-            child: Text(
-              deal.dealName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            ),
+
+        /// Deal Name
+        dataCell(
+          context,
+          Text(
+            deal.dealName,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        DataCell(
+
+        /// Email
+        dataCell(
+          context,
           Text(deal.dealEmail, style: Theme.of(context).textTheme.bodySmall),
         ),
-        DataCell(
+
+        /// Deal Value
+        dataCell(
+          context,
           Text(
             deal.dealValue.toString(),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Status
+        dataCell(
+          context,
           Text(
             CacheService.dealStatusByUid(deal.dealStatus ?? '')?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Created At
+        dataCell(
+          context,
           Text(
             deal.createdAt.listingDateTime,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(CreatedByWidget(userData: deal.createdBy)),
+
+        /// Created By
+        dataCell(context, CreatedByWidget(userData: deal.createdBy)),
+
+        /// Actions (❌ no row tap here)
         DataCell(
           Row(
             children: [
               if ((permissions?.canEdit ?? false)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
+                  color: AppColors.info,
+                  splashRadius: 20,
                   onPressed: () {
                     if (kIsMobile) {
                       Sheet.showSheet(
@@ -889,8 +917,6 @@ class _DealsListingViewState extends State<DealsListingView> {
                       );
                     }
                   },
-                  color: AppColors.info,
-                  splashRadius: 20,
                 ),
               ] else ...[
                 IconButton(
@@ -898,42 +924,39 @@ class _DealsListingViewState extends State<DealsListingView> {
                   onPressed: null,
                 ),
               ],
+
               if ((permissions?.canDelete ?? false)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,
                   splashRadius: 20,
                   onPressed: () async {
-                    // Ask for confirmation first
                     final result = await showDialog<bool>(
                       context: context,
-                      builder: (context) {
-                        return ConfirmDialog(
-                          title: 'Delete $_pageTitle',
-                          content:
-                              'Are you sure you want to delete this $_pageTitle?',
-                        );
-                      },
+                      builder: (_) => ConfirmDialog(
+                        title: 'Delete $_pageTitle',
+                        content:
+                            'Are you sure you want to delete this $_pageTitle?',
+                      ),
                     );
 
                     if (result == true) {
                       try {
                         await DealService.deleteDeal(uid: deal.uid ?? '');
 
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (context.mounted) {
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                          }
-                        });
+                        if (context.mounted) {
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                          );
+                        }
                       } catch (e, st) {
                         await ErrorService.recordError(e, st);
                         if (context.mounted) {
                           FlushBar.show(
                             context,
                             'Failed to delete $_pageTitle: $e',
+                            isSuccess: false,
                           );
                         }
                       }
