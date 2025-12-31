@@ -494,6 +494,26 @@ class _AdminListingViewState extends State<AdminListingView> {
     PaginatedDataController<AdminModel> controllerRead,
   ) {
     bool isSelected = controllerWatch.selectedIds.contains(admin.uid);
+    void openAdmin(BuildContext context, AdminModel admin) {
+      if (kIsMobile) {
+        Sheet.showSheet(context, widget: AdminProfile(admin: admin));
+      } else {
+        GeneralDialog.showRTLSheet(context, AdminProfile(admin: admin));
+      }
+    }
+
+    DataCell dataCell(BuildContext context, Widget child, AdminModel admin) {
+      return DataCell(
+        InkWell(
+          onTap: () => openAdmin(context, admin),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: child,
+          ),
+        ),
+      );
+    }
+
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
@@ -506,63 +526,64 @@ class _AdminListingViewState extends State<AdminListingView> {
         setState(() {});
       },
       cells: [
-        DataCell(
-          InkWell(
-            onTap: () {
-              permissions!.canView;
-              if (kIsMobile) {
-                Sheet.showSheet(context, widget: AdminProfile(admin: admin));
-              } else {
-                GeneralDialog.showRTLSheet(context, AdminProfile(admin: admin));
-              }
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl:
-                        admin.profileImageUrl ??
-                        AppStrings.emptyProfilePhotoUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: AppColors.grey300,
-                      highlightColor: AppColors.grey200,
-                      child: Container(color: AppColors.white),
-                    ),
-                    height: 30,
-                    width: 30,
-                    errorWidget: (context, url, error) =>
-                        const Icon(Iconsax.danger),
+        dataCell(
+          context,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl:
+                      admin.profileImageUrl ?? AppStrings.emptyProfilePhotoUrl,
+                  height: 30,
+                  width: 30,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Shimmer.fromColors(
+                    baseColor: AppColors.grey300,
+                    highlightColor: AppColors.grey200,
+                    child: Container(color: AppColors.white),
                   ),
+                  errorWidget: (_, __, ___) => const Icon(Iconsax.danger),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  admin.name,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                admin.name,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
+          admin,
         ),
-        DataCell(
+
+        /// Email
+        dataCell(
+          context,
           Text(admin.email, style: Theme.of(context).textTheme.bodySmall),
+          admin,
         ),
-        DataCell(
+
+        /// Mobile
+        dataCell(
+          context,
           Text(
             admin.mobileNumber,
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          admin,
         ),
-        DataCell(
+
+        /// Status
+        dataCell(
+          context,
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: admin.isActive ? AppColors.success : AppColors.danger,
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               admin.isActive ? 'Active' : 'Inactive',
@@ -572,14 +593,22 @@ class _AdminListingViewState extends State<AdminListingView> {
               ),
             ),
           ),
+          admin,
         ),
-        DataCell(
+
+        /// Created Date
+        dataCell(
+          context,
           Text(
             admin.createdAt.listingDateTime,
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          admin,
         ),
-        DataCell(CreatedByWidget(userData: admin.createdBy)),
+
+        /// Created By
+        dataCell(context, CreatedByWidget(userData: admin.createdBy), admin),
+
         DataCell(
           Row(
             children: [

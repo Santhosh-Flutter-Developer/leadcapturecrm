@@ -157,6 +157,8 @@ class _TaskListingViewState extends State<TaskListingView> {
                                     ),
                                     child: DataTable(
                                       showCheckboxColumn: true,
+                                      columnSpacing: 12,
+                                      horizontalMargin: 8,
                                       sortColumnIndex:
                                           controllerWatch.sortColumnIndex,
                                       sortAscending:
@@ -212,14 +214,6 @@ class _TaskListingViewState extends State<TaskListingView> {
                                         DataColumn(
                                           label: Text(
                                             "Assignee",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Tags",
                                             style: Theme.of(
                                               context,
                                             ).textTheme.bodySmall,
@@ -291,7 +285,38 @@ class _TaskListingViewState extends State<TaskListingView> {
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_searchBox(onSearchChanged: onSearchChanged)],
+      children: [
+        SizedBox(
+          width: 250,
+          child: TextField(
+            onChanged: onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search',
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: Colors.grey,
+              ),
+              filled: true,
+              fillColor: AppColors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12.0,
+                horizontal: 16.0,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.grey, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
+              ),
+              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+        ),
+      ],
     );
   }
 
@@ -427,6 +452,26 @@ class _TaskListingViewState extends State<TaskListingView> {
     PaginatedDataController<TaskModel> controllerRead,
   ) {
     bool isSelected = controllerWatch.selectedIds.contains(task.uid);
+    void openTask(BuildContext context, String uid) {
+      if (kIsMobile) {
+        Sheet.showSheet(context, widget: TaskView(uid: uid));
+      } else {
+        GeneralDialog.showRTLSheet(context, TaskView(uid: uid));
+      }
+    }
+
+    DataCell dataCell(BuildContext context, Widget child, String uid) {
+      return DataCell(
+        InkWell(
+          onTap: () => openTask(context, uid),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: child,
+          ),
+        ),
+      );
+    }
+
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
@@ -439,36 +484,30 @@ class _TaskListingViewState extends State<TaskListingView> {
         setState(() {});
       },
       cells: [
-        DataCell(
+        dataCell(
+          context,
           SelectableText(
-            task.uid ?? '-',
+            task.taskNumber?.toString() ?? '-',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontSize: 11),
           ),
+          task.uid ?? '',
         ),
 
-        DataCell(
-          InkWell(
-            onTap: () {
-              if (kIsMobile) {
-                Sheet.showSheet(context, widget: TaskView(uid: task.uid ?? ''));
-              } else {
-                GeneralDialog.showRTLSheet(
-                  context,
-                  TaskView(uid: task.uid ?? ''),
-                );
-              }
-            },
-            child: Text(
-              task.taskName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            ),
+        dataCell(
+          context,
+          Text(
+            task.taskName,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
+          task.uid ?? '',
         ),
-        DataCell(
+
+        dataCell(
+          context,
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -490,36 +529,51 @@ class _TaskListingViewState extends State<TaskListingView> {
               ).textTheme.bodySmall!.copyWith(color: AppColors.white),
             ),
           ),
+          task.uid ?? '',
         ),
-        DataCell(
+
+        dataCell(
+          context,
           Text(
             task.deadline?.listingDateTime ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          task.uid ?? '',
         ),
-        DataCell(
+
+        dataCell(
+          context,
           Text(
             task.createdBy
                 .map((e) => CacheService.getUserByUid(e)?.name ?? '')
                 .toList()
                 .join(','),
           ),
+          task.uid ?? '',
         ),
-        DataCell(
-          Text(
-            task.assignees
-                .map((e) => CacheService.getUserByUid(e)?.name ?? '')
-                .toList()
-                .join(','),
+
+        dataCell(
+          context,
+          SizedBox(
+            width: 120,
+            child: Text(
+              task.assignees
+                  .map((e) => CacheService.getUserByUid(e)?.name ?? '')
+                  .where((name) => name.isNotEmpty)
+                  .join(',\n'),
+              softWrap: true,
+              maxLines: null,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
+          task.uid ?? '',
         ),
-        DataCell(
-          Text(
-            task.tags.map((e) => e.toString()).toList().join(','),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+
+        dataCell(
+          context,
+          CreatedByWidget(userData: task.taskCreatedBy),
+          task.uid ?? '',
         ),
-        DataCell(CreatedByWidget(userData: task.taskCreatedBy)),
         DataCell(
           Row(
             children: [
@@ -592,13 +646,13 @@ class _TaskListingViewState extends State<TaskListingView> {
     );
   }
 
-  Widget _searchBox({required ValueChanged<String> onSearchChanged}) {
-    return SizedBox(
-      width: 200,
-      child: ListingSearchField(
-        onChanged: onSearchChanged,
-        pageTitle: _pageTitle,
-      ),
-    );
-  }
+  // Widget _searchBox({required ValueChanged<String> onSearchChanged}) {
+  //   return SizedBox(
+  //     width: 200,
+  //     child: ListingSearchField(
+  //       onChanged: onSearchChanged,
+  //       pageTitle: _pageTitle,
+  //     ),
+  //   );
+  // }
 }

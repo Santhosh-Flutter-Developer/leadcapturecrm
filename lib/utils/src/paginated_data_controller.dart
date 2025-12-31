@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 
 // Type definitions for the logic you will pass in
 typedef FilterLogic<T> = bool Function(T item, String query);
-typedef SortLogic<T> = int Function(
-    T a, T b, int sortColumn, bool sortAscending);
+typedef SortLogic<T> =
+    int Function(T a, T b, int sortColumn, bool sortAscending);
 typedef ItemIdLogic<T> = String Function(T item);
 
 class PaginatedDataController<T> extends ChangeNotifier {
@@ -30,10 +30,10 @@ class PaginatedDataController<T> extends ChangeNotifier {
     required this.filterLogic,
     required this.sortLogic,
     required this.getItemId,
-    int initialRowsPerPage = 10,
+    int initialRowsPerPage = 25,
     int initialSortColumnIndex = 1,
-  })  : _rowsPerPage = initialRowsPerPage,
-        _sortColumnIndex = initialSortColumnIndex;
+  }) : _rowsPerPage = initialRowsPerPage,
+       _sortColumnIndex = initialSortColumnIndex;
 
   // --- Getters for the UI ---
   List<T> get paginatedItems => _paginatedItems;
@@ -122,8 +122,10 @@ class PaginatedDataController<T> extends ChangeNotifier {
 
     // 3. Apply Pagination
     final int startIndex = (_currentPage - 1) * _rowsPerPage;
-    final int endIndex =
-        math.min(startIndex + _rowsPerPage, _filteredItems.length);
+    final int endIndex = math.min(
+      startIndex + _rowsPerPage,
+      _filteredItems.length,
+    );
     _paginatedItems = _filteredItems.sublist(startIndex, endIndex);
 
     // 4. Notify UI

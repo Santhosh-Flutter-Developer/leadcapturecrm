@@ -994,7 +994,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
       devices,
       PlatformType.mobile,
     );
-
     final desktopLastLogin = getLastLoginByPlatform(
       devices,
       PlatformType.desktop,
@@ -1004,12 +1003,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
       devices,
       PlatformType.mobile,
     );
-
     final desktopPlatformLabel = getPlatformLabelByType(
       devices,
       PlatformType.desktop,
     );
+
     final isSelected = controllerWatch.selectedIds.contains(employee.uid);
+
     String getDepartmentNames(EmployeeModel employee) {
       if (employee.department == null || employee.department!.isEmpty) {
         return '';
@@ -1019,6 +1019,31 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           .map((uid) => CacheService.departmentByUid(uid)?.name ?? '')
           .where((name) => name.isNotEmpty)
           .join(', ');
+    }
+
+    /// Open Employee Details
+    void openEmployee(BuildContext context, EmployeeModel employee) {
+      if (kIsMobile) {
+        Sheet.showSheet(context, widget: EmployeeDetails(employee: employee));
+      } else {
+        GeneralDialog.showRTLSheet(
+          context,
+          EmployeeDetails(employee: employee),
+        );
+      }
+    }
+
+    /// Reusable tappable DataCell
+    DataCell dataCell(BuildContext context, Widget child) {
+      return DataCell(
+        InkWell(
+          onTap: () => openEmployee(context, employee),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: child,
+          ),
+        ),
+      );
     }
 
     return DataRow(
@@ -1032,11 +1057,12 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         } else {
           _selectedEmployees.removeWhere((e) => e.uid == employee.uid);
         }
-
         setState(() {});
       },
       cells: [
-        DataCell(
+        /// Employee ID
+        dataCell(
+          context,
           Text(
             employee.employeeId,
             style: Theme.of(
@@ -1044,64 +1070,53 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        DataCell(
-          InkWell(
-            onTap: () {
-              if (kIsMobile) {
-                Sheet.showSheet(
-                  context,
-                  widget: EmployeeDetails(employee: employee),
-                );
-              } else {
-                GeneralDialog.showRTLSheet(
-                  context,
-                  EmployeeDetails(employee: employee),
-                );
-              }
-            },
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl:
-                        employee.profileImageUrl ??
-                        AppStrings.emptyProfilePhotoUrl,
-                    height: 32,
-                    width: 32,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, _, _) => const Icon(Iconsax.user),
+
+        /// Name + Avatar
+        dataCell(
+          context,
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl:
+                      employee.profileImageUrl ??
+                      AppStrings.emptyProfilePhotoUrl,
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => const Icon(Iconsax.user),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    employee.name,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      employee.name,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      CacheService.designationByUid(
-                            employee.designation,
-                          )?.name ??
-                          '',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  const SizedBox(height: 2),
+                  Text(
+                    CacheService.designationByUid(employee.designation)?.name ??
+                        '',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        DataCell(
+
+        /// Department
+        dataCell(
+          context,
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1126,30 +1141,45 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             ],
           ),
         ),
-        DataCell(
+
+        /// Email
+        dataCell(
+          context,
           Text(employee.email, style: Theme.of(context).textTheme.bodySmall),
         ),
-        DataCell(
+
+        /// Mobile Platform
+        dataCell(
+          context,
           buildPlatformCell(
             icon: Icons.phone_android,
             platformLabel: mobilePlatformLabel,
             lastLogin: mobileLastLogin,
           ),
         ),
-        DataCell(
+
+        /// Desktop Platform
+        dataCell(
+          context,
           buildPlatformCell(
             icon: Icons.desktop_windows,
             platformLabel: desktopPlatformLabel,
             lastLogin: desktopLastLogin,
           ),
         ),
-        DataCell(
+
+        /// Role
+        dataCell(
+          context,
           Text(
             CacheService.roleByUid(employee.role)?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Status
+        dataCell(
+          context,
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -1165,7 +1195,11 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             ),
           ),
         ),
-        DataCell(CreatedByWidget(userData: employee.createdBy)),
+
+        /// Created By
+        dataCell(context, CreatedByWidget(userData: employee.createdBy)),
+
+        /// Actions (no row tap)
         DataCell(
           Row(
             children: [

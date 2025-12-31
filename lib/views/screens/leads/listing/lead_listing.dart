@@ -408,7 +408,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           child: TextField(
             onChanged: onSearchChanged,
             decoration: InputDecoration(
-              hintText: 'Search $_pageTitle...',
+              hintText: 'Search',
               prefixIcon: const Icon(
                 Icons.search,
                 size: 20,
@@ -943,6 +943,28 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     bool isSelected = controllerWatch.selectedIds.contains(lead.uid);
     var leadCategory = CacheService.leadCategoryByUid(lead.leadCategory);
 
+    /// Open Lead View
+    void openLead(BuildContext context, LeadModel lead) {
+      if (kIsMobile) {
+        Sheet.showSheet(context, widget: LeadsViewPage(lead: lead));
+      } else {
+        GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: lead));
+      }
+    }
+
+    /// Reusable tappable DataCell
+    DataCell dataCell(BuildContext context, Widget child) {
+      return DataCell(
+        InkWell(
+          onTap: () => openLead(context, lead),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: child,
+          ),
+        ),
+      );
+    }
+
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
@@ -955,7 +977,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         setState(() {});
       },
       cells: [
-        DataCell(
+        /// Lead Number
+        dataCell(
+          context,
           Text(
             lead.leadNumber.toString(),
             style: Theme.of(
@@ -963,58 +987,75 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        DataCell(
-          InkWell(
-            onTap: () {
-              if (kIsMobile) {
-                Sheet.showSheet(context, widget: LeadsViewPage(lead: lead));
-              } else {
-                GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: lead));
-              }
-            },
-            child: Text(
-              lead.leadName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            ),
+
+        /// Lead Name
+        dataCell(
+          context,
+          Text(
+            lead.leadName,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        DataCell(
+
+        /// Email
+        dataCell(
+          context,
           Text(lead.leadEmail, style: Theme.of(context).textTheme.bodySmall),
         ),
-        const DataCell(Text('')),
-        DataCell(
+
+        /// Empty column
+        dataCell(context, const Text('')),
+
+        /// Lead Value
+        dataCell(
+          context,
           Text(
             lead.leadValue.toString(),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Category
+        dataCell(
+          context,
           Text(
             leadCategory?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Status
+        dataCell(
+          context,
           Text(
             CacheService.leadStatusByUid(lead.leadStatus)?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(
+
+        /// Created At
+        dataCell(
+          context,
           Text(
             lead.createdAt.listingDateTime,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        DataCell(CreatedByWidget(userData: lead.createdBy)),
+
+        /// Created By
+        dataCell(context, CreatedByWidget(userData: lead.createdBy)),
+
+        /// Actions (❌ no row tap here)
         DataCell(
           Row(
             children: [
               if ((permissions?.canEdit ?? false)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
+                  color: AppColors.info,
+                  splashRadius: 20,
                   onPressed: () {
                     if (kIsMobile) {
                       Sheet.showSheet(
@@ -1028,8 +1069,6 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       );
                     }
                   },
-                  color: AppColors.info,
-                  splashRadius: 20,
                 ),
               ] else ...[
                 IconButton(
@@ -1037,28 +1076,28 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   onPressed: null,
                 ),
               ],
+
               IconButton(
                 icon: const Icon(Icons.autorenew_rounded),
                 tooltip: 'Convert $_pageTitle to Deal',
                 color: AppColors.primary,
                 splashRadius: 20,
                 onPressed: () async {
-                  final result = await showDialog(
+                  final result = await showDialog<bool>(
                     context: context,
-                    builder: (context) {
-                      return const ConfirmDialog(
-                        title: 'Convert $_pageTitle',
-                        content:
-                            'Are you sure you want to convert this lead to a deal?',
-                      );
-                    },
+                    builder: (_) => const ConfirmDialog(
+                      title: 'Convert $_pageTitle',
+                      content:
+                          'Are you sure you want to convert this lead to a deal?',
+                    ),
                   );
 
-                  if (result != null && result) {
+                  if (result == true) {
                     await _convertLeadToDeal(context, lead);
                   }
                 },
               ),
+
               if ((permissions?.canDelete ?? false)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
@@ -1068,7 +1107,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   onPressed: () async {
                     final result = await showDialog<bool>(
                       context: context,
-                      builder: (context) => const ConfirmDialog(
+                      builder: (_) => const ConfirmDialog(
                         title: 'Delete $_pageTitle',
                         content: 'Are you sure you want to delete this lead?',
                       ),
@@ -1081,7 +1120,6 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                           context,
                           '$_pageTitle deleted successfully',
                         );
-
                         context.read<LeadBloc>().add(StreamLead());
                       } catch (e, st) {
                         await ErrorService.recordError(e, st);
