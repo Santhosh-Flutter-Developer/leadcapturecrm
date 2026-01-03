@@ -258,29 +258,77 @@ class TaskService {
       var cid = await Spdb.getCid();
       var uid = await Spdb.getUid();
 
+      if (uid == null) throw "User not logged in";
+
+      final hasActive = await hasActiveTask(userId: uid, excludeTaskId: taskId);
+
+      if (hasActive) {
+        throw "You already have an active task. Complete it first.";
+      }
+
+      final startTime = DateTime.now();
+
+      /// Update task main document
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.tasks.name}',
         taskId,
         {
           "hasStarted": true,
           "completed": false,
-          "startedTime": DateTime.now().millisecondsSinceEpoch,
+          "startedTime": startTime.millisecondsSinceEpoch,
         },
-        activity: 'Task has been updated',
+        activity: 'Task started',
       );
-      // Add history
+
+      /// Create time log
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .doc(taskId)
+          .collection('taskTimeLogs')
+          .add({
+            "userId": uid,
+            "startTime": startTime.millisecondsSinceEpoch,
+            "endTime": null,
+          });
+
+      /// History
       TaskHistoryModel history = TaskHistoryModel(
-        userId: uid ?? '',
+        userId: uid,
         updateDisposition: 'Task Started',
       );
 
-      await CommonService.add(
-        '${Collections.users.name}/$cid/${Collections.subDepartments.name}/$taskId/${Collections.taskHistory.name}',
-        history.toMap(),
-      );
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .doc(taskId)
+          .collection(Collections.taskHistory.name)
+          .add(history.toMap());
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      throw "Error starting task: $e";
+      throw e.toString();
+    }
+  }
+
+  static Future<bool> hasActiveTask({
+    required String userId,
+    String? excludeTaskId,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final snapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .where('assignees', arrayContains: userId)
+          .where('hasStarted', isEqualTo: true)
+          .where('completed', isEqualTo: false)
+          .get();
+
+      return snapshot.docs.any((doc) => doc.id != excludeTaskId);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      return false;
     }
   }
 
@@ -289,17 +337,36 @@ class TaskService {
       var cid = await Spdb.getCid();
       var uid = await Spdb.getUid();
 
+      final endTime = DateTime.now();
+
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.tasks.name}',
         taskId,
         {
           "completed": true,
           "hasStarted": false,
-          "completedTime": DateTime.now().millisecondsSinceEpoch,
+          "completedTime": endTime.millisecondsSinceEpoch,
         },
-        activity: 'Task has been updated',
+        activity: 'Task completed',
       );
-      // Add history
+
+      /// Close active time log
+      final activeLog = await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .doc(taskId)
+          .collection('taskTimeLogs')
+          .where('endTime', isNull: true)
+          .limit(1)
+          .get();
+
+      if (activeLog.docs.isNotEmpty) {
+        await activeLog.docs.first.reference.update({
+          "endTime": endTime.millisecondsSinceEpoch,
+        });
+      }
+
+      /// History
       TaskHistoryModel history = TaskHistoryModel(
         userId: uid ?? '',
         updateDisposition: 'Task Completed',

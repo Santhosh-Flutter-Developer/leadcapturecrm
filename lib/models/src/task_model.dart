@@ -23,9 +23,9 @@ class TaskModel {
   final String? lead;
   final String? subTaskOf;
   bool hasStarted;
-  final DateTime? startedTime;
+  DateTime? startedTime;
   bool completed;
-  final DateTime? completedTime;
+  DateTime? completedTime;
   final List<FileModel> attachments;
   final List<TaskCommentModel> comments;
   final List<TaskHistoryModel> history;
@@ -89,9 +89,13 @@ class TaskModel {
       lead: map['lead'] as String?,
       subTaskOf: map['subTaskOf'] as String?,
       hasStarted: map['hasStarted'] as bool? ?? false,
-      startedTime: map['startedTime'] as DateTime?,
+      startedTime: map['startedTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['startedTime'] as int)
+          : null,
+      completedTime: map['completedTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['completedTime'] as int)
+          : null,
       completed: map['completed'] as bool? ?? false,
-      completedTime: map['completedTime'] as DateTime?,
       attachments: map['attachments'] != null
           ? List<FileModel>.from(
               (map['attachments'] as List).map((x) => FileModel.fromMap(x)),
@@ -173,6 +177,15 @@ class TaskModel {
       'history': history.map((h) => h.toMap()).toList(),
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
+  }
+
+  double get totalHours {
+    if (startedTime == null) return 0;
+
+    final end = completedTime ?? DateTime.now();
+    final minutes = end.difference(startedTime!).inMinutes;
+
+    return minutes / 60;
   }
 
   String toJson() => json.encode(toMap());

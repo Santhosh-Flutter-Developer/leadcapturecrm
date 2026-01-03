@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:aaatp/views/screens/download/bloc/download_bloc.dart';
+import 'package:aaatp/views/screens/download/download_history.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';

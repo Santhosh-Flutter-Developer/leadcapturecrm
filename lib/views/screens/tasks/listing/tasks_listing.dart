@@ -196,6 +196,8 @@ class _TaskListingViewState extends State<TaskListingView> {
                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                     child: DataTable(
                       showCheckboxColumn: true,
+                      columnSpacing: 12,
+                      horizontalMargin: 8,
                       sortColumnIndex: controllerWatch.sortColumnIndex,
                       sortAscending: controllerWatch.sortAscending,
                       headingRowColor: WidgetStateProperty.all(
@@ -237,12 +239,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
-                        DataColumn(
-                          label: Text(
-                            "Tags",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
+
                         DataColumn(
                           label: Text(
                             "Created By",
@@ -601,7 +598,10 @@ class _TaskListingViewState extends State<TaskListingView> {
             task.createdBy
                 .map((e) => CacheService.getUserByUid(e)?.name ?? '')
                 .toList()
-                .join(','),
+                .join(',\n'),
+            softWrap: true,
+            maxLines: null,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           task.uid ?? '',
         ),

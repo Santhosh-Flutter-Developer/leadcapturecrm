@@ -139,6 +139,11 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const LoginLogsListing(showAppbar: false);
       case 'Activity Logs':
         return const ActivityLogsListing(showAppbar: false);
+      case 'Downloads':
+        return BlocProvider(
+          create: (context) => DownloadHistoryBloc(),
+          child: const DownloadHistory(showAppbar: false),
+        );
       case 'Feed':
         return BlocProvider(
           create: (context) => FeedBloc(),

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/constants/constants.dart';
@@ -38,16 +41,52 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
   bool isParticipant = false;
   bool _isActionLoading = false;
 
+  Timer? _liveTimer;
+  Duration get _taskDuration {
+    if (_taskModel.startedTime == null) return Duration.zero;
+
+    final end = _taskModel.completedTime ?? DateTime.now();
+    return end.difference(_taskModel.startedTime!);
+  }
+
+  List<FlSpot> _buildLiveSpots(int totalMinutes) {
+    final spots = <FlSpot>[];
+
+    for (int i = 0; i <= totalMinutes; i += 30) {
+      spots.add(FlSpot(i / 60, i.toDouble()));
+    }
+
+    // Live running task → add current moment
+    if (_taskModel.completedTime == null) {
+      final nowMinutes = DateTime.now()
+          .difference(_taskModel.startedTime!)
+          .inMinutes
+          .toDouble();
+
+      spots.add(FlSpot(nowMinutes / 60, nowMinutes));
+    }
+
+    return spots;
+  }
+
+  double get _totalHours => _taskDuration.inMinutes / 60;
+
   @override
   void initState() {
     super.initState();
     _future = TaskService.getTask(uid: widget.uid);
     _tabController = TabController(length: 3, vsync: this);
     Spdb.getUid().then((uid) => setState(() => currentUid = uid));
+    // _liveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    //   if (!mounted) return;
+    //   if (!(_taskModel.hasStarted && !_taskModel.completed)) return;
+    //   setState(() {});
+    // });
   }
 
   @override
   void dispose() {
+    _liveTimer?.cancel();
     _tabController.dispose();
     _commentController.dispose();
     super.dispose();
@@ -68,16 +107,27 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
 
   Future<void> _startTask() async {
     if (_taskModel.uid == null) return;
+
     setState(() => _isActionLoading = true);
+
     try {
+      final startTime = DateTime.now();
+
       await TaskService.startTask(taskId: _taskModel.uid!);
+
       setState(() {
         _taskModel.hasStarted = true;
         _taskModel.completed = false;
+        _taskModel.startedTime = startTime;
       });
+
       FlushBar.show(context, "Task started", isSuccess: true);
     } catch (e) {
-      FlushBar.show(context, "Failed to start task", isSuccess: false);
+      FlushBar.show(
+        context,
+        e.toString().replaceAll('Exception: ', ''),
+        isSuccess: false,
+      );
     } finally {
       setState(() => _isActionLoading = false);
     }
@@ -85,10 +135,20 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
 
   Future<void> _completeTask() async {
     if (_taskModel.uid == null) return;
+
     setState(() => _isActionLoading = true);
+
     try {
+      final endTime = DateTime.now();
+
       await TaskService.completeTask(taskId: _taskModel.uid!);
-      setState(() => _taskModel.completed = true);
+
+      setState(() {
+        _taskModel.completed = true;
+        _taskModel.hasStarted = false;
+        _taskModel.completedTime = endTime;
+      });
+
       FlushBar.show(context, "Task marked completed", isSuccess: true);
     } catch (e) {
       FlushBar.show(context, "Failed to complete task", isSuccess: false);
@@ -123,26 +183,9 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
 
             return Scaffold(
               backgroundColor: TaskViewColors.background,
-              appBar: AppBar(
-                backgroundColor: TaskViewColors.white,
-                elevation: 0,
-                centerTitle: false,
-                leading: const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Back(),
-                ),
-                title: const Text(
-                  "Task Details",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: TaskViewColors.textPrimary,
-                    fontSize: 18,
-                  ),
-                ),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(1),
-                  child: Container(color: TaskViewColors.border, height: 1),
-                ),
+              appBar: FormWidgets.buildHeader(
+                context: context,
+                title: "Task Details",
               ),
               body: Center(
                 child: ConstrainedBox(
@@ -535,7 +578,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
             children: [
               _buildCommentsTab(cid),
               _buildHistoryTab(cid),
-              _buildEmptyState(Iconsax.timer_1, "No time logs recorded."),
+              _buildTimeTrackingTab(),
             ],
           ),
         ),
@@ -754,6 +797,295 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimeInfoRow() {
+    return Row(
+      children: [
+        _timeTile(
+          "Started",
+          _taskModel.startedTime?.listingDateTime ?? "--",
+          Iconsax.play,
+        ),
+        const SizedBox(width: 16),
+        _timeTile(
+          "Completed",
+          _taskModel.completedTime?.listingDateTime ?? "In progress",
+          Iconsax.tick_circle,
+        ),
+      ],
+    );
+  }
+
+  Widget _timeTile(String label, String value, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: TaskViewColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: TaskViewColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: TaskViewColors.primary),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: TaskViewColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeTrackingTab() {
+    if (_taskModel.startedTime == null) {
+      return _buildEmptyState(
+        Iconsax.timer_start,
+        "Task has not been started yet.",
+      );
+    }
+
+    final totalMinutes = (_taskModel.completedTime ?? DateTime.now())
+        .difference(_taskModel.startedTime!)
+        .inMinutes;
+
+    final spots = _buildLiveSpots(totalMinutes);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTimeInfoRow(),
+
+        const SizedBox(height: 16),
+
+        /// TOTAL TIME CARD
+        _buildTotalTimeCard(),
+
+        const SizedBox(height: 24),
+
+        /// CHART
+        Expanded(child: _buildTimeChart(spots, totalMinutes)),
+      ],
+    );
+  }
+
+  Widget _buildTotalTimeCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: TaskViewColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: TaskViewColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: TaskViewColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Iconsax.timer,
+              color: TaskViewColors.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Total Time Spent",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: TaskViewColors.textSecondary,
+                ),
+              ),
+              Text(
+                "${_totalHours.toStringAsFixed(2)} hrs",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeChart(List<FlSpot> spots, int totalMinutes) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 20, 20, 16),
+      decoration: BoxDecoration(
+        color: TaskViewColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: TaskViewColors.border),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: LineChart(
+          key: ValueKey(spots.length),
+          LineChartData(
+            minX: 0,
+            maxX: (totalMinutes / 60).ceilToDouble(),
+            minY: 0,
+            maxY: totalMinutes.toDouble() + 10,
+
+            /// GRID
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: 30,
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: Colors.grey.withOpacity(0.12), strokeWidth: 1),
+            ),
+
+            /// BORDER
+            borderData: FlBorderData(show: false),
+
+            /// AXIS TITLES
+            titlesData: FlTitlesData(
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: 1,
+                  getTitlesWidget: (v, _) {
+                    if (v % 1 != 0) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        "${v.toInt()}h",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: TaskViewColors.textSecondary,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: 30,
+                  reservedSize: 38,
+                  getTitlesWidget: (v, _) => Text(
+                    "${v.toInt()}m",
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: TaskViewColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+            ),
+
+            /// LINE DATA
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: TaskViewColors.primary,
+                barWidth: 3,
+                isStrokeCapRound: true,
+
+                dotData: FlDotData(
+                  show: true,
+                  checkToShowDot: (spot, barData) => spot == spots.last,
+                  getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                    radius: _taskModel.completed ? 5 : 6,
+                    color: TaskViewColors.primary,
+                    strokeWidth: 3,
+                    strokeColor: Colors.white,
+                  ),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    colors: [
+                      TaskViewColors.primary.withOpacity(0.25),
+                      TaskViewColors.primary.withOpacity(0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ],
+
+            lineTouchData: LineTouchData(
+              handleBuiltInTouches: true,
+              touchTooltipData: LineTouchTooltipData(
+                tooltipBorderRadius: BorderRadius.circular(10),
+                tooltipPadding: const EdgeInsets.all(10),
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((spot) {
+                    return LineTooltipItem(
+                      "Time: ${spot.x.toStringAsFixed(1)} hrs\n"
+                      "Elapsed: ${spot.y.toInt()} min",
+                      const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    );
+                  }).toList();
+                },
+              ),
+              getTouchedSpotIndicator: (barData, spotIndexes) {
+                return spotIndexes.map((index) {
+                  return TouchedSpotIndicatorData(
+                    FlLine(
+                      color: TaskViewColors.primary.withOpacity(0.5),
+                      strokeWidth: 2,
+                    ),
+                    FlDotData(
+                      show: true,
+                      getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                        radius: 5,
+                        color: TaskViewColors.primary,
+                        strokeWidth: 2,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
