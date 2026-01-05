@@ -1,61 +1,40 @@
+import 'dart:async';
+
 import 'package:aaatp/models/src/download_model.dart';
-import 'package:aaatp/services/database/src/spdb.dart';
 import 'package:aaatp/views/screens/download/bloc/download_event.dart';
 import 'package:aaatp/views/screens/download/bloc/download_state.dart';
-import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DownloadHistoryBloc
     extends Bloc<DownloadHistoryEvent, DownloadHistoryState> {
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
-  List<DownloadHistoryModel> allDownloads = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   DownloadHistoryBloc() : super(DownloadHistoryLoading()) {
-    on<StreamDownloadHistory>(_streamDownloadHistory);
-    on<AddDownloadHistoryItem>(_addDownloadHistoryItem);
+    on<StreamDownloadHistory>(_onStream);
   }
 
-  // STREAM DOWNLOAD HISTORY LIVE
-  Future<void> _streamDownloadHistory(
+  Future<void> _onStream(
     StreamDownloadHistory event,
     Emitter<DownloadHistoryState> emit,
   ) async {
     emit(DownloadHistoryLoading());
-    final cid = await Spdb.getCid();
 
-    await emit.forEach(
-      firestore
-          .collection('users')
-          .doc(cid)
-          .collection('downloadHistory')
+    await emit.forEach<QuerySnapshot<Map<String, dynamic>>>(
+      _firestore
+          .collection('download_history')
           .orderBy('downloadedAt', descending: true)
-          .snapshots()
-          .map((snapshot) {
-            allDownloads = snapshot.docs
-                .map((doc) => DownloadHistoryModel.fromMap(doc.data()))
-                .toList();
-            return allDownloads;
-          }),
-      onData: (items) => DownloadHistoryLoaded(items),
-      onError: (error, stackTrace) =>
-          DownloadHistoryError('Failed to load download history: $error'),
-    );
-  }
+          .snapshots(),
+      onData: (snapshot) {
+        final items = snapshot.docs
+            .map((e) => DownloadHistoryModel.fromMap(e.data()))
+            .toList();
 
-  // ADD DOWNLOAD HISTORY ITEM
-  Future<void> _addDownloadHistoryItem(
-    AddDownloadHistoryItem event,
-    Emitter<DownloadHistoryState> emit,
-  ) async {
-    final cid = await Spdb.getCid();
-    try {
-      await firestore
-          .collection('users')
-          .doc(cid)
-          .collection('downloadHistory')
-          .add(event.item.toMap());
-    } catch (e) {
-      emit(DownloadHistoryError('Failed to add download: $e'));
-    }
+        return DownloadHistoryLoaded(items);
+      },
+      onError: (error, _) {
+        return DownloadHistoryError(error.toString());
+      },
+    );
   }
 }

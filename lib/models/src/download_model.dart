@@ -34,7 +34,7 @@ class DownloadHistoryModel {
       'filePath': filePath,
       'url': url,
       'fileSize': fileSize,
-      'downloadedAt': downloadedAt,
+      'downloadedAt': Timestamp.fromDate(downloadedAt),
       'isSuccess': isSuccess,
     };
   }

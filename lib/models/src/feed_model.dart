@@ -213,6 +213,8 @@ class CommentModel {
   final String authorName;
   final String authorAvatar;
   final String content;
+  final String? replyToCommentId;
+  final Map<String, List<String>> reactions;
   final DateTime createdAt;
 
   CommentModel({
@@ -221,8 +223,32 @@ class CommentModel {
     required this.authorName,
     required this.authorAvatar,
     required this.content,
+    this.replyToCommentId,
+    this.reactions = const {},
     required this.createdAt,
   });
+
+  CommentModel copyWith({
+    String? commentId,
+    String? authorId,
+    String? authorName,
+    String? authorAvatar,
+    String? content,
+    String? replyToCommentId,
+    Map<String, List<String>>? reactions,
+    DateTime? createdAt,
+  }) {
+    return CommentModel(
+      commentId: commentId ?? this.commentId,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      content: content ?? this.content,
+      replyToCommentId: replyToCommentId ?? this.replyToCommentId,
+      reactions: reactions ?? this.reactions,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
   factory CommentModel.fromMap(Map<String, dynamic> map) {
     return CommentModel(
@@ -241,6 +267,15 @@ class CommentModel {
       content: map['content'] != null && map['content'] is String
           ? map['content']
           : '',
+      replyToCommentId: map['replyToCommentId'] as String?,
+      reactions: map['reactions'] != null
+          ? Map<String, List<String>>.from(
+              (map['reactions'] as Map).map(
+                (key, value) =>
+                    MapEntry(key.toString(), List<String>.from(value)),
+              ),
+            )
+          : {},
       createdAt: map['createdAt'] != null && map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -254,7 +289,9 @@ class CommentModel {
       'authorName': authorName,
       'authorAvatar': authorAvatar,
       'content': content,
-      'createdAt': createdAt.millisecondsSinceEpoch,
+      'replyToCommentId': replyToCommentId,
+      'reactions': reactions,
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 }

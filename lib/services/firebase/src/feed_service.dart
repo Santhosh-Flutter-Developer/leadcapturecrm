@@ -112,6 +112,43 @@ class FeedService {
     }
   }
 
+  static Future<void> updateCommentReaction({
+    required String feedId,
+    required String commentId,
+    required Map<String, List<String>> reactions,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      final docRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.feed.name)
+          .doc(feedId);
+
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) throw "Feed post does not exist!";
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      List<dynamic> comments = data['comments'] ?? [];
+
+      // Update the reactions of the specific comment
+      comments = comments.map((c) {
+        if (c['commentId'] == commentId) {
+          final updatedComment = Map<String, dynamic>.from(c);
+          updatedComment['reactions'] = reactions;
+          return updatedComment;
+        }
+        return c;
+      }).toList();
+
+      await docRef.update({'comments': comments});
+    } catch (e) {
+      debugPrint("Error updating comment reaction: $e");
+      throw "Error updating comment reaction: $e";
+    }
+  }
+
   static Future<void> toggleReaction({
     required String feedId,
     required String userId,

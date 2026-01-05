@@ -1,5 +1,6 @@
 import 'dart:typed_data';
-
+import 'package:aaatp/models/src/download_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,9 +25,8 @@ class Download {
       directory = (await getDownloadsDirectory())!;
     }
 
-    String savePath = name != null
-        ? '${directory.path}/$name'
-        : '${directory.path}/${url.split('/').last}';
+    final String fileName = name ?? url.split('/').last;
+    final String savePath = '${directory.path}/$fileName';
 
     // Create an OverlayEntry to show live progress
     OverlayState overlayState = Overlay.of(context);
@@ -59,7 +59,20 @@ class Download {
         },
       );
 
-      // Remove overlay when completed
+      final fileSize = await File(savePath).length();
+
+      await FirebaseFirestore.instance
+          .collection('download_history')
+          .add(
+            DownloadHistoryModel(
+              fileName: fileName,
+              filePath: savePath,
+              url: url,
+              fileSize: fileSize,
+              downloadedAt: DateTime.now(),
+              isSuccess: true,
+            ).toMap(),
+          );
       overlayEntry.remove();
       FlushBar.show(context, "Download Completed", isSuccess: true);
 
@@ -67,6 +80,19 @@ class Download {
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
+      await FirebaseFirestore.instance
+          .collection('download_history')
+          .add(
+            DownloadHistoryModel(
+              fileName: fileName,
+              filePath: '',
+              url: url,
+              fileSize: 0,
+              downloadedAt: DateTime.now(),
+              isSuccess: false,
+            ).toMap(),
+          );
+
       overlayEntry.remove();
       FlushBar.show(
         context,

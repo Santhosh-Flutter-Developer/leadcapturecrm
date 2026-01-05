@@ -3,6 +3,7 @@ import 'package:aaatp/utils/src/open_file.dart';
 import 'package:aaatp/views/screens/download/bloc/download_bloc.dart';
 import 'package:aaatp/views/screens/download/bloc/download_event.dart';
 import 'package:aaatp/views/screens/download/bloc/download_state.dart';
+import 'package:aaatp/views/ui/src/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -38,8 +39,6 @@ class _DownloadHistoryState extends State<DownloadHistory> {
         _search = _searchController.text.trim().toLowerCase();
       });
     });
-
-    context.read<DownloadHistoryBloc>().add(StreamDownloadHistory());
   }
 
   @override
@@ -115,7 +114,7 @@ class _DownloadHistoryState extends State<DownloadHistory> {
         body: BlocBuilder<DownloadHistoryBloc, DownloadHistoryState>(
           builder: (context, state) {
             if (state is DownloadHistoryLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: WaitingLoading());
             }
             if (state is DownloadHistoryError) {
               return Center(child: Text(state.message));

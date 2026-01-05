@@ -23,11 +23,22 @@ class CommentSheetState extends State<CommentSheet> {
   EmployeeModel? _employee;
   AdminModel? _admin;
   bool _isPosting = false;
+  CommentModel? _replyingTo;
 
   @override
   void initState() {
     super.initState();
     _future = _init();
+  }
+
+  void _setReply(CommentModel comment) {
+    setState(() {
+      _replyingTo = comment;
+    });
+  }
+
+  void _clearReply() {
+    setState(() => _replyingTo = null);
   }
 
   Future<void> _init() async {
@@ -65,6 +76,7 @@ class CommentSheetState extends State<CommentSheet> {
         authorName: authorName,
         authorAvatar: authorAvatar,
         content: content,
+        replyToCommentId: _replyingTo?.commentId,
         createdAt: DateTime.now(),
       );
 
@@ -72,6 +84,7 @@ class CommentSheetState extends State<CommentSheet> {
       setState(() {
         _comments.insert(0, newComment);
         _isPosting = false;
+        _replyingTo = null;
       });
     } catch (e) {
       setState(() => _isPosting = false);
@@ -79,6 +92,40 @@ class CommentSheetState extends State<CommentSheet> {
         FlushBar.show(context, "Failed to post comment", isSuccess: false);
       }
     }
+  }
+
+  Future<void> _toggleReaction(CommentModel comment, String emoji) async {
+    final uid = widget.currentUserUid!;
+    final reactions = Map<String, List<String>>.from(comment.reactions);
+
+    final users = reactions[emoji] ?? [];
+
+    if (users.contains(uid)) {
+      users.remove(uid);
+    } else {
+      users.add(uid);
+    }
+
+    if (users.isEmpty) {
+      reactions.remove(emoji);
+    } else {
+      reactions[emoji] = users;
+    }
+
+    final updated = comment.copyWith(reactions: reactions);
+
+    setState(() {
+      final index = _comments.indexWhere(
+        (c) => c.commentId == comment.commentId,
+      );
+      _comments[index] = updated;
+    });
+
+    await FeedService.updateCommentReaction(
+      feedId: widget.feedId,
+      commentId: comment.commentId,
+      reactions: reactions,
+    );
   }
 
   @override
@@ -150,7 +197,45 @@ class CommentSheetState extends State<CommentSheet> {
             ),
           ),
 
-          // Input Section
+          if (_replyingTo != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: FeedAppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border(
+                  left: BorderSide(color: FeedAppColors.primary, width: 4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _replyingTo!.authorName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: FeedAppColors.primary,
+                          ),
+                        ),
+                        Text(
+                          _replyingTo!.content,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _clearReply,
+                  ),
+                ],
+              ),
+            ),
           _buildInputArea(),
         ],
       ),
@@ -172,64 +257,171 @@ class CommentSheetState extends State<CommentSheet> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    comment.authorName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
-                      color: FeedAppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    timeago.format(comment.createdAt, locale: 'en_short'),
-                    style: const TextStyle(
-                      color: FeedAppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                comment.content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: FeedAppColors.textPrimary,
+          child: GestureDetector(
+            onDoubleTap: () => _toggleReaction(comment, "❤️"),
+            onLongPress: () {
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
-              ),
-              // const SizedBox(height: 8),
-              // const Row(
-              //   children: [
-              //     Text(
-              //       "Like",
-              //       style: TextStyle(
-              //         fontSize: 11,
-              //         fontWeight: FontWeight.bold,
-              //         color: FeedAppColors.textSecondary,
-              //       ),
-              //     ),
-              //     SizedBox(width: 16),
-              //     Text(
-              //       "Reply",
-              //       style: TextStyle(
-              //         fontSize: 11,
-              //         fontWeight: FontWeight.bold,
-              //         color: FeedAppColors.textSecondary,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-            ],
+                builder: (_) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.reply),
+                      title: const Text("Reply"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _setReply(comment);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.favorite),
+                      title: const Text("React ❤️"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _toggleReaction(comment, "❤️");
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      comment.authorName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: FeedAppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      timeago.format(comment.createdAt, locale: 'en_short'),
+                      style: const TextStyle(
+                        color: FeedAppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                if (comment.replyToCommentId != null)
+                  _buildReplyPreview(comment),
+                Text(
+                  comment.content,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: FeedAppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _toggleReaction(comment, "❤️"),
+                      child: Text(
+                        "Like",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: FeedAppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () => _setReply(comment),
+                      child: Text(
+                        "Reply",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: FeedAppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (comment.reactions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Wrap(
+                      spacing: 6,
+                      children: comment.reactions.entries.map((e) {
+                        return GestureDetector(
+                          onTap: () => _toggleReaction(comment, e.key),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: FeedAppColors.background,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: FeedAppColors.border),
+                            ),
+                            child: Text(
+                              "${e.key} ${e.value.length}",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildReplyPreview(CommentModel comment) {
+    final replied = _comments.firstWhere(
+      (c) => c.commentId == comment.replyToCommentId,
+      orElse: () => CommentModel(
+        commentId: '',
+        authorId: '',
+        authorName: 'Deleted',
+        authorAvatar: '',
+        content: 'Comment not found',
+        createdAt: DateTime.now(),
+      ),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: FeedAppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(color: FeedAppColors.primary, width: 3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            replied.authorName,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: FeedAppColors.primary,
+            ),
+          ),
+          Text(replied.content, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      ),
     );
   }
 
