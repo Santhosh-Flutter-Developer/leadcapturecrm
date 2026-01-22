@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
   firebase_core
   firebase_storage
+  flutter_window_close
   local_notifier
   permission_handler_windows
   screen_retriever_windows

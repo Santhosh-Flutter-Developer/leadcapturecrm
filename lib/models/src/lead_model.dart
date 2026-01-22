@@ -14,6 +14,7 @@ class LeadModel {
   final double leadValue;
   final bool allowFollowUp;
   final String leadStatus;
+  // final String leadSubStatus;
   final List<FileModel> attachments;
   final String notes;
   final String? companyName;

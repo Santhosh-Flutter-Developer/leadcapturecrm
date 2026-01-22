@@ -27,12 +27,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           .doc(cid)
           .collection(Collections.chats.name)
           .where("participants", arrayContains: user.uid)
-          .orderBy("lastMessage.timestamp", descending: true)
+          // .orderBy("lastMessage.timestamp", descending: true)
           .snapshots()
           .map((snapshot) {
             allChats = snapshot.docs
                 .map((doc) => ChatModel.fromMap(doc.id, doc.data()))
+                .where(
+                  (chat) =>
+                      chat.lastMessage != null &&
+                      chat.lastMessage!.message.isNotEmpty,
+                )
                 .toList();
+            // Optional: sort safely
+            // allChats.sort(
+            //   (a, b) =>
+            //       b.lastMessage!.timestamp.compareTo(a.lastMessage!.timestamp),
+            // );
+
             return allChats;
           }),
       onData: (users) => ChatLoaded(users),

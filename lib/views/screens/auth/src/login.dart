@@ -32,6 +32,7 @@ class _LoginState extends State<Login> {
           employeeId: isAdminLogin ? null : input,
           password: _password.text.trim(),
         );
+
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         }
@@ -80,6 +81,8 @@ class _LoginState extends State<Login> {
         var data = result["adminData"];
         var uid = result["uid"];
         AdminModel admin = AdminModel.fromMap(uid, data);
+         print('the login admins id ${result["collectionId"]}, ${result["uid"]}');
+         
         await Spdb.setAdminLogin(model: admin, cid: result["collectionId"]);
         await PermissionService.savePermissions(AppStrings.permissionsTrueMap);
 

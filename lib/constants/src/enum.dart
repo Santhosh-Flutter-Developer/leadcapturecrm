@@ -61,3 +61,18 @@ enum CalendarView { day, week, month }
 enum ChatAction { pin, favorite }
 
 enum ClientSection { contacts, company }
+
+enum LeadCompletionStatus {  won,  lost,  disqualified }
+
+extension LeadCompletionStatusX on LeadCompletionStatus {
+  String get label {
+    switch (this) {
+      case LeadCompletionStatus.won:
+        return 'Won';
+      case LeadCompletionStatus.lost:
+        return 'Lost';
+      case LeadCompletionStatus.disqualified:
+        return 'Disqualified';
+    }
+  }
+}

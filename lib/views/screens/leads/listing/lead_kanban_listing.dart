@@ -1,3 +1,4 @@
+import 'package:aaatp/constants/src/enum.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -122,6 +123,12 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
 
         try {
           if (list.isFinal) {
+            // final LeadCompletionStatus? result = await showDialog<LeadCompletionStatus>(
+            //   context: context,
+            //   barrierDismissible: false,
+            //   builder: (context) => LeadCompletionDialog(leadName: lead.leadName),
+            // );
+
             final result = await showDialog<bool>(
               context: context,
               builder: (context) => const ConfirmDialog(
@@ -131,7 +138,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               ),
             );
 
-            if (result == null || !result) {
+            if (result == null) {
               _leadList[_draggedFromList!] = List.from(
                 _leadList[_draggedFromList]!,
               )..add(originalLead);
@@ -507,7 +514,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildCardContent(task),
+              _buildCardContent(task, list),
               const SizedBox(height: 6),
               Row(
                 children: const [
@@ -550,7 +557,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                   color: AppColors.blue.withValues(alpha: 0.5),
                 ),
               ),
-              child: _buildCardContent(task),
+              child: _buildCardContent(task, list),
             ),
           ),
         ),
@@ -588,14 +595,15 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               ],
             ),
             padding: const EdgeInsets.all(12.0),
-            child: _buildCardContent(task),
+            child: _buildCardContent(task,list),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCardContent(LeadModel lead) {
+  Widget _buildCardContent(LeadModel lead, LeadStatusModel list,) {
+    print("the lead status chekcing ${lead.leadStatus}");
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -697,6 +705,54 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               AppColors.blue,
             ),
             _chip(lead.leadSource.name, AppColors.orange),
+            // ElevatedButton(
+            //   onPressed: () async {
+            //   final originalLead = lead.copyWith();
+
+            //     try {
+            //       final result = await showDialog<bool>(
+            //         context: context,
+            //         builder: (context) => const ConfirmDialog(
+            //           title: 'Convert Lead',
+            //           content:
+            //               'Are you sure you want to convert this lead to a deal?',
+            //         ),
+            //       );
+
+            //       if (result == null || !result) {
+            //         _leadList[_draggedFromList!] = List.from(_leadList[_draggedFromList]!,)..add(originalLead);
+            //         _leadList[list] = List.from(_leadList[list]!)..removeWhere((l) => l.uid == lead.uid);
+
+            //         setState(() {});
+            //         return;
+            //       }
+
+            //       await LeadService.updateLeadStatus(
+            //         uid: lead.uid!,leadStatus: list.uid!,
+            //         leadsConverted: true,
+            //       );
+
+            //       // if (list.isFinal) {
+            //         await _convertLeadToDeal(context, lead);
+            //         _leadList[list] = List.from(_leadList[list]!)..removeWhere((l) => l.uid == lead.uid)..add(lead.copyWith(leadsConverted: true));
+            //         setState(() {});
+            //       // }
+            //     } catch (e) {
+            //       _leadList[_draggedFromList!] = List.from(
+            //         _leadList[_draggedFromList]!,
+            //       )..add(originalLead);
+            //       _leadList[list] = List.from(_leadList[list]!)
+            //         ..removeWhere((l) => l.uid == lead.uid);
+
+            //       setState(() {});
+
+            //       FlushBar.show(context, e.toString(), isSuccess: false);
+            //     }
+            //   },
+            //   child: _chip("Make a Deal", AppColors.blueGrey),
+            // ),
+            // if (lead.leadStatus == 'Completed')
+            // _chip('Won',const Color.fromARGB(255, 60, 255, 0),),
           ],
         ),
 

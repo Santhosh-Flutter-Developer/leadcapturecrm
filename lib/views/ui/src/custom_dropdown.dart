@@ -725,15 +725,15 @@ class _CustomFutureSearchableDropdownState<T>
   List<T> _allItems = [];
   List<T> _filtered = [];
   T? _selected;
-  List<T> _selectedList = [];
+  Set<T> _selectedList = {};
 
   @override
   void initState() {
     super.initState();
     _selected = widget.initialValue;
-    _selectedList = widget.initialValues != null
-        ? List<T>.from(widget.initialValues!)
-        : [];
+    _selectedList = widget.initialValues == null
+      ? <T>{}
+      : widget.initialValues!.cast<T>().toSet();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -817,11 +817,14 @@ class _CustomFutureSearchableDropdownState<T>
   void _onItemSelected(T item) {
     if (widget.multiSelect) {
       setState(() {
-        if (_selectedList.contains(item)) {
+        if (!_selectedList.add(item)) {
           _selectedList.remove(item);
-        } else {
-          _selectedList.add(item);
         }
+        // if (_selectedList.contains(item)) {
+        //   _selectedList.remove(item);
+        // } else {
+        //   _selectedList.add(item);
+        // }
       });
       _overlayEntry?.markNeedsBuild();
       widget.onChangedList?.call(List<T>.from(_selectedList));
@@ -1040,11 +1043,21 @@ class _CustomFutureSearchableDropdownState<T>
                 color: Theme.of(context).primaryColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontSize: 11),
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontSize: 11),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      _onItemSelected(item);
+                    },
+                    child: Icon(Icons.close, size: 15),
+                  ),
+                ],
               ),
             );
           }).toList(),

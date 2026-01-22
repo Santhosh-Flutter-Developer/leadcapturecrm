@@ -67,12 +67,16 @@ class SidebarIconTile extends StatelessWidget {
 }
 
 class DesktopSidebar extends StatefulWidget {
+   bool isCollapsed;
+  final ValueChanged<bool> onCollapseChanged;
   final String selectedMenu;
   final ValueChanged<String> onMenuSelected;
   final bool isAdmin;
 
-  const DesktopSidebar({
+   DesktopSidebar({
     super.key,
+     required this.isCollapsed,
+    required this.onCollapseChanged,
     required this.selectedMenu,
     required this.onMenuSelected,
     required this.isAdmin,
@@ -87,13 +91,14 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   late Future _future;
   List<Map<String, dynamic>> _menus = [];
 
-  bool _isCollapsed = false;
+  // bool _isCollapsed = false;
   static const double _expandedWidth = 240.0;
   static const double _collapsedWidth = 72.0;
 
   @override
   void initState() {
     super.initState();
+    // _isCollapsed = widget.isCollapsed;
     _future = _updateExpandedIndex();
   }
 
@@ -213,7 +218,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           'trailing': ValueListenableBuilder<int>(
             valueListenable: ChatService.unviewedCount(),
             builder: (context, count, _) {
-              if (count == 0 || _isCollapsed) return const SizedBox.shrink();
+              if (count == 0 || widget.isCollapsed) return const SizedBox.shrink();
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 5,
@@ -276,7 +281,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final double sidebarWidth = _isCollapsed ? _collapsedWidth : _expandedWidth;
+    final double sidebarWidth = widget.isCollapsed ? _collapsedWidth : _expandedWidth;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -336,7 +341,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                                           ? -1
                                           : index;
                                       if (expandedIndex != -1) {
-                                        _isCollapsed = false;
+                                        widget.isCollapsed = false;
                                       }
                                     });
                                   },
@@ -374,7 +379,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: _isCollapsed
+              child: widget.isCollapsed
                   ? const Icon(
                       Iconsax.buildings,
                       size: 28,
@@ -401,8 +406,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         Divider(
           color: DesktopColors.lightTextSecondary.withValues(alpha: 0.1),
           height: 1,
-          indent: _isCollapsed ? 0 : 16,
-          endIndent: _isCollapsed ? 0 : 16,
+          indent: widget.isCollapsed ? 0 : 16,
+          endIndent: widget.isCollapsed ? 0 : 16,
         ),
       ],
     );
@@ -418,17 +423,21 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       ),
       child: IconButton(
         icon: Icon(
-          _isCollapsed ? Iconsax.arrow_right_3 : Iconsax.arrow_left_2,
+          widget.isCollapsed ? Iconsax.arrow_right_3 : Iconsax.arrow_left_2,
           color: DesktopColors.lightTextSecondary,
           size: 20,
         ),
         onPressed: () {
-          setState(() {
-            _isCollapsed = !_isCollapsed;
-            if (_isCollapsed) expandedIndex = -1;
-          });
+          widget.onCollapseChanged(!widget.isCollapsed);
+          if (!widget.isCollapsed) {
+            setState(() => expandedIndex = -1);
+          }
+          // setState(() {
+          //   _isCollapsed = !_isCollapsed;
+          //   if (_isCollapsed) expandedIndex = -1;
+          // });
         },
-        tooltip: _isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar',
+        tooltip: widget.isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar',
       ),
     );
   }
@@ -441,7 +450,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }) {
     final bool isSelected = widget.selectedMenu == title;
 
-    if (_isCollapsed) {
+    if (widget.isCollapsed) {
       return SidebarIconTile(
         icon: icon,
         title: title,
@@ -511,7 +520,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     );
     final bool isActive = expanded || isChildSelected;
 
-    if (_isCollapsed) {
+    if (widget.isCollapsed) {
       return SidebarIconTile(
         icon: icon,
         title: title,
@@ -581,7 +590,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Widget _buildChildMenuItem(String title) {
-    if (_isCollapsed) return const SizedBox.shrink();
+    if (widget.isCollapsed) return const SizedBox.shrink();
 
     final bool isSelected = widget.selectedMenu == title;
     return Padding(
