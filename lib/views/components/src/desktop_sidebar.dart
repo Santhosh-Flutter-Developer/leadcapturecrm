@@ -67,15 +67,15 @@ class SidebarIconTile extends StatelessWidget {
 }
 
 class DesktopSidebar extends StatefulWidget {
-   bool isCollapsed;
+  bool isCollapsed;
   final ValueChanged<bool> onCollapseChanged;
   final String selectedMenu;
   final ValueChanged<String> onMenuSelected;
   final bool isAdmin;
 
-   DesktopSidebar({
+  DesktopSidebar({
     super.key,
-     required this.isCollapsed,
+    required this.isCollapsed,
     required this.onCollapseChanged,
     required this.selectedMenu,
     required this.onMenuSelected,
@@ -218,7 +218,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           'trailing': ValueListenableBuilder<int>(
             valueListenable: ChatService.unviewedCount(),
             builder: (context, count, _) {
-              if (count == 0 || widget.isCollapsed) return const SizedBox.shrink();
+              if (count == 0 || widget.isCollapsed)
+                return const SizedBox.shrink();
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 5,
@@ -262,7 +263,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
-      if (downloads) {'icon': Iconsax.document_download5, 'title': 'Downloads'},
+      if (downloads) {'icon': Iconsax.document_download, 'title': 'Downloads'},
       if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
       {
         'icon': Iconsax.info_circle,
@@ -281,7 +282,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final double sidebarWidth = widget.isCollapsed ? _collapsedWidth : _expandedWidth;
+    final double sidebarWidth = widget.isCollapsed
+        ? _collapsedWidth
+        : _expandedWidth;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),

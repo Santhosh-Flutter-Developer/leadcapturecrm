@@ -21,6 +21,8 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
+  final ShowDialogs showDialogs = ShowDialogs();
+
   @override
   void initState() {
     super.initState();
@@ -29,43 +31,16 @@ class _AppState extends State<App> {
       FlutterWindowClose.setWindowShouldCloseHandler(() async {
         final ctx = navigatorKey.currentContext;
         if (ctx == null) return true;
-        bool? shouldExit = false;
 
-        shouldExit = await showDialog<bool>(
-          context: ctx,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Exit App'),
-            content: const Text('Do you really want to quit?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                },
-                child: const Text('No'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(true);
-                },
-                child: const Text('Yes'),
-              ),
-            ],
-          ),
-        );
+        bool? shouldExit = await showDialogs.showExitConfirmationDialog(ctx);
 
         if (shouldExit == true) {
-          exit(0); // ✅ REQUIRED on Windows
+          exit(0);
         }
 
-        return shouldExit ?? false;
+        return shouldExit;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -80,25 +55,34 @@ class _AppState extends State<App> {
       ],
       child: Consumer2<AuthProvider, ThemeProvider>(
         builder: (context, authProvider, themeProvider, child) {
+          Widget home = authProvider.homeWidget ?? const Splash();
+          if (!Platform.isWindows) {
+            home = WillPopScope(
+              onWillPop: () async {
+                final ctx = navigatorKey.currentContext;
+                if (ctx == null) return true;
+                bool shouldExit = await showDialogs.showExitConfirmationDialog(
+                  ctx,
+                );
+                return shouldExit;
+              },
+              child: home,
+            );
+          }
+
           return AnimatedTheme(
             data: themeProvider.themeMode == ThemeMode.dark
                 ? darkTheme
                 : lightTheme,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-
             child: MaterialApp(
               navigatorKey: navigatorKey,
               scaffoldMessengerKey: messengerKey,
               debugShowCheckedModeBanner: false,
               title: "AAATP",
               theme: lightTheme,
-
-              // darkTheme: darkTheme,
-              // themeMode: themeProvider.themeMode,
-              home: authProvider.isLoggedIn
-                  ? authProvider.homeWidget ?? Container()
-                  : const Splash(),
+              home: authProvider.isLoggedIn ? home : const Splash(),
             ),
           );
         },

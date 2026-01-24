@@ -1333,7 +1333,38 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
                       color: AppColors.danger,
-                      onPressed: () async {},
+                      splashRadius: 20,
+                      tooltip: 'Delete $_pageTitle',
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => const ConfirmDialog(
+                            title: 'Delete $_pageTitle',
+                            content:
+                                'Are you sure you want to delete this $_pageTitle?',
+                          ),
+                        );
+
+                        if (result == true) {
+                          try {
+                            await EmployeeService.deleteEmployee(
+                              uid: employee.uid ?? '',
+                            );
+                            FlushBar.show(
+                              context,
+                              '$_pageTitle deleted successfully',
+                            );
+                            context.read<EmployeeBloc>().add(StreamEmployee());
+                          } catch (e, st) {
+                            await ErrorService.recordError(e, st);
+                            FlushBar.show(
+                              context,
+                              e.toString(),
+                              isSuccess: false,
+                            );
+                          }
+                        }
+                      },
                     )
                   : IconButton(
                       icon: Icon(Iconsax.trash, color: AppColors.grey400),

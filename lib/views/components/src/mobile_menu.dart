@@ -198,7 +198,7 @@ class _MobileMenuState extends State<MobileMenu> {
                                   .isNotEmpty ??
                               false))
                         _buildListTile(
-                          icon: Iconsax.emoji_happy,
+                          icon: Iconsax.security_user,
                           title: 'Employees',
                           onTap: () =>
                               Navigate.route(context, const EmployeeListing()),
@@ -344,7 +344,7 @@ class _MobileMenuState extends State<MobileMenu> {
                         ),
                       ),
                       _buildListTile(
-                        icon: Iconsax.document_download5,
+                        icon: Iconsax.document_download,
                         title: 'Download history',
                         onTap: () => Navigate.route(
                           context,

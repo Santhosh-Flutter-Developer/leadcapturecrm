@@ -1,4 +1,3 @@
-import 'package:aaatp/constants/src/enum.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -123,14 +122,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
 
         try {
           if (list.isFinal) {
-            // final LeadCompletionStatus? result = await showDialog<LeadCompletionStatus>(
-            //   context: context,
-            //   barrierDismissible: false,
-            //   builder: (context) => LeadCompletionDialog(leadName: lead.leadName),
-            // );
-
             final result = await showDialog<bool>(
               context: context,
+              barrierDismissible: false,
               builder: (context) => const ConfirmDialog(
                 title: 'Convert Lead',
                 content:
@@ -138,10 +132,11 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               ),
             );
 
-            if (result == null) {
+            if (result != true) {
               _leadList[_draggedFromList!] = List.from(
                 _leadList[_draggedFromList]!,
               )..add(originalLead);
+
               _leadList[list] = List.from(_leadList[list]!)
                 ..removeWhere((l) => l.uid == lead.uid);
 
@@ -595,14 +590,14 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               ],
             ),
             padding: const EdgeInsets.all(12.0),
-            child: _buildCardContent(task,list),
+            child: _buildCardContent(task, list),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCardContent(LeadModel lead, LeadStatusModel list,) {
+  Widget _buildCardContent(LeadModel lead, LeadStatusModel list) {
     print("the lead status chekcing ${lead.leadStatus}");
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
