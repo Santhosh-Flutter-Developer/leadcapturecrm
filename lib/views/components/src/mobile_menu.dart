@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:aaatp/views/screens/download/download_history.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
@@ -147,7 +148,7 @@ class _MobileMenuState extends State<MobileMenu> {
                                   .isNotEmpty ??
                               false))
                         _buildListTile(
-                          icon: Iconsax.user,
+                          icon: Iconsax.user_square,
                           title: 'Role',
                           onTap: () =>
                               Navigate.route(context, const RolesListing()),
@@ -340,6 +341,14 @@ class _MobileMenuState extends State<MobileMenu> {
                         onTap: () => Navigate.route(
                           context,
                           ActivityLogsListing(showAppbar: true),
+                        ),
+                      ),
+                      _buildListTile(
+                        icon: Iconsax.document_download5,
+                        title: 'Download history',
+                        onTap: () => Navigate.route(
+                          context,
+                          DownloadHistory(showAppbar: true),
                         ),
                       ),
                       _buildListTile(
