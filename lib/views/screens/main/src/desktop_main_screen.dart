@@ -14,6 +14,9 @@ class DesktopMainScreen extends StatefulWidget {
 }
 
 class _DesktopMainScreenState extends State<DesktopMainScreen> {
+  bool _isSidebarCollapsed = false;
+  static const double collapseWidth = 1100;
+
   late Future _future;
   late String _currentUserUid;
   final List<UserDataModel> _users = [];
@@ -29,8 +32,38 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   void initState() {
     _future = _init();
     _selectedMenu = widget.selectedMenu ?? 'Dashboard';
+    // WidgetsBinding.instance.addObserver(this);
     super.initState();
   }
+
+  @override
+  void dispose() {
+    // WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // @override
+  // void didChangeMetrics() {
+  //   final width =
+  //       WidgetsBinding
+  //           .instance
+  //           .platformDispatcher
+  //           .views
+  //           .first
+  //           .physicalSize
+  //           .width /
+  //       WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+
+  //   final shouldCollapse = width < collapseWidth;
+
+  //   if (shouldCollapse != _isSidebarCollapsed) {
+  //     setState(() {
+  //       _isSidebarCollapsed = shouldCollapse;
+  //     });
+  //   }
+
+  //   debugPrint('Window width: $width | collapsed: $shouldCollapse');
+  // }
 
   Future<void> _init() async {
     try {
@@ -159,6 +192,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,23 +213,40 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
               ),
             );
           }
-          return Row(
-            children: [
-              DesktopSidebar(
-                selectedMenu: _selectedMenu,
-                onMenuSelected: _onMenuItemSelected,
-                isAdmin: widget.isAdmin,
-              ),
-              Expanded(
-                child: Column(
-                  children: [
-                    Header(selectedMenu: _selectedMenu),
-                    Expanded(child: _buildMainContent()),
-                  ],
-                ),
-              ),
-              if (_selectedMenu != 'Chats') _buildGlassNavigationRail(),
-            ],
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final shouldCollapse = constraints.maxWidth < collapseWidth;
+    
+        if (_isSidebarCollapsed != shouldCollapse) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() => _isSidebarCollapsed = shouldCollapse);
+            }
+          });
+        }
+              return Row(
+                children: [
+                  DesktopSidebar(
+                    isCollapsed: _isSidebarCollapsed,
+                    onCollapseChanged: (v) {
+                      setState(() => _isSidebarCollapsed = v);
+                    },
+                    selectedMenu: _selectedMenu,
+                    onMenuSelected: _onMenuItemSelected,
+                    isAdmin: widget.isAdmin,
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Header(selectedMenu: _selectedMenu),
+                        Expanded(child: _buildMainContent()),
+                      ],
+                    ),
+                  ),
+                  if (_selectedMenu != 'Chats') _buildGlassNavigationRail(),
+                ],
+              );
+            },
           );
         },
       ),

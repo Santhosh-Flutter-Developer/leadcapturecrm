@@ -582,153 +582,147 @@ Widget _buildRightPanel(
   final notifications = data.notifications;
   final upcomingTasks = data.upcomingTasks;
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Quick Actions Grid
-      GridView.count(
-        crossAxisCount: 3, // 3 icons in a row
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 15,
-        mainAxisSpacing: 15,
-        childAspectRatio: 0.9,
-        children: isAdmin
-            ? [
-                QuickActionCard(
-                  icon: Icons.add_circle_outline,
-                  label: "Add Lead",
-                  color: Colors.blue,
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const LeadCreate());
-                    } else {
-                      GeneralDialog.showRTLSheet(context, const LeadCreate());
-                    }
-                  },
-                ),
-                QuickActionCard(
-                  icon: Icons.work_outline,
-                  label: "Add Deal",
-                  color: Colors.purple,
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const DealCreate());
-                    } else {
-                      GeneralDialog.showRTLSheet(context, const DealCreate());
-                    }
-                  },
-                ),
-                QuickActionCard(
-                  icon: Icons.check_circle_outline,
-                  label: "Add Task",
-                  color: Colors.orange,
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const TasksListing());
-                    } else {
-                      GeneralDialog.showRTLSheet(context, const TasksListing());
-                    }
-                  },
-                ),
-              ]
-            : [
-                QuickActionCard(
-                  icon: Icons.person_add_outlined,
-                  label: "New Lead",
-                  color: Colors.blue,
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const LeadCreate());
-                    } else {
-                      GeneralDialog.showRTLSheet(context, const LeadCreate());
-                    }
-                  },
-                ),
-                QuickActionCard(
-                  icon: Icons.update,
-                  label: "Tasks",
-                  color: Colors.orange,
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const TasksListing());
-                    } else {
-                      GeneralDialog.showRTLSheet(context, const TasksListing());
-                    }
-                  },
-                ),
-                QuickActionCard(
-                  icon: Icons.chat_bubble_outline,
-                  label: "Chat",
-                  color: Colors.green,
-                  onTap: () async {
-                    var uid = await Spdb.getUid() ?? '';
-                    if (kIsMobile) {
-                      Sheet.showSheet(
-                        context,
-                        widget: ChatListing(currentUserUid: uid),
-                      );
-                    } else {
-                      GeneralDialog.showRTLSheet(
-                        context,
-                        ChatListing(currentUserUid: uid),
-                      );
-                    }
-                  },
-                ),
-              ],
-      ),
+  return LayoutBuilder(
+    builder: (context, constraints) {
 
-      const SizedBox(height: 20),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        SizedBox(
+  height: 80, // controls card height
+  child: SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: (isAdmin
+              ? _adminActions(context)
+              : _userActions(context))
+          .map(
+            (card) => Padding(
+              padding: const EdgeInsets.only(right: 15),
+              child: SizedBox(
+                width: 80, // fixed width per card
+                child: card,
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  ),
+),
 
-      // Notifications Section
-      Text(
-        "Notifications",
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: kTextPrimary,
-        ),
-      ),
-      const SizedBox(height: 15),
-      if (notifications.isEmpty)
-        Text(
-          "No new notifications.",
-          style: Theme.of(
+const SizedBox(height: 20,),
+
+          // 🔔 NOTIFICATIONS
+          _sectionTitle(context, "Notifications"),
+          const SizedBox(height: 15),
+
+          if (notifications.isEmpty)
+            _emptyText(context, "No new notifications.")
+          else
+            ...notifications
+                .map((msg) => NotificationTile(notification: msg)),
+
+          const SizedBox(height: 20),
+
+          // 📌 TASKS
+          _sectionTitle(
             context,
-          ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
-        ),
-      ...notifications.map((msg) => NotificationTile(notification: msg)),
-
-      const SizedBox(height: 20),
-
-      // Tasks Section
-      Text(
-        isAdmin ? "Upcoming Deadlines" : "Your Tasks",
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: kTextPrimary,
-        ),
-      ),
-      const SizedBox(height: 15),
-      if (upcomingTasks.isEmpty)
-        Text(
-          "No upcoming tasks.",
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
-        )
-      else
-        ...upcomingTasks.map(
-          (task) => TaskReminderTile(
-            title: task.taskName,
-            date: task.deadline != null
-                ? DateFormat('dd MMM yyyy').format(task.deadline!)
-                : '',
+            isAdmin ? "Upcoming Deadlines" : "Your Tasks",
           ),
-        ),
-    ],
+          const SizedBox(height: 15),
+
+          if (upcomingTasks.isEmpty)
+            _emptyText(context, "No upcoming tasks.")
+          else
+            ...upcomingTasks.map(
+              (task) => TaskReminderTile(
+                title: task.taskName,
+                date: task.deadline != null
+                    ? DateFormat('dd MMM yyyy').format(task.deadline!)
+                    : '',
+              ),
+            ),
+        ],
+      );
+    },
   );
 }
+
+
+Widget _sectionTitle(BuildContext context, String text) {
+  return Text(
+    text,
+    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: kTextPrimary,
+    ),
+  );
+}
+
+Widget _emptyText(BuildContext context, String text) {
+  return Text(
+    text,
+    style: Theme.of(context)
+        .textTheme
+        .bodySmall
+        ?.copyWith(color: kTextSecondary),
+  );
+}
+
+
+List<Widget> _adminActions(BuildContext context) => [
+      QuickActionCard(
+        icon: Icons.add_circle_outline,
+        label: "Add Lead",
+        color: Colors.blue,
+        onTap: () => _openSheet(context, const LeadCreate()),
+      ),
+      QuickActionCard(
+        icon: Icons.work_outline,
+        label: "Add Deal",
+        color: Colors.purple,
+        onTap: () => _openSheet(context, const DealCreate()),
+      ),
+      QuickActionCard(
+        icon: Icons.check_circle_outline,
+        label: "Add Task",
+        color: Colors.orange,
+        onTap: () => _openSheet(context, const TasksListing()),
+      ),
+    ];
+
+List<Widget> _userActions(BuildContext context) => [
+      QuickActionCard(
+        icon: Icons.person_add_outlined,
+        label: "New Lead",
+        color: Colors.blue,
+        onTap: () => _openSheet(context, const LeadCreate()),
+      ),
+      QuickActionCard(
+        icon: Icons.update,
+        label: "Tasks",
+        color: Colors.orange,
+        onTap: () => _openSheet(context, const TasksListing()),
+      ),
+      QuickActionCard(
+        icon: Icons.chat_bubble_outline,
+        label: "Chat",
+        color: Colors.green,
+        onTap: () async {
+          var uid = await Spdb.getUid() ?? '';
+          _openSheet(context, ChatListing(currentUserUid: uid));
+        },
+      ),
+    ];
+
+void _openSheet(BuildContext context, Widget widget) {
+  if (kIsMobile) {
+    Sheet.showSheet(context, widget: widget);
+  } else {
+    GeneralDialog.showRTLSheet(context, widget);
+  }
+}
+
 
 class KpiCard extends StatelessWidget {
   final String title;
@@ -957,9 +951,9 @@ class QuickActionCard extends StatelessWidget {
                   ),
                   child: Icon(icon, size: 16, color: Colors.white),
                 ),
-
+      
                 const SizedBox(height: 6),
-
+      
                 /// LABEL
                 Text(
                   label,

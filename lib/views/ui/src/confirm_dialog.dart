@@ -1,3 +1,4 @@
+import 'package:aaatp/constants/src/enum.dart';
 import 'package:flutter/material.dart';
 import '/theme/theme.dart';
 
@@ -86,3 +87,139 @@ class _ConfirmDialogState extends State<ConfirmDialog> {
     );
   }
 }
+
+
+class LeadCompletionDialog extends StatefulWidget {
+  final String leadName;
+
+  const LeadCompletionDialog({
+    super.key,
+    required this.leadName,
+  });
+
+  @override
+  State<LeadCompletionDialog> createState() => _LeadCompletionDialogState();
+}
+
+class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
+  LeadCompletionStatus? _selectedStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      title: Text(
+        'Complete Lead',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'The lead "${widget.leadName}" is marked as completed and will be converted into a deal.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+
+          Text(
+            'Select Completion Status',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+
+          Wrap(
+            spacing: 8,
+            children: LeadCompletionStatus.values.map((status) {
+              final isSelected = _selectedStatus == status;
+              return ChoiceChip(
+                label: Text(status.label),
+                selected: isSelected,
+                selectedColor: AppColors.primary.withOpacity(0.15),
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.grey700,
+                  fontWeight:
+                      isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                onSelected: (_) {
+                  setState(() {
+                    _selectedStatus = status;
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+      actionsPadding: const EdgeInsets.all(12),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context, null),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.white,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Cancel',
+                      style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.grey700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: _selectedStatus == null
+                    ? null
+                    : () {
+                        Navigator.pop(context, _selectedStatus);
+                      },
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: _selectedStatus == null
+                        ? AppColors.grey300
+                        : AppColors.primary,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Confirm & Convert',
+                      style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+

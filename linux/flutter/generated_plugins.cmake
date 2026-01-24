@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   file_selector_linux
+  flutter_window_close
   local_notifier
   open_file_linux
   screen_retriever_linux

@@ -319,7 +319,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
                       tooltip: "Create Chat",
-                      icon: const Icon(
+                      icon: const Icon( 
                         Iconsax.message_add,
                         color: AppColors.white,
                       ),
