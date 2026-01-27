@@ -128,7 +128,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
           employeeStream,
           adminStream,
           (List<UserRowModel> employees, List<UserRowModel> admins) {
-            return [...employees, ...admins];
+            return [...admins, ...employees];
           },
         ),
         onData: (users) => UsersLoaded(users),

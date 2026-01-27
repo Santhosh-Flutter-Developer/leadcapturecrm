@@ -67,15 +67,15 @@ class SidebarIconTile extends StatelessWidget {
 }
 
 class DesktopSidebar extends StatefulWidget {
-   bool isCollapsed;
+  bool isCollapsed;
   final ValueChanged<bool> onCollapseChanged;
   final String selectedMenu;
   final ValueChanged<String> onMenuSelected;
   final bool isAdmin;
 
-   DesktopSidebar({
+  DesktopSidebar({
     super.key,
-     required this.isCollapsed,
+    required this.isCollapsed,
     required this.onCollapseChanged,
     required this.selectedMenu,
     required this.onMenuSelected,
@@ -91,14 +91,12 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   late Future _future;
   List<Map<String, dynamic>> _menus = [];
 
-  // bool _isCollapsed = false;
   static const double _expandedWidth = 240.0;
   static const double _collapsedWidth = 72.0;
 
   @override
   void initState() {
     super.initState();
-    // _isCollapsed = widget.isCollapsed;
     _future = _updateExpandedIndex();
   }
 
@@ -218,7 +216,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           'trailing': ValueListenableBuilder<int>(
             valueListenable: ChatService.unviewedCount(),
             builder: (context, count, _) {
-              if (count == 0 || widget.isCollapsed) return const SizedBox.shrink();
+              if (count == 0 || widget.isCollapsed)
+                return const SizedBox.shrink();
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 5,
@@ -281,7 +280,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final double sidebarWidth = widget.isCollapsed ? _collapsedWidth : _expandedWidth;
+    final double sidebarWidth = widget.isCollapsed
+        ? _collapsedWidth
+        : _expandedWidth;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -336,14 +337,18 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                                   title: menu['title'] as String,
                                   expanded: expandedIndex == index,
                                   onToggle: () {
-                                    setState(() {
-                                      expandedIndex = (expandedIndex == index)
-                                          ? -1
-                                          : index;
-                                      if (expandedIndex != -1) {
-                                        widget.isCollapsed = false;
-                                      }
-                                    });
+                                    print("hhhhhhh");
+                                    // setState(() {
+                                      setState(() {
+                                        expandedIndex = expandedIndex == index
+                                            ? -1
+                                            : index;
+                                      });
+
+                                      // if (widget.isCollapsed) {
+                                      //   widget.onCollapseChanged(false);
+                                      // }
+                                    // });
                                   },
                                   children:
                                       menu['children']
@@ -428,14 +433,14 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           size: 20,
         ),
         onPressed: () {
-          widget.onCollapseChanged(!widget.isCollapsed);
-          if (!widget.isCollapsed) {
+
+          final newValue = !widget.isCollapsed;
+
+          if (newValue) {
             setState(() => expandedIndex = -1);
           }
-          // setState(() {
-          //   _isCollapsed = !_isCollapsed;
-          //   if (_isCollapsed) expandedIndex = -1;
-          // });
+
+          widget.onCollapseChanged(newValue);
         },
         tooltip: widget.isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar',
       ),

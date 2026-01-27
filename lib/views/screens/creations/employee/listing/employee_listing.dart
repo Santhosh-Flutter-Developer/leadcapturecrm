@@ -92,8 +92,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
   @override
   Widget build(BuildContext context) {
-    final controllerRead = context.read<PaginatedDataController<UserRowModel>>();
-    final controllerWatch = context.watch<PaginatedDataController<UserRowModel>>();
+    final controllerRead = context
+        .read<PaginatedDataController<UserRowModel>>();
+    final controllerWatch = context
+        .watch<PaginatedDataController<UserRowModel>>();
 
     return Scaffold(
       appBar: kIsMobile
@@ -358,10 +360,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                         ],
 
                                         rows: controllerWatch.paginatedItems
+                                            .asMap()
+                                            .entries
                                             .map(
-                                              (user) => _buildDataRow(
+                                              (entry) => _buildDataRow(
                                                 context,
-                                                user,
+                                                entry.value, // user
+                                                entry.key, // 👈 index
                                                 controllerWatch,
                                                 controllerRead,
                                               ),
@@ -712,18 +717,24 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       if (!context.mounted) return;
 
                       for (final employee in _selectedEmployees) {
-                        if (employee.uid.isNotEmpty) {
+                        if (employee.uid.isNotEmpty && employee.isEmployee) {
                           context.read<UsersBloc>().add(DeleteUser(employee));
+
+                          _selectedEmployees.clear();
+
+                          FlushBar.show(
+                            context,
+                            'Employee deleted successfully',
+                            isSuccess: true,
+                          );
+                        }else{
+                           FlushBar.show(
+                            context,
+                            'Admin cannot be deleted',
+                            isSuccess: false,
+                          );
                         }
                       }
-
-                      _selectedEmployees.clear();
-
-                      FlushBar.show(
-                        context,
-                        'Employee deleted successfully',
-                        isSuccess: true,
-                      );
                     },
 
                     style: ElevatedButton.styleFrom(
@@ -853,11 +864,11 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     );
 
                     await ChatService.sendChatMessage(
-                                        chatId: chatId,
-                                        message: _chatMessage.text,
-                                        attachments: [],
-                                        replyFor: null,
-                                      );
+                      chatId: chatId,
+                      message: _chatMessage.text,
+                      attachments: [],
+                      replyFor: null,
+                    );
 
                     Navigator.pop(context);
                     var currentUserUid = await Spdb.getUid();
@@ -1123,6 +1134,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
   DataRow _buildDataRow(
     BuildContext context,
     UserRowModel employee,
+    int index,
     PaginatedDataController<UserRowModel> controllerWatch,
     PaginatedDataController<UserRowModel> controllerRead,
   ) {
@@ -1389,18 +1401,19 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       icon: Icon(Iconsax.edit, color: AppColors.grey400),
                       onPressed: null,
                     ),
-              (permissions?.canDelete ?? false)
-                  ? IconButton(
-                      icon: const Icon(Iconsax.trash),
-                      color: AppColors.danger,
-                      onPressed: () async {
-                        handleDelete(context, employee);
-                      },
-                    )
-                  : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
-                      onPressed: null,
-                    ),
+              if (!employee.isAdmin)
+                (permissions?.canDelete ?? false)
+                    ? IconButton(
+                        icon: const Icon(Iconsax.trash),
+                        color: AppColors.danger,
+                        onPressed: () async {
+                          handleDelete(context, employee);
+                        },
+                      )
+                    : IconButton(
+                        icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                        onPressed: null,
+                      ),
             ],
           ),
         ),

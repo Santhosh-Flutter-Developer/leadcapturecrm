@@ -15,6 +15,8 @@ class DesktopMainScreen extends StatefulWidget {
 
 class _DesktopMainScreenState extends State<DesktopMainScreen> {
   bool _isSidebarCollapsed = false;
+  bool _userToggledSidebar = false;
+  bool _wasBelowBreakpoint = false;
   static const double collapseWidth = 1100;
 
   late Future _future;
@@ -192,7 +194,6 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,21 +216,61 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
           }
           return LayoutBuilder(
             builder: (context, constraints) {
-              final shouldCollapse = constraints.maxWidth < collapseWidth;
-    
-        if (_isSidebarCollapsed != shouldCollapse) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() => _isSidebarCollapsed = shouldCollapse);
-            }
-          });
-        }
+              final isBelowBreakpoint = constraints.maxWidth < collapseWidth;
+
+              // final shouldCollapse = constraints.maxWidth < collapseWidth;
+
+              // /// AUTO collapse ONLY if user has NOT manually toggled
+              // if (!_userToggledSidebar &&
+              //     _isSidebarCollapsed != shouldCollapse) {
+              //   _isSidebarCollapsed = shouldCollapse;
+              // }
+
+              // /// RESET manual override when window grows
+              // if (_userToggledSidebar &&
+              //     constraints.maxWidth >= collapseWidth) {
+              //   _userToggledSidebar = false;
+              //   _isSidebarCollapsed = false;
+              // }
+
+              /// AUTO collapse ONLY when breakpoint is crossed
+              if (!_userToggledSidebar &&
+                  isBelowBreakpoint != _wasBelowBreakpoint) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isSidebarCollapsed = isBelowBreakpoint;
+                    });
+                  }
+                });
+              }
+
+              /// Reset manual override ONLY when window expands back
+              if (_userToggledSidebar &&
+                  !isBelowBreakpoint &&
+                  _wasBelowBreakpoint) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _userToggledSidebar = false;
+                      _isSidebarCollapsed = false;
+                    });
+                  }
+                });
+              }
+
+              /// update last width state
+              _wasBelowBreakpoint = isBelowBreakpoint;
+
               return Row(
                 children: [
                   DesktopSidebar(
                     isCollapsed: _isSidebarCollapsed,
                     onCollapseChanged: (v) {
-                      setState(() => _isSidebarCollapsed = v);
+                      setState(() {
+                        _isSidebarCollapsed = v;
+                        _userToggledSidebar = true;
+                      });
                     },
                     selectedMenu: _selectedMenu,
                     onMenuSelected: _onMenuItemSelected,
