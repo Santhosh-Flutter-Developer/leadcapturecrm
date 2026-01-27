@@ -17,3 +17,13 @@ class DeleteEmployee extends EmployeeEvent {
   @override
   List<Object> get props => [uid];
 }
+
+abstract class UsersEvent {}
+
+class StreamUsers extends UsersEvent {}
+
+class DeleteUser extends UsersEvent {
+  final UserRowModel user;
+  DeleteUser(this.user);
+}
+

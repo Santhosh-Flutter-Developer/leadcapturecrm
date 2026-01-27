@@ -78,11 +78,20 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
   Future<void> _deleteAdmin(DeleteAdmin event, Emitter<AdminState> emit) async {
     try {
       await AdminService.deleteAdmin(uid: event.uid);
-      emit(const AdminSuccess("Admin deleted successfully"));
-      add(StreamAdmins());
     } catch (e, st) {
-      debugPrint("$e, $st");
-      emit(AdminError("Failed to delete admin: $e"));
+      await ErrorService.recordError(e, st);
+      debugPrint('Delete admin failed: $e');
     }
   }
+
+  // Future<void> _deleteAdmin(DeleteAdmin event, Emitter<AdminState> emit) async {
+  //   try {
+  //     await AdminService.deleteAdmin(uid: event.uid);
+  //     emit(const AdminSuccess("Admin deleted successfully"));
+  //     add(StreamAdmins());
+  //   } catch (e, st) {
+  //     debugPrint("$e, $st");
+  //     emit(AdminError("Failed to delete admin: $e"));
+  //   }
+  // }
 }

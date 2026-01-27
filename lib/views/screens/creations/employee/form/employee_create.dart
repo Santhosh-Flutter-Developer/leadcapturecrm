@@ -329,8 +329,8 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             label: 'Employee Id',
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
-            isRequired: true,
-            valid: (input) => input == null || input.isEmpty
+            isRequired: isAdmin ? false : true,
+            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
                 ? 'Employee Id is required'
                 : null,
           ),
@@ -353,9 +353,10 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-            // isRequired: true,
-            // valid: (input) =>
-            //     input == null || input.isEmpty ? 'Email is required' : null,
+           isRequired: isAdmin ? true : false,
+            valid: !isAdmin  ? null : (input) => input == null || input.isEmpty
+                ? 'Email is required'
+                : null,
           ),
         ),
         SizedBox(
@@ -383,83 +384,87 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             ),
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: CustomFutureSearchableDropdown<DesignationModel>(
-            label: 'Designation',
-            isRequired: true,
-            validator: (value) {
-              if (_designationModel == null) {
-                return 'Designation is required';
-              }
-              return null;
-            },
-            asyncItems: () async {
-              var designations = await DesignationService.getAllDesignations();
-              return designations;
-            },
-            itemAsString: (desigantion) => desigantion.name,
-            onChanged: (selectedDes) async {
-              if (selectedDes != null) {
-                _designationModel = selectedDes;
-              }
-              setState(() {});
-            },
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: CustomFutureSearchableDropdown<DesignationModel>(
+              label: 'Designation',
+              isRequired: true,
+              validator: (value) {
+                if (_designationModel == null) {
+                  return 'Designation is required';
+                }
+                return null;
+              },
+              asyncItems: () async {
+                var designations =
+                    await DesignationService.getAllDesignations();
+                return designations;
+              },
+              itemAsString: (desigantion) => desigantion.name,
+              onChanged: (selectedDes) async {
+                if (selectedDes != null) {
+                  _designationModel = selectedDes;
+                }
+                setState(() {});
+              },
+            ),
           ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: CustomFutureSearchableDropdown<DepartmentModel>(
-            label: 'Department',
-            isRequired: true,
-            validator: (value) {
-              if (_department.isEmpty) {
-                return 'Department is required';
-              }
-              return null;
-            },
-            asyncItems: () async {
-              var departments = await DepartmentService.getAllDepartments();
-              return departments;
-            },
-            multiSelect: true,
-            itemAsString: (department) => department.name,
-            onChangedList: (selectedDeps) async {
-              _department.clear();
-              for (var d in selectedDeps) {
-                _department.add(d.uid ?? '');
-              }
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: CustomFutureSearchableDropdown<DepartmentModel>(
+              label: 'Department',
+              isRequired: true,
+              validator: (value) {
+                if (_department.isEmpty) {
+                  return 'Department is required';
+                }
+                return null;
+              },
+              asyncItems: () async {
+                var departments = await DepartmentService.getAllDepartments();
+                return departments;
+              },
+              multiSelect: true,
+              itemAsString: (department) => department.name,
+              onChangedList: (selectedDeps) async {
+                _department.clear();
+                for (var d in selectedDeps) {
+                  _department.add(d.uid ?? '');
+                }
 
-              setState(() {});
-            },
+                setState(() {});
+              },
+            ),
           ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: CustomFutureSearchableDropdown<SubDepartmentModel>(
-            label: 'Sub Department',
-            asyncItems: () async {
-              List<SubDepartmentModel> subDepartmentList = [];
-              for (var depId in _department) {
-                final list =
-                    await SubDepartmentService.getSubDepartmentsByDepId(
-                      depId: depId,
-                    );
-                subDepartmentList.addAll(list);
-              }
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: CustomFutureSearchableDropdown<SubDepartmentModel>(
+              label: 'Sub Department',
+              asyncItems: () async {
+                List<SubDepartmentModel> subDepartmentList = [];
+                for (var depId in _department) {
+                  final list =
+                      await SubDepartmentService.getSubDepartmentsByDepId(
+                        depId: depId,
+                      );
+                  subDepartmentList.addAll(list);
+                }
 
-              return subDepartmentList;
-            },
-            itemAsString: (subDepartment) => subDepartment.name,
-            onChanged: (subDepartment) async {
-              if (subDepartment != null) {
-                _subDepartmentModel = subDepartment;
-              }
+                return subDepartmentList;
+              },
+              itemAsString: (subDepartment) => subDepartment.name,
+              onChanged: (subDepartment) async {
+                if (subDepartment != null) {
+                  _subDepartmentModel = subDepartment;
+                }
 
-              setState(() {});
-            },
+                setState(() {});
+              },
+            ),
           ),
-        ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
@@ -473,13 +478,13 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
           child: FormDropdownSearch(
             items: const ['Male', 'Female', 'Others'],
             label: 'Gender',
-            isRequired: true,
+            isRequired: isAdmin ? false : true,
             onChanged: (value) {
               if (value != null) {
                 _gender = value.toString();
               }
             },
-            validator: (value) {
+            validator: isAdmin ? null : (value) {
               if (value == null) {
                 return "* Required";
               }
@@ -494,9 +499,10 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _dateOfJoiningController,
             hintText: 'DD/MM/YYYY',
             readOnly: true,
-            isRequired: true,
-            valid: (input) =>
-                input == null || input.isEmpty ? '* Required' : null,
+            isRequired: isAdmin ? false : true,
+            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
+                ? 'Joining Date is required'
+                : null,
             onTap: () async {
               var result = await datePicker(context);
               if (result != null) {
@@ -522,31 +528,32 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             },
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: CustomFutureSearchableDropdown<RoleModel>(
-            label: 'Role',
-            isRequired: true,
-            validator: (value) {
-              if (_roleModel == null) {
-                return 'Role is required';
-              }
-              return null;
-            },
-            asyncItems: () async {
-              var roles = await RoleService.getAllRoles();
-              return roles;
-            },
-            itemAsString: (role) => role.name,
-            onChanged: (selectedRole) async {
-              if (selectedRole != null) {
-                _roleModel = selectedRole;
-              }
-              setState(() {});
-            },
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: CustomFutureSearchableDropdown<RoleModel>(
+              label: 'Role',
+              isRequired: true,
+              validator: (value) {
+                if (_roleModel == null) {
+                  return 'Role is required';
+                }
+                return null;
+              },
+              asyncItems: () async {
+                var roles = await RoleService.getAllRoles();
+                return roles;
+              },
+              itemAsString: (role) => role.name,
+              onChanged: (selectedRole) async {
+                if (selectedRole != null) {
+                  _roleModel = selectedRole;
+                }
+                setState(() {});
+              },
+            ),
           ),
-        ),
-        SizedBox(
+        if(!isAdmin) SizedBox(
           width: itemWidth,
           child: UsersListDropdown(
             label: 'Reporting To',
@@ -557,9 +564,30 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             includeCurrentUser: false,
           ),
         ),
+        Container(
+          width: itemWidth,
+          padding: EdgeInsets.only(top: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Checkbox(
+                value: isAdmin,
+                onChanged: (value) {
+                  setState(() {
+                    isAdmin = value ?? false;
+                  });
+                },
+              ),
+              Text("Make as Admin"),
+            ],
+          ),
+        ),
       ],
     );
   }
+
+  bool isAdmin = false;
 
   Widget _buildContactFormFields(BoxConstraints constraints, int gridCounts) {
     final double currentWidth = constraints.maxWidth;
@@ -685,67 +713,101 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
-        futureLoading(context);
+        if (isAdmin) {
+          futureLoading(context);
+          
+          String? profileImageUrl;
+          if (_selectedProfileImage != null) {
+            profileImageUrl = await StorageService.uploadFile(
+              file: _selectedProfileImage!,
+              folder: StorageFolder.userPhotos,
+            );
+          }
 
-        var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
-          employeeId: _employeeIdController.text,
-        );
+          AdminModel admin = AdminModel(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            mobileNumber: _mobileNumberController.text.trim(),
+            profileImageUrl: profileImageUrl,
+            createdBy: await Spdb.getUser(),
+          );
 
-        if (employeeIdExists) {
+          await AdminService.createAdmin(admin: admin);
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }
+          Navigator.pop(context, true);
+
           FlushBar.show(
             context,
-            'Employee ID already exists',
-            isSuccess: false,
+            'Employee created successfully',
+            isSuccess: true,
+          );
+
+        } else {
+          futureLoading(context);
+
+          var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
+            employeeId: _employeeIdController.text,
+          );
+
+          if (employeeIdExists) {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            FlushBar.show(
+              context,
+              'Employee ID already exists',
+              isSuccess: false,
+            );
+          }
+
+          String? profileImageUrl;
+          if (_selectedProfileImage != null) {
+            profileImageUrl = await StorageService.uploadFile(
+              file: _selectedProfileImage!,
+              folder: StorageFolder.userPhotos,
+            );
+          }
+
+          EmployeeModel employeeModel = EmployeeModel(
+            employeeId: _employeeIdController.text,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+            designation: _designationModel?.uid ?? '',
+            department: _department,
+            subDepartment: _subDepartmentModel?.uid,
+            mobileNumber: _mobileNumberController.text.trim(),
+            gender: _gender ?? 'Male',
+            dateOfJoining: _selectedDateOfJoining!,
+            dateOfBirth: _selectedDateOfBirth,
+            role: _roleModel?.uid ?? '',
+            address: _addressController.text.trim(),
+            about: _aboutController.text.trim(),
+            loginAllowed: _loginAllowed == 'Yes',
+            receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
+            maritalStatus: _maritalStatus,
+            employeeType: _employeeType ?? '',
+            profileImageUrl: profileImageUrl,
+            skills: '',
+            reportingTo: _reportingTo,
+            createdBy: await Spdb.getUser(),
+          );
+
+          await EmployeeService.createEmployee(employee: employeeModel);
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          Navigator.pop(context, true);
+
+          FlushBar.show(
+            context,
+            'Employee created successfully',
+            isSuccess: true,
           );
         }
-
-        String? profileImageUrl;
-        if (_selectedProfileImage != null) {
-          profileImageUrl = await StorageService.uploadFile(
-            file: _selectedProfileImage!,
-            folder: StorageFolder.userPhotos,
-          );
-        }
-
-        EmployeeModel employeeModel = EmployeeModel(
-          employeeId: _employeeIdController.text,
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          designation: _designationModel?.uid ?? '',
-          department: _department,
-          subDepartment: _subDepartmentModel?.uid,
-          mobileNumber: _mobileNumberController.text.trim(),
-          gender: _gender ?? 'Male',
-          dateOfJoining: _selectedDateOfJoining!,
-          dateOfBirth: _selectedDateOfBirth,
-          role: _roleModel?.uid ?? '',
-          address: _addressController.text.trim(),
-          about: _aboutController.text.trim(),
-          loginAllowed: _loginAllowed == 'Yes',
-          receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
-          maritalStatus: _maritalStatus,
-          employeeType: _employeeType ?? '',
-          profileImageUrl: profileImageUrl,
-          skills: '',
-          reportingTo: _reportingTo,
-          createdBy: await Spdb.getUser(),
-        );
-
-        await EmployeeService.createEmployee(employee: employeeModel);
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-        Navigator.pop(context, true);
-
-        FlushBar.show(
-          context,
-          'Employee created successfully',
-          isSuccess: true,
-        );
       } catch (e, st) {
         await ErrorService.recordError(e, st);
         debugPrint("${e.toString()}, ${st.toString()}");

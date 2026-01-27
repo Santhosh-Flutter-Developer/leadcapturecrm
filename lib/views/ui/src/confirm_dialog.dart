@@ -223,3 +223,35 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
   }
 }
 
+class ConfirmDialog2 extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const ConfirmDialog2({
+    super.key,
+    required this.title,
+    required this.content,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(false); 
+          },
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop(true); 
+          },
+          child: const Text('Confirm'),
+        ),
+      ],
+    );
+  }
+}

@@ -35,6 +35,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
                 .where(
                   (chat) =>
                       chat.lastMessage != null &&
+                      //  chat.lastMessage!.message != "Chat started" &&
                       chat.lastMessage!.message.isNotEmpty,
                 )
                 .toList();

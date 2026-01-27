@@ -560,7 +560,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             context,
             client,
             client.clientName,
-            client.profilePictureUrl,
+            client.profilePictureUrl,false
           ),
         ),
 
@@ -615,7 +615,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             context,
             company,
             company.companyName,
-            company.companyLogoUrl,
+            company.companyLogoUrl,true
           ),
         ),
 
@@ -650,10 +650,11 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
     ClientModel company,
     String? title,
     String? imageUrl,
+    bool isCompany,
   ) {
     return InkWell(
       onTap: () {
-        final profile = ClientProfile(client: company);
+        final profile = ClientProfile(client: company, isCompany: isCompany,);
         kIsMobile
             ? Sheet.showSheet(context, widget: profile)
             : GeneralDialog.showRTLSheet(context, profile);

@@ -1,3 +1,7 @@
+import 'package:aaatp/utils/src/platform.dart';
+import 'package:aaatp/views/components/src/sheet.dart';
+import 'package:aaatp/views/screens/leads/listing/lead_listing.dart';
+import 'package:aaatp/views/ui/src/general_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '/models/models.dart';
@@ -25,72 +29,84 @@ class _LeadsSourcePieChartState extends State<LeadsSourcePieChart> {
 
     final totalLeads = widget.leads.length;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 600;
-
-        return Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF2B3674).withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Leads by Source",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Distribution across $totalLeads total leads",
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 24),
-              // We use a SizedBox instead of Expanded so it can fit inside a Column/ListView
-              SizedBox(
-                height: isDesktop ? 300 : 450,
-                child: isDesktop
-                    ? Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _buildPieChart(sourceCounts, totalLeads),
-                          ),
-                          const SizedBox(width: 40),
-                          Expanded(
-                            flex: 1,
-                            child: _buildLegend(sourceCounts, totalLeads),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          Expanded(
-                            child: _buildPieChart(sourceCounts, totalLeads),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildLegend(sourceCounts, totalLeads),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-        );
+    return GestureDetector(
+      onTap: () {
+        if (kIsMobile) {
+          Sheet.showSheet(context, widget: const LeadsListing());
+        } else {
+          GeneralDialog.showRTLSheet(context, const LeadsListing());
+        }
       },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 600;
+
+          return Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFF2B3674).withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Leads by Source",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Distribution across $totalLeads total leads",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // We use a SizedBox instead of Expanded so it can fit inside a Column/ListView
+                SizedBox(
+                  height: isDesktop ? 300 : 450,
+                  child: isDesktop
+                      ? Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _buildPieChart(sourceCounts, totalLeads),
+                            ),
+                            const SizedBox(width: 40),
+                            Expanded(
+                              flex: 1,
+                              child: _buildLegend(sourceCounts, totalLeads),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: _buildPieChart(sourceCounts, totalLeads),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildLegend(sourceCounts, totalLeads),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

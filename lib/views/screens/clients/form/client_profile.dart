@@ -8,11 +8,14 @@ import '/views/views.dart';
 
 class ClientProfile extends StatelessWidget {
   final ClientModel client;
+  final bool isCompany;
 
-  const ClientProfile({super.key, required this.client});
+  const ClientProfile({super.key, required this.client, required this.isCompany});
 
   @override
   Widget build(BuildContext context) {
+
+    print("the value of iscompany or not $isCompany");
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(16),
@@ -39,9 +42,9 @@ class ClientProfile extends StatelessWidget {
                   const SizedBox(height: 20),
                   _buildCompanyInfo(context),
                   const SizedBox(height: 24),
-                  _buildProjectsCard(context),
+                  _buildProjectsExpandable(context),
                   const SizedBox(height: 24),
-                  _buildInvoicesCard(context),
+                  _buildInvoicesExpandable(context),
                 ],
               ),
             ),
@@ -159,32 +162,32 @@ class ClientProfile extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _statCard(
-                context,
-                Icons.folder_open_outlined,
-                "Projects",
-                "8",
-                const Color(0xFF1E88E5),
-              ),
-              _statCard(
-                context,
-                Icons.attach_money,
-                "Earnings",
-                "\$24,000",
-                const Color(0xFF43A047),
-              ),
-              _statCard(
-                context,
-                Icons.receipt_long_outlined,
-                "Due Invoices",
-                "2",
-                const Color(0xFFE53935),
-              ),
-            ],
-          ),
+          // const SizedBox(height: 24),
+          // Row(
+          //   children: [
+          //     _statCard(
+          //       context,
+          //       Icons.folder_open_outlined,
+          //       "Projects",
+          //       "8",
+          //       const Color(0xFF1E88E5),
+          //     ),
+          //     _statCard(
+          //       context,
+          //       Icons.attach_money,
+          //       "Earnings",
+          //       "\$24,000",
+          //       const Color(0xFF43A047),
+          //     ),
+          //     _statCard(
+          //       context,
+          //       Icons.receipt_long_outlined,
+          //       "Due Invoices",
+          //       "2",
+          //       const Color(0xFFE53935),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -206,199 +209,202 @@ class ClientProfile extends StatelessWidget {
     );
   }
 
-  Widget _statCard(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 26),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.black87,
-              ),
+  // Widget _statCard(
+  //   BuildContext context,
+  //   IconData icon,
+  //   String label,
+  //   String value,
+  //   Color color,
+  // ) {
+  //   return Expanded(
+  //     child: Container(
+  //       margin: const EdgeInsets.symmetric(horizontal: 6),
+  //       padding: const EdgeInsets.all(16),
+  //       decoration: BoxDecoration(
+  //         color: color.withValues(alpha: 0.08),
+  //         borderRadius: BorderRadius.circular(16),
+  //         border: Border.all(color: color.withValues(alpha: 0.15)),
+  //       ),
+  //       child: Column(
+  //         children: [
+  //           Icon(icon, color: color, size: 26),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             value,
+  //             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //               fontWeight: FontWeight.w700,
+  //               color: AppColors.black87,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           Text(
+  //             label,
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.bodySmall?.copyWith(color: AppColors.black54),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+ Widget _buildContactInfo(BuildContext context) {
+  final items = [
+    {"label": "Client Name", "value": "${client.salutation} ${client.clientName}"},
+    {"label": "Email", "value": client.email},
+    {"label": "Mobile", "value": client.mobileNumber},
+    {"label": "Gender", "value": client.gender},
+    {
+      "label": "Login Allowed",
+      "value": client.loginAllowed == true ? "Yes" : "No",
+    },
+  ];
+
+  return expandableSection(
+    context: context,
+    title: "Contact Details",
+    icon: Icons.person_outline,
+    initiallyExpanded: isCompany ? false : true,
+    child: _infoGrid(context, items),
+  );
+}
+
+Widget _buildCompanyInfo(BuildContext context) {
+  final items = [
+    {"label": "Company Name", "value": client.companyName},
+    {"label": "Website", "value": client.officialWebsite},
+    {"label": "GST/VAT No", "value": client.gstVatNumber},
+    {"label": "Office Phone", "value": client.officePhoneNo},
+    {"label": "Address", "value": client.companyAddress},
+  ];
+
+  return expandableSection(
+    context: context,
+    title: "Company Details",
+    icon: Icons.apartment_outlined,
+    initiallyExpanded: isCompany,
+    child: _infoGrid(context, items),
+  );
+}
+
+ Widget expandableSection({
+  required BuildContext context,
+  required String title,
+  required IconData icon,
+  required Widget child,
+  bool initiallyExpanded = false,
+}) {
+  return Container(
+    decoration: _cardDecoration(),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.all(16),
+      leading: Icon(icon, color: AppColors.primary),
+      initiallyExpanded: initiallyExpanded,
+      title: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      children: [child],
+    ),
+  );
+}
+
+
+Widget _infoGrid(BuildContext context, List<Map<String, dynamic>> items) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final crossAxisCount = constraints.maxWidth > 800
+          ? 3
+          : constraints.maxWidth > 500
+              ? 2
+              : 1;
+
+      return Wrap(
+        spacing: 20,
+        runSpacing: 12,
+        children: items.map((item) {
+          return SizedBox(
+            width: constraints.maxWidth / crossAxisCount - 24,
+            child: _infoTile(
+              context,
+              item["label"].toString(),
+              item["value"]?.toString() ?? "-",
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.black54),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
+        }).toList(),
+      );
+    },
+  );
+}
+
+ Widget _buildProjectsExpandable(BuildContext context) {
+  final projects = [
+    Project("CRM Development", "In Progress"),
+    Project("E-Commerce Website", "Completed"),
+    Project("Mobile App", "Pending"),
+  ];
+
+  return expandableSection(
+    context: context,
+    title: "Projects",
+    icon: Icons.folder_open_outlined,
+    child: Column(
+      children: projects.map((p) {
+        return _listTile(
+          context,
+          p.name,
+          p.status,
+          _statusColor(p.status),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Widget _buildInvoicesExpandable(BuildContext context) {
+  final invoices = [
+    {"no": "INV-001", "status": "Paid"},
+    {"no": "INV-002", "status": "Pending"},
+    {"no": "INV-003", "status": "Overdue"},
+  ];
+
+  return expandableSection(
+    context: context,
+    title: "Invoices",
+    icon: Icons.receipt_long_outlined,
+    child: Column(
+      children: invoices.map((i) {
+        return _invoiceTile(
+          context,
+          "Invoice #${i['no']}",
+          i['status']!,
+          _statusColor(i['status']!),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+Color _statusColor(String status) {
+  switch (status.toLowerCase()) {
+    case "completed":
+    case "paid":
+      return AppColors.success;
+    case "pending":
+    case "in progress":
+      return AppColors.orange;
+    case "overdue":
+      return AppColors.danger;
+    default:
+      return AppColors.grey;
   }
+}
 
-  Widget _buildContactInfo(BuildContext context) {
-    final contactItems = [
-      {
-        "label": "Client Name",
-        "value": "${client.salutation} ${client.clientName}",
-      },
-      {"label": "Email", "value": client.email},
-      {"label": "Mobile", "value": client.mobileNumber},
-      {"label": "Gender", "value": client.gender},
-      {
-        "label": "Login Allowed",
-        "value": client.loginAllowed == true ? "Yes" : "No",
-      },
-      {
-        "label": "Email Notifications",
-        "value": client.receiveEmailNotifications == true ? "Yes" : "No",
-      },
-    ];
-
-    return _expandableSection(
-      context: context,
-      title: "Contact Details",
-      icon: Icons.person_outline,
-      items: contactItems,
-    );
-  }
-
-  Widget _buildCompanyInfo(BuildContext context) {
-    final companyItems = [
-      {"label": "Company Name", "value": client.companyName},
-      {"label": "Website", "value": client.officialWebsite},
-      {"label": "GST/VAT No", "value": client.gstVatNumber},
-      {"label": "Office Phone", "value": client.officePhoneNo},
-      {
-        "label": "Location",
-        "value": "${client.city?.name ?? '-'}, ${client.state?.name ?? '-'}",
-      },
-      {"label": "Postal Code", "value": client.postalCode},
-      {"label": "Company Address", "value": client.companyAddress},
-      {"label": "Shipping Address", "value": client.shippingAddress},
-      {"label": "Notes", "value": client.notes},
-    ];
-
-    return _expandableSection(
-      context: context,
-      title: "Company Details",
-      icon: Icons.apartment_outlined,
-      items: companyItems,
-    );
-  }
-
-  Widget _expandableSection({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required List<Map<String, dynamic>> items,
-  }) {
-    return Container(
-      decoration: _cardDecoration(),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        childrenPadding: const EdgeInsets.all(16),
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth > 800
-                  ? 3
-                  : constraints.maxWidth > 500
-                  ? 2
-                  : 1;
-
-              return Wrap(
-                spacing: 20,
-                runSpacing: 12,
-                children: items.map((item) {
-                  return SizedBox(
-                    width: constraints.maxWidth / crossAxisCount - 24,
-                    child: _infoTile(
-                      context,
-                      item["label"].toString(),
-                      item["value"]?.toString() ?? "-",
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProjectsCard(BuildContext context) {
-    return _sectionContainer(
-      context: context,
-      title: "Projects",
-      icon: Icons.folder_open_outlined,
-      child: Column(
-        children: [
-          _listTile(
-            context,
-            "CRM Development",
-            "In Progress",
-            AppColors.orange,
-          ),
-          _listTile(
-            context,
-            "E-Commerce Website",
-            "Completed",
-            AppColors.success,
-          ),
-          _listTile(context, "Mobile App Design", "Pending", AppColors.danger),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInvoicesCard(BuildContext context) {
-    return _sectionContainer(
-      context: context,
-      title: "Invoices",
-      icon: Icons.receipt_long_outlined,
-      child: Column(
-        children: [
-          _invoiceTile(
-            context,
-            "Invoice #INV-2025-01",
-            "Paid",
-            AppColors.success,
-          ),
-          _invoiceTile(
-            context,
-            "Invoice #INV-2025-02",
-            "Pending",
-            AppColors.orange,
-          ),
-          _invoiceTile(
-            context,
-            "Invoice #INV-2025-03",
-            "Overdue",
-            AppColors.danger,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _invoiceTile(
     BuildContext context,
@@ -525,4 +531,12 @@ class ClientProfile extends StatelessWidget {
       ),
     ],
   );
+}
+
+
+class Project {
+  final String name;
+  final String status;
+
+  Project(this.name, this.status);
 }

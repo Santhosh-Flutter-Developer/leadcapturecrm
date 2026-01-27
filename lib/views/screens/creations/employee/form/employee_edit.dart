@@ -13,7 +13,8 @@ import '/constants/constants.dart';
 
 class EmployeeEdit extends StatefulWidget {
   final String uid;
-  const EmployeeEdit({super.key, required this.uid});
+  final AdminModel? admin;
+  const EmployeeEdit({super.key, required this.uid, this.admin});
 
   @override
   State<EmployeeEdit> createState() => _EmployeeEditState();
@@ -75,68 +76,81 @@ class _EmployeeEditState extends State<EmployeeEdit> {
       _designationList.clear();
       _departmentList.clear();
       _subDepartmentList.clear();
-
-      _rolesList = await RoleService.getAllRoles();
-      _designationList = await DesignationService.getAllDesignations();
-      _departmentList = await DepartmentService.getAllDepartments();
-
-      _employeeModel = await EmployeeService.getEmployee(uid: widget.uid);
-      _employeeIdController.text = _employeeModel!.employeeId;
-      _nameController.text = _employeeModel!.name;
-      _emailController.text = _employeeModel!.email;
-      _passwordController.text = _employeeModel!.password;
-      _mobileNumberController.text = _employeeModel!.mobileNumber;
-      _dateOfJoiningController.text = _employeeModel!.dateOfJoining.formatDate;
-      _selectedDateOfJoining = _employeeModel!.dateOfJoining;
-      _dateOfBirthController.text =
-          _employeeModel!.dateOfBirth?.formatDate ?? '';
-      _selectedDateOfBirth = _employeeModel!.dateOfBirth;
-      _addressController.text = _employeeModel!.address;
-      _aboutController.text = _employeeModel!.about;
-      _skillsController.text = _employeeModel!.skills;
-
-      _gender = _employeeModel!.gender;
-      _loginAllowed = _employeeModel!.loginAllowed ? 'Yes' : 'No';
-      _receiveEmailNotifications = _employeeModel!.receiveEmailNotifications
-          ? 'Yes'
-          : 'No';
-      _maritalStatus = _employeeModel!.maritalStatus;
-      _employeeType = _employeeModel!.employeeType;
-      _profileImageUrl = _employeeModel!.profileImageUrl;
-
-      _roleModel = await RoleService.getRole(uid: _employeeModel!.role);
-      _designationModel = await DesignationService.getDesignation(
-        uid: _employeeModel!.designation,
-      );
-      if (_employeeModel!.department != null &&
-          _employeeModel!.department!.isNotEmpty) {
-        _department.clear();
-        _department.addAll(_employeeModel!.department!);
-      }
-
-      if (_departmentModel != null) {
-        _subDepartmentList =
-            await SubDepartmentService.getSubDepartmentsByDepId(
-              depId: _departmentModel!.uid ?? '',
-            );
-      }
-
-      if (_employeeModel!.subDepartment != null &&
-          _employeeModel!.subDepartment!.isNotEmpty) {
-        _subDepartmentModel = await SubDepartmentService.getSubDepartment(
-          uid: _employeeModel!.subDepartment ?? '',
-        );
-      }
-
       _initialReportingTo.clear();
-      for (var i in (_employeeModel?.reportingTo ?? [])) {
-        var employee = await EmployeeService.getEmployee(uid: i);
-        if (employee != null) {
-          _initialReportingTo.add(employee);
-        } else {
-          var admin = await AdminService.getAdmin(uid: i);
-          if (admin != null) {
-            _initialReportingTo.add(admin);
+
+      if (widget.admin != null) {
+        _employeeIdController.text = "";
+        _nameController.text = widget.admin!.name;
+        _emailController.text = widget.admin!.email;
+        _passwordController.text = widget.admin!.password;
+        _mobileNumberController.text = widget.admin!.mobileNumber;
+        _selectedDateOfBirth = widget.admin!.createdAt;
+        isAdmin = true;
+
+      } else {
+        _rolesList = await RoleService.getAllRoles();
+        _designationList = await DesignationService.getAllDesignations();
+        _departmentList = await DepartmentService.getAllDepartments();
+
+        _employeeModel = await EmployeeService.getEmployee(uid: widget.uid);
+        _employeeIdController.text = _employeeModel!.employeeId;
+        _nameController.text = _employeeModel!.name;
+        _emailController.text = _employeeModel!.email;
+        _passwordController.text = _employeeModel!.password;
+        _mobileNumberController.text = _employeeModel!.mobileNumber;
+        _dateOfJoiningController.text =
+            _employeeModel!.dateOfJoining.formatDate;
+        _selectedDateOfJoining = _employeeModel!.dateOfJoining;
+        _dateOfBirthController.text =
+            _employeeModel!.dateOfBirth?.formatDate ?? '';
+        _selectedDateOfBirth = _employeeModel!.dateOfBirth;
+        _addressController.text = _employeeModel!.address;
+        _aboutController.text = _employeeModel!.about;
+        _skillsController.text = _employeeModel!.skills;
+
+        _gender = _employeeModel!.gender;
+        _loginAllowed = _employeeModel!.loginAllowed ? 'Yes' : 'No';
+        _receiveEmailNotifications = _employeeModel!.receiveEmailNotifications
+            ? 'Yes'
+            : 'No';
+        _maritalStatus = _employeeModel!.maritalStatus;
+        _employeeType = _employeeModel!.employeeType;
+        _profileImageUrl = _employeeModel!.profileImageUrl;
+
+        _roleModel = await RoleService.getRole(uid: _employeeModel!.role);
+        _designationModel = await DesignationService.getDesignation(
+          uid: _employeeModel!.designation,
+        );
+
+        if (_employeeModel!.department != null &&
+            _employeeModel!.department!.isNotEmpty) {
+          _department.clear();
+          _department.addAll(_employeeModel!.department!);
+        }
+
+        if (_departmentModel != null) {
+          _subDepartmentList =
+              await SubDepartmentService.getSubDepartmentsByDepId(
+                depId: _departmentModel!.uid ?? '',
+              );
+        }
+
+        if (_employeeModel!.subDepartment != null &&
+            _employeeModel!.subDepartment!.isNotEmpty) {
+          _subDepartmentModel = await SubDepartmentService.getSubDepartment(
+            uid: _employeeModel!.subDepartment ?? '',
+          );
+        }
+
+        for (var i in (_employeeModel?.reportingTo ?? [])) {
+          var employee = await EmployeeService.getEmployee(uid: i);
+          if (employee != null) {
+            _initialReportingTo.add(employee);
+          } else {
+            var admin = await AdminService.getAdmin(uid: i);
+            if (admin != null) {
+              _initialReportingTo.add(admin);
+            }
           }
         }
       }
@@ -416,8 +430,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             label: 'Employee Id',
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
-            isRequired: true,
-            valid: (input) => input == null || input.isEmpty
+            isRequired: isAdmin ? false : true,
+            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
                 ? 'Employee Id is required'
                 : null,
           ),
@@ -440,9 +454,9 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-            // isRequired: true,
-            // valid: (input) =>
-            //     input == null || input.isEmpty ? 'Email is required' : null,
+            isRequired: isAdmin ,
+            valid: !isAdmin ? null :(input) =>
+                input == null || input.isEmpty ? 'Email is required' : null,
           ),
         ),
         SizedBox(
@@ -465,112 +479,116 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             ),
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            initialItem:
-                _designationModel != null && _designationModel!.name.isNotEmpty
-                ? _designationModel?.name
-                : null,
-            items: _designationList.map((e) => e.name.toString()).toList(),
-            label: 'Designation',
-            isRequired: true,
-            onChanged: (value) {
-              _designationModel = _designationList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
-            validator: (value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: FormDropdownSearch(
+              initialItem:
+                  _designationModel != null &&
+                      _designationModel!.name.isNotEmpty
+                  ? _designationModel?.name
+                  : null,
+              items: _designationList.map((e) => e.name.toString()).toList(),
+              label: 'Designation',
+              isRequired: true,
+              onChanged: (value) {
+                _designationModel = _designationList.firstWhere(
+                  (element) => element.name == value,
+                );
+              },
+              validator: (value) {
+                if (value == null) {
+                  return "* Required";
+                }
+                return null;
+              },
+            ),
           ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Department",
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: AppColors.black,
-                      fontWeight: FontWeight.w500,
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      "Department",
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: AppColors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '*',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(width: 4),
+                    Text(
+                      '*',
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
+                  ],
+                ),
+                const SizedBox(height: 6),
 
-              CustomSearchableDropdown<String>(
-                items: _departmentList.map((e) => e.name.toString()).toList(),
-                multiSelect: true,
+                CustomSearchableDropdown<String>(
+                  items: _departmentList.map((e) => e.name.toString()).toList(),
+                  multiSelect: true,
 
-                initialValues: _departmentList
-                    .where((d) => _department.contains(d.uid))
-                    .map((d) => d.name)
-                    .toList(),
+                  initialValues: _departmentList
+                      .where((d) => _department.contains(d.uid))
+                      .map((d) => d.name)
+                      .toList(),
 
-                itemAsString: (s) => s,
+                  itemAsString: (s) => s,
 
-                onChangedList: (selectedNames) async {
-                  _department.clear();
+                  onChangedList: (selectedNames) async {
+                    _department.clear();
 
-                  for (var name in selectedNames) {
-                    final dep = _departmentList.firstWhere(
-                      (d) => d.name == name,
-                    );
-                    if (dep.uid != null) {
-                      _department.add(dep.uid!);
+                    for (var name in selectedNames) {
+                      final dep = _departmentList.firstWhere(
+                        (d) => d.name == name,
+                      );
+                      if (dep.uid != null) {
+                        _department.add(dep.uid!);
+                      }
                     }
-                  }
 
-                  _subDepartmentList.clear();
+                    _subDepartmentList.clear();
 
-                  for (var depId in _department) {
-                    final subDeps =
-                        await SubDepartmentService.getSubDepartmentsByDepId(
-                          depId: depId,
-                        );
-                    _subDepartmentList.addAll(subDeps);
-                  }
+                    for (var depId in _department) {
+                      final subDeps =
+                          await SubDepartmentService.getSubDepartmentsByDepId(
+                            depId: depId,
+                          );
+                      _subDepartmentList.addAll(subDeps);
+                    }
 
-                  setState(() {});
-                },
-              ),
-            ],
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
 
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            initialItem:
-                _subDepartmentModel != null &&
-                    _subDepartmentModel!.name.isNotEmpty
-                ? _subDepartmentModel?.name
-                : null,
-            items: _subDepartmentList.map((e) => e.name.toString()).toList(),
-            label: 'Sub Department',
-            onChanged: (value) {
-              _subDepartmentModel = _subDepartmentList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: FormDropdownSearch(
+              initialItem:
+                  _subDepartmentModel != null &&
+                      _subDepartmentModel!.name.isNotEmpty
+                  ? _subDepartmentModel?.name
+                  : null,
+              items: _subDepartmentList.map((e) => e.name.toString()).toList(),
+              label: 'Sub Department',
+              onChanged: (value) {
+                _subDepartmentModel = _subDepartmentList.firstWhere(
+                  (element) => element.name == value,
+                );
+              },
+            ),
           ),
-        ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
@@ -587,13 +605,13 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                 : null,
             items: const ['Male', 'Female', 'Others'],
             label: 'Gender',
-            isRequired: true,
+            isRequired: isAdmin ? false : true,
             onChanged: (value) {
               if (value != null) {
                 _gender = value.toString();
               }
             },
-            validator: (value) {
+            validator: isAdmin ? null :(value) {
               if (value == null) {
                 return "* Required";
               }
@@ -608,8 +626,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _dateOfJoiningController,
             hintText: 'DD/MM/YYYY',
             readOnly: true,
-            isRequired: true,
-            valid: (input) =>
+            isRequired: isAdmin ? false : true,
+            valid: isAdmin ? null :(input) =>
                 input == null || input.isEmpty ? '* Required' : null,
             onTap: () async {
               var result = await datePicker(context);
@@ -636,43 +654,66 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             },
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            initialItem: _roleModel != null && _roleModel!.name.isNotEmpty
-                ? _roleModel?.name
-                : null,
-            items: _rolesList.map((e) => e.name.toString()).toList(),
-            label: 'Role',
-            isRequired: true,
-            onChanged: (value) {
-              _roleModel = _rolesList.firstWhere(
-                (element) => element.name == value,
-              );
-            },
-            validator: (value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: FormDropdownSearch(
+              initialItem: _roleModel != null && _roleModel!.name.isNotEmpty
+                  ? _roleModel?.name
+                  : null,
+              items: _rolesList.map((e) => e.name.toString()).toList(),
+              label: 'Role',
+              isRequired: true,
+              onChanged: (value) {
+                _roleModel = _rolesList.firstWhere(
+                  (element) => element.name == value,
+                );
+              },
+              validator: (value) {
+                if (value == null) {
+                  return "* Required";
+                }
+                return null;
+              },
+            ),
           ),
-        ),
-        SizedBox(
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: UsersListDropdown(
+              label: 'Reporting To',
+              initialValues: _initialReportingTo,
+              onChangedList: (list) {
+                _reportingTo.clear();
+                _reportingTo.addAll(list.map((e) => e.uid!));
+              },
+              includeCurrentUser: false,
+            ),
+          ),
+        Container(
           width: itemWidth,
-          child: UsersListDropdown(
-            label: 'Reporting To',
-            initialValues: _initialReportingTo,
-            onChangedList: (list) {
-              _reportingTo.clear();
-              _reportingTo.addAll(list.map((e) => e.uid!));
-            },
-            includeCurrentUser: false,
+          padding: EdgeInsets.only(top: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Checkbox(
+                value: isAdmin,
+                onChanged: (value) {
+                  setState(() {
+                    isAdmin = value ?? false;
+                  });
+                },
+              ),
+              Text("Make as Admin"),
+            ],
           ),
         ),
       ],
     );
   }
+
+  bool isAdmin = false;
 
   Widget _buildContactFormFields(BoxConstraints constraints, int gridCounts) {
     final double currentWidth = constraints.maxWidth;
@@ -807,75 +848,105 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
-        futureLoading(context);
+        if (isAdmin) {
+          futureLoading(context);
 
-        var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
-          employeeId: _employeeIdController.text,
-        );
+          String? profileImageUrl;
 
-        if (employeeIdExists) {
+          if (_selectedProfileImage != null) {
+            profileImageUrl = await StorageService.uploadFile(
+              file: _selectedProfileImage!,
+              folder: StorageFolder.adminProfile,
+            );
+          }
+
+          AdminModel adminModel = AdminModel(
+            email: _emailController.text.trim(),
+            name: _nameController.text.trim(),
+            password: _passwordController.text,
+            mobileNumber: _mobileNumberController.text.trim(),
+            profileImageUrl: profileImageUrl,
+            createdBy: await Spdb.getUser(),
+          );
+
+          await AdminService.updateAdmin(id: widget.uid, data: adminModel);
+
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }
+          Navigator.pop(context, true);
+          FlushBar.show(context, "Admin updated successfully", isSuccess: true);
+        } else {
+          futureLoading(context);
+
+          var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
+            employeeId: _employeeIdController.text,
+          );
+
+          if (employeeIdExists) {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            FlushBar.show(
+              context,
+              'Employee ID already exists',
+              isSuccess: false,
+            );
+          }
+
+          String? profileImageUrl;
+          if (_selectedProfileImage != null) {
+            profileImageUrl = await StorageService.uploadFile(
+              file: _selectedProfileImage!,
+              folder: StorageFolder.userPhotos,
+            );
+          }
+
+          if (_oldProfileImageRemoved) {
+            await EmployeeService.deleteEmployeeImage(uid: widget.uid);
+          }
+
+          EmployeeModel employeeModel = EmployeeModel(
+            uid: widget.uid,
+            employeeId: _employeeIdController.text,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+            designation: _designationModel?.uid ?? '',
+            department: _department,
+            subDepartment: _subDepartmentModel?.uid,
+            mobileNumber: _mobileNumberController.text.trim(),
+            gender: _gender ?? 'Male',
+            dateOfJoining: _selectedDateOfJoining!,
+            dateOfBirth: _selectedDateOfBirth,
+            role: _roleModel?.uid ?? '',
+            address: _addressController.text.trim(),
+            about: _aboutController.text.trim(),
+            loginAllowed: _loginAllowed == 'Yes',
+            receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
+            maritalStatus: _maritalStatus,
+            employeeType: _employeeType ?? '',
+            profileImageUrl: profileImageUrl,
+            skills: '',
+            reportingTo: _reportingTo,
+            createdBy: await Spdb.getUser(),
+          );
+
+          await EmployeeService.editEmployee(
+            uid: widget.uid,
+            employee: employeeModel,
+          );
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          Navigator.pop(context, true);
+
           FlushBar.show(
             context,
-            'Employee ID already exists',
-            isSuccess: false,
+            'Employee updated successfully',
+            isSuccess: true,
           );
         }
-
-        String? profileImageUrl;
-        if (_selectedProfileImage != null) {
-          profileImageUrl = await StorageService.uploadFile(
-            file: _selectedProfileImage!,
-            folder: StorageFolder.userPhotos,
-          );
-        }
-
-        if (_oldProfileImageRemoved) {
-          await EmployeeService.deleteEmployeeImage(uid: widget.uid);
-        }
-
-        EmployeeModel employeeModel = EmployeeModel(
-          uid: widget.uid,
-          employeeId: _employeeIdController.text,
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-          designation: _designationModel?.uid ?? '',
-          department: _department,
-          subDepartment: _subDepartmentModel?.uid,
-          mobileNumber: _mobileNumberController.text.trim(),
-          gender: _gender ?? 'Male',
-          dateOfJoining: _selectedDateOfJoining!,
-          dateOfBirth: _selectedDateOfBirth,
-          role: _roleModel?.uid ?? '',
-          address: _addressController.text.trim(),
-          about: _aboutController.text.trim(),
-          loginAllowed: _loginAllowed == 'Yes',
-          receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
-          maritalStatus: _maritalStatus,
-          employeeType: _employeeType ?? '',
-          profileImageUrl: profileImageUrl,
-          skills: '',
-          reportingTo: _reportingTo,
-          createdBy: await Spdb.getUser(),
-        );
-
-        await EmployeeService.editEmployee(
-          uid: widget.uid,
-          employee: employeeModel,
-        );
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-        Navigator.pop(context, true);
-
-        FlushBar.show(
-          context,
-          'Employee updated successfully',
-          isSuccess: true,
-        );
       } catch (e, st) {
         await ErrorService.recordError(e, st);
         debugPrint("${e.toString()}, ${st.toString()}");

@@ -27,6 +27,7 @@ class AdminModel {
   }) : isActive = isActive ?? true,
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
+       
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{

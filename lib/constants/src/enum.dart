@@ -76,3 +76,9 @@ extension LeadCompletionStatusX on LeadCompletionStatus {
     }
   }
 }
+
+enum UserTypes {
+  employee,
+  admin,
+}
+

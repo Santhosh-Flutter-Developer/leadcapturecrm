@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:aaatp/constants/constants.dart';
+import 'package:aaatp/models/src/admin_model.dart';
+
 import '/utils/utils.dart';
 import 'user_data_model.dart';
 
@@ -300,4 +303,210 @@ class EmployeeModel {
   String toString() {
     return 'EmployeeModel(..., reportingTo: $reportingTo, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
+}
+
+
+class UserRowModel {
+  /// Common
+  final UserTypes userType;
+  final String uid;
+  final String name;
+  final String email;
+  final String mobileNumber;
+  final String? profileImageUrl;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final UserDataModel createdBy;
+  final List<Map<String, dynamic>>? devices;
+
+  /// Employee-only
+  final String? employeeId;
+  final String? designation;
+  final List<String>? department;
+  final String? subDepartment;
+  final String? gender;
+  final DateTime? dateOfJoining;
+  final DateTime? dateOfBirth;
+  final String? role;
+  final String? address;
+  final String? about;
+  final bool? loginAllowed;
+  final bool? receiveEmailNotifications;
+  final String? skills;
+  final String? employeeType;
+  final List<String>? reportingTo;
+  final String? maritalStatus;
+  final DateTime? lastActive;
+  final bool? isInitialPasswordChanged;
+
+  /// Admin-only
+  final String? adminPassword;
+
+  const UserRowModel({
+    required this.userType,
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.mobileNumber,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isActive,
+    this.profileImageUrl,
+    this.devices,
+
+    // employee
+    this.employeeId,
+    this.designation,
+    this.department,
+    this.subDepartment,
+    this.gender,
+    this.dateOfJoining,
+    this.dateOfBirth,
+    this.role,
+    this.address,
+    this.about,
+    this.loginAllowed,
+    this.receiveEmailNotifications,
+    this.skills,
+    this.employeeType,
+    this.reportingTo,
+    this.maritalStatus,
+    this.lastActive,
+    this.isInitialPasswordChanged,
+
+    // admin
+    this.adminPassword,
+  });
+
+  // ---------------- SAFE GETTERS ----------------
+
+  bool get isEmployee => userType == UserTypes.employee;
+  bool get isAdmin => userType == UserTypes.admin;
+}
+
+extension EmployeeToRow on EmployeeModel {
+  UserRowModel toUserRowModel() {
+    return UserRowModel(
+      userType: UserTypes.employee,
+      uid: uid ?? '',
+      employeeId: employeeId,
+      name: name,
+      email: email,
+      mobileNumber: mobileNumber,
+      profileImageUrl: profileImageUrl,
+      designation: designation,
+      department: department,
+      subDepartment: subDepartment,
+      gender: gender,
+      dateOfJoining: dateOfJoining,
+      dateOfBirth: dateOfBirth,
+      role: role,
+      address: address,
+      about: about,
+      loginAllowed: loginAllowed,
+      receiveEmailNotifications: receiveEmailNotifications,
+      skills: skills,
+      employeeType: employeeType,
+      reportingTo: reportingTo,
+      maritalStatus: maritalStatus,
+      isActive: isActive,
+      lastActive: lastActive,
+      devices: devices,
+      isInitialPasswordChanged: isInitialPasswordChanged,
+      createdBy: createdBy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+extension AdminToRow on AdminModel {
+  UserRowModel toUserRowModel() {
+    return UserRowModel(
+      userType: UserTypes.admin,
+      uid: uid ?? '',
+      name: name,
+      email: email,
+      mobileNumber: mobileNumber,
+      profileImageUrl: profileImageUrl,
+      adminPassword: password,
+      isActive: isActive,
+      createdBy: createdBy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+extension UserRowToEmployee on UserRowModel {
+  EmployeeModel toEmployeeModel() {
+    assert(
+      userType == UserTypes.employee,
+      'UserRowModel is not an employee',
+    );
+
+    return EmployeeModel(
+      uid: uid,
+      employeeId: employeeId ?? '',
+      name: name,
+      email: email,
+      password: '', // not available in list
+      designation: designation ?? '',
+      department: department ?? [],
+      subDepartment: subDepartment,
+      mobileNumber: mobileNumber,
+      profileImageUrl: profileImageUrl,
+      gender: gender ?? '',
+      dateOfJoining: dateOfJoining ?? DateTime.now(),
+      dateOfBirth: dateOfBirth,
+      role: role ?? '',
+      address: address ?? '',
+      about: about ?? '',
+      loginAllowed: loginAllowed ?? false,
+      receiveEmailNotifications: receiveEmailNotifications ?? false,
+      skills: skills ?? '',
+      employeeType: employeeType,
+      reportingTo: reportingTo,
+      maritalStatus: maritalStatus ?? '',
+      isActive: isActive,
+      lastActive: lastActive,
+      devices: devices,
+      isInitialPasswordChanged: isInitialPasswordChanged ?? false,
+      createdBy: createdBy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+extension UserRowToAdmin on UserRowModel {
+  AdminModel toAdminModel() {
+    assert(
+      userType == UserTypes.admin,
+      'UserRowModel is not an admin',
+    );
+
+    return AdminModel(
+      uid: uid,
+      name: name,
+      email: email,
+      password: adminPassword ?? '', // not available in list/edit
+      mobileNumber: mobileNumber,
+      profileImageUrl: profileImageUrl,
+      isActive: isActive,
+      createdBy: createdBy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+
+
+
+extension UserRowActions on UserRowModel {
+  bool get isEmployee => userType == UserTypes.employee;
+  bool get isAdmin => userType == UserTypes.admin;
 }

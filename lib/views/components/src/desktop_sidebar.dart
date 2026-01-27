@@ -130,9 +130,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Future<List<Map<String, dynamic>>> _getMenus() async {
-    bool admin =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Admin')) != null;
+    // bool admin =
+    //     widget.isAdmin ||
+    //     (await PermissionService.getPermissions('Admin')) != null;
     bool role =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Role')) != null;
@@ -203,7 +203,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         'icon': Iconsax.element_plus,
         'title': 'Creation',
         'children': [
-          if (admin) 'Admin',
+          // if (admin) 'Admin',
           if (role) 'Role',
           if (designation) 'Designation',
           if (department) 'Department',

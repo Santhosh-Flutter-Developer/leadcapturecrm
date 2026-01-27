@@ -1,5 +1,7 @@
+import 'package:aaatp/views/screens/creations/admin/listing/bloc/admin_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -20,9 +22,9 @@ class EmployeeListing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EmployeeBloc()..add(StreamEmployee()),
+      create: (context) => UsersBloc()..add(StreamUsers()),
       child: ChangeNotifierProvider(
-        create: (context) => PaginatedDataController<EmployeeModel>(
+        create: (context) => PaginatedDataController<UserRowModel>(
           initialSortColumnIndex: 0,
           filterLogic: (employee, query) {
             final q = query.toLowerCase();
@@ -33,11 +35,9 @@ class EmployeeListing extends StatelessWidget {
             int compare;
             switch (col) {
               case 0:
-                //   compare = a.employeeId
-                //       .toLowerCase()
-                //       .compareTo(b.employeeId.toLowerCase());
-                //   break;
-                // case 1:
+                compare = a.uid.toLowerCase().compareTo(b.uid.toLowerCase());
+                break;
+              case 1:
                 compare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
                 break;
               case 2:
@@ -45,18 +45,18 @@ class EmployeeListing extends StatelessWidget {
                   b.email.toLowerCase(),
                 );
                 break;
-              case 4:
+              case 3:
                 compare = a.isActive.toString().compareTo(
                   b.isActive.toString(),
                 );
                 break;
               default:
-                compare = (a.employeeId).compareTo(b.employeeId);
+                compare = (a.uid).compareTo(b.uid);
                 break;
             }
             return asc ? compare : -compare;
           },
-          getItemId: (employee) => employee.uid ?? '',
+          getItemId: (employee) => employee.uid,
         ),
         child: const EmployeeListingView(),
       ),
@@ -72,10 +72,12 @@ class EmployeeListingView extends StatefulWidget {
 }
 
 class _EmployeeListingViewState extends State<EmployeeListingView> {
-  final List<EmployeeModel> _selectedEmployees = [];
-  final List<EmployeeModel> _employeesList = [];
+  final List<UserRowModel> _selectedEmployees = [];
+  final List<UserRowModel> _employeesList = [];
   PermissionModel? permissions;
   final ScrollController _hScrollController = ScrollController();
+
+  final TextEditingController _chatMessage = TextEditingController();
 
   @override
   void initState() {
@@ -90,32 +92,28 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
   @override
   Widget build(BuildContext context) {
-    final controllerRead = context
-        .read<PaginatedDataController<EmployeeModel>>();
-    final controllerWatch = context
-        .watch<PaginatedDataController<EmployeeModel>>();
+    final controllerRead = context.read<PaginatedDataController<UserRowModel>>();
+    final controllerWatch = context.watch<PaginatedDataController<UserRowModel>>();
 
     return Scaffold(
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
-      body: BlocListener<EmployeeBloc, EmployeeState>(
-        listenWhen: (previous, current) => current is EmployeeLoaded,
+      body: BlocListener<UsersBloc, UsersState>(
+        listenWhen: (previous, current) => current is UsersLoaded,
         listener: (context, state) {
-          if (state is EmployeeLoaded) {
-            controllerRead.setData(state.employees);
-            _employeesList
-              ..clear()
-              ..addAll(state.employees);
+          if (state is UsersLoaded) {
+            controllerRead.setData(state.users);
           }
         },
-        child: BlocBuilder<EmployeeBloc, EmployeeState>(
+
+        child: BlocBuilder<UsersBloc, UsersState>(
           builder: (context, state) {
-            if (state is EmployeeLoading) {
+            if (state is UsersLoading) {
               return const WaitingLoading();
             }
 
-            if (state is EmployeeLoaded) {
+            if (state is UsersLoaded) {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
@@ -129,7 +127,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       ),
                       const SizedBox(height: 10),
 
-                      _buildActionRow(context),
+                      _buildActionRow(),
                       const SizedBox(height: 20),
                       Container(
                         decoration: BoxDecoration(
@@ -361,9 +359,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                                         rows: controllerWatch.paginatedItems
                                             .map(
-                                              (employee) => _buildDataRow(
+                                              (user) => _buildDataRow(
                                                 context,
-                                                employee,
+                                                user,
                                                 controllerWatch,
                                                 controllerRead,
                                               ),
@@ -380,7 +378,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                 horizontal: 16.0,
                                 vertical: 12.0,
                               ),
-                              child: PaginationControls<EmployeeModel>(),
+                              child: PaginationControls<UserRowModel>(),
                             ),
                           ],
                         ),
@@ -391,7 +389,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               );
             }
 
-            if (state is EmployeeError) {
+            if (state is UsersError) {
               return Center(
                 child: Text(
                   state.message,
@@ -404,6 +402,22 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         ),
       ),
     );
+  }
+
+  Future<void> handleDelete(BuildContext context, UserRowModel user) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => ConfirmDialog2(
+        title: 'Delete',
+        content: 'Are you sure you want to delete ${user.name}?',
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!context.mounted) return;
+    debugPrint('Confirmed delete for ${user.uid}');
+    context.read<UsersBloc>().add(DeleteUser(user));
   }
 
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
@@ -444,7 +458,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     );
   }
 
-  Widget _buildActionRow(BuildContext context) {
+  Widget _buildActionRow() {
     return LayoutBuilder(
       builder: (context, constraints) {
         // final bool isMobile = constraints.maxWidth < 600;
@@ -548,10 +562,11 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 for (var i in _employeesList) {
                   List<String> row = [];
                   row.addAll([
-                    i.employeeId,
+                    i.employeeId ?? "",
                     i.name,
                     i.email,
-                    CacheService.designationByUid(i.designation)?.name ?? '',
+                    CacheService.designationByUid(i.designation ?? "")?.name ??
+                        '',
                     i.department != null && i.department!.isNotEmpty
                         ? i.department!
                               .map(
@@ -569,14 +584,14 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         : '',
                     i.mobileNumber,
                     i.profileImageUrl ?? '',
-                    i.gender,
-                    i.dateOfJoining.formatDate,
-                    i.dateOfBirth != null ? i.dateOfBirth!.formatDate : '',
-                    CacheService.roleByUid(i.role)?.name ?? '',
-                    i.address,
-                    i.about,
-                    i.loginAllowed ? "Yes" : "No",
-                    i.receiveEmailNotifications ? "Yes" : "No",
+                    i.gender ?? "",
+                    i.dateOfJoining?.formatDate ?? '',
+                    i.dateOfBirth?.formatDate ?? '',
+                    CacheService.roleByUid(i.role ?? "")?.name ?? '',
+                    i.address ?? "",
+                    i.about ?? "",
+                    (i.loginAllowed ?? false) ? "Yes" : "No",
+                    (i.receiveEmailNotifications ?? false) ? "Yes" : "No",
                     i.employeeType ?? '',
 
                     i.reportingTo != null && i.reportingTo!.isNotEmpty
@@ -587,9 +602,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                               )
                               .join(', ')
                         : '',
-                    i.maritalStatus,
+                    i.maritalStatus ?? "",
                     i.isActive ? "Yes" : "No",
-                    i.createdAt.formatDateTime,
+                    i.createdAt?.formatDateTime ?? '',
                   ]);
                   exportData.add(row);
                 }
@@ -677,13 +692,15 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     onPressed: () async {
                       if (_selectedEmployees.isEmpty) return;
 
-                      for (var employee in _selectedEmployees) {
+                      for (final employee in _selectedEmployees) {
                         final isAssigned =
                             await EmployeeService.isEmployeeAssigned(
-                              employee.uid ?? '',
+                              employee.employeeId ?? '',
                             );
 
                         if (isAssigned) {
+                          if (!context.mounted) return;
+
                           await showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
@@ -714,25 +731,32 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                       final confirm = await showDialog<bool>(
                         context: context,
-                        builder: (context) => ConfirmDialog(
+                        barrierDismissible: false,
+                        builder: (_) => ConfirmDialog(
                           title: 'Delete',
                           content:
                               'Are you sure you want to delete the selected $_pageTitle?',
                         ),
-                        barrierDismissible: false,
                       );
 
-                      if (confirm == true) {
-                        context.read<EmployeeBloc>().add(
-                          DeleteEmployee(uid: 'uid'),
-                        );
-                        FlushBar.show(
-                          context,
-                          'Employee deleted successfully',
-                          isSuccess: true,
-                        );
+                      if (confirm != true) return;
+                      if (!context.mounted) return;
+
+                      for (final employee in _selectedEmployees) {
+                        if (employee.uid.isNotEmpty) {
+                          context.read<UsersBloc>().add(DeleteUser(employee));
+                        }
                       }
+
+                      _selectedEmployees.clear();
+
+                      FlushBar.show(
+                        context,
+                        'Employee deleted successfully',
+                        isSuccess: true,
+                      );
                     },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.danger,
                       foregroundColor: AppColors.white,
@@ -779,11 +803,29 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       isSingle ? "Create Chat" : "Create Group Chat",
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    content: Text(
-                      isSingle
-                          ? "Do you want to start a chat with ${_selectedEmployees.first.name}?"
-                          : "Do you want to create a group chat with ${_selectedEmployees.length} employees?",
-                      style: Theme.of(context).textTheme.bodySmall,
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isSingle
+                              ? "Do you want to start a chat with ${_selectedEmployees.first.name}?"
+                              : "Do you want to create a group chat with ${_selectedEmployees.length} employees?",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        FormFields(
+                          label: 'Enter chat message',
+                          controller: _chatMessage,
+                          hintText: 'Enter Description',
+                          maxLines: 3,
+                          isRequired: true,
+                          valid: (val) => val == null || val.isEmpty
+                              ? 'Chat message is required'
+                              : null,
+                        ),
+                      ],
                     ),
                     actions: [
                       TextButton(
@@ -823,13 +865,23 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   if (isSingle) {
                     final emp = _selectedEmployees.first;
 
-                    if (emp.uid == null || emp.uid!.isEmpty) {
+                    if (emp.uid == null || emp.uid.isEmpty) {
                       Navigator.pop(context);
+                      return;
+                    }
+
+                    if (_chatMessage.text.isEmpty) {
+                      FlushBar.show(
+                        context,
+                        "Please enter the chat message.",
+                        isSuccess: false,
+                      );
                       return;
                     }
 
                     var chatId = await ChatService.createIndividualChat(
                       userId: emp.uid!,
+                      chatMessage: _chatMessage.text,
                     );
 
                     Navigator.pop(context);
@@ -854,6 +906,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         );
                       }
                     }
+                    _chatMessage.clear();
+                    setState(() {});
                     FlushBar.show(context, "Chat created");
                     return;
                   }
@@ -945,7 +999,12 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => TaskCreate(employees: _selectedEmployees),
+                    builder: (_) => TaskCreate(
+                      employees: _selectedEmployees
+                          .where((e) => e.isEmployee)
+                          .map((e) => e.toEmployeeModel())
+                          .toList(),
+                    ),
                   ),
                 );
               },
@@ -1088,9 +1147,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
   DataRow _buildDataRow(
     BuildContext context,
-    EmployeeModel employee,
-    PaginatedDataController<EmployeeModel> controllerWatch,
-    PaginatedDataController<EmployeeModel> controllerRead,
+    UserRowModel employee,
+    PaginatedDataController<UserRowModel> controllerWatch,
+    PaginatedDataController<UserRowModel> controllerRead,
   ) {
     final devices = (employee.devices ?? []).cast<Map<String, dynamic>>();
 
@@ -1114,8 +1173,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
     final isSelected = controllerWatch.selectedIds.contains(employee.uid);
 
-    String getDepartmentNames(EmployeeModel employee) {
-      if (employee.department == null || employee.department!.isEmpty) {
+    String getDepartmentNames(EmployeeModel? employee) {
+      if (employee!.department == null || employee.department!.isEmpty) {
         return '';
       }
 
@@ -1126,13 +1185,20 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     }
 
     /// Open Employee Details
-    void openEmployee(BuildContext context, EmployeeModel employee) {
+    void openEmployee(BuildContext context, UserRowModel employee) {
       if (kIsMobile) {
-        Sheet.showSheet(context, widget: EmployeeDetails(employee: employee));
+        Sheet.showSheet(
+          context,
+          widget: employee.isAdmin
+              ? AdminProfile(admin: employee.toAdminModel())
+              : EmployeeDetails(employee: employee.toEmployeeModel()),
+        );
       } else {
         GeneralDialog.showRTLSheet(
           context,
-          EmployeeDetails(employee: employee),
+          employee.isAdmin
+              ? AdminProfile(admin: employee.toAdminModel())
+              : EmployeeDetails(employee: employee.toEmployeeModel()),
         );
       }
     }
@@ -1141,7 +1207,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     DataCell dataCell(BuildContext context, Widget child) {
       return DataCell(
         InkWell(
-          onTap: () => openEmployee(context, employee),
+          onTap: () {
+            // if (!employee.isEmployee) return;
+            openEmployee(context, employee);
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: child,
@@ -1153,13 +1222,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
-        controllerRead.onSelected(employee.uid ?? '', selected);
+        // if (!employee.isEmployee) return;
+        controllerRead.onSelected(employee.uid, selected);
         if (selected ?? false) {
           if (!_selectedEmployees.any((e) => e.uid == employee.uid)) {
             _selectedEmployees.add(employee);
+            _employeesList.add(employee);
           }
         } else {
           _selectedEmployees.removeWhere((e) => e.uid == employee.uid);
+          _employeesList.removeWhere((e) => e.uid == employee.uid);
         }
         setState(() {});
       },
@@ -1168,7 +1240,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         dataCell(
           context,
           Text(
-            employee.employeeId,
+            employee.employeeId ?? "",
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
@@ -1206,7 +1278,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    CacheService.designationByUid(employee.designation)?.name ??
+                    CacheService.designationByUid(
+                          employee.designation ?? "",
+                        )?.name ??
                         '',
                     style: Theme.of(
                       context,
@@ -1226,7 +1300,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                getDepartmentNames(employee),
+                "",
+                // getDepartmentNames(employee.isEmployee ? employee.toEmployeeModel() : null),
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
@@ -1276,7 +1351,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         dataCell(
           context,
           Text(
-            CacheService.roleByUid(employee.role)?.name ?? '',
+            CacheService.roleByUid(employee.role ?? "")?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -1315,12 +1390,22 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         if (kIsMobile) {
                           Sheet.showSheet(
                             context,
-                            widget: EmployeeEdit(uid: employee.uid ?? ''),
+                            widget: EmployeeEdit(
+                              uid: employee.uid,
+                              admin: employee.isAdmin
+                                  ? employee.toAdminModel()
+                                  : null,
+                            ),
                           );
                         } else {
                           GeneralDialog.showRTLSheet(
                             context,
-                            EmployeeEdit(uid: employee.uid ?? ''),
+                            EmployeeEdit(
+                              uid: employee.uid,
+                              admin: employee.isAdmin
+                                  ? employee.toAdminModel()
+                                  : null,
+                            ),
                           );
                         }
                       },
@@ -1336,6 +1421,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       splashRadius: 20,
                       tooltip: 'Delete $_pageTitle',
                       onPressed: () async {
+                        handleDelete(context, employee);
+                      
                         final result = await showDialog<bool>(
                           context: context,
                           builder: (_) => const ConfirmDialog(
