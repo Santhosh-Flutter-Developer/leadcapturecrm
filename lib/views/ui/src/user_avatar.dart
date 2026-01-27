@@ -259,6 +259,7 @@ class _UserAvatarState extends State<UserAvatar> {
           child: InkWell(
             onTap: () async {
               var chatId = await ChatService.getChatUid(widget.userData.uid);
+              debugPrint("the chat id on getchat id $chatId");
               var currentUserUid = await Spdb.getUid();
               if (chatId != null && currentUserUid != null) {
                 if (!mounted) return;

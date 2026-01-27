@@ -34,7 +34,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
                 .map((doc) => ChatModel.fromMap(doc.id, doc.data()))
                 .where(
                   (chat) =>
-                      chat.lastMessage != null &&
+                      chat.lastMessage != null  &&
                       //  chat.lastMessage!.message != "Chat started" &&
                       chat.lastMessage!.message.isNotEmpty,
                 )
