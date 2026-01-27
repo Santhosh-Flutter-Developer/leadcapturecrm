@@ -462,8 +462,9 @@ class ChatService {
     }
   }
 
-  static Future<String> createIndividualChat({required String userId, 
-  required String chatMessage}) async {
+
+
+  static Future<String> createIndividualChat({required String userId}) async {
     try {
       final cid = await Spdb.getCid();
       final currentUid = await Spdb.getUid();
@@ -493,10 +494,7 @@ class ChatService {
         participants: [currentUid, userId],
         participantsKey: participantsKey,
         createdAt: DateTime.now(),
-        lastMessage: LastMessageModel(
-          message: chatMessage,
-          senderId: currentUid,
-        ),
+        lastMessage: null,
         isGroupChat: false,
         isPinned: false,
         isFavorite: false,
@@ -507,12 +505,7 @@ class ChatService {
         chatModel.toMap(),
       );
 
-      await ChatService.sendChatMessage(
-        chatId: chatDoc.id,
-        message: chatMessage,
-        attachments: [],
-        replyFor: null,
-      );
+       debugPrint("the chat id on servuce id ${chatDoc.id}");
 
       await sendNotification(
         chatId: chatDoc.id,
@@ -705,7 +698,8 @@ class ChatService {
     if (chat.docs.isNotEmpty) {
       return chat.docs.first.id;
     }
-    var chatId = await createIndividualChat(userId: opponentUserId, chatMessage: "");
+
+    var chatId = await createIndividualChat(userId: opponentUserId);
     return chatId;
   }
 

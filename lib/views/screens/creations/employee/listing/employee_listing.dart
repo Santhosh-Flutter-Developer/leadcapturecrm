@@ -882,7 +882,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                     var chatId = await ChatService.createIndividualChat(
                       userId: emp.uid,
-                      chatMessage: _chatMessage.text,
+                    );
+
+                    await ChatService.sendChatMessage(
+                      chatId: chatId,
+                      message: _chatMessage.text,
+                      attachments: [],
+                      replyFor: null,
                     );
 
                     Navigator.pop(context);

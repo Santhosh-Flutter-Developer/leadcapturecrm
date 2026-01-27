@@ -72,7 +72,7 @@ class _CreateChatState extends State<CreateChat>
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _chatMessage.dispose();
     super.dispose();
   }
@@ -238,7 +238,7 @@ class _CreateChatState extends State<CreateChat>
                                       return;
                                     }
 
-                                     // Check if msg is not empty
+                                    // Check if msg is not empty
                                     if (_chatMessage.text.isEmpty) {
                                       FlushBar.show(
                                         context,
@@ -252,12 +252,24 @@ class _CreateChatState extends State<CreateChat>
                                       futureLoading(context);
 
                                       // Call API with non-null String
-                                      await ChatService.createIndividualChat(
-                                        userId: selectedUser, chatMessage: _chatMessage.text
+
+                                      debugPrint(
+                                        "the chat selected user on the create chat $selectedUser ",
+                                      );
+                                      final chatId =
+                                          await ChatService.createIndividualChat(
+                                            userId: selectedUser,
+                                          );
+
+                                      await ChatService.sendChatMessage(
+                                        chatId: chatId,
+                                        message: _chatMessage.text,
+                                        attachments: [],
+                                        replyFor: null,
                                       );
 
-                                          _chatMessage.clear();
-                                          setState(() {});
+                                      _chatMessage.clear();
+                                      setState(() {});
 
                                       if (Navigator.canPop(context)) {
                                         Navigator.pop(context);

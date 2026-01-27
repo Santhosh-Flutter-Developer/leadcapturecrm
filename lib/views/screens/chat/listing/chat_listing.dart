@@ -53,6 +53,7 @@ class _ChatListingViewState extends State<ChatListingView> {
   @override
   void initState() {
     _selectedChatUid = widget.selectedChatUid;
+    debugPrint("the chat id on the listing inside $_selectedChatUid");
     super.initState();
   }
 
