@@ -1,4 +1,3 @@
-import 'package:aaatp/views/screens/creations/admin/listing/bloc/admin_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -1422,35 +1421,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       tooltip: 'Delete $_pageTitle',
                       onPressed: () async {
                         handleDelete(context, employee);
-                      
-                        final result = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => const ConfirmDialog(
-                            title: 'Delete $_pageTitle',
-                            content:
-                                'Are you sure you want to delete this $_pageTitle?',
-                          ),
-                        );
-
-                        if (result == true) {
-                          try {
-                            await EmployeeService.deleteEmployee(
-                              uid: employee.uid ?? '',
-                            );
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                            context.read<EmployeeBloc>().add(StreamEmployee());
-                          } catch (e, st) {
-                            await ErrorService.recordError(e, st);
-                            FlushBar.show(
-                              context,
-                              e.toString(),
-                              isSuccess: false,
-                            );
-                          }
-                        }
+                  
                       },
                     )
                   : IconButton(
