@@ -91,8 +91,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
   @override
   Widget build(BuildContext context) {
-    final controllerRead = context.read<PaginatedDataController<UserRowModel>>();
-    final controllerWatch = context.watch<PaginatedDataController<UserRowModel>>();
+    final controllerRead = context
+        .read<PaginatedDataController<UserRowModel>>();
+    final controllerWatch = context
+        .watch<PaginatedDataController<UserRowModel>>();
 
     return Scaffold(
       appBar: kIsMobile
@@ -603,7 +605,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         : '',
                     i.maritalStatus ?? "",
                     i.isActive ? "Yes" : "No",
-                    i.createdAt?.formatDateTime ?? '',
+                    i.createdAt.formatDateTime ?? '',
                   ]);
                   exportData.add(row);
                 }
@@ -864,7 +866,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   if (isSingle) {
                     final emp = _selectedEmployees.first;
 
-                    if (emp.uid == null || emp.uid.isEmpty) {
+                    if (emp.uid.isEmpty) {
                       Navigator.pop(context);
                       return;
                     }
@@ -879,7 +881,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     }
 
                     var chatId = await ChatService.createIndividualChat(
-                      userId: emp.uid!,
+                      userId: emp.uid,
                       chatMessage: _chatMessage.text,
                     );
 
@@ -1251,16 +1253,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           context,
           Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl:
-                      employee.profileImageUrl ??
-                      AppStrings.emptyProfilePhotoUrl,
-                  height: 32,
-                  width: 32,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => const Icon(Iconsax.user),
+              UserAvatar(
+                size: 32,
+                showCrown: true,
+                userData: UserDataModel(
+                  uid: employee.uid,
+                  name: employee.name,
+                  profilePic: employee.profileImageUrl,
+                  userType: employee.isAdmin
+                      ? UserType.admin
+                      : UserType.employee,
                 ),
               ),
               const SizedBox(width: 8),
@@ -1421,7 +1423,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       tooltip: 'Delete $_pageTitle',
                       onPressed: () async {
                         handleDelete(context, employee);
-                  
                       },
                     )
                   : IconButton(
