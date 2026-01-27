@@ -54,8 +54,10 @@ class _TaskCreateState extends State<TaskCreate> {
     _future = _init();
 
     if (widget.employees != null && widget.employees!.isNotEmpty) {
+      debugPrint("the emp user is available");
       for (final emp in widget.employees!) {
         if (emp.uid != null) {
+          debugPrint("the emp user is not null available ${emp.employeeId}");
           _selectedAssignees.add(emp.uid!);
         }
       }
@@ -390,6 +392,7 @@ class _TaskCreateState extends State<TaskCreate> {
       children: [
         UsersListDropdown(
           label: 'Assign To',
+          // initialValues: _selectedAssignees.isNotEmpty ? _selectedAssignees : [],
           onChangedList: (list) {
             _selectedAssignees.clear();
             _selectedAssignees.addAll(list.map((e) => e.uid!));

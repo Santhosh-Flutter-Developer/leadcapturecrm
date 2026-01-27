@@ -28,3 +28,18 @@ class EmployeeError extends EmployeeState {
   @override
   List<Object> get props => [message];
 }
+
+abstract class UsersState {}
+
+class UsersLoading extends UsersState {}
+
+class UsersLoaded extends UsersState {
+  final List<UserRowModel> users;
+  UsersLoaded(this.users);
+}
+
+class UsersError extends UsersState {
+  final String message;
+  UsersError(this.message);
+}
+

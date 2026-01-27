@@ -1,3 +1,7 @@
+import 'package:aaatp/utils/src/platform.dart';
+import 'package:aaatp/views/components/src/sheet.dart';
+import 'package:aaatp/views/screens/tasks/listing/tasks_listing.dart';
+import 'package:aaatp/views/ui/src/general_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '/models/models.dart';
@@ -34,89 +38,101 @@ class _TaskStatusPieChartState extends State<TaskStatusPieChart> {
 
     final totalTasks = widget.tasks.length;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 600;
+    return GestureDetector(
+      onTap: () {
+        if (kIsMobile) {
+          Sheet.showSheet(context, widget: const TasksListing());
+        } else {
+          GeneralDialog.showRTLSheet(context, const TasksListing());
+        }
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 600;
 
-        return Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF2B3674).withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Task Distribution",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+          return Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFF2B3674).withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Progress overview for $totalTasks active tasks",
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                height: isDesktop ? 280 : 400,
-                child: isDesktop
-                    ? Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _buildPieChart(
-                              notStartedCount,
-                              ongoingCount,
-                              completedCount,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Task Distribution",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Progress overview for $totalTasks active tasks",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  height: isDesktop ? 280 : 400,
+                  child: isDesktop
+                      ? Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _buildPieChart(
+                                notStartedCount,
+                                ongoingCount,
+                                completedCount,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 40),
-                          Expanded(
-                            flex: 1,
-                            child: _buildLegend(
+                            const SizedBox(width: 40),
+                            Expanded(
+                              flex: 1,
+                              child: _buildLegend(
+                                notStartedCount,
+                                ongoingCount,
+                                completedCount,
+                                totalTasks,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: _buildPieChart(
+                                notStartedCount,
+                                ongoingCount,
+                                completedCount,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildLegend(
                               notStartedCount,
                               ongoingCount,
                               completedCount,
                               totalTasks,
                             ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          Expanded(
-                            child: _buildPieChart(
-                              notStartedCount,
-                              ongoingCount,
-                              completedCount,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildLegend(
-                            notStartedCount,
-                            ongoingCount,
-                            completedCount,
-                            totalTasks,
-                          ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
+                          ],
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -68,9 +68,9 @@ class _DashboardState extends State<Dashboard> {
                               _buildKpiGrid(context, widget.isAdmin, data),
                               const SizedBox(height: 20),
                               if (widget.isAdmin) ...[
-                                LeadsSourcePieChart(leads: data.allLeads),
+                                LeadsSourcePieChart(leads: data.allLeads,),
                                 const SizedBox(height: 20),
-                                DealsTimelineChart(deals: data.allDeals),
+                                DealsTimelineChart(deals: data.allDeals,),
                                 const SizedBox(height: 20),
                                 TaskStatusPieChart(tasks: data.allTasks),
                                 const SizedBox(height: 20),
@@ -584,33 +584,31 @@ Widget _buildRightPanel(
 
   return LayoutBuilder(
     builder: (context, constraints) {
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        SizedBox(
-  height: 80, // controls card height
-  child: SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: (isAdmin
-              ? _adminActions(context)
-              : _userActions(context))
-          .map(
-            (card) => Padding(
-              padding: const EdgeInsets.only(right: 15),
-              child: SizedBox(
-                width: 80, // fixed width per card
-                child: card,
+          SizedBox(
+            height: 80, // controls card height
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children:
+                    (isAdmin ? _adminActions(context) : _userActions(context))
+                        .map(
+                          (card) => Padding(
+                            padding: const EdgeInsets.only(right: 15),
+                            child: SizedBox(
+                              width: 80, // fixed width per card
+                              child: card,
+                            ),
+                          ),
+                        )
+                        .toList(),
               ),
             ),
-          )
-          .toList(),
-    ),
-  ),
-),
+          ),
 
-const SizedBox(height: 20,),
+          const SizedBox(height: 20),
 
           // 🔔 NOTIFICATIONS
           _sectionTitle(context, "Notifications"),
@@ -619,16 +617,12 @@ const SizedBox(height: 20,),
           if (notifications.isEmpty)
             _emptyText(context, "No new notifications.")
           else
-            ...notifications
-                .map((msg) => NotificationTile(notification: msg)),
+            ...notifications.map((msg) => NotificationTile(notification: msg)),
 
           const SizedBox(height: 20),
 
           // 📌 TASKS
-          _sectionTitle(
-            context,
-            isAdmin ? "Upcoming Deadlines" : "Your Tasks",
-          ),
+          _sectionTitle(context, isAdmin ? "Upcoming Deadlines" : "Your Tasks"),
           const SizedBox(height: 15),
 
           if (upcomingTasks.isEmpty)
@@ -648,7 +642,6 @@ const SizedBox(height: 20,),
   );
 }
 
-
 Widget _sectionTitle(BuildContext context, String text) {
   return Text(
     text,
@@ -662,58 +655,56 @@ Widget _sectionTitle(BuildContext context, String text) {
 Widget _emptyText(BuildContext context, String text) {
   return Text(
     text,
-    style: Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(color: kTextSecondary),
+    style: Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
   );
 }
 
-
 List<Widget> _adminActions(BuildContext context) => [
-      QuickActionCard(
-        icon: Icons.add_circle_outline,
-        label: "Add Lead",
-        color: Colors.blue,
-        onTap: () => _openSheet(context, const LeadCreate()),
-      ),
-      QuickActionCard(
-        icon: Icons.work_outline,
-        label: "Add Deal",
-        color: Colors.purple,
-        onTap: () => _openSheet(context, const DealCreate()),
-      ),
-      QuickActionCard(
-        icon: Icons.check_circle_outline,
-        label: "Add Task",
-        color: Colors.orange,
-        onTap: () => _openSheet(context, const TasksListing()),
-      ),
-    ];
+  QuickActionCard(
+    icon: Icons.add_circle_outline,
+    label: "Add Lead",
+    color: Colors.blue,
+    onTap: () => _openSheet(context, const LeadCreate()),
+  ),
+  QuickActionCard(
+    icon: Icons.work_outline,
+    label: "Add Deal",
+    color: Colors.purple,
+    onTap: () => _openSheet(context, const DealCreate()),
+  ),
+  QuickActionCard(
+    icon: Icons.check_circle_outline,
+    label: "Add Task",
+    color: Colors.orange,
+    onTap: () => _openSheet(context, const TasksListing()),
+  ),
+];
 
 List<Widget> _userActions(BuildContext context) => [
-      QuickActionCard(
-        icon: Icons.person_add_outlined,
-        label: "New Lead",
-        color: Colors.blue,
-        onTap: () => _openSheet(context, const LeadCreate()),
-      ),
-      QuickActionCard(
-        icon: Icons.update,
-        label: "Tasks",
-        color: Colors.orange,
-        onTap: () => _openSheet(context, const TasksListing()),
-      ),
-      QuickActionCard(
-        icon: Icons.chat_bubble_outline,
-        label: "Chat",
-        color: Colors.green,
-        onTap: () async {
-          var uid = await Spdb.getUid() ?? '';
-          _openSheet(context, ChatListing(currentUserUid: uid));
-        },
-      ),
-    ];
+  QuickActionCard(
+    icon: Icons.person_add_outlined,
+    label: "New Lead",
+    color: Colors.blue,
+    onTap: () => _openSheet(context, const LeadCreate()),
+  ),
+  QuickActionCard(
+    icon: Icons.update,
+    label: "Tasks",
+    color: Colors.orange,
+    onTap: () => _openSheet(context, const TasksListing()),
+  ),
+  QuickActionCard(
+    icon: Icons.chat_bubble_outline,
+    label: "Chat",
+    color: Colors.green,
+    onTap: () async {
+      var uid = await Spdb.getUid() ?? '';
+      _openSheet(context, ChatListing(currentUserUid: uid));
+    },
+  ),
+];
 
 void _openSheet(BuildContext context, Widget widget) {
   if (kIsMobile) {
@@ -722,7 +713,6 @@ void _openSheet(BuildContext context, Widget widget) {
     GeneralDialog.showRTLSheet(context, widget);
   }
 }
-
 
 class KpiCard extends StatelessWidget {
   final String title;
@@ -951,9 +941,9 @@ class QuickActionCard extends StatelessWidget {
                   ),
                   child: Icon(icon, size: 16, color: Colors.white),
                 ),
-      
+
                 const SizedBox(height: 6),
-      
+
                 /// LABEL
                 Text(
                   label,

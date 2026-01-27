@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
@@ -21,6 +22,7 @@ class _CreateChatState extends State<CreateChat>
 
   final TextEditingController _groupName = TextEditingController();
   final TextEditingController _description = TextEditingController();
+  final TextEditingController _chatMessage = TextEditingController();
   final List<dynamic> _members = [];
   final List<dynamic> _selectedMembers = [];
   final List<dynamic> _employees = [];
@@ -67,6 +69,12 @@ class _CreateChatState extends State<CreateChat>
         stackTrace: st,
       );
     }
+  }
+
+  @override
+  void dispose(){
+    _chatMessage.dispose();
+    super.dispose();
   }
 
   @override
@@ -187,6 +195,19 @@ class _CreateChatState extends State<CreateChat>
                                   ],
                                 ),
 
+                              const SizedBox(height: 8),
+
+                              FormFields(
+                                label: 'Enter chat message',
+                                controller: _chatMessage,
+                                hintText: 'Enter Description',
+                                maxLines: 3,
+                                isRequired: true,
+                                valid: (val) => val == null || val.isEmpty
+                                    ? 'Chat message is required'
+                                    : null,
+                              ),
+
                               const SizedBox(height: 40),
 
                               // --- Create Button ---
@@ -217,13 +238,26 @@ class _CreateChatState extends State<CreateChat>
                                       return;
                                     }
 
+                                     // Check if msg is not empty
+                                    if (_chatMessage.text.isEmpty) {
+                                      FlushBar.show(
+                                        context,
+                                        "Please enter the chat message.",
+                                        isSuccess: false,
+                                      );
+                                      return;
+                                    }
+
                                     try {
                                       futureLoading(context);
 
                                       // Call API with non-null String
                                       await ChatService.createIndividualChat(
-                                        userId: selectedUser,
+                                        userId: selectedUser, chatMessage: _chatMessage.text
                                       );
+
+                                          _chatMessage.clear();
+                                          setState(() {});
 
                                       if (Navigator.canPop(context)) {
                                         Navigator.pop(context);
