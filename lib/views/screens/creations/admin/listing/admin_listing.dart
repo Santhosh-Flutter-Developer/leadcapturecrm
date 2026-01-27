@@ -328,7 +328,38 @@ class _AdminListingViewState extends State<AdminListingView> {
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_searchBox(onSearchChanged: onSearchChanged)],
+      children: [
+        SizedBox(
+          width: 250,
+          child: TextField(
+            onChanged: onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search',
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: Colors.grey,
+              ),
+              filled: true,
+              fillColor: AppColors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12.0,
+                horizontal: 16.0,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.grey, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
+              ),
+              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+        ),
+      ],
     );
   }
 
@@ -694,16 +725,6 @@ class _AdminListingViewState extends State<AdminListingView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _searchBox({required ValueChanged<String> onSearchChanged}) {
-    return SizedBox(
-      width: 200,
-      child: ListingSearchField(
-        onChanged: onSearchChanged,
-        pageTitle: _pageTitle,
-      ),
     );
   }
 }

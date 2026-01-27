@@ -9,7 +9,7 @@ class ShowDialogs {
             return AlertDialog(
               title: const Text('Exit Application'),
               content: const Text(
-                'Are you sure you want to exit? Any unsaved changes will be lost.',
+                'Are you sure you want to exit the application?',
               ),
               actions: [
                 TextButton(

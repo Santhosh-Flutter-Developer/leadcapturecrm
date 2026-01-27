@@ -261,7 +261,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
-      if (downloads) {'icon': Iconsax.document_download5, 'title': 'Downloads'},
+      if (downloads) {'icon': Iconsax.document_download, 'title': 'Downloads'},
       if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
       {
         'icon': Iconsax.info_circle,

@@ -1,4 +1,3 @@
-import 'package:aaatp/views/screens/creations/admin/listing/bloc/admin_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -428,7 +427,38 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_searchBox(onSearchChanged: onSearchChanged)],
+      children: [
+        SizedBox(
+          width: 250,
+          child: TextField(
+            onChanged: onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search',
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: Colors.grey,
+              ),
+              filled: true,
+              fillColor: AppColors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12.0,
+                horizontal: 16.0,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.grey, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.0),
+                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
+              ),
+              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+        ),
+      ],
     );
   }
 
@@ -578,7 +608,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         : '',
                     i.maritalStatus ?? "",
                     i.isActive ? "Yes" : "No",
-                    i.createdAt?.formatDateTime ?? '',
+                    i.createdAt.formatDateTime ?? '',
                   ]);
                   exportData.add(row);
                 }
@@ -845,7 +875,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   if (isSingle) {
                     final emp = _selectedEmployees.first;
 
-                    if (emp.uid == null || emp.uid.isEmpty) {
+                    if (emp.uid.isEmpty) {
                       Navigator.pop(context);
                       return;
                     }
@@ -1239,16 +1269,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           context,
           Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl:
-                      employee.profileImageUrl ??
-                      AppStrings.emptyProfilePhotoUrl,
-                  height: 32,
-                  width: 32,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => const Icon(Iconsax.user),
+              UserAvatar(
+                size: 32,
+                showCrown: true,
+                userData: UserDataModel(
+                  uid: employee.uid,
+                  name: employee.name,
+                  profilePic: employee.profileImageUrl,
+                  userType: employee.isAdmin
+                      ? UserType.admin
+                      : UserType.employee,
                 ),
               ),
               const SizedBox(width: 8),
@@ -1418,16 +1448,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _searchBox({required ValueChanged<String> onSearchChanged}) {
-    return SizedBox(
-      width: 200,
-      child: ListingSearchField(
-        onChanged: onSearchChanged,
-        pageTitle: _pageTitle,
-      ),
     );
   }
 }

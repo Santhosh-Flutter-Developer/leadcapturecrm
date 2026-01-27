@@ -148,7 +148,7 @@ class _ChatListingViewState extends State<ChatListingView> {
               shape: const CircleBorder(),
               onPressed: () =>
                   Sheet.showSheet(context, widget: const CreateChat()),
-              child: const Icon(Iconsax.add),
+              child: const Icon(Iconsax.message_add),
             )
           : null,
     );
@@ -320,7 +320,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
                       tooltip: "Create Chat",
-                      icon: const Icon( 
+                      icon: const Icon(
                         Iconsax.message_add,
                         color: AppColors.white,
                       ),

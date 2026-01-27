@@ -100,10 +100,10 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
                   child: CircleAvatar(
                     radius: 25,
                     child: Text(
-                      _employeeModel != null
-                          ? _employeeModel!.name.substring(0, 1).toUpperCase()
-                          : _adminModel != null
-                          ? _adminModel!.name.substring(0, 1).toUpperCase()
+                      _employeeModel != null && _employeeModel!.name.isNotEmpty
+                          ? _employeeModel!.name[0].toUpperCase()
+                          : _adminModel != null && _adminModel!.name.isNotEmpty
+                          ? _adminModel!.name[0].toUpperCase()
                           : 'U',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),

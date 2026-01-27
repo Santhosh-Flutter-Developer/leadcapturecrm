@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:local_notifier/local_notifier.dart';
-import 'package:window_manager/window_manager.dart';
 import '/firebase_options.dart';
 import '/app/app.dart';
 import '/services/services.dart';
