@@ -15,6 +15,7 @@ class AuthService {
   }) async {
     try {
       var companies = await firebase.users.get();
+      debugPrint("Companies count: ${companies.docs.length}");
 
       if (companies.docs.isEmpty) {
         return {"status": false, "error": "Organization not found", 'st': []};
