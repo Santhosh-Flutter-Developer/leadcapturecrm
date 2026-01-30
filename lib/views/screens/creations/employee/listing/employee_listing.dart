@@ -1286,22 +1286,26 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    employee.name,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                  Flexible(
+                    child: Text(
+                      employee.name,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    CacheService.designationByUid(
-                          employee.designation ?? "",
-                        )?.name ??
-                        '',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                  Flexible(
+                    child: Text(
+                      CacheService.designationByUid(
+                            employee.designation ?? "",
+                          )?.name ??
+                          '',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                    ),
                   ),
                 ],
               ),
