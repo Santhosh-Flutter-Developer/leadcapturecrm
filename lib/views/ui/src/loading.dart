@@ -12,7 +12,9 @@ class WaitingLoading extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: LoadingAnimationWidget.progressiveDots(
-            color: AppColors.primary, size: 40),
+          color: AppColors.primary,
+          size: 40,
+        ),
       ),
     );
   }
