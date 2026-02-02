@@ -31,7 +31,7 @@ workflows:
       - name: Install create-dmg
         script: brew install create-dmg
 
-      - name: Package macOS app (ZIP + DMG)
+      - name: Package macOS app (ZIP + DMG – CI safe)
         script: |
           set -e
           cd build/macos/Build/Products/Release
@@ -47,16 +47,20 @@ workflows:
           fi
 
           APP_NAME=$(basename "$APP_PATH")
-          APP_BASENAME="${APP_NAME%.app}"
+          APP_BASE="${APP_NAME%.app}"
 
-          echo "Found app bundle: $APP_NAME"
+          echo "Found app: $APP_NAME"
 
-          zip -r "${APP_BASENAME}.app.zip" "$APP_NAME"
+          # ZIP (always safe)
+          zip -r "${APP_BASE}.app.zip" "$APP_NAME"
 
-          create-dmg \
-            --volname "$APP_BASENAME" \
-            "${APP_BASENAME}.dmg" \
-            "$APP_NAME"
+          # SIMPLE DMG (NO Finder / NO AppleScript)
+          hdiutil create \
+            -volname "$APP_BASE" \
+            -srcfolder "$APP_NAME" \
+            -ov \
+            -format UDZO \
+            "${APP_BASE}.dmg"
 
     artifacts:
       - build/macos/Build/Products/Release/*.app
