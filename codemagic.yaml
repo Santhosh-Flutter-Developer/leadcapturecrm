@@ -24,7 +24,7 @@ workflows:
       - name: Zip .app
         script: |
           cd build/macos/Build/Products/Release
-          zip -r YourApp.app.zip YourApp.app
+          zip -r AAATP.app.zip AAATP.app
 
       - name: Install create-dmg
         script: brew install create-dmg
@@ -33,9 +33,9 @@ workflows:
         script: |
           cd build/macos/Build/Products/Release
           create-dmg \
-            --volname "YourApp" \
-            "YourApp.dmg" \
-            "YourApp.app"
+            --volname "AAATP" \
+            "AAATP.dmg" \
+            "AAATP.app"
 
     artifacts:
       - build/macos/Build/Products/Release/*.app
