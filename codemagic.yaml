@@ -21,21 +21,25 @@ workflows:
       - name: Build macOS release
         script: flutter build macos --release
 
-      - name: Zip .app
+      - name: Zip .app (auto-detect)
         script: |
           cd build/macos/Build/Products/Release
-          zip -r AAATP.app.zip AAATP.app
+          APP_NAME=$(ls *.app | head -n 1)
+          echo "Found app: $APP_NAME"
+          zip -r "${APP_NAME}.zip" "$APP_NAME"
 
       - name: Install create-dmg
         script: brew install create-dmg
 
-      - name: Create DMG
+      - name: Create DMG (auto-detect)
         script: |
           cd build/macos/Build/Products/Release
+          APP_NAME=$(ls *.app | head -n 1)
+          echo "Creating DMG for: $APP_NAME"
           create-dmg \
-            --volname "AAATP" \
-            "AAATP.dmg" \
-            "AAATP.app"
+            --volname "${APP_NAME%.app}" \
+            "${APP_NAME%.app}.dmg" \
+            "$APP_NAME"
 
     artifacts:
       - build/macos/Build/Products/Release/*.app
