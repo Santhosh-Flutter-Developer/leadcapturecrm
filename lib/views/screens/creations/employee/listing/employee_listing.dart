@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -607,7 +606,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         : '',
                     i.maritalStatus ?? "",
                     i.isActive ? "Yes" : "No",
-                    i.createdAt.formatDateTime ?? '',
+                    i.createdAt.formatDateTime,
                   ]);
                   exportData.add(row);
                 }
@@ -756,8 +755,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                             'Employee deleted successfully',
                             isSuccess: true,
                           );
-                        }else{
-                           FlushBar.show(
+                        } else {
+                          FlushBar.show(
                             context,
                             'Admin cannot be deleted',
                             isSuccess: false,
@@ -929,7 +928,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                   var groupUsers = [
                     ..._selectedEmployees
-                        .map((e) => e.uid ?? '')
+                        .map((e) => e.uid)
                         .where((id) => id.isNotEmpty),
                     sessionUser.uid,
                   ];
@@ -1189,16 +1188,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
     final isSelected = controllerWatch.selectedIds.contains(employee.uid);
 
-    String getDepartmentNames(EmployeeModel? employee) {
-      if (employee!.department == null || employee.department!.isEmpty) {
-        return '';
-      }
+    // String getDepartmentNames(EmployeeModel? employee) {
+    //   if (employee!.department == null || employee.department!.isEmpty) {
+    //     return '';
+    //   }
 
-      return employee.department!
-          .map((uid) => CacheService.departmentByUid(uid)?.name ?? '')
-          .where((name) => name.isNotEmpty)
-          .join(', ');
-    }
+    //   return employee.department!
+    //       .map((uid) => CacheService.departmentByUid(uid)?.name ?? '')
+    //       .where((name) => name.isNotEmpty)
+    //       .join(', ');
+    // }
 
     /// Open Employee Details
     void openEmployee(BuildContext context, UserRowModel employee) {

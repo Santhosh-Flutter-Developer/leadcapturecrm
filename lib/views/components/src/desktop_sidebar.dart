@@ -67,13 +67,13 @@ class SidebarIconTile extends StatelessWidget {
 }
 
 class DesktopSidebar extends StatefulWidget {
-  bool isCollapsed;
+  final bool isCollapsed;
   final ValueChanged<bool> onCollapseChanged;
   final String selectedMenu;
   final ValueChanged<String> onMenuSelected;
   final bool isAdmin;
 
-  DesktopSidebar({
+  const DesktopSidebar({
     super.key,
     required this.isCollapsed,
     required this.onCollapseChanged,
@@ -216,8 +216,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           'trailing': ValueListenableBuilder<int>(
             valueListenable: ChatService.unviewedCount(),
             builder: (context, count, _) {
-              if (count == 0 || widget.isCollapsed)
+              if (count == 0 || widget.isCollapsed) {
                 return const SizedBox.shrink();
+              }
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 5,

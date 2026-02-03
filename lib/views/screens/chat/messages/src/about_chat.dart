@@ -399,6 +399,44 @@ class _AboutChatState extends State<AboutChat> {
               }
             },
           ),
+          _buildDivider(),
+          _buildActionTile(
+            context,
+            icon: Iconsax.trash,
+            iconColor: Colors.red,
+            title: 'Delete chat',
+            onTap: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete chat'),
+                  content: const Text(
+                    'This chat will be permanently deleted. '
+                    'This action cannot be undone.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                await ChatService.deleteChat(chatId: widget.chat.uid!);
+
+                if (context.mounted) {
+                  Navigator.pop(context); // close actions sheet
+                }
+              }
+            },
+          ),
         ],
       ),
     );
