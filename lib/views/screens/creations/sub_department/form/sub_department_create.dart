@@ -133,7 +133,7 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
               label: 'Department',
               isRequired: true,
               validator: (value) {
-                if (value == null) {
+                if (_selectedDepartment == null) {
                   return 'Department is required';
                 }
                 return null;
@@ -147,6 +147,7 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
                 if (selectedDep != null) {
                   _selectedDepartment = selectedDep;
                 }
+                print("the dep $_selectedDepartment ,,, $selectedDep");
                 setState(() {});
               },
             ),
