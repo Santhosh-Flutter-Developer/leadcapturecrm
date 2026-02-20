@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -607,7 +606,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         : '',
                     i.maritalStatus ?? "",
                     i.isActive ? "Yes" : "No",
-                    i.createdAt.formatDateTime ,
+                    i.createdAt.formatDateTime,
                   ]);
                   exportData.add(row);
                 }
@@ -756,8 +755,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                             'Employee deleted successfully',
                             isSuccess: true,
                           );
-                        }else{
-                           FlushBar.show(
+                        } else {
+                          FlushBar.show(
                             context,
                             'Admin cannot be deleted',
                             isSuccess: false,

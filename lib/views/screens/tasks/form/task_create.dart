@@ -53,6 +53,8 @@ class _TaskCreateState extends State<TaskCreate> {
     super.initState();
     _future = _init();
 
+    _selectedAssignees.addAll(widget.employees!.map((e) => e.uid!).toList());
+
     if (widget.employees != null && widget.employees!.isNotEmpty) {
       debugPrint("the emp user is available");
       for (final emp in widget.employees!) {
@@ -392,7 +394,7 @@ class _TaskCreateState extends State<TaskCreate> {
       children: [
         UsersListDropdown(
           label: 'Assign To',
-          // initialValues: _selectedAssignees.isNotEmpty ? _selectedAssignees : [],
+          initialValues: widget.employees!,
           onChangedList: (list) {
             _selectedAssignees.clear();
             _selectedAssignees.addAll(list.map((e) => e.uid!));

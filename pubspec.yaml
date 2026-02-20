@@ -115,14 +115,14 @@ msix_config:
   publisher_display_name: Srisoftwarez
   identity_name: com.srisoftwarez.aaatp
   msix_version: 0.0.0.1
-  logo_path: D:\flutter\projects\release\aaatp\windows\runner\resources\app_icon.ico
+  logo_path: D:\Projects\aaatp\windows\runner\resources\app_icon.ico
   languages: en-us
   capabilities: internetClient
-  certificate_path: D:\flutter\projects\release\aaatp\ssl\OPENSSL.pfx
+  certificate_path: D:\Projects\aaatp\ssl\OPENSSL.pfx
   certificate_password: Admin123@
 
   app_installer:
-    publish_folder_path: D:\exe
+    publish_folder_path: D:\msix
     hours_between_update_checks: 0
     automatic_background_task: true
     update_blocks_activation: true

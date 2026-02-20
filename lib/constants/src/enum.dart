@@ -58,11 +58,11 @@ enum EventRepeatType { none, daily, weekly, monthly, yearly }
 
 enum CalendarView { day, week, month }
 
-enum ChatAction { pin, favorite }
+enum ChatAction { pin, favorite, delete }
 
 enum ClientSection { contacts, company }
 
-enum LeadCompletionStatus {  won,  lost,  disqualified }
+enum LeadCompletionStatus { won, lost, disqualified }
 
 extension LeadCompletionStatusX on LeadCompletionStatus {
   String get label {
@@ -77,8 +77,4 @@ extension LeadCompletionStatusX on LeadCompletionStatus {
   }
 }
 
-enum UserTypes {
-  employee,
-  admin,
-}
-
+enum UserTypes { employee, admin }

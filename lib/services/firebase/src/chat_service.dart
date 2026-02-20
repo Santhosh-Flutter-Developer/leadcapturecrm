@@ -462,8 +462,6 @@ class ChatService {
     }
   }
 
-
-
   static Future<String> createIndividualChat({required String userId}) async {
     try {
       final cid = await Spdb.getCid();
@@ -505,14 +503,14 @@ class ChatService {
         chatModel.toMap(),
       );
 
-       debugPrint("the chat id on servuce id ${chatDoc.id}");
+      debugPrint("the chat id on servuce id ${chatDoc.id}");
 
       await sendNotification(
         chatId: chatDoc.id,
         message: "Started chat",
         isChat: true,
       );
-      
+
       return chatDoc.id;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
@@ -617,6 +615,36 @@ class ChatService {
           .collection(Collections.chats.name)
           .doc(chatId)
           .update({'isPinned': value, 'updatedAt': DateTime.now()});
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      rethrow;
+    }
+  }
+
+  static Future<void> deleteChat({required String chatId}) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      final chatRef = FirebaseFirestore.instance
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .doc(chatId);
+
+      final messagesRef = chatRef.collection(Collections.messages.name);
+
+      // 🔥 1. Delete all messages in the chat
+      final messagesSnapshot = await messagesRef.get();
+      final batch = FirebaseFirestore.instance.batch();
+
+      for (final doc in messagesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 🔥 2. Delete the chat document itself
+      batch.delete(chatRef);
+
+      await batch.commit();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;

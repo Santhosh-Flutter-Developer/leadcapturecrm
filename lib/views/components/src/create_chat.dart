@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-// import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
@@ -171,7 +170,6 @@ class _CreateChatState extends State<CreateChat>
 
                               const SizedBox(height: 8),
 
-                              // Optional: show role/badge below the dropdown
                               if (_selectedUser != null)
                                 Row(
                                   children: [
@@ -197,17 +195,25 @@ class _CreateChatState extends State<CreateChat>
 
                               const SizedBox(height: 8),
 
-                              FormFields(
-                                label: 'Enter chat message',
+                              TextFormField(
                                 controller: _chatMessage,
-                                hintText: 'Enter Description',
                                 maxLines: 3,
-                                isRequired: true,
-                                valid: (val) => val == null || val.isEmpty
+                                validator: (val) => val == null || val.isEmpty
                                     ? 'Chat message is required'
                                     : null,
-                              ),
 
+                                enableSuggestions: true,
+                                autocorrect: true,
+                                spellCheckConfiguration:
+                                    const SpellCheckConfiguration(),
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                decoration: const InputDecoration(
+                                  labelText: 'Enter chat message',
+                                  hintText: 'Enter Description',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
                               const SizedBox(height: 40),
 
                               // --- Create Button ---

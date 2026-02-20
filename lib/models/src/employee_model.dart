@@ -305,7 +305,6 @@ class EmployeeModel {
   }
 }
 
-
 class UserRowModel {
   /// Common
   final UserTypes userType;
@@ -442,10 +441,7 @@ extension AdminToRow on AdminModel {
 
 extension UserRowToEmployee on UserRowModel {
   EmployeeModel toEmployeeModel() {
-    assert(
-      userType == UserTypes.employee,
-      'UserRowModel is not an employee',
-    );
+    assert(userType == UserTypes.employee, 'UserRowModel is not an employee');
 
     return EmployeeModel(
       uid: uid,
@@ -483,10 +479,7 @@ extension UserRowToEmployee on UserRowModel {
 
 extension UserRowToAdmin on UserRowModel {
   AdminModel toAdminModel() {
-    assert(
-      userType == UserTypes.admin,
-      'UserRowModel is not an admin',
-    );
+    assert(userType == UserTypes.admin, 'UserRowModel is not an admin');
 
     return AdminModel(
       uid: uid,
@@ -502,9 +495,6 @@ extension UserRowToAdmin on UserRowModel {
     );
   }
 }
-
-
-
 
 extension UserRowActions on UserRowModel {
   bool get isEmployee => userType == UserTypes.employee;

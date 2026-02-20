@@ -54,11 +54,17 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   DesignationModel? _designationModel;
   // DepartmentModel? _departmentModel;
   SubDepartmentModel? _subDepartmentModel;
+  EmployeeModel? employee;
+  bool _isActive = true;
 
   @override
   void initState() {
-    _future = _init();
     super.initState();
+    _future = _init();
+
+    if (employee != null) {
+      _isActive = employee!.isActive;
+    }
   }
 
   Future<void> _init() async {
@@ -308,7 +314,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
     final double currentWidth = constraints.maxWidth;
     const double horizontalSpacing = 16.0;
     const double verticalSpacing = 8.0;
-
     const double minColumnWidth = 220.0;
 
     final bool canShowGrid =
@@ -330,9 +335,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
             isRequired: isAdmin ? false : true,
-            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
-                ? 'Employee Id is required'
-                : null,
+            valid: isAdmin
+                ? null
+                : (input) => input == null || input.isEmpty
+                      ? 'Employee Id is required'
+                      : null,
           ),
         ),
         SizedBox(
@@ -353,10 +360,12 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-           isRequired: isAdmin ? true : false,
-            valid: !isAdmin  ? null : (input) => input == null || input.isEmpty
-                ? 'Email is required'
-                : null,
+            isRequired: isAdmin ? true : false,
+            valid: !isAdmin
+                ? null
+                : (input) => input == null || input.isEmpty
+                      ? 'Email is required'
+                      : null,
           ),
         ),
         SizedBox(
@@ -484,12 +493,14 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                 _gender = value.toString();
               }
             },
-            validator: isAdmin ? null : (value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+            validator: isAdmin
+                ? null
+                : (value) {
+                    if (value == null) {
+                      return "* Required";
+                    }
+                    return null;
+                  },
           ),
         ),
         SizedBox(
@@ -500,9 +511,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             hintText: 'DD/MM/YYYY',
             readOnly: true,
             isRequired: isAdmin ? false : true,
-            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
-                ? 'Joining Date is required'
-                : null,
+            valid: isAdmin
+                ? null
+                : (input) => input == null || input.isEmpty
+                      ? 'Joining Date is required'
+                      : null,
             onTap: () async {
               var result = await datePicker(context);
               if (result != null) {
@@ -553,17 +566,18 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               },
             ),
           ),
-        if(!isAdmin) SizedBox(
-          width: itemWidth,
-          child: UsersListDropdown(
-            label: 'Reporting To',
-            onChangedList: (list) {
-              _reportingTo.clear();
-              _reportingTo.addAll(list.map((e) => e.uid!));
-            },
-            includeCurrentUser: false,
+        if (!isAdmin)
+          SizedBox(
+            width: itemWidth,
+            child: UsersListDropdown(
+              label: 'Reporting To',
+              onChangedList: (list) {
+                _reportingTo.clear();
+                _reportingTo.addAll(list.map((e) => e.uid!));
+              },
+              includeCurrentUser: false,
+            ),
           ),
-        ),
         Container(
           width: itemWidth,
           padding: EdgeInsets.only(top: 20),
@@ -581,6 +595,35 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               ),
               Text("Make as Admin"),
             ],
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: Container(
+            padding: const EdgeInsets.only(top: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Switch(
+                  value: _isActive,
+                  activeThumbColor: AppColors.success,
+                  inactiveThumbColor: AppColors.danger,
+                  onChanged: (value) {
+                    setState(() {
+                      _isActive = value;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isActive ? 'Active' : 'Inactive',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: _isActive ? AppColors.success : AppColors.danger,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -715,7 +758,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
       try {
         if (isAdmin) {
           futureLoading(context);
-          
+
           String? profileImageUrl;
           if (_selectedProfileImage != null) {
             profileImageUrl = await StorageService.uploadFile(
@@ -744,7 +787,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             'Employee created successfully',
             isSuccess: true,
           );
-
         } else {
           futureLoading(context);
 
@@ -771,7 +813,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             );
           }
 
-          EmployeeModel employeeModel = EmployeeModel(
+          EmployeeModel employee = EmployeeModel(
             employeeId: _employeeIdController.text,
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
@@ -789,6 +831,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             loginAllowed: _loginAllowed == 'Yes',
             receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
             maritalStatus: _maritalStatus,
+            isActive: _isActive,
             employeeType: _employeeType ?? '',
             profileImageUrl: profileImageUrl,
             skills: '',
@@ -796,7 +839,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             createdBy: await Spdb.getUser(),
           );
 
-          await EmployeeService.createEmployee(employee: employeeModel);
+          await EmployeeService.createEmployee(employee: employee);
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }

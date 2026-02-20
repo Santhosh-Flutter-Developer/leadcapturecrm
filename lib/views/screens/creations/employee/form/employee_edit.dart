@@ -62,12 +62,17 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   DesignationModel? _designationModel;
   DepartmentModel? _departmentModel;
   SubDepartmentModel? _subDepartmentModel;
-  EmployeeModel? _employeeModel;
+  EmployeeModel? employee;
+  bool _isActive = true;
 
   @override
   void initState() {
-    _future = _init();
     super.initState();
+    _future = _init();
+
+    if (employee != null) {
+      _isActive = employee!.isActive;
+    }
   }
 
   Future<void> _init() async {
@@ -86,46 +91,43 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         _mobileNumberController.text = widget.admin!.mobileNumber;
         _selectedDateOfBirth = widget.admin!.createdAt;
         isAdmin = true;
-
       } else {
         _rolesList = await RoleService.getAllRoles();
         _designationList = await DesignationService.getAllDesignations();
         _departmentList = await DepartmentService.getAllDepartments();
 
-        _employeeModel = await EmployeeService.getEmployee(uid: widget.uid);
-        _employeeIdController.text = _employeeModel!.employeeId;
-        _nameController.text = _employeeModel!.name;
-        _emailController.text = _employeeModel!.email;
-        _passwordController.text = _employeeModel!.password;
-        _mobileNumberController.text = _employeeModel!.mobileNumber;
-        _dateOfJoiningController.text =
-            _employeeModel!.dateOfJoining.formatDate;
-        _selectedDateOfJoining = _employeeModel!.dateOfJoining;
-        _dateOfBirthController.text =
-            _employeeModel!.dateOfBirth?.formatDate ?? '';
-        _selectedDateOfBirth = _employeeModel!.dateOfBirth;
-        _addressController.text = _employeeModel!.address;
-        _aboutController.text = _employeeModel!.about;
-        _skillsController.text = _employeeModel!.skills;
+        employee = await EmployeeService.getEmployee(uid: widget.uid);
+        _employeeIdController.text = employee!.employeeId;
+        _nameController.text = employee!.name;
+        _emailController.text = employee!.email;
+        _passwordController.text = employee!.password;
+        _mobileNumberController.text = employee!.mobileNumber;
+        _dateOfJoiningController.text = employee!.dateOfJoining.formatDate;
+        _selectedDateOfJoining = employee!.dateOfJoining;
+        _dateOfBirthController.text = employee!.dateOfBirth?.formatDate ?? '';
+        _selectedDateOfBirth = employee!.dateOfBirth;
+        _addressController.text = employee!.address;
+        _aboutController.text = employee!.about;
+        _skillsController.text = employee!.skills;
 
-        _gender = _employeeModel!.gender;
-        _loginAllowed = _employeeModel!.loginAllowed ? 'Yes' : 'No';
-        _receiveEmailNotifications = _employeeModel!.receiveEmailNotifications
+        _gender = employee!.gender;
+        _loginAllowed = employee!.loginAllowed ? 'Yes' : 'No';
+        _receiveEmailNotifications = employee!.receiveEmailNotifications
             ? 'Yes'
             : 'No';
-        _maritalStatus = _employeeModel!.maritalStatus;
-        _employeeType = _employeeModel!.employeeType;
-        _profileImageUrl = _employeeModel!.profileImageUrl;
+        _maritalStatus = employee!.maritalStatus;
+        _isActive = employee!.isActive;
+        _employeeType = employee!.employeeType;
+        _profileImageUrl = employee!.profileImageUrl;
 
-        _roleModel = await RoleService.getRole(uid: _employeeModel!.role);
+        _roleModel = await RoleService.getRole(uid: employee!.role);
         _designationModel = await DesignationService.getDesignation(
-          uid: _employeeModel!.designation,
+          uid: employee!.designation,
         );
 
-        if (_employeeModel!.department != null &&
-            _employeeModel!.department!.isNotEmpty) {
+        if (employee!.department != null && employee!.department!.isNotEmpty) {
           _department.clear();
-          _department.addAll(_employeeModel!.department!);
+          _department.addAll(employee!.department!);
         }
 
         if (_departmentModel != null) {
@@ -135,14 +137,14 @@ class _EmployeeEditState extends State<EmployeeEdit> {
               );
         }
 
-        if (_employeeModel!.subDepartment != null &&
-            _employeeModel!.subDepartment!.isNotEmpty) {
+        if (employee!.subDepartment != null &&
+            employee!.subDepartment!.isNotEmpty) {
           _subDepartmentModel = await SubDepartmentService.getSubDepartment(
-            uid: _employeeModel!.subDepartment ?? '',
+            uid: employee!.subDepartment ?? '',
           );
         }
 
-        for (var i in (_employeeModel?.reportingTo ?? [])) {
+        for (var i in (employee?.reportingTo ?? [])) {
           var employee = await EmployeeService.getEmployee(uid: i);
           if (employee != null) {
             _initialReportingTo.add(employee);
@@ -431,9 +433,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
             isRequired: isAdmin ? false : true,
-            valid: isAdmin  ? null : (input) => input == null || input.isEmpty
-                ? 'Employee Id is required'
-                : null,
+            valid: isAdmin
+                ? null
+                : (input) => input == null || input.isEmpty
+                      ? 'Employee Id is required'
+                      : null,
           ),
         ),
         SizedBox(
@@ -454,9 +458,12 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             label: 'Email',
             controller: _emailController,
             hintText: 'Enter Email',
-            isRequired: isAdmin ,
-            valid: !isAdmin ? null :(input) =>
-                input == null || input.isEmpty ? 'Email is required' : null,
+            isRequired: isAdmin,
+            valid: !isAdmin
+                ? null
+                : (input) => input == null || input.isEmpty
+                      ? 'Email is required'
+                      : null,
           ),
         ),
         SizedBox(
@@ -611,12 +618,14 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                 _gender = value.toString();
               }
             },
-            validator: isAdmin ? null :(value) {
-              if (value == null) {
-                return "* Required";
-              }
-              return null;
-            },
+            validator: isAdmin
+                ? null
+                : (value) {
+                    if (value == null) {
+                      return "* Required";
+                    }
+                    return null;
+                  },
           ),
         ),
         SizedBox(
@@ -627,8 +636,10 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             hintText: 'DD/MM/YYYY',
             readOnly: true,
             isRequired: isAdmin ? false : true,
-            valid: isAdmin ? null :(input) =>
-                input == null || input.isEmpty ? '* Required' : null,
+            valid: isAdmin
+                ? null
+                : (input) =>
+                      input == null || input.isEmpty ? '* Required' : null,
             onTap: () async {
               var result = await datePicker(context);
               if (result != null) {
@@ -706,6 +717,34 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                 },
               ),
               Text("Make as Admin"),
+            ],
+          ),
+        ),
+
+        Container(
+          width: itemWidth,
+          padding: const EdgeInsets.only(top: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Switch(
+                value: _isActive,
+                activeThumbColor: AppColors.success,
+                inactiveThumbColor: AppColors.danger,
+                onChanged: (value) {
+                  setState(() {
+                    _isActive = value;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _isActive ? 'Active' : 'Inactive',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: _isActive ? AppColors.success : AppColors.danger,
+                ),
+              ),
             ],
           ),
         ),
@@ -925,6 +964,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             loginAllowed: _loginAllowed == 'Yes',
             receiveEmailNotifications: _receiveEmailNotifications == 'Yes',
             maritalStatus: _maritalStatus,
+            isActive: _isActive,
             employeeType: _employeeType ?? '',
             profileImageUrl: profileImageUrl,
             skills: '',

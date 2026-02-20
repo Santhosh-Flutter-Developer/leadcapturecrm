@@ -239,41 +239,41 @@ class _ChatListPanelState extends State<ChatListPanel> {
   }
 
   void _filterChats() {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.trim().toLowerCase();
     final cacheValue = _cacheListenable.value;
 
     setState(() {
-      if (query.isEmpty) {
-        // If query is empty, show all chats
-        _filteredChats = widget.chats;
-      } else {
-        // Otherwise, filter the list
-        _filteredChats = widget.chats.where((chat) {
-          String chatName = '';
+      _filteredChats = widget.chats.where((chat) {
+        String chatName = '';
 
-          if (chat.isGroupChat) {
-            chatName = chat.title ?? '';
-          } else {
-            // Get 1-on-1 chat partner's name from cache
-            String opponentUid = chat.participants.firstWhere(
-              (id) => id != widget.currentUserUid,
-              orElse: () => '',
+        if (chat.isGroupChat) {
+          chatName = chat.title ?? '';
+        } else {
+          final opponentUid = chat.participants.firstWhere(
+            (id) => id != widget.currentUserUid,
+            orElse: () => '',
+          );
+
+          if (opponentUid.isNotEmpty) {
+            final employee = cacheValue.cast<EmployeeModel?>().firstWhere(
+              (e) => e?.uid == opponentUid,
+              orElse: () => null,
             );
-            if (opponentUid.isNotEmpty) {
-              chatName = cacheValue
-                  .firstWhere((element) => element.uid == opponentUid)
-                  .name;
-            }
+            chatName = employee?.name ?? '';
           }
+        }
 
-          // Check if last message content matches
-          String lastMessage = chat.lastMessage?.message ?? '';
+        final lastMessage = chat.lastMessage?.message ?? '';
 
-          // Return true if name or message contains the query
-          return chatName.toLowerCase().contains(query) ||
-              lastMessage.toLowerCase().contains(query);
-        }).toList();
-      }
+        if (query.isEmpty) return true;
+
+        final q = query.trim().toLowerCase();
+        final name = chatName.toLowerCase();
+        final message = lastMessage.toLowerCase();
+
+        return name.contains(q) || message.contains(q);
+      }).toList();
+      // keep pinned chats on top
       _filteredChats.sort((a, b) {
         final ap = a.isPinned == true ? 1 : 0;
         final bp = b.isPinned == true ? 1 : 0;
@@ -365,6 +365,32 @@ class _ChatListPanelState extends State<ChatListPanel> {
                           chatId: chat.uid!,
                           value: !chat.isFavorite,
                         );
+                        break;
+                      case ChatAction.delete:
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete chat'),
+                            content: const Text(
+                              'This chat will be permanently deleted. Continue?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(),
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await ChatService.deleteChat(chatId: chat.uid!);
+                        }
                         break;
                     }
                   },
@@ -609,6 +635,28 @@ class _ChatListItem extends StatelessWidget {
                                   : 'Add to favorites',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(color: AppColors.black),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: ChatAction.delete,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: AppColors.danger,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Delete chat',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppColors.danger),
                             ),
                           ],
                         ),

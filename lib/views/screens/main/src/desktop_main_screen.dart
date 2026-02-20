@@ -338,8 +338,14 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      var userData = _users[index];
-                      return _buildRailAvatar(userData);
+                      final userData = _users[index];
+
+                      return StreamBuilder<UserStatusModel?>(
+                        stream: UserStatusService.streamStatus(userData.uid),
+                        builder: (context, snapshot) {
+                          return _buildRailAvatar(userData, snapshot.data);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -370,7 +376,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     );
   }
 
-  Widget _buildRailAvatar(UserDataModel userData) {
+  Widget _buildRailAvatar(UserDataModel userData, UserStatusModel? status) {
+    final bool isOnline = status?.isOnline == true;
     return Center(
       child: Stack(
         children: [
@@ -378,27 +385,25 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.transparent,
-                width: 2,
-              ), // Can add active border logic here
+              border: Border.all(color: Colors.transparent, width: 2),
             ),
             child: UserAvatar(userData: userData, size: 36),
           ),
           // Online Indicator
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+          if (isOnline)
+            Positioned(
+              bottom: 2,
+              right: 2,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
