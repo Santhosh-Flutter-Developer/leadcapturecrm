@@ -43,7 +43,7 @@ class AuthProvider with ChangeNotifier {
     } else {
       if (Platform.isWindows) {
         _homeWidget = WindowsUpdate();
-      } else {
+      } else if(Platform.isAndroid) {
         _homeWidget = AndroidUpdate();
       }
     }
