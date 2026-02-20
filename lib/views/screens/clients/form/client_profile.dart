@@ -477,48 +477,48 @@ Color _statusColor(String status) {
     );
   }
 
-  Widget _sectionHeader(BuildContext context, String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppColors.black87,
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _sectionHeader(BuildContext context, String title, IconData icon) {
+  //   return Row(
+  //     children: [
+  //       Container(
+  //         padding: const EdgeInsets.all(8),
+  //         decoration: BoxDecoration(
+  //           color: AppColors.primary.withValues(alpha: 0.1),
+  //           borderRadius: BorderRadius.circular(10),
+  //         ),
+  //         child: Icon(icon, color: AppColors.primary, size: 20),
+  //       ),
+  //       const SizedBox(width: 10),
+  //       Text(
+  //         title,
+  //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //           fontWeight: FontWeight.w700,
+  //           color: AppColors.black87,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _sectionContainer({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(context, title, icon),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
+  // Widget _sectionContainer({
+  //   required BuildContext context,
+  //   required String title,
+  //   required IconData icon,
+  //   required Widget child,
+  // }) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(24),
+  //     decoration: _cardDecoration(),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         _sectionHeader(context, title, icon),
+  //         const SizedBox(height: 16),
+  //         child,
+  //       ],
+  //     ),
+  //   );
+  // }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
     color: AppColors.white,

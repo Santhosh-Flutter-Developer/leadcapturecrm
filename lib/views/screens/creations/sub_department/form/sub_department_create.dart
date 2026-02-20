@@ -147,7 +147,6 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
                 if (selectedDep != null) {
                   _selectedDepartment = selectedDep;
                 }
-                print("the dep $_selectedDepartment ,,, $selectedDep");
                 setState(() {});
               },
             ),
