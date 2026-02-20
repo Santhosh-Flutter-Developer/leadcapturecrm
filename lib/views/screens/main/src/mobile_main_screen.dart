@@ -156,32 +156,38 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: selected ? AppColors.primary : AppColors.grey400,
-            ),
-            SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            Flexible(
+              child: Icon(
+                icon,
+                size: 24,
                 color: selected ? AppColors.primary : AppColors.grey400,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+            SizedBox(height: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: selected ? AppColors.primary : AppColors.grey400,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
               ),
             ),
             SizedBox(height: 6),
-            AnimatedOpacity(
-              duration: Duration(milliseconds: 220),
-              opacity: selected ? 1.0 : 0.0,
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 200),
-                height: 6,
-                width: 6,
-                // ignore: deprecated_member_use
-                transform: Matrix4.identity()..scale(selected ? 1.0 : 0.4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
+            Flexible(
+              child: AnimatedOpacity(
+                duration: Duration(milliseconds: 220),
+                opacity: selected ? 1.0 : 0.0,
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 200),
+                  height: 6,
+                  width: 6,
+                  // ignore: deprecated_member_use
+                  transform: Matrix4.identity()..scale(selected ? 1.0 : 0.4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
               ),
             ),

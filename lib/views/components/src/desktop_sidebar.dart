@@ -66,6 +66,7 @@ class SidebarIconTile extends StatelessWidget {
   }
 }
 
+// ignore: must_be_immutable
 class DesktopSidebar extends StatefulWidget {
   final bool isCollapsed;
   final ValueChanged<bool> onCollapseChanged;

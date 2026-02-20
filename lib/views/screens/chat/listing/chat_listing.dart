@@ -74,6 +74,7 @@ class _ChatListingViewState extends State<ChatListingView> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth < 900) {
+                  print("the chats ${state.chats}");
                   if (state.chats.isNotEmpty) {
                     return ChatListPanel(
                       onSelect: (index) {

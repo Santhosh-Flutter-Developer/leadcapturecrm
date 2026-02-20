@@ -100,11 +100,12 @@ class _MobileMenuState extends State<MobileMenu> {
 
                     SizedBox(height: 8),
                     if (_adminModel != null ||
-                        ((_roleModel?.permissions
-                                    .where((e) => e.page == "Admin")
-                                    .isNotEmpty ??
-                                false) ||
-                            _adminModel != null ||
+                        (
+                          // (_roleModel?.permissions
+                          //           .where((e) => e.page == "Admin")
+                          //           .isNotEmpty ??
+                          //       false) ||
+                          //   _adminModel != null ||
                             (_roleModel?.permissions
                                     .where((e) => e.page == "Role")
                                     .isNotEmpty ??
@@ -131,17 +132,17 @@ class _MobileMenuState extends State<MobileMenu> {
                           color: AppColors.grey500,
                         ),
                       ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Admin")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.user,
-                          title: 'Admin',
-                          onTap: () =>
-                              Navigate.route(context, const AdminListing()),
-                        ),
+                      // if (_adminModel != null ||
+                      //     (_roleModel?.permissions
+                      //             .where((e) => e.page == "Admin")
+                      //             .isNotEmpty ??
+                      //         false))
+                      //   _buildListTile(
+                      //     icon: Iconsax.user,
+                      //     title: 'Admin',
+                      //     onTap: () =>
+                      //         Navigate.route(context, const AdminListing()),
+                      //   ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
                                   .where((e) => e.page == "Role")
