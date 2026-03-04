@@ -1,6 +1,6 @@
 flutter_native_splash:
   color: "#FFFFFF" # Background color matching the background image
-  image: assets/images/splash-logo.png # Transparent logo on splash screen
+  image: assets/images/company_logo.png # Transparent logo on splash screen
 
   android: true
   ios: true
@@ -10,9 +10,9 @@ flutter_native_splash:
 
   android_12:
     color: "#FFFFFF"
-    image: assets/images/splash-logo.png
+    image: assets/images/company_logo.png
     icon_background_color: "#FFFFFF" # Set to match background color
-    image_dark: assets/images/splash-logo.png
+    image_dark: assets/images/company_logo.png
     icon_background_color_dark: "#FFFFFF" # Prevents black fill
 
   background_image: assets/images/splash_light.png # Full-screen background

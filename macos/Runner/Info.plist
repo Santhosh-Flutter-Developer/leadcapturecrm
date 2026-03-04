@@ -14,7 +14,7 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<!-- <string>$(PRODUCT_NAME)</string> -->
-	<string>AAATP</string>
+	<string>Lead Capture</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

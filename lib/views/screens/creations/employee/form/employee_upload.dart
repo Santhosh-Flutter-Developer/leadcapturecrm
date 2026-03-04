@@ -661,7 +661,7 @@ class _CustomMenuCard extends StatelessWidget {
               onTap: () async {
                 await Download.downloadFromUrl(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_employee_upload_template.xlsx?alt=media&token=85108573-f509-4d5a-baf7-460f16945598",
+                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Fleadcapture_employee_upload_template.xlsx?alt=media&token=85108573-f509-4d5a-baf7-460f16945598",
                   "Employee Template.xlsx",
                 );
                 if (Navigator.canPop(context)) {
@@ -677,7 +677,7 @@ class _CustomMenuCard extends StatelessWidget {
               onTap: () async {
                 await Download.downloadFromUrl(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_employee_upload_template_with_data.xlsx?alt=media&token=4cc3bb15-dddc-49e1-931c-34bd17b559b3",
+                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Fleadcapture_employee_upload_template_with_data.xlsx?alt=media&token=4cc3bb15-dddc-49e1-931c-34bd17b559b3",
                   "Employee Template.xlsx",
                 );
                 if (Navigator.canPop(context)) {

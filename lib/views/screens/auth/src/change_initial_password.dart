@@ -203,49 +203,48 @@ class _ChangeInitialPasswordState extends State<ChangeInitialPassword> {
                       ),
                       const SizedBox(height: 20),
 
-                      SizedBox(
+                      Container(
                         width: double.infinity,
-                        height: 40,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF0052D4),
-                                Color(0xFF4364F7),
-                                Color(0xFF6FB1FC),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF0056D2,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
+                        height: 45,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF0052D4),
+                              Color(0xFF4364F7),
+                              Color(0xFF6FB1FC),
                             ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: ElevatedButton(
-                            onPressed: _resetPassword,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.transparent,
-                              shadowColor: AppColors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0056D2,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
-                            child: Text(
-                              "Reset Password",
-                              style: Theme.of(context).textTheme.bodyMedium!
-                                  .copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.1,
-                                    color: AppColors.white,
-                                  ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _resetPassword,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
+                          ),
+                          child: Text(
+                            "Reset Password",
+                            style: Theme.of(context).textTheme.bodyMedium!
+                                .copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.1,
+                                  color: Colors.white,
+                                ),
                           ),
                         ),
                       ),

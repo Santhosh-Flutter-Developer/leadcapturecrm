@@ -1,12 +1,12 @@
-import 'package:aaatp/models/src/download_model.dart';
-import 'package:aaatp/utils/src/open_file.dart';
-import 'package:aaatp/views/screens/download/bloc/download_bloc.dart';
-import 'package:aaatp/views/screens/download/bloc/download_event.dart';
-import 'package:aaatp/views/screens/download/bloc/download_state.dart';
-import 'package:aaatp/views/ui/src/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/models/src/download_model.dart';
+import 'package:leadcapture/utils/src/open_file.dart';
+import 'package:leadcapture/views/screens/download/bloc/download_bloc.dart';
+import 'package:leadcapture/views/screens/download/bloc/download_event.dart';
+import 'package:leadcapture/views/screens/download/bloc/download_state.dart';
+import 'package:leadcapture/views/ui/src/loading.dart';
 
 class DownloadHistoryColors {
   static const Color primary = Color(0xFF2563EB);

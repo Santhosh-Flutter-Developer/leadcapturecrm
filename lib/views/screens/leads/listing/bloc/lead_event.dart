@@ -38,3 +38,15 @@ class StreamLeadHistory extends LeadEvent {
   final String leadUid;
   StreamLeadHistory(this.leadUid);
 }
+
+class StreamLeadActivities extends LeadEvent {
+  final String leadUid;
+  StreamLeadActivities(this.leadUid);
+}
+
+class AddLeadActivity extends LeadEvent {
+  final String leadUid;
+  final LeadActivityModel activity;
+
+  AddLeadActivity({required this.leadUid, required this.activity});
+}

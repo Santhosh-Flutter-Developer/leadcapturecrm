@@ -18,15 +18,15 @@ class CreatedByWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              userData.name.isNotEmpty ? userData.name : 'N/A',
+              userData.name.isNotEmpty ? userData.name : '',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.bold),
             ),
-            Text(
-              userData.desc ?? 'N/A',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            // Text(
+            //   userData.desc ?? '',
+            //   style: Theme.of(context).textTheme.bodySmall,
+            // ),
           ],
         ),
       ],

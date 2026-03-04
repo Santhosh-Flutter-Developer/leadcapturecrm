@@ -1,10 +1,10 @@
-import 'package:aaatp/utils/src/platform.dart';
-import 'package:aaatp/views/components/src/sheet.dart';
-import 'package:aaatp/views/screens/deals/listing/deals_listing.dart';
-import 'package:aaatp/views/ui/src/general_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/utils/src/platform.dart';
+import 'package:leadcapture/views/components/src/sheet.dart';
+import 'package:leadcapture/views/screens/deals/listing/deals_listing.dart';
+import 'package:leadcapture/views/ui/src/general_dialog.dart';
 import '/models/models.dart';
 
 class DealsTimelineChart extends StatelessWidget {

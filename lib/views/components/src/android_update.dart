@@ -37,7 +37,7 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
 
   void _init() async {
     _installedLocation =
-        "${await _getFolderPath()}/${_versionModel?.version ?? 'aaatp'}.apk";
+        "${await _getFolderPath()}/${_versionModel?.version ?? 'leadcapture'}.apk";
     _readyToInstall = await _checkFileExists();
     setState(() {});
   }
@@ -164,7 +164,9 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
   bool _readyToInstall = false;
   double _progress = 0.0;
   String _installedLocation = "";
-  static const platform = MethodChannel('com.srisoftwarez.aaatp/install_apk');
+  static const platform = MethodChannel(
+    'com.srisoftwarez.leadcapture/install_apk',
+  );
 
   Future<void> _downloadApkAndInstall() async {
     try {
@@ -190,7 +192,7 @@ class _AndroidUpdateState extends State<AndroidUpdate> {
           .onDone(() async {
             await saveFileToDownloads(
               Uint8List.fromList(bytes),
-              fileName: "${_versionModel?.version ?? 'aaatp'}.apk",
+              fileName: "${_versionModel?.version ?? 'leadcapture'}.apk",
             );
             _isLoading = false;
             _readyToInstall = true;

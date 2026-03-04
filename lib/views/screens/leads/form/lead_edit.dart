@@ -34,8 +34,8 @@ class _LeadEditState extends State<LeadEdit> {
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
 
-  String? _salutation;
-  bool _allowFollowUp = true;
+  // String? _salutation;
+  // final bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
   late Future _future;
@@ -78,7 +78,7 @@ class _LeadEditState extends State<LeadEdit> {
       _companyMobileController.text = _leadModel.companyMobile ?? '';
       _companyAddressController.text = _leadModel.companyAddress ?? '';
       _companyZipController.text = _leadModel.companyZipCode ?? '';
-      _salutation = _leadModel.salutation;
+      // _salutation = _leadModel.salutation;
       _selectedLeadSource = _leadModel.leadSource;
       _regionModel = _leadModel.companyCountry;
       _stateModel = _leadModel.companyState;
@@ -96,7 +96,13 @@ class _LeadEditState extends State<LeadEdit> {
         );
       }
 
-      _allowFollowUp = _leadModel.allowFollowUp;
+      if (_leadModel.leadPriority.isNotEmpty) {
+        _leadPriority = await LeadPriorityService.getLeadPriority(
+          uid: _leadModel.leadPriority,
+        );
+      }
+
+      // _allowFollowUp = _leadModel.allowFollowUp;
       _uploadedAttachments = _leadModel.attachments;
 
       _leadCategories.clear();
@@ -354,15 +360,15 @@ class _LeadEditState extends State<LeadEdit> {
       spacing: horizontalSpacing,
       runSpacing: verticalSpacing,
       children: [
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'Salutation',
-            initialItem: _salutation,
-            items: const ['Mr.', 'Mrs.', 'Ms.', 'Dr.'],
-            onChanged: (value) => _salutation = value as String?,
-          ),
-        ),
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormDropdownSearch(
+        //     label: 'Salutation',
+        //     initialItem: _salutation,
+        //     items: const ['Mr.', 'Mrs.', 'Ms.', 'Dr.'],
+        //     onChanged: (value) => _salutation = value as String?,
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
@@ -439,17 +445,17 @@ class _LeadEditState extends State<LeadEdit> {
             keyboardType: TextInputType.number,
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'Allow Follow Up',
-            items: const ['Yes', 'No'],
-            initialItem: _allowFollowUp ? 'Yes' : 'No',
-            onChanged: (value) =>
-                _allowFollowUp = value == 'Yes' ? true : false,
-            validator: (value) => value == null ? "* Required" : null,
-          ),
-        ),
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormDropdownSearch(
+        //     label: 'Allow Follow Up',
+        //     items: const ['Yes', 'No'],
+        //     initialItem: _allowFollowUp ? 'Yes' : 'No',
+        //     onChanged: (value) =>
+        //         _allowFollowUp = value == 'Yes' ? true : false,
+        //     validator: (value) => value == null ? "* Required" : null,
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
           child: FormDropdownSearch(
@@ -653,14 +659,14 @@ class _LeadEditState extends State<LeadEdit> {
         }
 
         LeadModel leadModel = LeadModel(
-          salutation: _salutation,
+          // salutation: _salutation,
           leadName: _leadNameController.text,
           leadEmail: _leadEmailController.text,
           leadSource: _selectedLeadSource!,
           leadCategory: _leadCategory?.uid ?? '',
           leadPriority: _leadPriority?.uid ?? '',
           leadValue: double.parse(_leadValueController.text),
-          allowFollowUp: _allowFollowUp,
+          // allowFollowUp: _allowFollowUp,
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text,
           attachments: attachments,

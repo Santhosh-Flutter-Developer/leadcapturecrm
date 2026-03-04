@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/views/screens/leads/listing/lead_upload.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import '/services/services.dart';
@@ -77,6 +78,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   final ScrollController _hScrollController = ScrollController();
   String _selectedView = 'Grid';
   final List<LeadModel> _selectedLeads = [];
+  final List<LeadModel> _leadsList = [];
   List<LeadModel> _filteredLeads = [];
   PermissionModel? permissions;
 
@@ -780,116 +782,170 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   Widget _buildActionRow(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // final bool isMobile = constraints.maxWidth < 600;
+        // 1. Define the Action Buttons (Add, Upload, Export, Delete)
+        final List<Widget> actionButtons = [];
 
-        final addDeleteButtons = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (permissions?.canCreate ?? false) ...[
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (kIsMobile) {
-                    Sheet.showSheet(context, widget: const LeadCreate());
-                  } else {
-                    GeneralDialog.showRTLSheet(context, const LeadCreate());
-                  }
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(
-                  "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: AppColors.white,
-                ),
+        // ADD BUTTON
+        if (permissions?.canCreate ?? false) {
+          actionButtons.add(
+            ElevatedButton.icon(
+              onPressed: () {
+                if (kIsMobile) {
+                  Sheet.showSheet(context, widget: const LeadCreate());
+                } else {
+                  GeneralDialog.showRTLSheet(context, const LeadCreate());
+                }
+              },
+              icon: const Icon(Icons.add, size: 18),
+              label: Text("Add $_pageTitle"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: AppColors.white,
               ),
-              const SizedBox(width: 10),
-            ] else ...[
-              ElevatedButton.icon(
-                onPressed: null,
-                icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
-                label: Text(
-                  "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey300,
-                  foregroundColor: AppColors.grey600,
-                ),
+            ),
+          );
+        } else {
+          actionButtons.add(
+            ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text("Add $_pageTitle"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.grey300,
+                foregroundColor: AppColors.grey600,
               ),
-            ],
-            if (permissions?.canDelete ?? false) ...[
-              if (_selectedLeads.isNotEmpty)
-                ElevatedButton.icon(
-                  label: Text(
-                    "Delete",
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.white),
-                  ),
-                  icon: const Icon(Iconsax.trash),
-                  onPressed: () async {
-                    var result = await showDialog(
-                      context: context,
-                      builder: (context) => ConfirmDialog(
-                        title: 'Delete',
-                        content:
-                            'Are you sure want to delete this $_pageTitle?',
-                      ),
-                      barrierDismissible: false,
-                    );
-                    if (result != null && result) {
-                      try {
-                        futureLoading(context);
-                        for (var i in _selectedLeads) {
-                          await LeadService.deleteLead(uid: i.uid ?? '');
-                        }
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        _selectedLeads.clear();
-                        setState(() {});
-                      } catch (e) {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(context, e.toString(), isSuccess: false);
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
-                    foregroundColor: AppColors.white,
-                  ),
-                ),
-            ] else ...[
-              ElevatedButton.icon(
-                label: Text(
-                  "Delete",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
-                ),
-                icon: Icon(Iconsax.trash),
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey400,
-                  foregroundColor: AppColors.white,
-                ),
-              ),
-            ],
-          ],
+            ),
+          );
+        }
+
+        actionButtons.add(const SizedBox(width: 10));
+
+        actionButtons.add(
+          ElevatedButton.icon(
+            onPressed: () {
+              if (kIsMobile) {
+                Sheet.showSheet(context, widget: const LeadUpload());
+              } else {
+                GeneralDialog.showRTLSheet(context, const LeadUpload());
+              }
+            },
+            icon: const Icon(Iconsax.cloud_plus, size: 18),
+            label: const Text("Upload"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.blue,
+              foregroundColor: AppColors.white,
+            ),
+          ),
         );
 
+        actionButtons.add(const SizedBox(width: 10));
+
+        // EXPORT BUTTON
+        actionButtons.add(
+          ElevatedButton.icon(
+            label: const Text("Export"),
+            icon: const Icon(Iconsax.export_3, size: 18),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors
+                  .grey600, // Changed to grey to differentiate from Upload
+              foregroundColor: AppColors.white,
+            ),
+            onPressed: () async {
+              try {
+                List<List<String>> exportData = [];
+                exportData.add([
+                  'Lead Name',
+                  'Email',
+                  'Source',
+                  'Category',
+                  'Priority',
+                  'Value',
+                  'Status',
+                  'Company',
+                  'Mobile',
+                  'Country',
+                  'State',
+                  'City',
+                  'Address',
+                  'Notes',
+                  'Created At',
+                ]);
+
+                for (var lead in _leadsList) {
+                  exportData.add([
+                    lead.leadName,
+                    lead.leadEmail,
+                    lead.leadSource.name,
+                    lead.leadCategory,
+                    lead.leadPriority,
+                    lead.leadValue.toString(),
+                    lead.leadStatus,
+                    lead.companyName ?? '',
+                    lead.companyMobile ?? '',
+                    lead.companyCountry?.name ?? '',
+                    lead.companyState?.name ?? '',
+                    lead.companyCity?.name ?? '',
+                    lead.companyAddress ?? '',
+                    lead.notes,
+                    lead.createdAt.formatDateTime,
+                  ]);
+                }
+
+                var fileBytes = await XlsxWriter().create(exportData);
+                var filePath = await saveFileToDownloads(
+                  fileBytes,
+                  fileName:
+                      'Leads_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+                );
+                openfile(filePath, context);
+              } catch (e) {
+                FlushBar.show(context, e.toString(), isSuccess: false);
+              }
+            },
+          ),
+        );
+
+        // DELETE BUTTON (Only shows if items selected)
+        if ((permissions?.canDelete ?? false) && _selectedLeads.isNotEmpty) {
+          actionButtons.add(const SizedBox(width: 10));
+          actionButtons.add(
+            ElevatedButton.icon(
+              label: const Text("Delete"),
+              icon: const Icon(Iconsax.trash, size: 18),
+              onPressed: () async {
+                var result = await showDialog(
+                  context: context,
+                  builder: (context) => const ConfirmDialog(
+                    title: 'Delete',
+                    content:
+                        'Are you sure you want to delete the selected leads?',
+                  ),
+                );
+                if (result == true) {
+                  try {
+                    futureLoading(context);
+                    for (var i in _selectedLeads) {
+                      await LeadService.deleteLead(uid: i.uid ?? '');
+                    }
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+                    FlushBar.show(context, 'Leads deleted successfully');
+                    _selectedLeads.clear();
+                    setState(() {});
+                  } catch (e) {
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+                    FlushBar.show(context, e.toString(), isSuccess: false);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: AppColors.white,
+              ),
+            ),
+          );
+        }
+
+        // 2. Define the View Toggle (Grid/List/Calendar)
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
@@ -900,61 +956,47 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                onPressed: () {
-                  _selectedView = 'Grid';
-                  setState(() {});
-                },
-                icon: const Icon(Iconsax.grid_3, size: 18),
-                color: _selectedView == 'Grid'
-                    ? AppColors.blue
-                    : AppColors.grey700,
-              ),
+              _buildToggleIcon(Iconsax.grid_3, 'Grid'),
               Container(width: 1, color: Colors.grey.shade300),
-              IconButton(
-                onPressed: () {
-                  _selectedView = 'List';
-                  setState(() {});
-                },
-                icon: const Icon(Icons.list),
-                color: _selectedView == 'List'
-                    ? AppColors.blue
-                    : AppColors.grey700,
-              ),
+              _buildToggleIcon(Icons.list, 'List'),
               Container(width: 1, color: Colors.grey.shade300),
-              IconButton(
-                onPressed: () {
-                  _selectedView = 'Calendar';
-                  setState(() {});
-                },
-                icon: const Icon(Iconsax.calendar_1, size: 18),
-                color: _selectedView == 'Calendar'
-                    ? AppColors.blue
-                    : AppColors.grey700,
-              ),
+              _buildToggleIcon(Iconsax.calendar_1, 'Calendar'),
             ],
           ),
         );
 
+        // 3. Layout the components
         if (kIsMobile) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: addDeleteButtons,
+                child: Row(children: actionButtons),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               viewToggle,
             ],
           );
         } else {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [addDeleteButtons, viewToggle],
+            children: [
+              Row(children: actionButtons),
+              viewToggle,
+            ],
           );
         }
       },
+    );
+  }
+
+  // Helper for the View Toggle icons
+  Widget _buildToggleIcon(IconData icon, String viewName) {
+    return IconButton(
+      onPressed: () => setState(() => _selectedView = viewName),
+      icon: Icon(icon, size: 18),
+      color: _selectedView == viewName ? AppColors.blue : AppColors.grey700,
     );
   }
 

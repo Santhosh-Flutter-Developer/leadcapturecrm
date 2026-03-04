@@ -15,6 +15,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   List<LeadStatusModel> allStatus = [];
   List<LeadCommentModel> _comments = [];
   List<LeadHistoryModel> _history = [];
+  List<LeadActivityModel> _activities = [];
 
   LeadBloc() : super(LeadLoading()) {
     on<StreamLead>(_streamLeads);
@@ -22,6 +23,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<StreamLeadComments>(_streamLeadComments);
     on<AddLeadComment>(_addLeadComment);
     on<StreamLeadHistory>(_streamLeadHistory);
+    on<StreamLeadActivities>(_streamLeadActivities);
+    on<AddLeadActivity>(_addLeadActivity);
   }
 
   Future<void> _streamLeads(StreamLead event, Emitter<LeadState> emit) async {
@@ -137,7 +140,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         commentsStream,
         onData: (comments) {
           _comments = comments;
-          return LeadDetailLoaded(comments: _comments, history: _history);
+          return LeadDetailLoaded(
+            comments: _comments,
+            history: _history,
+            activities: _activities,
+          );
         },
         onError: (error, stackTrace) {
           debugPrint(stackTrace.toString());
@@ -184,6 +191,64 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     }
   }
 
+  Future<void> _streamLeadActivities(
+    StreamLeadActivities event,
+    Emitter<LeadState> emit,
+  ) async {
+    final cid = await Spdb.getCid();
+
+    final stream = firestore
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.leads.name)
+        .doc(event.leadUid)
+        .collection('activities')
+        .orderBy('scheduledAt')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => LeadActivityModel.fromMap(doc.id, doc.data()))
+              .toList();
+        });
+
+    await emit.forEach<List<LeadActivityModel>>(
+      stream,
+      onData: (activities) {
+        _activities = activities;
+
+        return LeadDetailLoaded(
+          comments: _comments,
+          history: _history,
+          activities: _activities,
+        );
+      },
+    );
+  }
+
+  Future<void> _addLeadActivity(
+    AddLeadActivity event,
+    Emitter<LeadState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(event.leadUid)
+          .collection('activities')
+          .add(event.activity.toMap());
+
+      await LeadService.addLeadHistory(
+        leadUid: event.leadUid,
+        action: "New activity scheduled",
+      );
+    } catch (e) {
+      emit(LeadError(e.toString()));
+    }
+  }
+
   Future<void> _streamLeadHistory(
     StreamLeadHistory event,
     Emitter<LeadState> emit,
@@ -208,7 +273,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         historyStream,
         onData: (history) {
           _history = history;
-          return LeadDetailLoaded(comments: _comments, history: _history);
+          return LeadDetailLoaded(
+            comments: _comments,
+            history: _history,
+            activities: _activities,
+          );
         },
         onError: (error, _) => LeadDetailError(error.toString()),
       );

@@ -1,5 +1,5 @@
-import 'package:aaatp/constants/src/enum.dart';
 import 'package:flutter/material.dart';
+import 'package:leadcapture/constants/src/enum.dart';
 import '/theme/theme.dart';
 
 class ConfirmDialog extends StatefulWidget {
@@ -88,14 +88,10 @@ class _ConfirmDialogState extends State<ConfirmDialog> {
   }
 }
 
-
 class LeadCompletionDialog extends StatefulWidget {
   final String leadName;
 
-  const LeadCompletionDialog({
-    super.key,
-    required this.leadName,
-  });
+  const LeadCompletionDialog({super.key, required this.leadName});
 
   @override
   State<LeadCompletionDialog> createState() => _LeadCompletionDialogState();
@@ -109,14 +105,12 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
     return AlertDialog(
       backgroundColor: AppColors.white,
       surfaceTintColor: AppColors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(
         'Complete Lead',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -130,9 +124,9 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
 
           Text(
             'Select Completion Status',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
 
@@ -145,11 +139,8 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
                 selected: isSelected,
                 selectedColor: AppColors.primary.withOpacity(0.15),
                 labelStyle: TextStyle(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.grey700,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? AppColors.primary : AppColors.grey700,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 onSelected: (_) {
                   setState(() {
@@ -177,11 +168,10 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
                   child: Center(
                     child: Text(
                       'Cancel',
-                      style:
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.grey700,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.grey700,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -206,11 +196,10 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
                   child: Center(
                     child: Text(
                       'Confirm & Convert',
-                      style:
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -227,11 +216,7 @@ class ConfirmDialog2 extends StatelessWidget {
   final String title;
   final String content;
 
-  const ConfirmDialog2({
-    super.key,
-    required this.title,
-    required this.content,
-  });
+  const ConfirmDialog2({super.key, required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -241,13 +226,13 @@ class ConfirmDialog2 extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop(false); 
+            Navigator.of(context).pop(false);
           },
           child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.of(context).pop(true); 
+            Navigator.of(context).pop(true);
           },
           child: const Text('Confirm'),
         ),

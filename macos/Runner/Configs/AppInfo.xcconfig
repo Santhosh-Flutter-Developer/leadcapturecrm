@@ -8,7 +8,7 @@
 PRODUCT_NAME = macos
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.srisoftwarez.aaatp.macos
+PRODUCT_BUNDLE_IDENTIFIER = com.srisoftwarez.leadcapture.macos
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.srisoftwarez.aaatp. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com.srisoftwarez.leadcapture. All rights reserved.

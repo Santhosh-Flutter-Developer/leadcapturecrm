@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.srisoftwarez" "\0"
-            VALUE "FileDescription", "aaatp" "\0"
+            VALUE "FileDescription", "leadcapture" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "aaatp" "\0"
+            VALUE "InternalName", "leadcapture" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.srisoftwarez. All rights reserved." "\0"
-            VALUE "OriginalFilename", "aaatp.exe" "\0"
-            VALUE "ProductName", "aaatp" "\0"
+            VALUE "OriginalFilename", "leadcapture.exe" "\0"
+            VALUE "ProductName", "leadcapture" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

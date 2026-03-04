@@ -6,11 +6,7 @@ class LoadDashboardEvent extends DashboardEvent {
   final String filter;
   final DateTimeRange? range;
 
-  LoadDashboardEvent({
-    required this.filter,
-    this.range,
-  });
+  LoadDashboardEvent({required this.filter, this.range});
 }
 
 class RefreshDashboardEvent extends DashboardEvent {}
-

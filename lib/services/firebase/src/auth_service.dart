@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '/utils/utils.dart';
@@ -111,6 +113,58 @@ class AuthService {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
       throw e.toString();
+    }
+  }
+
+  static Future<Map<String, dynamic>> registerCompany({
+    required String name,
+    required String adminEmail,
+    required String adminName,
+    required String password,
+    File? logo,
+  }) async {
+    try {
+      // 1. Generate a new Company Document ID first
+      DocumentReference companyRef = firebase.users.doc();
+      String companyId = companyRef.id;
+
+      // 2. Upload Logo if it exists using your StorageService
+      String? logoUrl;
+      if (logo != null) {
+        logoUrl = await StorageService.uploadImage(
+          file: logo,
+          folder: StorageFolder.companyLogo,
+          collectionId: companyId,
+        );
+      }
+
+      // 3. Create Company Root Data
+      await companyRef.set({
+        'companyName': name.encrypt,
+        'createdAt': FieldValue.serverTimestamp(),
+        'logo': logoUrl,
+        'status': 'active',
+      });
+
+      // 4. Create the Super Admin in the sub-collection
+      await companyRef.collection(Collections.admins.name).add({
+        'name': adminName,
+        'email': adminEmail,
+        'password': password,
+        'role': 'super_admin',
+        'createdAt': FieldValue.serverTimestamp(),
+        'devices': [],
+        'loginAllowed': true,
+      });
+
+      return {
+        "status": true,
+        "message": "Organization registered successfully",
+      };
+    } catch (e, st) {
+      debugPrint("${e.toString()}, ${st.toString()}");
+      await ErrorService.recordError(e, st);
+      return {"status": false, "error": e.toString()};
     }
   }
 

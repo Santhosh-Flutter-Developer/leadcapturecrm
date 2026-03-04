@@ -1,4 +1,4 @@
-package com.srisoftwarez.aaatp
+package com.srisoftwarez.leadcapture
 
 import android.content.Intent
 import android.net.Uri
@@ -10,7 +10,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val INSTALLCHANNEL = "com.srisoftwarez.aaatp/install_apk"
+    private val INSTALLCHANNEL = "com.srisoftwarez.leadcapture/install_apk"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

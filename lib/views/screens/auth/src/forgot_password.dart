@@ -351,59 +351,51 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         const SizedBox(height: 20),
                       ],
 
-                      //  Main Button
-                      SizedBox(
+                      Container(
                         width: double.infinity,
-                        height: 40,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF0052D4),
-                                Color(0xFF4364F7),
-                                Color(0xFF6FB1FC),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF0056D2,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
+                        height: 45, // Matched height
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF0052D4),
+                              Color(0xFF4364F7),
+                              Color(0xFF6FB1FC),
                             ],
                           ),
-                          child: ElevatedButton(
-                            onPressed: _emailVerified
-                                ? _otpSent
-                                      ? _verifyOtp
-                                      : _sendOtp
-                                : _verifyEmail,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.transparent,
-                              shadowColor: AppColors.transparent,
-                              foregroundColor: AppColors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0056D2,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
-                            child: Text(
-                              _emailVerified
-                                  ? _otpSent
-                                        ? "Verify OTP"
-                                        : "Send OTP"
-                                  : "Verify User",
-                              style: Theme.of(context).textTheme.bodyMedium!
-                                  .copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.1,
-                                  ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _emailVerified
+                              ? _otpSent
+                                    ? _verifyOtp
+                                    : _sendOtp
+                              : _verifyEmail,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            _emailVerified
+                                ? _otpSent
+                                      ? "Verify OTP"
+                                      : "Send OTP"
+                                : "Verify User",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
                             ),
                           ),
                         ),

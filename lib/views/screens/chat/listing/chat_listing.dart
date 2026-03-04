@@ -60,6 +60,20 @@ class _ChatListingViewState extends State<ChatListingView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: kIsMobile ? Back(color: FeedAppColors.textPrimary) : null,
+        backgroundColor: FeedAppColors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          "Chats",
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: FeedAppColors.textPrimary,
+            fontSize: 18,
+          ),
+        ),
+      ),
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
           if (state is ChatLoading) {

@@ -17,7 +17,7 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
   int _currentIndex = 0;
 
   final items = [
-    {"icon": Iconsax.message, "label": "Messenger"},
+    {"icon": Iconsax.music_dashboard, "label": "Dashboard"},
     {"icon": Iconsax.graph, "label": "Leads"},
     {"icon": Iconsax.grid_lock, "label": "Deals"},
     {"icon": Iconsax.menu, "label": "Menu"},
@@ -52,7 +52,14 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
   Widget _buildMainContentMobile() {
     switch (_currentIndex) {
       case 0:
-        return ChatListing(currentUserUid: _currentUserUid);
+        return BlocProvider(
+          create: (context) => DashboardBloc(
+            dashboard: DashboardService(),
+            userId: _currentUserUid,
+            isAdmin: widget.isAdmin,
+          )..add(LoadDashboardEvent(filter: 'all')),
+          child: Dashboard(isAdmin: widget.isAdmin),
+        );
       case 1:
         return const LeadsListing(showAppBar: false);
       case 2:
@@ -182,7 +189,6 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
                   duration: Duration(milliseconds: 200),
                   height: 6,
                   width: 6,
-                  // ignore: deprecated_member_use
                   transform: Matrix4.identity()..scale(selected ? 1.0 : 0.4),
                   decoration: BoxDecoration(
                     color: AppColors.primary,

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:leadcapture/constants/src/enum.dart';
+import 'package:leadcapture/models/src/admin_model.dart';
+import 'package:leadcapture/models/src/user_data_model.dart';
 import 'package:local_notifier/local_notifier.dart';
 import '/firebase_options.dart';
 import '/app/app.dart';
@@ -35,6 +38,7 @@ class LifecycleHandler extends WidgetsBindingObserver {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await seedFirstAdmin();
 
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
@@ -44,7 +48,7 @@ void main() async {
   if (kIsMobile) {
     NotificationService.instance.initalize();
   } else if (kIsDesktop) {
-    await localNotifier.setup(appName: 'AAATP');
+    await localNotifier.setup(appName: 'Lead Capture');
     FirestoreNotificationListener.listenForNotifications();
 
     // FlutterWindowClose.setWindowShouldCloseHandler(() async {
@@ -66,3 +70,32 @@ void main() async {
 
   runApp(const App());
 }
+
+// Future<void> seedFirstAdmin() async {
+//   final companyRef = await FirebaseFirestore.instance.collection("users").add({
+//     "name": "Lead Capture",
+//     "createdAt": DateTime.now().millisecondsSinceEpoch,
+//   });
+
+//   final cid = companyRef.id;
+
+//   final admin = AdminModel(
+//     name: "Super Admin",
+//     email: "admin@leadcapture.com",
+//     password: "Admin123@",
+//     mobileNumber: "9876543210",
+//     createdBy: UserDataModel(
+//       uid: "system",
+//       name: "system",
+//       userType: UserType.admin,
+//     ),
+//   );
+
+//   await FirebaseFirestore.instance
+//       .collection("users")
+//       .doc(cid)
+//       .collection("admins")
+//       .add(admin.toMap());
+
+//   debugPrint("✅ Company + Admin created");
+// }

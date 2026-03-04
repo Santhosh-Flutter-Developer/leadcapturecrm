@@ -68,9 +68,9 @@ class _DashboardState extends State<Dashboard> {
                               _buildKpiGrid(context, widget.isAdmin, data),
                               const SizedBox(height: 20),
                               if (widget.isAdmin) ...[
-                                LeadsSourcePieChart(leads: data.allLeads,),
+                                LeadsSourcePieChart(leads: data.allLeads),
                                 const SizedBox(height: 20),
-                                DealsTimelineChart(deals: data.allDeals,),
+                                DealsTimelineChart(deals: data.allDeals),
                                 const SizedBox(height: 20),
                                 TaskStatusPieChart(tasks: data.allTasks),
                                 const SizedBox(height: 20),

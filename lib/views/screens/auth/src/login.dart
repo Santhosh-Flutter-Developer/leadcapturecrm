@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/views/screens/auth/src/company_registration.dart';
 import '/constants/constants.dart';
 import '/theme/theme.dart';
 import '/models/models.dart';
@@ -81,8 +82,10 @@ class _LoginState extends State<Login> {
         var data = result["adminData"];
         var uid = result["uid"];
         AdminModel admin = AdminModel.fromMap(uid, data);
-         print('the login admins id ${result["collectionId"]}, ${result["uid"]}');
-         
+        print(
+          'the login admins id ${result["collectionId"]}, ${result["uid"]}',
+        );
+
         await Spdb.setAdminLogin(model: admin, cid: result["collectionId"]);
         await PermissionService.savePermissions(AppStrings.permissionsTrueMap);
 
@@ -152,29 +155,34 @@ class _LoginState extends State<Login> {
                               color: const Color(0xFF1C1F23),
                             ),
                       ),
-                      // Row(
-                      //   children: [
-                      //     Text(
-                      //       "Don't have account?",
-                      //       style: Theme.of(context).textTheme.bodyLarge!
-                      //           .copyWith(
-                      //             fontWeight: FontWeight.w500,
-                      //             color: AppColors.grey700,
-                      //           ),
-                      //     ),
-                      //     TextButton(
-                      //       child: Text(
-                      //         "Register",
-                      //         style: Theme.of(context).textTheme.bodyLarge!
-                      //             .copyWith(
-                      //               color: const Color(0xFF1565C0),
-                      //               fontWeight: FontWeight.bold,
-                      //             ),
-                      //       ),
-                      //       onPressed: () {},
-                      //     ),
-                      //   ],
-                      // ),
+                      Row(
+                        children: [
+                          Text(
+                            "Don't have account?",
+                            style: Theme.of(context).textTheme.bodyLarge!
+                                .copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.grey700,
+                                ),
+                          ),
+                          TextButton(
+                            child: Text(
+                              "Register",
+                              style: Theme.of(context).textTheme.bodyLarge!
+                                  .copyWith(
+                                    color: const Color(0xFF1565C0),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            onPressed: () {
+                              Navigate.route(
+                                context,
+                                const CompanyRegistration(),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 25),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,49 +279,33 @@ class _LoginState extends State<Login> {
                         ],
                       ),
                       const SizedBox(height: 15),
-                      SizedBox(
-                        height: 40,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF0052D4),
-                                Color(0xFF4364F7),
-                                Color(0xFF6FB1FC),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF0056D2,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
+                      Container(
+                        width: double.infinity,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF0052D4),
+                              Color(0xFF4364F7),
+                              Color(0xFF6FB1FC),
                             ],
                           ),
-                          child: ElevatedButton(
-                            onPressed: _submitForm,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.transparent,
-                              shadowColor: AppColors.transparent,
-                              foregroundColor: AppColors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: Text(
-                              "Login",
-                              style: Theme.of(context).textTheme.bodyMedium!
-                                  .copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.1,
-                                    color: Colors.white,
-                                  ),
+                          ),
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),

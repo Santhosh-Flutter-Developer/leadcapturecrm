@@ -41,48 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD1-qmYt3fwlA-TlHmxHOhd_DL3lmj5TF0',
-    appId: '1:249357070035:web:ac5050ebe46fece26e2e26',
-    messagingSenderId: '249357070035',
-    projectId: 'srisoftwarez-crm',
-    authDomain: 'srisoftwarez-crm.firebaseapp.com',
-    storageBucket: 'srisoftwarez-crm.firebasestorage.app',
-    measurementId: 'G-TFJMX734D4',
+    apiKey: 'AIzaSyCGyZe6crlOPMfMmXvYWiquBCQDfDBmmo8',
+    appId: '1:204207195810:web:4f329a51ecefce1f0339fb',
+    messagingSenderId: '204207195810',
+    projectId: 'leadcapture-79a43',
+    authDomain: 'leadcapture-79a43.firebaseapp.com',
+    storageBucket: 'leadcapture-79a43.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCN9KCExYnJkUGcMgvxr3KnvmJDY4PiPZI',
-    appId: '1:249357070035:android:bceadab9dbcac9b86e2e26',
-    messagingSenderId: '249357070035',
-    projectId: 'srisoftwarez-crm',
-    storageBucket: 'srisoftwarez-crm.firebasestorage.app',
+    apiKey: 'AIzaSyCfQhvOiQ2e_ChtI2e5d8Lc68kQviqssCk',
+    appId: '1:204207195810:android:e65d94b37fc20e380339fb',
+    messagingSenderId: '204207195810',
+    projectId: 'leadcapture-79a43',
+    storageBucket: 'leadcapture-79a43.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDIWcOw_muSxhkr1SpHin_xBo5RelMV8V8',
-    appId: '1:249357070035:ios:2be0d1f0f0a5452a6e2e26',
-    messagingSenderId: '249357070035',
-    projectId: 'srisoftwarez-crm',
-    storageBucket: 'srisoftwarez-crm.firebasestorage.app',
-    iosBundleId: 'com.srisoftwarez.aaatp',
+    apiKey: 'AIzaSyBpJYFQN_hwLFBafWn3zdYx1dJ1mE3UtBk',
+    appId: '1:204207195810:ios:61ae8bd9237a1df40339fb',
+    messagingSenderId: '204207195810',
+    projectId: 'leadcapture-79a43',
+    storageBucket: 'leadcapture-79a43.firebasestorage.app',
+    iosBundleId: 'com.srisoftwarez.leadcapture',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDIWcOw_muSxhkr1SpHin_xBo5RelMV8V8',
-    appId: '1:249357070035:ios:7f8ed6d597e36a1d6e2e26',
-    messagingSenderId: '249357070035',
-    projectId: 'srisoftwarez-crm',
-    storageBucket: 'srisoftwarez-crm.firebasestorage.app',
-    iosBundleId: 'com.srisoftwarez.aaatp.macos',
+    apiKey: 'AIzaSyBpJYFQN_hwLFBafWn3zdYx1dJ1mE3UtBk',
+    appId: '1:204207195810:ios:506bd2b6cbef2e170339fb',
+    messagingSenderId: '204207195810',
+    projectId: 'leadcapture-79a43',
+    storageBucket: 'leadcapture-79a43.firebasestorage.app',
+    iosBundleId: 'com.srisoftwarez.leadcapture.macos',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyD1-qmYt3fwlA-TlHmxHOhd_DL3lmj5TF0',
-    appId: '1:249357070035:web:2d15a779bcaf48bc6e2e26',
-    messagingSenderId: '249357070035',
-    projectId: 'srisoftwarez-crm',
-    authDomain: 'srisoftwarez-crm.firebaseapp.com',
-    storageBucket: 'srisoftwarez-crm.firebasestorage.app',
-    measurementId: 'G-QTD7VVDMS2',
+    apiKey: 'AIzaSyCGyZe6crlOPMfMmXvYWiquBCQDfDBmmo8',
+    appId: '1:204207195810:web:a2372760280e11a90339fb',
+    messagingSenderId: '204207195810',
+    projectId: 'leadcapture-79a43',
+    authDomain: 'leadcapture-79a43.firebaseapp.com',
+    storageBucket: 'leadcapture-79a43.firebasestorage.app',
   );
+
 }

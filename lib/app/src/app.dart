@@ -1,8 +1,7 @@
 import 'dart:io';
-
-import 'package:aaatp/views/components/src/show_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_window_close/flutter_window_close.dart';
+import 'package:leadcapture/views/components/src/show_dialog.dart';
 import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
@@ -79,7 +78,7 @@ class _AppState extends State<App> {
               navigatorKey: navigatorKey,
               scaffoldMessengerKey: messengerKey,
               debugShowCheckedModeBanner: false,
-              title: "AAATP",
+              title: "Lead Capture",
               theme: lightTheme,
               home: authProvider.isLoggedIn ? home : const Splash(),
             ),

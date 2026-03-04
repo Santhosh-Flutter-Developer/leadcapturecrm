@@ -196,4 +196,45 @@ class LeadStatusService {
       (s) => s.isFinal && (excludeUid == null || s.uid != excludeUid),
     );
   }
+
+  static Future<LeadStatusModel> getByNameOrCreate({
+    required String name,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final query = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadStatus.name)
+          .where('name', isEqualTo: name.encrypt)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        return LeadStatusModel.fromMap(doc.id, doc.data());
+      }
+
+      final newModel = LeadStatusModel(
+        name: name,
+        createdBy: await Spdb.getUser(),
+        description: '',
+        color: Colors.blue.value,
+        orderNumber: 0,
+      );
+
+      final docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadStatus.name)
+          .add(newModel.toMap());
+
+      final createdDoc = await docRef.get();
+
+      return LeadStatusModel.fromMap(createdDoc.id, createdDoc.data()!);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error in getByNameOrCreate LeadStatus: $e\n$st");
+      rethrow;
+    }
+  }
 }

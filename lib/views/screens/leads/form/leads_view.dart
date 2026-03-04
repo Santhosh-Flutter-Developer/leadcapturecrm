@@ -40,7 +40,8 @@ class LeadsViewPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => LeadBloc()
         ..add(StreamLeadComments(lead.uid!))
-        ..add(StreamLeadHistory(lead.uid!)),
+        ..add(StreamLeadHistory(lead.uid!))
+        ..add(StreamLeadActivities(lead.uid!)),
       child: LeadsView(lead: lead),
     );
   }
@@ -63,10 +64,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     var leadCategory = CacheService.leadCategoryByUid(widget.lead.leadCategory);
-    widgetLeadCategory =
-        leadCategory ??
-        LeadCategoryModel.fromEmptyMap(); // Fallback to empty model
-    _tabController = TabController(length: 3, vsync: this);
+    widgetLeadCategory = leadCategory ?? LeadCategoryModel.fromEmptyMap();
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -170,17 +169,17 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  if (isWide)
-                    Container(
-                      width: 450,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: LeadsViewAppColors.border),
-                        ),
-                        color: LeadsViewAppColors.white,
-                      ),
-                      child: _buildCommentsSection(),
-                    ),
+                  // if (isWide)
+                  //   Container(
+                  //     width: 450,
+                  //     decoration: const BoxDecoration(
+                  //       border: Border(
+                  //         left: BorderSide(color: LeadsViewAppColors.border),
+                  //       ),
+                  //       color: LeadsViewAppColors.white,
+                  //     ),
+                  //     child: _buildCommentsSection(),
+                  //   ),
                 ],
               );
             },
@@ -471,6 +470,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Tab(text: "Lead Profile"),
           Tab(text: "Files & Notes"),
           Tab(text: "History Log"),
+          Tab(text: "Comments"),
+          Tab(text: "Activities"),
         ],
       ),
     );
@@ -486,6 +487,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             _buildOverviewTab(),
             _buildNotesTab(),
             _buildTimelineTab(),
+            _buildCommentsTab(),
+            _buildActivitiesTab(),
           ],
         );
       },
@@ -631,7 +634,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               ),
               const SizedBox(width: 12),
               const Text(
-                "Comments & Activity",
+                "Comments ",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const Spacer(),
@@ -640,7 +643,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           ),
         ),
         const Divider(height: 1),
-        Expanded(
+
+        SizedBox(
+          height: 400,
           child: BlocBuilder<LeadBloc, LeadState>(
             builder: (context, state) {
               if (state is LeadDetailLoaded) {
@@ -665,6 +670,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             },
           ),
         ),
+
         _buildCommentInputArea(),
       ],
     );
@@ -905,31 +911,36 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   }
 
   Widget _buildTimelineTab() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
-      ),
-      child: BlocBuilder<LeadBloc, LeadState>(
-        builder: (context, state) {
-          if (state is LeadDetailLoaded) {
-            if (state.history.isEmpty) {
-              return _emptyState(Iconsax.activity, "No activity logs yet");
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: LeadsViewAppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LeadsViewAppColors.border),
+        ),
+        child: BlocBuilder<LeadBloc, LeadState>(
+          builder: (context, state) {
+            if (state is LeadDetailLoaded) {
+              if (state.history.isEmpty) {
+                return _emptyState(Iconsax.activity, "No activity logs yet");
+              }
+
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.55,
+                child: ListView.builder(
+                  itemCount: state.history.length,
+                  itemBuilder: (context, index) => _buildTimelineItem(
+                    state.history[index],
+                    index == state.history.length - 1,
+                  ),
+                ),
+              );
             }
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.history.length,
-              itemBuilder: (context, index) => _buildTimelineItem(
-                state.history[index],
-                index == state.history.length - 1,
-              ),
-            );
-          }
-          return const WaitingLoading();
-        },
+
+            return const WaitingLoading();
+          },
+        ),
       ),
     );
   }
@@ -976,7 +987,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Modified by ${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
+                    "${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
                     style: const TextStyle(
                       color: LeadsViewAppColors.textSecondary,
                       fontSize: 13,
@@ -996,6 +1007,113 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsTab() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
+      child: _buildCommentsSection(),
+    );
+  }
+
+  Widget _buildActivitiesTab() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                "Scheduled Activities",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _scheduleActivity,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text("Schedule"),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.55,
+            child: BlocBuilder<LeadBloc, LeadState>(
+              builder: (context, state) {
+                if (state is LeadDetailLoaded) {
+                  if (state.activities.isEmpty) {
+                    return _emptyState(
+                      Iconsax.calendar,
+                      "No activities scheduled",
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: state.activities.length,
+                    itemBuilder: (_, i) => _activityItem(state.activities[i]),
+                  );
+                }
+                return const WaitingLoading();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityItem(LeadActivityModel activity) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: LeadsViewAppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(_activityIcon(activity.type), color: LeadsViewAppColors.primary),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.title,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  DateFormat('MMM dd • hh:mm a').format(
+                    DateTime.fromMillisecondsSinceEpoch(
+                      activity.scheduledAt.millisecondsSinceEpoch,
+                    ),
+                  ),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: LeadsViewAppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1187,6 +1305,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     );
   }
 
+  IconData _activityIcon(LeadActivityType type) {
+    switch (type) {
+      case LeadActivityType.call:
+        return Iconsax.call;
+      case LeadActivityType.meeting:
+        return Iconsax.video;
+      case LeadActivityType.followUp:
+        return Iconsax.refresh;
+      case LeadActivityType.task:
+        return Iconsax.task;
+    }
+  }
+
   void _deleteComment(LeadCommentModel comment) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -1322,5 +1453,173 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         isSuccess: false,
       );
     }
+  }
+
+  void _scheduleActivity() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<LeadBloc>(),
+        child: ScheduleLeadActivityDialog(leadUid: widget.lead.uid!),
+      ),
+    );
+  }
+}
+
+class ScheduleLeadActivityDialog extends StatefulWidget {
+  final String leadUid;
+
+  const ScheduleLeadActivityDialog({super.key, required this.leadUid});
+
+  @override
+  State<ScheduleLeadActivityDialog> createState() =>
+      _ScheduleLeadActivityDialogState();
+}
+
+class _ScheduleLeadActivityDialogState
+    extends State<ScheduleLeadActivityDialog> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController descController = TextEditingController();
+
+  LeadActivityType selectedType = LeadActivityType.call;
+
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+
+  DateTime? get scheduledDateTime {
+    if (selectedDate == null || selectedTime == null) return null;
+
+    return DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+  }
+
+  Future<void> pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+
+    if (date != null) {
+      setState(() => selectedDate = date);
+    }
+  }
+
+  Future<void> pickTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (time != null) {
+      setState(() => selectedTime = time);
+    }
+  }
+
+  void saveActivity() {
+    final scheduled = scheduledDateTime;
+
+    if (titleController.text.isEmpty || scheduled == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Fill all required fields")));
+      return;
+    }
+
+    final activity = LeadActivityModel(
+      title: titleController.text.trim(),
+      description: descController.text.trim(),
+      type: selectedType,
+      scheduledAt: scheduled,
+      createdBy: "user",
+      createdAt: DateTime.now(),
+    );
+
+    context.read<LeadBloc>().add(
+      AddLeadActivity(leadUid: widget.leadUid, activity: activity),
+    );
+
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Schedule Activity"),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            /// TITLE
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: "Title"),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// DESCRIPTION
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(labelText: "Description"),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// TYPE DROPDOWN
+            DropdownButtonFormField<LeadActivityType>(
+              initialValue: selectedType,
+              items: LeadActivityType.values
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.name.toUpperCase()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => selectedType = v!),
+              decoration: const InputDecoration(labelText: "Activity Type"),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// DATE
+            ListTile(
+              title: Text(
+                selectedDate == null
+                    ? "Select Date"
+                    : selectedDate.toString().split(' ')[0],
+              ),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: pickDate,
+            ),
+
+            /// TIME
+            ListTile(
+              title: Text(
+                selectedTime == null
+                    ? "Select Time"
+                    : selectedTime!.format(context),
+              ),
+              trailing: const Icon(Icons.access_time),
+              onTap: pickTime,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(onPressed: saveActivity, child: const Text("Save")),
+      ],
+    );
   }
 }

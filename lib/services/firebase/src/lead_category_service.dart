@@ -154,4 +154,43 @@ class LeadCategoryService {
       throw 'Error deleting lead category: $e';
     }
   }
+
+  static Future<LeadCategoryModel> getByNameOrCreate({
+    required String name,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final query = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadCategory.name)
+          .where('name', isEqualTo: name.encrypt)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        return LeadCategoryModel.fromMap(doc.id, doc.data());
+      }
+
+      final newModel = LeadCategoryModel(
+        name: name,
+        createdBy: await Spdb.getUser(),
+        description: '',
+      );
+
+      final docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadCategory.name)
+          .add(newModel.toMap());
+
+      final createdDoc = await docRef.get();
+
+      return LeadCategoryModel.fromMap(createdDoc.id, createdDoc.data()!);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error in getByNameOrCreate LeadCategory: $e\n$st");
+      rethrow;
+    }
+  }
 }

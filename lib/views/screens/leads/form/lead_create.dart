@@ -39,9 +39,9 @@ class _LeadCreateState extends State<LeadCreate> {
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
 
-  String? _salutation;
+  // String? _salutation;
 
-  bool _allowFollowUp = true;
+  // bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
   late Future _future;
@@ -301,14 +301,14 @@ class _LeadCreateState extends State<LeadCreate> {
       spacing: horizontalSpacing,
       runSpacing: verticalSpacing,
       children: [
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'Salutation',
-            items: const ['Mr.', 'Mrs.', 'Ms.', 'Dr.'],
-            onChanged: (value) => _salutation = value as String?,
-          ),
-        ),
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormDropdownSearch(
+        //     label: 'Salutation',
+        //     items: const ['Mr.', 'Mrs.', 'Ms.', 'Dr.'],
+        //     onChanged: (value) => _salutation = value as String?,
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
@@ -381,17 +381,17 @@ class _LeadCreateState extends State<LeadCreate> {
             keyboardType: TextInputType.number,
           ),
         ),
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            label: 'Allow Follow Up',
-            items: const ['Yes', 'No'],
-            initialItem: 'Yes',
-            onChanged: (value) =>
-                _allowFollowUp = value == 'Yes' ? true : false,
-            validator: (value) => value == null ? "* Required" : null,
-          ),
-        ),
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormDropdownSearch(
+        //     label: 'Allow Follow Up',
+        //     items: const ['Yes', 'No'],
+        //     initialItem: 'Yes',
+        //     onChanged: (value) =>
+        //         _allowFollowUp = value == 'Yes' ? true : false,
+        //     validator: (value) => value == null ? "* Required" : null,
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
           child: FormDropdownSearch(
@@ -589,14 +589,14 @@ class _LeadCreateState extends State<LeadCreate> {
         var clientId = await ClientService.createClient(client: clientModel);
 
         final leadModel = LeadModel(
-          salutation: _salutation,
+          // salutation: _salutation,
           leadName: _leadNameController.text.trim(),
           leadEmail: _leadEmailController.text.trim(),
           leadSource: _selectedLeadSource!,
           leadCategory: _selectedLeadCategory?.uid ?? '',
           leadPriority: _selectedLeadPriority?.uid ?? '',
           leadValue: double.tryParse(_leadValueController.text) ?? 0.0,
-          allowFollowUp: _allowFollowUp,
+          // allowFollowUp: _allowFollowUp,
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text.trim(),
           attachments: attachments,

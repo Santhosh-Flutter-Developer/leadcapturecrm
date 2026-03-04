@@ -1,8 +1,9 @@
 import 'dart:io';
-import 'package:aaatp/views/screens/download/download_history.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/views/screens/chat/listing/bloc/chat_bloc.dart';
+import 'package:leadcapture/views/screens/download/download_history.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -90,6 +91,19 @@ class _MobileMenuState extends State<MobileMenu> {
                       ),
                     ),
                     _buildListTile(
+                      icon: Iconsax.message,
+                      title: 'Chat',
+                      onTap: () => Navigate.route(
+                        context,
+                        BlocProvider(
+                          create: (context) => ChatBloc(),
+                          child: ChatListing(
+                            currentUserUid: _userDataModel?.uid ?? '',
+                          ),
+                        ),
+                      ),
+                    ),
+                    _buildListTile(
                       icon: Iconsax.calendar_1,
                       title: 'Calendar',
                       onTap: () => Navigate.route(
@@ -101,12 +115,12 @@ class _MobileMenuState extends State<MobileMenu> {
                     SizedBox(height: 8),
                     if (_adminModel != null ||
                         (
-                          // (_roleModel?.permissions
-                          //           .where((e) => e.page == "Admin")
-                          //           .isNotEmpty ??
-                          //       false) ||
-                          //   _adminModel != null ||
-                            (_roleModel?.permissions
+                        // (_roleModel?.permissions
+                        //           .where((e) => e.page == "Admin")
+                        //           .isNotEmpty ??
+                        //       false) ||
+                        //   _adminModel != null ||
+                        (_roleModel?.permissions
                                     .where((e) => e.page == "Role")
                                     .isNotEmpty ??
                                 false) ||
@@ -211,20 +225,24 @@ class _MobileMenuState extends State<MobileMenu> {
                                     .where((e) => e.page == "Clients")
                                     .isNotEmpty ??
                                 false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Projects")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Tasks")
-                                    .isNotEmpty ??
-                                false) ||
+                            // (_roleModel?.permissions
+                            //         .where((e) => e.page == "Projects")
+                            //         .isNotEmpty ??
+                            //     false) ||
+                            // (_roleModel?.permissions
+                            //         .where((e) => e.page == "Tasks")
+                            //         .isNotEmpty ??
+                            //     false) ||
                             (_roleModel?.permissions
                                     .where((e) => e.page == "Lead Category")
                                     .isNotEmpty ??
                                 false) ||
                             (_roleModel?.permissions
                                     .where((e) => e.page == "Lead Status")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Lead Source")
                                     .isNotEmpty ??
                                 false) ||
                             (_roleModel?.permissions
@@ -265,6 +283,19 @@ class _MobileMenuState extends State<MobileMenu> {
                         ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
+                                  .where((e) => e.page == "Lead Status")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.link_circle,
+                          title: 'Lead Source',
+                          onTap: () => Navigate.route(
+                            context,
+                            const LeadSourceListing(),
+                          ),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
                                   .where((e) => e.page == "Deal Status")
                                   .isNotEmpty ??
                               false))
@@ -276,12 +307,12 @@ class _MobileMenuState extends State<MobileMenu> {
                             const DealStatusListing(),
                           ),
                         ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Tasks")
-                                  .isNotEmpty ??
-                              false))
-                        SizedBox(height: 8),
+                      // if (_adminModel != null ||
+                      //     (_roleModel?.permissions
+                      //             .where((e) => e.page == "Tasks")
+                      //             .isNotEmpty ??
+                      //         false))
+                      SizedBox(height: 8),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
                                   .where((e) => e.page == "Clients")
@@ -295,31 +326,31 @@ class _MobileMenuState extends State<MobileMenu> {
                         //     ClientsListing(section: section),
                         //   ),
                         // ),
-                        if (_adminModel != null ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Projects")
-                                    .isNotEmpty ??
-                                false))
-                          _buildListTile(
-                            icon: Iconsax.airdrop,
-                            title: 'Projects',
-                            onTap: () => Navigate.route(
-                              context,
-                              const ProjectsListing(),
-                            ),
-                          ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Tasks")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.check,
-                          title: 'Tasks',
-                          onTap: () =>
-                              Navigate.route(context, const TasksListing()),
-                        ),
-                      SizedBox(height: 8),
+                        // if (_adminModel != null ||
+                        //     (_roleModel?.permissions
+                        //             .where((e) => e.page == "Projects")
+                        //             .isNotEmpty ??
+                        //         false))
+                        //   _buildListTile(
+                        //     icon: Iconsax.airdrop,
+                        //     title: 'Projects',
+                        //     onTap: () => Navigate.route(
+                        //       context,
+                        //       const ProjectsListing(),
+                        //     ),
+                        //   ),
+                        // if (_adminModel != null ||
+                        //     (_roleModel?.permissions
+                        //             .where((e) => e.page == "Tasks")
+                        //             .isNotEmpty ??
+                        //         false))
+                        //   _buildListTile(
+                        //     icon: Iconsax.check,
+                        //     title: 'Tasks',
+                        //     onTap: () =>
+                        //         Navigate.route(context, const TasksListing()),
+                        //   ),
+                        SizedBox(height: 8),
                     ],
                     if (_adminModel != null) ...[
                       Text(

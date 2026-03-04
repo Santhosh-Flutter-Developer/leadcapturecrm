@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+import 'package:leadcapture/constants/src/enum.dart';
+
 import '/models/models.dart';
 
 class LeadModel {
@@ -12,7 +14,7 @@ class LeadModel {
   final String leadCategory;
   final String leadPriority;
   final double leadValue;
-  final bool allowFollowUp;
+  // final bool allowFollowUp;
   final String leadStatus;
   // final String leadSubStatus;
   final List<FileModel> attachments;
@@ -43,7 +45,7 @@ class LeadModel {
     required this.leadCategory,
     required this.leadPriority,
     required this.leadValue,
-    required this.allowFollowUp,
+    // required this.allowFollowUp,
     required this.leadStatus,
     required this.attachments,
     required this.notes,
@@ -75,7 +77,7 @@ class LeadModel {
     String? leadCategory,
     String? leadPriority,
     double? leadValue,
-    bool? allowFollowUp,
+    // bool? allowFollowUp,
     String? leadStatus,
     List<FileModel>? attachments,
     String? notes,
@@ -105,7 +107,7 @@ class LeadModel {
       leadCategory: leadCategory ?? this.leadCategory,
       leadPriority: leadPriority ?? this.leadPriority,
       leadValue: leadValue ?? this.leadValue,
-      allowFollowUp: allowFollowUp ?? this.allowFollowUp,
+      // allowFollowUp: allowFollowUp ?? this.allowFollowUp,
       leadStatus: leadStatus ?? this.leadStatus,
       attachments: attachments ?? this.attachments,
       notes: notes ?? this.notes,
@@ -136,7 +138,7 @@ class LeadModel {
       'leadCategory': leadCategory,
       'leadPriority': leadPriority,
       'leadValue': leadValue,
-      'allowFollowUp': allowFollowUp,
+      // 'allowFollowUp': allowFollowUp,
       'leadStatus': leadStatus,
       'attachments': attachments.map((x) => x.toMap()).toList(),
       'notes': notes,
@@ -167,7 +169,7 @@ class LeadModel {
       'leadCategory': leadCategory,
       'leadPriority': leadPriority,
       'leadValue': leadValue,
-      'allowFollowUp': allowFollowUp,
+      // 'allowFollowUp': allowFollowUp,
       'leadStatus': leadStatus,
       'attachments': attachments.map((x) => x.toMap()).toList(),
       'notes': notes,
@@ -217,9 +219,9 @@ class LeadModel {
       leadValue: map['leadValue'] is num
           ? (map['leadValue'] as num).toDouble()
           : double.tryParse(map['leadValue']?.toString() ?? '0') ?? 0.0,
-      allowFollowUp: map['allowFollowUp'] is bool
-          ? map['allowFollowUp'] as bool
-          : false,
+      // allowFollowUp: map['allowFollowUp'] is bool
+      //     ? map['allowFollowUp'] as bool
+      //     : false,
       attachments: map['attachments'] != null && map['attachments'] is List
           ? List<FileModel>.from(
               (map['attachments'] as List)
@@ -306,7 +308,7 @@ class LeadModel {
       leadSource: leadSource ?? LeadSourceModel.fromEmptyMap(),
       leadCategory: '',
       leadPriority: '',
-      allowFollowUp: true,
+      // allowFollowUp: true,
       attachments: const [],
       notes: '',
       companyName: null,
@@ -453,4 +455,49 @@ class LeadHistoryModel {
         update: map['update'] as String?,
         timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       );
+}
+
+class LeadActivityModel {
+  final String? uid;
+  final String title;
+  final String description;
+  final LeadActivityType type;
+  final DateTime scheduledAt;
+  final String createdBy;
+  final DateTime createdAt;
+  final bool completed;
+
+  LeadActivityModel({
+    this.uid,
+    required this.title,
+    required this.description,
+    required this.type,
+    required this.scheduledAt,
+    required this.createdBy,
+    required this.createdAt,
+    this.completed = false,
+  });
+
+  Map<String, dynamic> toMap() => {
+    "title": title,
+    "description": description,
+    "type": type.name,
+    "scheduledAt": scheduledAt.millisecondsSinceEpoch,
+    "createdBy": createdBy,
+    "createdAt": createdAt.millisecondsSinceEpoch,
+    "completed": completed,
+  };
+
+  factory LeadActivityModel.fromMap(String id, Map<String, dynamic> map) {
+    return LeadActivityModel(
+      uid: id,
+      title: map["title"],
+      description: map["description"],
+      type: LeadActivityType.values.byName(map["type"]),
+      scheduledAt: DateTime.fromMillisecondsSinceEpoch(map["scheduledAt"]),
+      createdBy: map["createdBy"],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map["createdAt"]),
+      completed: map["completed"] ?? false,
+    );
+  }
 }

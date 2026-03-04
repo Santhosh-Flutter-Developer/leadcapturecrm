@@ -37,6 +37,7 @@ enum Collections {
 }
 
 enum StorageFolder {
+  companyLogo,
   userPhotos,
   chats,
   leadAttachments,
@@ -78,3 +79,5 @@ extension LeadCompletionStatusX on LeadCompletionStatus {
 }
 
 enum UserTypes { employee, admin }
+
+enum LeadActivityType { call, meeting, followUp, task }

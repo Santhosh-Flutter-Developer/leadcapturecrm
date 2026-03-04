@@ -66,13 +66,13 @@ class SidebarIconTile extends StatelessWidget {
   }
 }
 
-// ignore: must_be_immutable
 class DesktopSidebar extends StatefulWidget {
   final bool isCollapsed;
   final ValueChanged<bool> onCollapseChanged;
   final String selectedMenu;
   final ValueChanged<String> onMenuSelected;
   final bool isAdmin;
+  final String? companyLogo;
 
   const DesktopSidebar({
     super.key,
@@ -81,6 +81,7 @@ class DesktopSidebar extends StatefulWidget {
     required this.selectedMenu,
     required this.onMenuSelected,
     required this.isAdmin,
+    this.companyLogo,
   });
 
   @override
@@ -341,15 +342,15 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                                   onToggle: () {
                                     print("hhhhhhh");
                                     // setState(() {
-                                      setState(() {
-                                        expandedIndex = expandedIndex == index
-                                            ? -1
-                                            : index;
-                                      });
+                                    setState(() {
+                                      expandedIndex = expandedIndex == index
+                                          ? -1
+                                          : index;
+                                    });
 
-                                      // if (widget.isCollapsed) {
-                                      //   widget.onCollapseChanged(false);
-                                      // }
+                                    // if (widget.isCollapsed) {
+                                    //   widget.onCollapseChanged(false);
+                                    // }
                                     // });
                                   },
                                   children:
@@ -379,6 +380,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Widget _buildLogo() {
+    final String? networkLogo = widget.companyLogo;
+
     return Column(
       children: [
         SizedBox(
@@ -395,17 +398,20 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                   : InkWell(
                       onTap: () =>
                           Navigate.routeReplace(context, RouteScreen()),
-                      child: Image.asset(
-                        ImageAssets.logoTransparent,
-                        height: 36,
-                        color: DesktopColors.white,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Iconsax.buildings,
-                              size: 30,
-                              color: DesktopColors.white,
-                            ),
-                      ),
+                      child: (networkLogo != null && networkLogo.isNotEmpty)
+                          ? Image.network(
+                              networkLogo,
+                              height: 36,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildDefaultLogoAsset(),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildDefaultLogoAsset();
+                                  },
+                            )
+                          : _buildDefaultLogoAsset(),
                     ),
             ),
           ),
@@ -417,6 +423,16 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           endIndent: widget.isCollapsed ? 0 : 16,
         ),
       ],
+    );
+  }
+
+  Widget _buildDefaultLogoAsset() {
+    return Image.asset(
+      ImageAssets.logoTransparent,
+      height: 36,
+      color: DesktopColors.white,
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Iconsax.buildings, size: 30, color: DesktopColors.white),
     );
   }
 
@@ -435,7 +451,6 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           size: 20,
         ),
         onPressed: () {
-
           final newValue = !widget.isCollapsed;
 
           if (newValue) {

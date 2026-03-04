@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +29,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     symbol: '₹',
     decimalDigits: 0,
   );
+
+  final ScrollController _scrollController = ScrollController();
+  Timer? _scrollTimer;
 
   @override
   void initState() {
@@ -72,6 +77,39 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     });
   }
 
+  void _startEdgeScrolling(DragUpdateDetails details) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double scrollThreshold = 100.0; // Distance from edge to trigger scroll
+    double scrollSpeed = 15.0; // How fast to scroll
+
+    _scrollTimer?.cancel();
+
+    _scrollTimer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
+      if (details.globalPosition.dx < scrollThreshold) {
+        // Scroll Left
+        if (_scrollController.offset > 0) {
+          _scrollController.animateTo(
+            _scrollController.offset - scrollSpeed,
+            duration: const Duration(milliseconds: 20),
+            curve: Curves.linear,
+          );
+        }
+      } else if (details.globalPosition.dx > screenWidth - scrollThreshold) {
+        // Scroll Right
+        if (_scrollController.offset <
+            _scrollController.position.maxScrollExtent) {
+          _scrollController.animateTo(
+            _scrollController.offset + scrollSpeed,
+            duration: const Duration(milliseconds: 20),
+            curve: Curves.linear,
+          );
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -85,6 +123,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           return Container(
             color: const Color(0xFFF3F4F6),
             child: SingleChildScrollView(
+              controller: _scrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(12.0),
               physics: const BouncingScrollPhysics(),
@@ -491,41 +530,50 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       // Converted leads are shown as static cards
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(color: AppColors.blue.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildCardContent(task, list),
-              const SizedBox(height: 6),
-              Row(
-                children: const [
-                  Icon(Icons.lock, size: 12, color: Colors.grey),
-                  SizedBox(width: 4),
-                  Text(
-                    'Converted to Deal',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w600,
+        child: InkWell(
+          onTap: () {
+            if (kIsDesktop) {
+              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
+            } else {
+              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: AppColors.blue.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildCardContent(task, list),
+                const SizedBox(height: 6),
+                Row(
+                  children: const [
+                    Icon(Icons.lock, size: 12, color: Colors.grey),
+                    SizedBox(width: 4),
+                    Text(
+                      'Converted to Deal',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -536,6 +584,14 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Draggable<LeadModel>(
         data: task,
+        onDragStarted: () => _handleDragStarted(task, list),
+        onDragUpdate: (details) {
+          _startEdgeScrolling(details);
+        },
+        onDragEnd: (details) {
+          _scrollTimer?.cancel();
+          _handleDragEnd(details);
+        },
         feedback: Material(
           elevation: 8.0,
           borderRadius: BorderRadius.circular(12.0),
@@ -566,8 +622,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
             ),
           ),
         ),
-        onDragStarted: () => _handleDragStarted(task, list),
-        onDragEnd: _handleDragEnd,
         child: InkWell(
           onTap: () {
             if (kIsDesktop) {

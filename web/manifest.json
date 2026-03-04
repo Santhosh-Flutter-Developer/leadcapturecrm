@@ -1,6 +1,6 @@
 {
-    "name": "aaatp",
-    "short_name": "aaatp",
+    "name": "leadcapture",
+    "short_name": "leadcapture",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '/theme/theme.dart';
 import '/utils/utils.dart';
 
-final masterKey = masterKeyFromPassword("aaatp-crm");
+final masterKey = masterKeyFromPassword("leadcapture-crm");
 final crypto = DeterministicCrypto(masterKey);
 
 extension StringExtensions on String {

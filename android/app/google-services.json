@@ -1,40 +1,21 @@
 {
   "project_info": {
-    "project_number": "249357070035",
-    "project_id": "srisoftwarez-crm",
-    "storage_bucket": "srisoftwarez-crm.firebasestorage.app"
+    "project_number": "204207195810",
+    "project_id": "leadcapture-79a43",
+    "storage_bucket": "leadcapture-79a43.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:249357070035:android:bceadab9dbcac9b86e2e26",
+        "mobilesdk_app_id": "1:204207195810:android:e65d94b37fc20e380339fb",
         "android_client_info": {
-          "package_name": "com.srisoftwarez.aaatp"
+          "package_name": "com.srisoftwarez.leadcapture"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCN9KCExYnJkUGcMgvxr3KnvmJDY4PiPZI"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:249357070035:android:3348ac44513bf3cd6e2e26",
-        "android_client_info": {
-          "package_name": "com.srisoftwarez.crm"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCN9KCExYnJkUGcMgvxr3KnvmJDY4PiPZI"
+          "current_key": "AIzaSyCfQhvOiQ2e_ChtI2e5d8Lc68kQviqssCk"
         }
       ],
       "services": {

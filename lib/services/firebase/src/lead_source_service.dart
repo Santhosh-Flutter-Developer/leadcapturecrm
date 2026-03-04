@@ -152,4 +152,43 @@ class LeadSourceService {
       throw 'Error deleting lead category: $e';
     }
   }
+
+  static Future<LeadSourceModel> getByNameOrCreate({
+    required String name,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final query = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadSource.name)
+          .where('name', isEqualTo: name.encrypt)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final doc = query.docs.first;
+        return LeadSourceModel.fromMap(doc.id, doc.data());
+      }
+
+      final newModel = LeadSourceModel(
+        name: name,
+        createdBy: await Spdb.getUser(),
+        description: '',
+      );
+
+      final docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.leadSource.name)
+          .add(newModel.toMap());
+
+      final createdDoc = await docRef.get();
+
+      return LeadSourceModel.fromMap(createdDoc.id, createdDoc.data()!);
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error in getByNameOrCreate LeadSource: $e\n$st");
+      rethrow;
+    }
+  }
 }

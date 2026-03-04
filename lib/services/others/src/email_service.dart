@@ -21,7 +21,7 @@ class EmailService {
           "smtp_user": "systemadmin@srisoftwarez.com",
           "smtp_pass": "rvbv wzse zsku krzy",
           "from": "systemadmin@srisoftwarez.com",
-          "from_name": "AAATP",
+          "from_name": "Lead Capture System Admin",
           "to": to.map((e) => e.trim()).toList().join(','),
           "to_name": toName.map((e) => e.trim()).toList().join(','),
           "reply_to": "systemadmin@srisoftwarez.com",
