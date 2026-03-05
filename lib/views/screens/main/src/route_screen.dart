@@ -64,12 +64,12 @@ class _RouteScreenState extends State<RouteScreen> {
         'route': 'Calendar',
         'color': Colors.purpleAccent,
       },
-      {
-        'icon': Iconsax.check,
-        'title': 'Tasks',
-        'route': 'Tasks',
-        'color': Colors.greenAccent,
-      },
+      // {
+      //   'icon': Iconsax.check,
+      //   'title': 'Tasks',
+      //   'route': 'Tasks',
+      //   'color': Colors.greenAccent,
+      // },
       {
         'icon': Iconsax.graph,
         'title': 'CRM',

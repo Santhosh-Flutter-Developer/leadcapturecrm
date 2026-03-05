@@ -126,6 +126,13 @@ flutter_launcher_icons:
   adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/images/company_logo.png"
 
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/images/company_logo.png"
+
+  android: true
+  ios: true
+
 # msix_config:
 #   display_name: AAATP
 #   publisher_display_name: Srisoftwarez

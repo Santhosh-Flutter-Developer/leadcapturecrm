@@ -158,7 +158,7 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
 
     return Expanded(
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque, // full tappable area
+        behavior: HitTestBehavior.opaque,
         onTap: () => setState(() => _currentIndex = index),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

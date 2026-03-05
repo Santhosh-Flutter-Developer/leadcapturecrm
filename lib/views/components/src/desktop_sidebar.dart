@@ -178,15 +178,15 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool clientsContact =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Contact')) != null;
-    bool projects =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Projects')) != null;
+    // bool projects =
+    //     widget.isAdmin ||
+    //     (await PermissionService.getPermissions('Projects')) != null;
     bool calendar =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Calendar')) != null;
-    bool tasks =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Tasks')) != null;
+    // bool tasks =
+    //     widget.isAdmin ||
+    //     (await PermissionService.getPermissions('Tasks')) != null;
     bool downloads =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Downloads')) != null;
@@ -259,8 +259,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         ],
       },
       if (calendar) {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
-      if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
-      if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
+      // if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
+      // if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
@@ -353,9 +353,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                                     // }
                                     // });
                                   },
-                                  children:
-                                      menu['children']
-                                          as List<dynamic>, // <- FIX
+                                  children: menu['children'] as List<dynamic>,
                                 )
                               : buildMenuItem(
                                   menu['icon'] as IconData,

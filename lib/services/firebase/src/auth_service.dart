@@ -16,101 +16,72 @@ class AuthService {
     required String password,
   }) async {
     try {
-      var companies = await firebase.users.get();
-      debugPrint("Companies count: ${companies.docs.length}");
+      // 1. ===== EMPLOYEE LOGIN (Using Collection Group) =====
+      if (employeeId != null && employeeId.isNotEmpty) {
+        var employeeQuery = await FirebaseFirestore.instance
+            .collectionGroup(Collections.employees.name)
+            .where(
+              'employeeId',
+              isEqualTo: employeeId.trim(),
+            ) // Assuming ID isn't encrypted
+            .get();
 
-      if (companies.docs.isEmpty) {
-        return {"status": false, "error": "Organization not found", 'st': []};
+        if (employeeQuery.docs.isNotEmpty) {
+          var doc = employeeQuery.docs.first;
+          var userData = doc.data();
+          String cid =
+              doc.reference.parent.parent!.id; // Get Company ID from path
+
+          // Verify Password
+          if (userData['password'].toString().decrypt != password) {
+            return {"status": false, "error": "Invalid password"};
+          }
+
+          if (userData['loginAllowed'] == false) {
+            return {"status": false, "error": "Your login is disabled!"};
+          }
+
+          await _trackDevice(cid: cid, uid: doc.id, isAdmin: false);
+          return {
+            "status": true,
+            "collectionId": cid,
+            "uid": doc.id,
+            "userData": userData,
+          };
+        }
       }
 
-      for (var data in companies.docs) {
-        // ===== Employee Login =====
-        if (employeeId != null && employeeId.isNotEmpty) {
-          var employees = await firebase.users
-              .doc(data.id)
-              .collection(Collections.employees.name)
-              .get();
+      // 2. ===== ADMIN LOGIN (Using Collection Group) =====
+      if (email != null && email.isNotEmpty) {
+        // Search for the ENCRYPTED email directly
+        var adminQuery = await FirebaseFirestore.instance
+            .collectionGroup(Collections.admins.name)
+            .where('email', isEqualTo: email.trim().encrypt)
+            .get();
 
-          for (var i in employees.docs) {
-            var uData = i;
+        if (adminQuery.docs.isNotEmpty) {
+          var doc = adminQuery.docs.first;
+          var adminData = doc.data();
+          String cid = doc.reference.parent.parent!.id;
 
-            if (uData['employeeId'].toString().toLowerCase().trim() ==
-                employeeId.toLowerCase().trim()) {
-              var user = await firebase.users
-                  .doc(data.id)
-                  .collection(Collections.employees.name)
-                  .doc(uData.id)
-                  .get();
-
-              if (user.exists) {
-                final userData = user.data() ?? {};
-
-                if (userData['password'].toString().decrypt != password) {
-                  return {"status": false, "error": "Invalid password"};
-                }
-
-                if (userData['loginAllowed'] == false) {
-                  return {
-                    "status": false,
-                    "error":
-                        "Your login is disabled!. Please contact your administrator to enable it.",
-                  };
-                }
-
-                await _trackDevice(cid: data.id, uid: user.id, isAdmin: false);
-
-                return {
-                  "status": true,
-                  "collectionId": data.id,
-                  "uid": user.id,
-                  "userData": userData,
-                };
-              }
-            }
+          // Verify Password
+          if (adminData['password'].toString().decrypt != password) {
+            return {"status": false, "error": "Invalid password"};
           }
-        }
 
-        if (email != null && email.isNotEmpty) {
-          var admins = await firebase.users
-              .doc(data.id)
-              .collection(Collections.admins.name)
-              .get();
-
-          for (var i in admins.docs) {
-            var aData = i;
-
-            if (aData['email'].toString().decrypt == email.trim()) {
-              var admin = await firebase.users
-                  .doc(data.id)
-                  .collection(Collections.admins.name)
-                  .doc(aData.id)
-                  .get();
-
-              if (admin.exists) {
-                final adminData = admin.data() ?? {};
-
-                // PASSWORD CHECK
-                if (adminData['password'].toString().decrypt != password) {
-                  return {"status": false, "error": "Invalid password"};
-                }
-
-                await _trackDevice(cid: data.id, uid: admin.id, isAdmin: true);
-
-                return {
-                  "status": true,
-                  "collectionId": data.id,
-                  "uid": admin.id,
-                  "adminData": adminData,
-                };
-              }
-            }
-          }
+          await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
+          return {
+            "status": true,
+            "collectionId": cid,
+            "uid": doc.id,
+            "adminData": adminData,
+          };
         }
       }
 
       return {"status": false, "error": "No user found"};
     } catch (e, st) {
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint("Login Error: $e");
       await ErrorService.recordError(e, st);
       throw e.toString();
     }
@@ -140,7 +111,7 @@ class AuthService {
 
       // 3. Create Company Root Data
       await companyRef.set({
-        'companyName': name.encrypt,
+        'companyName': name,
         'createdAt': FieldValue.serverTimestamp(),
         'logo': logoUrl,
         'status': 'active',
@@ -149,8 +120,8 @@ class AuthService {
       // 4. Create the Super Admin in the sub-collection
       await companyRef.collection(Collections.admins.name).add({
         'name': adminName,
-        'email': adminEmail,
-        'password': password,
+        'email': adminEmail.encrypt,
+        'password': password.encrypt,
         'role': 'super_admin',
         'createdAt': FieldValue.serverTimestamp(),
         'devices': [],

@@ -840,6 +840,27 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
         actionButtons.add(const SizedBox(width: 10));
 
+        actionButtons.add(
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Download.downloadFromUrl(
+                context,
+                "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_lead_upload_template.xlsx?alt=media&token=8173a050-72a3-403e-bc10-e8c876118721",
+                "Lead_Import_Template.xlsx",
+              );
+            },
+            icon: const Icon(Icons.file_download_outlined, size: 18),
+            label: const Text("Template"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.blue,
+              side: const BorderSide(color: AppColors.blue),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        );
+
+        actionButtons.add(const SizedBox(width: 10));
+
         // EXPORT BUTTON
         actionButtons.add(
           ElevatedButton.icon(
@@ -847,7 +868,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             icon: const Icon(Iconsax.export_3, size: 18),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors
-                  .grey600, // Changed to grey to differentiate from Upload
+                  .grey600, 
               foregroundColor: AppColors.white,
             ),
             onPressed: () async {
