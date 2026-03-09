@@ -283,11 +283,11 @@ class _MobileMenuState extends State<MobileMenu> {
                         ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Status")
+                                  .where((e) => e.page == "Lead Source")
                                   .isNotEmpty ??
                               false))
                         _buildListTile(
-                          icon: Iconsax.link_circle,
+                          icon: Iconsax.share,
                           title: 'Lead Source',
                           onTap: () => Navigate.route(
                             context,
@@ -410,6 +410,7 @@ class _MobileMenuState extends State<MobileMenu> {
                           await Spdb.setEmployeeLogin(
                             model: emp,
                             cid: result["collectionId"],
+                            logoUrl: result["companyLogo"],
                           );
 
                           RoleModel role = await RoleService.getRole(

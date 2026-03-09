@@ -41,6 +41,7 @@ class _LoginState extends State<Login> {
           FlushBar.show(context, result['error'], isSuccess: false);
           return;
         }
+        String? companyLogo = result["companyLogo"];
         FlushBar.show(context, "Login Successful");
 
         if (!isAdminLogin) {
@@ -71,7 +72,11 @@ class _LoginState extends State<Login> {
                   .replaceAll("{device}", alertInfo.device),
             );
           }
-          await Spdb.setEmployeeLogin(model: emp, cid: result["collectionId"]);
+          await Spdb.setEmployeeLogin(
+            model: emp,
+            cid: result["collectionId"],
+            logoUrl: companyLogo,
+          );
           RoleModel role = await RoleService.getRole(uid: emp.role);
           await PermissionService.savePermissions(role.permissions);
           await CacheService.syncAllCollections();
@@ -86,7 +91,11 @@ class _LoginState extends State<Login> {
           'the login admins id ${result["collectionId"]}, ${result["uid"]}',
         );
 
-        await Spdb.setAdminLogin(model: admin, cid: result["collectionId"]);
+        await Spdb.setAdminLogin(
+          model: admin,
+          cid: result["collectionId"],
+          logoUrl: companyLogo,
+        );
         await PermissionService.savePermissions(AppStrings.permissionsTrueMap);
 
         await AuthService.saveLoginLogs(

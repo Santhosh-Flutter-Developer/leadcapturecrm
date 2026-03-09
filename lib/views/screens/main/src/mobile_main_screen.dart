@@ -15,9 +15,10 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
   EmployeeModel? _employeeModel;
   AdminModel? _adminModel;
   int _currentIndex = 0;
+  String? _companyLogoUrl;
 
   final items = [
-    {"icon": Iconsax.music_dashboard, "label": "Dashboard"},
+    {"icon": Iconsax.status_up, "label": "Dashboard"},
     {"icon": Iconsax.graph, "label": "Leads"},
     {"icon": Iconsax.grid_lock, "label": "Deals"},
     {"icon": Iconsax.menu, "label": "Menu"},
@@ -34,6 +35,8 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
       if (mounted) {
         _currentUserUid = await Spdb.getUid() ?? '';
         var user = await Spdb.getUser();
+
+        _companyLogoUrl = await Spdb.getCompanyLogo();
 
         if (user.userType == UserType.admin) {
           _adminModel = await Spdb.getAdmin();
@@ -98,28 +101,42 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
         return Scaffold(
           appBar: AppBar(
             centerTitle: false,
-            leadingWidth: 40,
+            leadingWidth: 50,
             leading: InkWell(
               onTap: () => Navigate.route(context, const Profile()),
               child: Padding(
                 padding: const EdgeInsets.only(left: 8.0),
                 child: Center(
                   child: CircleAvatar(
-                    radius: 25,
-                    child: Text(
-                      _employeeModel != null && _employeeModel!.name.isNotEmpty
-                          ? _employeeModel!.name[0].toUpperCase()
-                          : _adminModel != null && _adminModel!.name.isNotEmpty
-                          ? _adminModel!.name[0].toUpperCase()
-                          : 'U',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    radius: 20, // Slightly smaller for standard AppBar leading
+                    backgroundColor: Colors.grey[200],
+                    // 1. Try to load the Network Image
+                    backgroundImage:
+                        (_companyLogoUrl != null && _companyLogoUrl!.isNotEmpty)
+                        ? NetworkImage(_companyLogoUrl!)
+                        : null,
+                    // 2. Fallback child if backgroundImage is null or loading
+                    child: (_companyLogoUrl == null || _companyLogoUrl!.isEmpty)
+                        ? Text(
+                            _employeeModel?.name.isNotEmpty == true
+                                ? _employeeModel!.name[0].toUpperCase()
+                                : _adminModel?.name.isNotEmpty == true
+                                ? _adminModel!.name[0].toUpperCase()
+                                : 'U',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          )
+                        : null,
                   ),
                 ),
               ),
             ),
             title: Text(items[_currentIndex]['label'] as String),
             actions: [
+              IconButton(
+                icon: Icon(Iconsax.logout),
+                onPressed: () => logout(context),
+                tooltip: 'Logout',
+              ),
               IconButton(
                 icon: Icon(Iconsax.notification),
                 onPressed: () =>

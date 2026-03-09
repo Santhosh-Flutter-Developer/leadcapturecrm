@@ -72,8 +72,8 @@ class _DashboardState extends State<Dashboard> {
                                 const SizedBox(height: 20),
                                 DealsTimelineChart(deals: data.allDeals),
                                 const SizedBox(height: 20),
-                                TaskStatusPieChart(tasks: data.allTasks),
-                                const SizedBox(height: 20),
+                                // TaskStatusPieChart(tasks: data.allTasks),
+                                // const SizedBox(height: 20),
                               ],
                               _buildActivitySection(
                                 context,
@@ -674,12 +674,12 @@ List<Widget> _adminActions(BuildContext context) => [
     color: Colors.purple,
     onTap: () => _openSheet(context, const DealCreate()),
   ),
-  QuickActionCard(
-    icon: Icons.check_circle_outline,
-    label: "Add Task",
-    color: Colors.orange,
-    onTap: () => _openSheet(context, const TasksListing()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.check_circle_outline,
+  //   label: "Add Task",
+  //   color: Colors.orange,
+  //   onTap: () => _openSheet(context, const TasksListing()),
+  // ),
 ];
 
 List<Widget> _userActions(BuildContext context) => [

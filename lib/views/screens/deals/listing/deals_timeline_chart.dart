@@ -72,27 +72,30 @@ class DealsTimelineChart extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Deals $monthName Activity",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Deals $monthName Activity",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Daily deal creation performance for the current month",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B).withValues(alpha: 0.8),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Daily deal creation performance for the current month",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B).withValues(alpha: 0.8),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,

@@ -5,6 +5,7 @@ import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
+import 'dart:async';
 
 class DealKanbanListing extends StatefulWidget {
   final List<DealModel> dealList;
@@ -26,6 +27,9 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
     symbol: '₹',
     decimalDigits: 0,
   );
+
+  final ScrollController _scrollController = ScrollController();
+  Timer? _scrollTimer;
 
   @override
   void initState() {
@@ -71,6 +75,39 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
     });
   }
 
+  void _startEdgeScrolling(DragUpdateDetails details) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double scrollThreshold = 100.0; // Distance from edge to trigger scroll
+    double scrollSpeed = 15.0; // How fast to scroll
+
+    _scrollTimer?.cancel();
+
+    _scrollTimer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
+      if (details.globalPosition.dx < scrollThreshold) {
+        // Scroll Left
+        if (_scrollController.offset > 0) {
+          _scrollController.animateTo(
+            _scrollController.offset - scrollSpeed,
+            duration: const Duration(milliseconds: 20),
+            curve: Curves.linear,
+          );
+        }
+      } else if (details.globalPosition.dx > screenWidth - scrollThreshold) {
+        // Scroll Right
+        if (_scrollController.offset <
+            _scrollController.position.maxScrollExtent) {
+          _scrollController.animateTo(
+            _scrollController.offset + scrollSpeed,
+            duration: const Duration(milliseconds: 20),
+            curve: Curves.linear,
+          );
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -84,6 +121,7 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           return Container(
             color: const Color(0xFFF3F4F6),
             child: SingleChildScrollView(
+              controller: _scrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(12.0),
               physics: const BouncingScrollPhysics(),
@@ -257,6 +295,14 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Draggable<DealModel>(
         data: task,
+        onDragStarted: () => _handleDragStarted(task, list),
+        onDragUpdate: (details) {
+          _startEdgeScrolling(details);
+        },
+        onDragEnd: (details) {
+          _scrollTimer?.cancel();
+          _handleDragEnd(details);
+        },
         feedback: Material(
           elevation: 8.0,
           borderRadius: BorderRadius.circular(12.0),
@@ -287,8 +333,6 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
             ),
           ),
         ),
-        onDragStarted: () => _handleDragStarted(task, list),
-        onDragEnd: _handleDragEnd,
         child: InkWell(
           onTap: () {
             if (kIsDesktop) {

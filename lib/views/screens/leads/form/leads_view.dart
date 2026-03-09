@@ -220,174 +220,190 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   Widget _buildProfessionalHeader() {
     final status = CacheService.leadStatusByUid(widget.lead.leadStatus);
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ─── AVATAR ───────────────────────────────
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: LeadsViewAppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                widget.lead.leadName[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 32,
-                  color: LeadsViewAppColors.primary,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Determine if we are on a small screen
+        final bool isMobile = constraints.maxWidth < 600;
+
+        return Container(
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
+          decoration: BoxDecoration(
+            color: LeadsViewAppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: LeadsViewAppColors.border),
           ),
-
-          const SizedBox(width: 20),
-
-          /// ─── MAIN CONTENT ─────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// NAME + STATUS
-                Row(
-                  children: [
-                    Expanded(
-                      child: Tooltip(
-                        message: widget.lead.leadName,
-                        child: Text(
-                          widget.lead.leadName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: LeadsViewAppColors.textPrimary,
-                          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// ─── AVATAR ───────────────────────────────
+                  Container(
+                    width: isMobile ? 60 : 80,
+                    height: isMobile ? 60 : 80,
+                    decoration: BoxDecoration(
+                      color: LeadsViewAppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.lead.leadName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: isMobile ? 24 : 32,
+                          color: LeadsViewAppColors.primary,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: _buildStatusBadge(status?.name ?? 'Unknown'),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 4),
-
-                /// COMPANY
-                Text(
-                  widget.lead.companyName ?? 'Unspecified Company',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: LeadsViewAppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
                   ),
-                ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(width: 20),
 
-                /// QUICK ACTIONS
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  /// ─── MAIN CONTENT ─────────────────────────
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              widget.lead.leadName,
+                              style: TextStyle(
+                                fontSize: isMobile ? 18 : 22,
+                                fontWeight: FontWeight.w800,
+                                color: LeadsViewAppColors.textPrimary,
+                              ),
+                            ),
+                            _buildStatusBadge(status?.name ?? 'Unknown'),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.lead.companyName ?? 'Unspecified Company',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: LeadsViewAppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        // On Desktop, Quick Actions stay here
+                        if (!isMobile) ...[
+                          const SizedBox(height: 12),
+                          _buildActionsRow(),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // On Desktop, Lead Value stays on the top right
+                  if (!isMobile) ...[
+                    const SizedBox(width: 16),
+                    _buildLeadValueCard(),
+                  ],
+                ],
+              ),
+
+              // On Mobile, Quick Actions and Lead Value stack below
+              if (isMobile) ...[
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: LeadsViewAppColors.border),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _quickAction(
-                      Iconsax.call,
-                      "Call",
-                      () {
-                        if (widget.lead.companyMobile?.isNotEmpty ?? false) {
-                          launchUrl(
-                            Uri.parse("tel:${widget.lead.companyMobile}"),
-                          );
-                        }
-                      },
-                      tooltip: widget.lead.companyMobile?.isNotEmpty ?? false
-                          ? "Call ${widget.lead.companyMobile}"
-                          : "No contact number available",
-                    ),
-                    _quickAction(
-                      Iconsax.sms,
-                      "Email",
-                      () {},
-                      tooltip: widget.lead.leadEmail.isNotEmpty
-                          ? "Mail ${widget.lead.leadEmail}"
-                          : "No contact mail available",
-                    ),
-                    _quickAction(
-                      LineIcons.whatSApp,
-                      "WA",
-                      () {
-                        if (widget.lead.companyMobile?.isNotEmpty ?? false) {
-                          launchUrl(
-                            Uri.parse("tel:${widget.lead.companyMobile}"),
-                          );
-                        }
-                      },
-                      color: Colors.green,
-                      tooltip: widget.lead.leadEmail.isNotEmpty
-                          ? "Message ${widget.lead.leadEmail}"
-                          : "No contact number available",
-                    ),
+                    Expanded(child: _buildActionsRow()),
+                    const SizedBox(width: 12),
+                    _buildLeadValueCard(),
                   ],
                 ),
               ],
-            ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(width: 16),
+  /// Helper to build the Action Buttons
+  Widget _buildActionsRow() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _quickAction(
+          Iconsax.call,
+          "Call",
+          () {
+            if (widget.lead.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${widget.lead.companyMobile}"));
+            }
+          },
+          tooltip: widget.lead.companyMobile?.isNotEmpty ?? false
+              ? "Call ${widget.lead.companyMobile}"
+              : "No contact number available",
+        ),
+        _quickAction(
+          Iconsax.sms,
+          "Email",
+          () {},
+          tooltip: widget.lead.leadEmail.isNotEmpty
+              ? "Mail ${widget.lead.leadEmail}"
+              : "No contact mail available",
+        ),
+        _quickAction(
+          LineIcons.whatSApp,
+          "WA",
+          () {},
+          color: Colors.green,
+          tooltip: "WhatsApp Message",
+        ),
+      ],
+    );
+  }
 
-          /// ─── LEAD VALUE ───────────────────────────
-          IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: LeadsViewAppColors.background,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: LeadsViewAppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "Lead Value",
-                    style: TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  /// AMOUNT SAFE RENDER
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: LeadsViewAppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
+  /// Helper to build the Lead Value side-box
+  Widget _buildLeadValueCard() {
+    return IntrinsicWidth(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: LeadsViewAppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: LeadsViewAppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Lead Value",
+              style: TextStyle(
+                color: LeadsViewAppColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: LeadsViewAppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1028,6 +1044,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   Widget _buildActivitiesTab() {
     return Container(
+      // Match the padding and decoration of your _infoSection
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: LeadsViewAppColors.white,
@@ -1037,42 +1054,73 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// ─── HEADER SECTION ───────────────────────────
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Scheduled Activities",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                "Activities",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: LeadsViewAppColors.textPrimary,
+                ),
               ),
-              const Spacer(),
-              ElevatedButton.icon(
+              TextButton.icon(
                 onPressed: _scheduleActivity,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text("Schedule"),
+                style: TextButton.styleFrom(
+                  backgroundColor: LeadsViewAppColors.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Iconsax.add, size: 18),
+                label: const Text(
+                  "Schedule",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
 
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.55,
-            child: BlocBuilder<LeadBloc, LeadState>(
-              builder: (context, state) {
-                if (state is LeadDetailLoaded) {
-                  if (state.activities.isEmpty) {
-                    return _emptyState(
+          const SizedBox(height: 24),
+
+          /// ─── CONTENT SECTION ──────────────────────────
+          BlocBuilder<LeadBloc, LeadState>(
+            builder: (context, state) {
+              if (state is LeadDetailLoaded) {
+                if (state.activities.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: _emptyState(
                       Iconsax.calendar,
-                      "No activities scheduled",
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: state.activities.length,
-                    itemBuilder: (_, i) => _activityItem(state.activities[i]),
+                      "No activities scheduled yet",
+                    ),
                   );
                 }
-                return const WaitingLoading();
-              },
-            ),
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: state.activities.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (_, i) => _activityItem(state.activities[i]),
+                );
+              }
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: WaitingLoading(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1081,7 +1129,6 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   Widget _activityItem(LeadActivityModel activity) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: LeadsViewAppColors.background,
@@ -1090,9 +1137,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       ),
       child: Row(
         children: [
-          Icon(_activityIcon(activity.type), color: LeadsViewAppColors.primary),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: LeadsViewAppColors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              _activityIcon(activity.type),
+              color: LeadsViewAppColors.primary,
+              size: 20,
+            ),
+          ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
 
           Expanded(
             child: Column(
@@ -1100,20 +1158,44 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   activity.title,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  DateFormat('MMM dd • hh:mm a').format(
-                    DateTime.fromMillisecondsSinceEpoch(
-                      activity.scheduledAt.millisecondsSinceEpoch,
-                    ),
-                  ),
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: LeadsViewAppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: LeadsViewAppColors.textPrimary,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Iconsax.clock,
+                      size: 12,
+                      color: LeadsViewAppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      DateFormat(
+                        'MMM dd • hh:mm a',
+                      ).format(activity.scheduledAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: LeadsViewAppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
+            ),
+          ),
+
+          /// Optional: Add a "More" or "Delete" action per item
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.more_vert,
+              size: 18,
+              color: LeadsViewAppColors.textSecondary,
             ),
           ),
         ],

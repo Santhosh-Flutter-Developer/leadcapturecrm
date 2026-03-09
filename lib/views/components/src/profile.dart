@@ -120,7 +120,11 @@ class _ProfileState extends State<Profile> {
       );
 
       String? cid = await Spdb.getCid();
-      await Spdb.setEmployeeLogin(model: updatedEmployee, cid: cid ?? '');
+      await Spdb.setEmployeeLogin(
+        model: updatedEmployee,
+        cid: cid ?? '',
+        logoUrl: downloadUrl,
+      );
 
       setState(() => employee = updatedEmployee);
       FlushBar.show(

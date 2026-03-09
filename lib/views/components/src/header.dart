@@ -358,7 +358,11 @@ class _HeaderState extends State<Header> {
       var uid = result["uid"];
 
       EmployeeModel emp = EmployeeModel.fromMap(uid, data);
-      await Spdb.setEmployeeLogin(model: emp, cid: result["collectionId"]);
+      await Spdb.setEmployeeLogin(
+        model: emp,
+        cid: result["collectionId"],
+        logoUrl: result["companyLogo"],
+      );
 
       RoleModel role = await RoleService.getRole(uid: emp.role);
       await PermissionService.savePermissions(role.permissions);

@@ -16,14 +16,10 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // 1. ===== EMPLOYEE LOGIN (Using Collection Group) =====
       if (employeeId != null && employeeId.isNotEmpty) {
         var employeeQuery = await FirebaseFirestore.instance
             .collectionGroup(Collections.employees.name)
-            .where(
-              'employeeId',
-              isEqualTo: employeeId.trim(),
-            ) // Assuming ID isn't encrypted
+            .where('employeeId', isEqualTo: employeeId.trim())
             .get();
 
         if (employeeQuery.docs.isNotEmpty) {
@@ -51,9 +47,7 @@ class AuthService {
         }
       }
 
-      // 2. ===== ADMIN LOGIN (Using Collection Group) =====
       if (email != null && email.isNotEmpty) {
-        // Search for the ENCRYPTED email directly
         var adminQuery = await FirebaseFirestore.instance
             .collectionGroup(Collections.admins.name)
             .where('email', isEqualTo: email.trim().encrypt)
@@ -70,11 +64,24 @@ class AuthService {
           }
 
           await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
+
+          var companyDoc = await FirebaseFirestore.instance
+              .collection(Collections.users.name)
+              .doc(cid)
+              .get();
+
+          String? companyLogoUrl = companyDoc.data()?['logo'];
+          String? companyName = companyDoc.data()?['companyName'];
+
+          await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
+
           return {
             "status": true,
             "collectionId": cid,
             "uid": doc.id,
             "adminData": adminData,
+            "companyLogo": companyLogoUrl,
+            "companyName": companyName,
           };
         }
       }

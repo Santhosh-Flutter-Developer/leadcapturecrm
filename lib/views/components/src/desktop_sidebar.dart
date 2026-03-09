@@ -340,7 +340,6 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                                   title: menu['title'] as String,
                                   expanded: expandedIndex == index,
                                   onToggle: () {
-                                    print("hhhhhhh");
                                     // setState(() {
                                     setState(() {
                                       expandedIndex = expandedIndex == index
@@ -388,11 +387,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: widget.isCollapsed
-                  ? const Icon(
-                      Iconsax.buildings,
-                      size: 28,
-                      color: DesktopColors.white,
-                    )
+                  ? const Icon(Iconsax.buildings, size: 28, color: Colors.white)
                   : InkWell(
                       onTap: () =>
                           Navigate.routeReplace(context, RouteScreen()),
@@ -401,13 +396,26 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                               networkLogo,
                               height: 36,
                               fit: BoxFit.contain,
+                              frameBuilder:
+                                  (
+                                    context,
+                                    child,
+                                    frame,
+                                    wasSynchronouslyLoaded,
+                                  ) {
+                                    return wasSynchronouslyLoaded
+                                        ? child
+                                        : AnimatedOpacity(
+                                            opacity: frame == null ? 0 : 1,
+                                            duration: const Duration(
+                                              seconds: 1,
+                                            ),
+                                            curve: Curves.easeOut,
+                                            child: child,
+                                          );
+                                  },
                               errorBuilder: (context, error, stackTrace) =>
                                   _buildDefaultLogoAsset(),
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return _buildDefaultLogoAsset();
-                                  },
                             )
                           : _buildDefaultLogoAsset(),
                     ),

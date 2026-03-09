@@ -19,16 +19,39 @@ class Spdb {
     }
   }
 
+  // Save the Company Logo URL
+  static Future<void> saveCompanyLogo(String? url) async {
+    try {
+      final cn = await _connect();
+      if (url != null) {
+        await cn.setString("company_logo", url);
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+    }
+  }
+
+  static Future<String?> getCompanyLogo() async {
+    try {
+      final cn = await _connect();
+      return cn.getString("company_logo");
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      return null;
+    }
+  }
+
   static Future<void> setEmployeeLogin({
     required EmployeeModel model,
     required String cid,
+    String? logoUrl,
   }) async {
     try {
       final cn = await _connect();
-
       cn.setString("cid", cid);
       cn.setBool("employee_login", true);
       cn.setBool("admin_login", false);
+      if (logoUrl != null) cn.setString("company_logo", logoUrl);
 
       var map = model.toMap();
       map["uid"] = model.uid;
@@ -136,17 +159,17 @@ class Spdb {
   static Future<void> setAdminLogin({
     required AdminModel model,
     required String cid,
+    String? logoUrl,
   }) async {
     try {
       final cn = await _connect();
-
       cn.setString("cid", cid);
       cn.setBool("admin_login", true);
       cn.setBool("employee_login", false);
+      if (logoUrl != null) cn.setString("company_logo", logoUrl);
 
       var map = model.toMap();
       map["uid"] = model.uid;
-
       cn.setString("admin", json.encode(map));
     } catch (e, st) {
       await ErrorService.recordError(e, st);
