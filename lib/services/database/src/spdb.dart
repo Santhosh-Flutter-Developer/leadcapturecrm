@@ -249,8 +249,31 @@ class Spdb {
     final value = prefs.getBool('panelSettings') ?? false;
     PanelSettingsNotifier.hidePanel.value = value;
   }
+
+  static Future<void> savePayrollSettings(bool value) async {
+    final prefs = await _connect();
+    await prefs.setBool('payrollEnabled', value);
+
+    AppSettingsNotifier.payrollEnabled.value = value;
+  }
+
+  static Future<bool> getPayrollSettings() async {
+    final prefs = await _connect();
+    return prefs.getBool('payrollEnabled') ?? false;
+  }
+
+  static Future<void> loadPayrollSettings() async {
+    final prefs = await _connect();
+    final value = prefs.getBool('payrollEnabled') ?? false;
+
+    AppSettingsNotifier.payrollEnabled.value = value;
+  }
 }
 
 class PanelSettingsNotifier {
   static final ValueNotifier<bool> hidePanel = ValueNotifier<bool>(false);
+}
+
+class AppSettingsNotifier {
+  static final ValueNotifier<bool> payrollEnabled = ValueNotifier(false);
 }

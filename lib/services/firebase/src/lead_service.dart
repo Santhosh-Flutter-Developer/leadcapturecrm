@@ -59,11 +59,11 @@ class LeadService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
-        message: 'New lead created by ${user.name}',
+        body: 'New lead created by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Lead',
+        type: NotificationType.lead,
         payload: {'leadId': leadDoc.id},
       );
 
@@ -114,14 +114,13 @@ class LeadService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
-        message: 'Lead has been updated by ${user.name}',
+        body: 'Lead has been updated by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Lead',
+        type: NotificationType.lead,
         payload: {},
       );
-
       await PostNotificationService.sendNotification(model: notif);
     } catch (e, st) {
       debugPrint("Error updating lead: $e\n$st");

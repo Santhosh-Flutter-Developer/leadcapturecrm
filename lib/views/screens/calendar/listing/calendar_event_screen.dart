@@ -32,7 +32,7 @@ class CalendarDisplay extends StatefulWidget {
 }
 
 class _CalendarDisplayState extends State<CalendarDisplay> {
-  CalendarView _currentView = CalendarView.month;
+  Calendar _currentView = Calendar.month;
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedMonth = DateTime.now();
 
@@ -105,7 +105,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
               child: Column(
                 children: [
                   _buildViewSwitcher(),
-                  if (_currentView != CalendarView.month)
+                  if (_currentView != Calendar.month)
                     _buildHorizontalDatePicker(),
                   Expanded(child: _buildBody(state.events, state.tasks)),
                 ],
@@ -130,16 +130,16 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
         ),
         child: Row(
           children: [
-            _buildSwitchTab('Day', CalendarView.day),
-            _buildSwitchTab('Week', CalendarView.week),
-            _buildSwitchTab('Month', CalendarView.month),
+            _buildSwitchTab('Day', Calendar.day),
+            _buildSwitchTab('Week', Calendar.week),
+            _buildSwitchTab('Month', Calendar.month),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSwitchTab(String label, CalendarView view) {
+  Widget _buildSwitchTab(String label, Calendar view) {
     bool isSelected = _currentView == view;
     return Expanded(
       child: GestureDetector(
@@ -218,11 +218,11 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
 
   Widget _buildBody(List<EventModel> events, List<TaskModel> tasks) {
     switch (_currentView) {
-      case CalendarView.day:
+      case Calendar.day:
         return _buildDayView(events, tasks);
-      case CalendarView.week:
+      case Calendar.week:
         return _buildWeekView(events, tasks);
-      case CalendarView.month:
+      case Calendar.month:
         return _buildMonthView(events, tasks);
     }
   }
@@ -345,9 +345,12 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                   }
                 } else {
                   if (kIsDesktop) {
-                    GeneralDialog.showRTLSheet(context, TaskCreate());
+                    GeneralDialog.showRTLSheet(
+                      context,
+                      TaskCreate(employees: []),
+                    );
                   } else {
-                    Sheet.showSheet(context, widget: TaskCreate());
+                    Sheet.showSheet(context, widget: TaskCreate(employees: []));
                   }
                 }
               } else {
@@ -500,9 +503,15 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                       }
                     } else {
                       if (kIsDesktop) {
-                        GeneralDialog.showRTLSheet(context, TaskCreate());
+                        GeneralDialog.showRTLSheet(
+                          context,
+                          TaskCreate(employees: []),
+                        );
                       } else {
-                        Sheet.showSheet(context, widget: TaskCreate());
+                        Sheet.showSheet(
+                          context,
+                          widget: TaskCreate(employees: []),
+                        );
                       }
                     }
                   }

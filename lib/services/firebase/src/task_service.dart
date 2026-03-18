@@ -70,11 +70,11 @@ class TaskService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Task : ${task.taskName}',
-        message: 'New task created by ${user.name}',
+        body: 'New task created by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Task',
+        type: NotificationType.task,
         payload: {},
       );
 
@@ -84,12 +84,12 @@ class TaskService {
         ReminderService.createReminder(
           scheduledAt: task.deadline!,
           notification: NotificationModel(
-            title: 'Task Deadline Reminder',
-            message: 'Task "${task.taskName}" is due soon',
             collectionId: cid ?? '',
+            title: 'Task Deadline Reminder',
+            body: 'Task "${task.taskName}" is due soon',
             toFcms: fcmIds,
             toUids: users,
-            type: 'task_deadline_reminder',
+            type: NotificationType.task,
             payload: {'taskId': taskDoc.id},
           ),
         );
@@ -153,11 +153,11 @@ class TaskService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Task : ${task.taskName}',
-        message: 'Task has updated by ${user.name}',
+        body: 'Task has updated by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Task',
+        type: NotificationType.task,
         payload: {},
       );
 
@@ -166,12 +166,12 @@ class TaskService {
         ReminderService.createReminder(
           scheduledAt: task.deadline!,
           notification: NotificationModel(
-            title: 'Task Deadline Reminder',
-            message: 'Task "${task.taskName}" is due soon',
             collectionId: cid ?? '',
+            title: 'Task Deadline Reminder',
+            body: 'Task "${task.taskName}" is due soon',
             toFcms: fcmIds,
             toUids: users,
-            type: 'task_deadline_reminder',
+            type: NotificationType.task,
             payload: {'taskId': uid},
           ),
         );

@@ -162,6 +162,18 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const ProjectsListing();
       case 'Tasks':
         return const TasksListing();
+      case 'Work Time':
+        return widget.isAdmin
+            ? const DashboardWorktime()
+            : const WorktimeCreate();
+      case 'Attendance Ledger':
+        return Attendance();
+      case 'Permissions':
+        return widget.isAdmin
+            ? const PermissionRequestsListing()
+            : const PermissionListing();
+      case 'Salary Ledger':
+        return const SalaryLedgerList();
       case 'Chats':
         return ChatListing(currentUserUid: _currentUserUid);
       case 'Calendar':

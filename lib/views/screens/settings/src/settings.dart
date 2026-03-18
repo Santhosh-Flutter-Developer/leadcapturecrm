@@ -88,7 +88,6 @@ class _SettingsListingState extends State<SettingsListing> {
           if (state is SettingsLoading) {
             return const Center(child: WaitingLoading());
           }
-
           if (state is SettingsLoaded) {
             final settings = state.settings;
             return Center(
@@ -119,6 +118,19 @@ class _SettingsListingState extends State<SettingsListing> {
                         onChanged: (val) => context.read<SettingsBloc>().add(
                           UpdateSettingsEvent("pushNotification", val),
                         ),
+                      ),
+                      _buildSwitchTile(
+                        icon: Iconsax.wallet,
+                        iconColor: Colors.green,
+                        title: "Payroll",
+                        subtitle: "Show payroll related modules",
+                        value: settings.payrollEnabled,
+                        onChanged: (val) async {
+                          context.read<SettingsBloc>().add(
+                            UpdateSettingsEvent("payrollEnabled", val),
+                          );
+                          await Spdb.savePayrollSettings(val);
+                        },
                       ),
                       _buildSwitchTile(
                         icon: Iconsax.message,

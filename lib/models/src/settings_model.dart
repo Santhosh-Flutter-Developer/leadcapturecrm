@@ -10,6 +10,7 @@ class SettingsModel {
   final String language;
   final String dashboardLayout;
   final bool autoBackup;
+  final bool payrollEnabled;
 
   SettingsModel({
     this.uid,
@@ -23,6 +24,7 @@ class SettingsModel {
     required this.language,
     required this.dashboardLayout,
     required this.autoBackup,
+    required this.payrollEnabled,
   });
 
   SettingsModel copyWith({
@@ -38,6 +40,7 @@ class SettingsModel {
     String? language,
     String? dashboardLayout,
     bool? autoBackup,
+    bool? payrollEnabled,
   }) {
     return SettingsModel(
       uid: uid ?? this.uid,
@@ -51,6 +54,7 @@ class SettingsModel {
       language: language ?? this.language,
       dashboardLayout: dashboardLayout ?? this.dashboardLayout,
       autoBackup: autoBackup ?? this.autoBackup,
+      payrollEnabled: payrollEnabled ?? this.payrollEnabled,
     );
   }
 
@@ -67,6 +71,7 @@ class SettingsModel {
       language: map['language'] ?? "",
       dashboardLayout: map['dashboardLayout'] ?? "",
       autoBackup: map['autoBackup'] ?? false,
+      payrollEnabled: map['payrollEnabled'] ?? false,
     );
   }
 
@@ -83,6 +88,7 @@ class SettingsModel {
       "language": language,
       "dashboardLayout": dashboardLayout,
       "autoBackup": autoBackup,
+      "payrollEnabled": payrollEnabled,
     };
   }
 }

@@ -25,9 +25,7 @@ class AuthService {
         if (employeeQuery.docs.isNotEmpty) {
           var doc = employeeQuery.docs.first;
           var userData = doc.data();
-          String cid =
-              doc.reference.parent.parent!.id; // Get Company ID from path
-
+          String cid = doc.reference.parent.parent!.id;
           // Verify Password
           if (userData['password'].toString().decrypt != password) {
             return {"status": false, "error": "Invalid password"};
@@ -50,7 +48,7 @@ class AuthService {
       if (email != null && email.isNotEmpty) {
         var adminQuery = await FirebaseFirestore.instance
             .collectionGroup(Collections.admins.name)
-            .where('email', isEqualTo: email.trim().encrypt)
+            .where('email', isEqualTo: email.trim().toLowerCase())
             .get();
 
         if (adminQuery.docs.isNotEmpty) {
@@ -73,7 +71,7 @@ class AuthService {
           String? companyLogoUrl = companyDoc.data()?['logo'];
           String? companyName = companyDoc.data()?['companyName'];
 
-          await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
+          // await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
 
           return {
             "status": true,
@@ -127,7 +125,7 @@ class AuthService {
       // 4. Create the Super Admin in the sub-collection
       await companyRef.collection(Collections.admins.name).add({
         'name': adminName,
-        'email': adminEmail.encrypt,
+        'email': adminEmail.trim().toLowerCase(),
         'password': password.encrypt,
         'role': 'super_admin',
         'createdAt': FieldValue.serverTimestamp(),
@@ -261,7 +259,7 @@ class AuthService {
           var user = await firebase.users
               .doc(i.id)
               .collection(Collections.employees.name)
-              .where('email', isEqualTo: email)
+              .where('email', isEqualTo: email.trim().toLowerCase())
               .get();
           if (user.docs.isNotEmpty) {
             return true;
@@ -351,7 +349,7 @@ class AuthService {
         if (adminQuery.docs.isNotEmpty) {
           for (var i in adminQuery.docs) {
             var data = i.data();
-            if (data['email'].toString().decrypt == email) {
+            if (data['email'] == email.trim().toLowerCase()) {
               return {
                 'companyId': company.id,
                 'adminId': i.id,

@@ -35,6 +35,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     final updated = current.copyWith(
       emailNotification: event.key == "emailNotification" ? event.value : null,
       pushNotification: event.key == "pushNotification" ? event.value : null,
+      payrollEnabled: event.key == "payrollEnabled" ? event.value : null,
       inAppNotification: event.key == "inAppNotification" ? event.value : null,
       darkTheme: event.key == "darkTheme" ? event.value : null,
       showChats: event.key == "showChats" ? event.value : null,

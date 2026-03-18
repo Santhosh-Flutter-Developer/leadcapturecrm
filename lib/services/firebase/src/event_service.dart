@@ -21,13 +21,13 @@ class EventService {
       ReminderService.createReminder(
         scheduledAt: event.eventDateTime,
         notification: NotificationModel(
-          title: 'Event Reminder',
-          message: 'You have an upcoming event: ${event.eventName}',
           collectionId: cid ?? '',
+          title: 'Event Reminder',
+          body: 'You have an upcoming event: ${event.eventName}',
           toFcms: fcmIds,
           toUids: [event.createdBy.uid],
           payload: {},
-          type: 'event_reminder',
+          type: NotificationType.eventReminder,
         ),
       );
     } catch (e, st) {

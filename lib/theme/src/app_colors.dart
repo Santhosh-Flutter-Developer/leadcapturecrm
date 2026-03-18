@@ -3,6 +3,16 @@ import 'package:flutter/material.dart';
 class AppColors {
   // AppColors._();
 
+  static Color colorScheme = const Color(0xff0077b6);
+  static Color primaryColor = const Color(0xff0077b6);
+  static Color secondaryColor = const Color(0xffe3e8f0);
+  static Color whiteColor = const Color(0xffF2F2F2);
+  static Color pureWhiteColor = const Color(0xffFFFFFF);
+  static Color blackColor = const Color(0xff000000);
+  static Color greyColor = const Color(0xff808080);
+  static Color redColor = const Color(0xffD70040);
+  static Color greenColor = const Color(0xff008000);
+
   // ---- Core brand colors ----
   static const Color primary = Color(0xFF2E5EAA); // teal
   static const Color primaryVariant = Color(0xFF3B8EA5);

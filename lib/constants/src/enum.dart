@@ -34,6 +34,11 @@ enum Collections {
   recentActivity,
   errors,
   events,
+  worktime,
+  attendance,
+  permission,
+  worktimeFromHome,
+  salaryLedger,
 }
 
 enum StorageFolder {
@@ -57,7 +62,7 @@ enum UserType { admin, employee }
 
 enum EventRepeatType { none, daily, weekly, monthly, yearly }
 
-enum CalendarView { day, week, month }
+enum Calendar { day, week, month }
 
 enum ChatAction { pin, favorite, delete }
 
@@ -78,6 +83,38 @@ extension LeadCompletionStatusX on LeadCompletionStatus {
   }
 }
 
+enum UserData { uid, name, img, mobileNumber, collectionId, type }
+
+enum FilterRequirements { staff }
+
 enum UserTypes { employee, admin }
 
 enum LeadActivityType { call, meeting, followUp, task }
+
+enum HalfDaySession { morning, evening }
+
+enum PermissionsStatus { pending, approved, rejected }
+
+enum PermissionType {
+  permission,
+  leaveFullDay,
+  leaveHalfDay,
+  workFromHome,
+  lateEntry,
+  earlyExit,
+}
+
+enum NotificationType {
+  alert,
+  info,
+  openFile,
+  task,
+  permissionRequest,
+  lead,
+  eventReminder,
+  deal,
+  chat,
+  success,
+  warning,
+  error,
+}

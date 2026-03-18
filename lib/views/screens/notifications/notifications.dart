@@ -225,10 +225,13 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   List<NotificationModel> _filterList(List<NotificationModel> list) {
+    final query = _search.toLowerCase();
+
     return list.where((it) {
-      if (_search.isEmpty) return true;
-      return it.title.toLowerCase().contains(_search) ||
-          it.message.toLowerCase().contains(_search);
+      if (query.isEmpty) return true;
+
+      return it.title.toLowerCase().contains(query) ||
+          it.body.toLowerCase().contains(query);
     }).toList();
   }
 
@@ -333,7 +336,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _smallAvatar(item.title, item.type ?? ''),
+                _smallAvatar(item.title, item.type?.name ?? 'info'),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -346,7 +349,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                             child: Text(
                               item.title.isNotEmpty
                                   ? item.title
-                                  : (item.type ?? 'Alert'),
+                                  : (item.type?.name.toUpperCase() ?? 'Alert'),
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: isSelected
@@ -369,7 +372,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item.message,
+                        item.body,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -416,7 +419,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
         children: [
           Row(
             children: [
-              _smallAvatar(item.title, item.type ?? '', size: 56),
+              _smallAvatar(item.title, item.type?.name ?? 'info', size: 60),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
@@ -431,7 +434,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                       ),
                     ),
                     Text(
-                      item.type ?? "System Alert",
+                      (item.type?.name.toUpperCase() ?? 'System Alert'),
                       style: const TextStyle(
                         color: NotifyColors.primary,
                         fontWeight: FontWeight.bold,
@@ -464,7 +467,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
           ),
           const SizedBox(height: 12),
           Text(
-            item.message,
+            item.body,
             style: const TextStyle(
               fontSize: 16,
               height: 1.6,
@@ -617,7 +620,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
             ),
             const SizedBox(height: 8),
             Text(
-              item.message,
+              item.body,
               style: const TextStyle(
                 fontSize: 15,
                 height: 1.5,

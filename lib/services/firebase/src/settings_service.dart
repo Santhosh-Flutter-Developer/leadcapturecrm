@@ -38,6 +38,7 @@ class SettingsService {
         language: "English",
         dashboardLayout: "Default",
         autoBackup: false,
+        payrollEnabled: true,
       );
 
       await ref.set(defaults.toMap());

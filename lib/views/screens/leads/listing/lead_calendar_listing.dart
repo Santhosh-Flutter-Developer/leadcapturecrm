@@ -17,7 +17,7 @@ class LeadCalendarListing extends StatefulWidget {
 }
 
 class _LeadCalendarListingState extends State<LeadCalendarListing> {
-  CalendarView _currentView = CalendarView.month;
+  Calendar _currentView = Calendar.month;
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedMonth = DateTime.now();
 
@@ -48,7 +48,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
       child: Column(
         children: [
           _buildViewSwitcher(),
-          if (_currentView != CalendarView.month) _buildHorizontalDatePicker(),
+          if (_currentView != Calendar.month) _buildHorizontalDatePicker(),
           _buildBody(widget.leadList),
         ],
       ),
@@ -66,16 +66,16 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
         ),
         child: Row(
           children: [
-            _buildSwitchTab('Day', CalendarView.day),
-            _buildSwitchTab('Week', CalendarView.week),
-            _buildSwitchTab('Month', CalendarView.month),
+            _buildSwitchTab('Day', Calendar.day),
+            _buildSwitchTab('Week', Calendar.week),
+            _buildSwitchTab('Month', Calendar.month),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSwitchTab(String label, CalendarView view) {
+  Widget _buildSwitchTab(String label, Calendar view) {
     bool isSelected = _currentView == view;
     return Expanded(
       child: GestureDetector(
@@ -154,11 +154,11 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
 
   Widget _buildBody(List<LeadModel> leads) {
     switch (_currentView) {
-      case CalendarView.day:
+      case Calendar.day:
         return _buildDayView(leads);
-      case CalendarView.week:
+      case Calendar.week:
         return _buildWeekView(leads);
-      case CalendarView.month:
+      case Calendar.month:
         return _buildMonthView(leads);
     }
   }

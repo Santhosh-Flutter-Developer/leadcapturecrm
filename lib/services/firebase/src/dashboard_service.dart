@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:leadcapture/services/firebase/src/attendance_service.dart';
+import 'package:leadcapture/services/firebase/src/salary_service.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -63,6 +65,7 @@ class DashboardService {
 
       final recentActivities = await RecentActivityService()
           .getRecentActivities();
+
       final notifications = await _fetchNotifications(cid, userId);
       final upcomingTasks = await _fetchUpcomingTasks(cid);
 
@@ -70,6 +73,17 @@ class DashboardService {
       final allDeals = await DealService.getAllDeals();
       final allTasks = await TaskService.getAllTasks();
 
+      final attendanceStats = await AttendanceService.getAttendanceStats(
+        userUid: userId,
+        fromDate: dateRange.start,
+        toDate: dateRange.end,
+      );
+
+      final salary = await SalaryLedgerService.getSalarySummary(
+        userUid: userId,
+        fromDate: dateRange.start,
+        toDate: dateRange.end,
+      );
       return DashboardModel(
         totalLeads: totalLeads,
         convertedLeads: convertedLeads,
@@ -85,6 +99,8 @@ class DashboardService {
         allLeads: allLeads,
         allDeals: allDeals,
         allTasks: allTasks,
+        attendanceStats: attendanceStats,
+        salary: salary,
       );
     } catch (e, st) {
       debugPrint("Error fetching dashboard: $e\n$st");

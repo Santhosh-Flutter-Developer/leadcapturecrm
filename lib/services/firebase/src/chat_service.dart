@@ -28,7 +28,7 @@ class ChatService {
           return snapshot.docs.map((doc) {
             var data = doc.data();
             data['uid'] = doc.id;
-            return MessagesModel.fromMap(data);
+            return MessagesModel.fromMap(doc.id, data);
           }).toList();
         });
   }
@@ -49,7 +49,7 @@ class ChatService {
           return snapshot.docs.map((doc) {
             var data = doc.data();
             data['uid'] = doc.id;
-            return MessagesModel.fromMap(data);
+            return MessagesModel.fromMap(doc.id, data);
           }).toList();
         })
         .first;
@@ -73,7 +73,7 @@ class ChatService {
           return snapshot.docs.map((doc) {
             var data = doc.data();
             data['uid'] = doc.id;
-            return MessagesModel.fromMap(data);
+            return MessagesModel.fromMap(doc.id, data);
           }).toList();
         })
         .first;
@@ -140,7 +140,7 @@ class ChatService {
           .get(const GetOptions(source: Source.serverAndCache));
       var data = doc.data();
       data!['uid'] = doc.id;
-      return MessagesModel.fromMap(data);
+      return MessagesModel.fromMap(doc.id, data);
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
@@ -148,27 +148,34 @@ class ChatService {
     }
   }
 
-  static Future deleteChatMessage({
+  static Future<MessagesModel?> deleteChatMessage({
     required String chatId,
     required String messageId,
   }) async {
     try {
-      var cid = await Spdb.getCid();
-      var doc = await firebase.users
+      final cid = await Spdb.getCid();
+
+      final doc = await firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
           .doc(messageId)
           .get(const GetOptions(source: Source.serverAndCache));
-      var data = doc.data();
-      data!['uid'] = doc.id;
-      var chat = MessagesModel.fromMap(data);
 
-      for (var i in chat.attachments) {
-        await StorageService.deleteImage(i.url);
+      if (!doc.exists) return null;
+
+      final data = doc.data()!;
+
+      // Convert first
+      final message = MessagesModel.fromMap(doc.id, data);
+
+      // Delete attachments
+      for (final file in message.attachments) {
+        await StorageService.deleteImage(file.url);
       }
 
+      // Delete Firestore document
       await firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
@@ -176,10 +183,12 @@ class ChatService {
           .collection(Collections.messages.name)
           .doc(messageId)
           .delete();
+
+      return message;
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
-      throw e.toString();
+      rethrow;
     }
   }
 
@@ -229,10 +238,14 @@ class ChatService {
       }
 
       MessagesModel chat = MessagesModel(
-        attachments: attachmentList,
+        chatId: chatId,
         senderId: userId ?? '',
+        // senderName: user.name,
         receiverId: receivers,
         message: message,
+        attachments: attachmentList,
+
+        // Edit related
         edited: true,
         editHistory: [MessagesEditHistory(message: message)],
       );
@@ -291,7 +304,9 @@ class ChatService {
       }
 
       MessagesModel chat = MessagesModel(
+        chatId: chatId,
         senderId: senderId!,
+        // senderName: senderName,
         receiverId: receivers,
         message: message,
         replyFor: replyFor,
@@ -375,11 +390,11 @@ class ChatService {
       NotificationModel notification = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: name,
-        message: message,
+        body: message,
         toUids: receivers,
         toFcms: toFcms,
         senderId: await Spdb.getUid(),
-        type: 'Chat',
+        type: NotificationType.chat,
         payload: (isChat ?? false)
             ? {
                 "type": "chat",

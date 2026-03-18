@@ -58,11 +58,11 @@ class DealService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Deal : ${deal.dealName}',
-        message: 'New deal created by ${user.name}',
+        body: 'New deal created by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Deal',
+        type: NotificationType.deal,
         payload: {'dealId': dealDoc.id},
       );
 
@@ -109,11 +109,11 @@ class DealService {
       var notif = NotificationModel(
         collectionId: await Spdb.getCid() ?? '',
         title: 'Deal : ${deal.dealName}',
-        message: 'Deal has been updated by ${user.name}',
+        body: 'Deal has been updated by ${user.name}',
         toFcms: fcmIds,
         toUids: users,
         senderId: await Spdb.getUid(),
-        type: 'Deal',
+        type: NotificationType.deal,
         payload: {},
       );
 

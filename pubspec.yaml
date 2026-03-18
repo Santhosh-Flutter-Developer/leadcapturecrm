@@ -82,6 +82,12 @@ dependencies:
   graphview: ^1.5.1
   flutter_window_close: ^1.3.0
   flutter_launcher_icons: ^0.14.4
+  get_time_ago: ^2.3.2
+  syncfusion_flutter_xlsio: ^31.2.18
+  localstore: ^1.4.0
+  downloadsfolder: ^1.2.0
+  syncfusion_flutter_calendar: ^31.2.18
+  table_calendar: ^3.2.0
 
 dev_dependencies:
   flutter_test:

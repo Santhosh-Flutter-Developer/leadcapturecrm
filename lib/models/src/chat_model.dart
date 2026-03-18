@@ -129,92 +129,142 @@ class ChatModel {
 
 class MessagesModel {
   final String? uid;
+  final String chatId;
   final String senderId;
+  final String? senderName;
+
+  String message;
+
   final List<String> receiverId;
-  final String message;
+
   final List<FileModel> attachments;
+
   final bool edited;
   final List<MessagesEditHistory> editHistory;
+
   final String? replyFor;
+  final String? replyForMessageId;
+
+  final String? forwardFrom;
+  final String? forwardFromMessageId;
+  final String? forwardFromChatId;
+
   final List<String> seenBy;
-  final DateTime? timestamp;
+
   final Map<String, List<String>> reactions;
+
+  final bool deleted;
+
   final bool isPinned;
+  final DateTime? pinnedTimeStamp;
+
+  final DateTime timestamp;
+
   final List<String> searchKeywords;
 
   MessagesModel({
     this.uid,
+    required this.chatId,
     required this.senderId,
+    this.senderName,
     required this.receiverId,
     required this.message,
+    this.attachments = const [],
     this.edited = false,
-    this.replyFor,
     this.editHistory = const [],
+    this.replyFor,
+    this.replyForMessageId,
+    this.forwardFrom,
+    this.forwardFromMessageId,
+    this.forwardFromChatId,
     this.seenBy = const [],
-    required this.attachments,
-    this.timestamp,
     this.reactions = const {},
+    this.deleted = false,
     this.isPinned = false,
+    this.pinnedTimeStamp,
+    DateTime? timestamp,
     this.searchKeywords = const [],
-  });
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  // ---------------- MAP ----------------
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
+      'chatId': chatId,
       'senderId': senderId,
+      'senderName': senderName,
       'receiverId': receiverId,
       'message': message,
-      'seenBy': seenBy,
-      'edited': edited,
-      'editHistory': [],
-      'replyFor': replyFor,
       'attachments': attachments.map((x) => x.toMap()).toList(),
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'edited': edited,
+      'editHistory': editHistory.map((x) => x.toMap()).toList(),
+      'replyFor': replyFor,
+      'replyForMessageId': replyForMessageId,
+      'forwardFrom': forwardFrom,
+      'forwardFromMessageId': forwardFromMessageId,
+      'forwardFromChatId': forwardFromChatId,
+      'seenBy': seenBy,
       'reactions': reactions,
+      'deleted': deleted,
       'isPinned': isPinned,
+      'pinnedTimeStamp': pinnedTimeStamp?.millisecondsSinceEpoch,
+      'timestamp': timestamp.millisecondsSinceEpoch,
       'searchKeywords': [
         ...buildSearchKeywords(message),
-        ...attachments.expand((file) => buildSearchKeywords(file.name)),
+        ...attachments.expand((f) => buildSearchKeywords(f.name)),
       ],
     };
   }
 
-  Map<String, dynamic> toEditMap() {
-    return <String, dynamic>{
-      'message': message,
-      'edited': edited,
-      'editHistory': FieldValue.arrayUnion([
-        ...editHistory.map((x) => x.toMap()),
-      ]),
-      'attachments': FieldValue.arrayUnion([
-        ...attachments.map((x) => x.toMap()),
-      ]),
-    };
-  }
+  // ---------------- FROM MAP ----------------
 
-  factory MessagesModel.fromMap(Map<String, dynamic> map) {
+  factory MessagesModel.fromMap(String id, Map<String, dynamic> map) {
     return MessagesModel(
-      uid: map['uid'],
-      senderId: map['senderId'] as String,
-      receiverId: (map['receiverId'] as List).map((e) => e.toString()).toList(),
-      message: map['message'] as String,
-      attachments: (map['attachments'] as List)
-          .map<FileModel>((x) => FileModel.fromMap(x as Map<String, dynamic>))
+      uid: id,
+      chatId: map['chatId'],
+      senderId: map['senderId'],
+      senderName: map['senderName'],
+      receiverId: List<String>.from(map['receiverId'] ?? []),
+      message: map['message'],
+      attachments: (map['attachments'] as List? ?? [])
+          .map((e) => FileModel.fromMap(e))
           .toList(),
-      seenBy: (map['seenBy'] as List).map((e) => e.toString()).toList(),
-      timestamp: map['timestamp'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
-          : null,
-      replyFor: map['replyFor'],
       edited: map['edited'] ?? false,
+      replyFor: map['replyFor'],
+      replyForMessageId: map['replyForMessageId'],
+      forwardFrom: map['forwardFrom'],
+      forwardFromMessageId: map['forwardFromMessageId'],
+      forwardFromChatId: map['forwardFromChatId'],
+      seenBy: List<String>.from(map['seenBy'] ?? []),
       reactions: map['reactions'] != null
           ? Map<String, List<String>>.from(
               (map['reactions'] as Map).map(
-                (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+                (k, v) => MapEntry(k, List<String>.from(v)),
               ),
             )
           : {},
+      deleted: map['deleted'] ?? false,
       isPinned: map['isPinned'] ?? false,
+      pinnedTimeStamp: map['pinnedTimeStamp'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['pinnedTimeStamp'])
+          : null,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
     );
+  }
+
+  // ---------------- EDIT ----------------
+
+  Map<String, dynamic> toEditMap() {
+    return {
+      'message': message,
+      'edited': true,
+      'attachments': FieldValue.arrayUnion(
+        attachments.map((x) => x.toMap()).toList(),
+      ),
+      'editHistory': FieldValue.arrayUnion(
+        editHistory.map((x) => x.toMap()).toList(),
+      ),
+    };
   }
 }
 
