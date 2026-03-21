@@ -87,8 +87,6 @@ enum UserData { uid, name, img, mobileNumber, collectionId, type }
 
 enum FilterRequirements { staff }
 
-enum UserTypes { employee, admin }
-
 enum LeadActivityType { call, meeting, followUp, task }
 
 enum HalfDaySession { morning, evening }

@@ -61,6 +61,10 @@ class AuthService {
             return {"status": false, "error": "Invalid password"};
           }
 
+          if (adminData['loginAllowed'] == false) {
+            return {"status": false, "error": "Your login is disabled!"};
+          }
+
           await _trackDevice(cid: cid, uid: doc.id, isAdmin: true);
 
           var companyDoc = await FirebaseFirestore.instance
@@ -100,11 +104,11 @@ class AuthService {
     File? logo,
   }) async {
     try {
-      // 1. Generate a new Company Document ID first
+      // 1. Create company
       DocumentReference companyRef = firebase.users.doc();
       String companyId = companyRef.id;
 
-      // 2. Upload Logo if it exists using your StorageService
+      // 2. Upload logo
       String? logoUrl;
       if (logo != null) {
         logoUrl = await StorageService.uploadImage(
@@ -114,7 +118,6 @@ class AuthService {
         );
       }
 
-      // 3. Create Company Root Data
       await companyRef.set({
         'companyName': name,
         'createdAt': FieldValue.serverTimestamp(),
@@ -122,15 +125,39 @@ class AuthService {
         'status': 'active',
       });
 
-      // 4. Create the Super Admin in the sub-collection
-      await companyRef.collection(Collections.admins.name).add({
-        'name': adminName,
-        'email': adminEmail.trim().toLowerCase(),
-        'password': password.encrypt,
-        'role': 'super_admin',
-        'createdAt': FieldValue.serverTimestamp(),
-        'devices': [],
-        'loginAllowed': true,
+      DocumentReference roleRef = companyRef
+          .collection(Collections.roles.name)
+          .doc();
+
+      await roleRef.set({
+        "name": "Super Admin",
+        "permissions": ["all"],
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      DocumentReference adminRef = companyRef
+          .collection(Collections.admins.name)
+          .doc();
+
+      AdminModel admin = AdminModel(
+        uid: adminRef.id,
+        name: adminName,
+        email: adminEmail.trim().toLowerCase(),
+        password: password,
+        mobileNumber: "",
+        createdBy: UserDataModel(
+          uid: "Admin",
+          name: "Admin",
+          userType: UserType.admin,
+        ),
+      );
+
+      await adminRef.set({
+        ...admin.toMap(),
+        "roleId": roleRef.id,
+        "companyId": companyId,
+        "devices": [],
+        "loginAllowed": true,
       });
 
       return {

@@ -153,11 +153,11 @@ class SalaryLedgerService {
         }
       }
 
-      final lessMinutes = double.tryParse(attendance.lessHourMinutes) ?? 0.0;
+      final lessMinutes = attendance.lessHourMinutes;
 
       final lessHourDeduction = lessMinutes * perMinuteSalary;
 
-      final otMinutes = double.tryParse(attendance.otHourMinutes) ?? 0.0;
+      final otMinutes = attendance.otHourMinutes;
 
       final otHours = otMinutes / 60;
 
@@ -252,12 +252,13 @@ class SalaryLedgerService {
       return AttendanceModel(
         employeeId: salaries.isNotEmpty ? salaries.first.employeeId : '',
         punchList: [],
+        breakMinutes: 0,
         present: presentDays.toString(),
         holiday: holidayCount.toString(),
         absent: absentCount.toString(),
-        workingHourMinutes: '0',
-        lessHourMinutes: '0',
-        otHourMinutes: '0',
+        workingHourMinutes: 0,
+        lessHourMinutes: 0,
+        otHourMinutes: 0,
         permissions: List.generate(
           permissionCount,
           (_) => PermissionType.permission,
@@ -268,12 +269,13 @@ class SalaryLedgerService {
 
       return AttendanceModel(
         punchList: [],
+        breakMinutes: 0,
         present: '0',
         holiday: '0',
         absent: '0',
-        workingHourMinutes: '0',
-        lessHourMinutes: '0',
-        otHourMinutes: '0',
+        workingHourMinutes: 0,
+        lessHourMinutes: 0,
+        otHourMinutes: 0,
         permissions: [],
         employeeId: '',
       );

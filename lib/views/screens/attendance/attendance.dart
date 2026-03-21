@@ -3,6 +3,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
+import 'package:leadcapture/models/src/department_model.dart';
+import 'package:leadcapture/models/src/employee_model.dart';
 import 'package:leadcapture/models/src/user_data_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/attendance_service.dart';
@@ -13,34 +15,61 @@ import 'package:leadcapture/views/ui/src/loading.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 String getAttendanceStatus(PunchModel punch) {
-  if (punch.permissionType != null) {
-    if (punch.permissionStatus == PermissionsStatus.approved) {
-      switch (punch.permissionType!) {
-        case PermissionType.leaveFullDay:
-          return "Leave";
-        case PermissionType.leaveHalfDay:
-          return "HalfDay";
-        case PermissionType.workFromHome:
-          return "WFH";
-        case PermissionType.lateEntry:
-          return "Late";
-        case PermissionType.earlyExit:
-          return "EarlyExit";
-        case PermissionType.permission:
-          return "Permission";
-      }
-    } else if (punch.permissionStatus == PermissionsStatus.pending) {
-      return "Pending Permission";
-    } else if (punch.permissionStatus == PermissionsStatus.rejected) {
-      return "Permission Rejected";
+  final type = punch.permissionType;
+  final status = punch.permissionStatus;
+
+  if (status == PermissionsStatus.pending) return "Pending";
+  if (status == PermissionsStatus.rejected) return "Rejected";
+
+  if (status == PermissionsStatus.approved && type != null) {
+    switch (type) {
+      case PermissionType.leaveFullDay:
+        return "Leave";
+      case PermissionType.leaveHalfDay:
+        return "HalfDay";
+      case PermissionType.workFromHome:
+        return "WFH";
+      case PermissionType.lateEntry:
+        return "Late";
+      case PermissionType.earlyExit:
+        return "EarlyExit";
+      case PermissionType.permission:
+        return "Permission";
     }
   }
 
-  if (punch.punchTime.isNotEmpty) {
-    return punch.punchTime.length >= 2 ? "Present" : "Half Day";
+  final punchStatus = (punch.status).toLowerCase();
+
+  switch (punchStatus) {
+    case "present":
+      return "Present";
+    case "halfday":
+      return "HalfDay";
+    case "leave":
+      return "Leave";
+    case "absent":
+    default:
+      return "Absent";
+  }
+}
+
+DateTime? _parseDate(String? date) {
+  if (date == null || date.isEmpty) return null;
+
+  final formats = ['yyyy-MM-dd', 'dd-MM-yyyy', 'dd/MM/yyyy', 'yyyy/MM/dd'];
+
+  for (final format in formats) {
+    try {
+      return DateFormat(format).parse(date);
+    } catch (_) {}
   }
 
-  return "Absent";
+  try {
+    return DateTime.parse(date);
+  } catch (_) {}
+
+  print("❌ Invalid date format: $date");
+  return null;
 }
 
 const String _pageTitle = "Attendance";
@@ -63,7 +92,10 @@ class _AttendanceState extends State<Attendance> {
   String _dateRangeText = "Select Date Range";
 
   List<AttendanceModel> _aList = [];
+  List<AttendanceModel> filteredList = [];
   final List<AttendanceModel> _tempAList = [];
+  final List<EmployeeModel> _employees = [];
+  final List<DepartmentModel> _departments = [];
   AttendanceStats? _stats;
   bool isAdmin = false;
   bool isEmployee = false;
@@ -120,16 +152,20 @@ class _AttendanceState extends State<Attendance> {
     _tempAList.clear();
 
     _aList = _stats!.attendanceData;
+    _tempAList.addAll(_aList);
+
+    filteredList = List.from(_aList);
 
     _aList.sort((a, b) {
       if (a.punchList.isEmpty || b.punchList.isEmpty) return 0;
 
-      return DateTime.parse(
-        b.punchList.first.punchDate,
-      ).compareTo(DateTime.parse(a.punchList.first.punchDate));
-    });
+      final dateA = _parseDate(a.punchList.first.punchDate);
+      final dateB = _parseDate(b.punchList.first.punchDate);
 
-    _tempAList.addAll(_aList);
+      if (dateA == null || dateB == null) return 0;
+
+      return dateB.compareTo(dateA);
+    });
   }
 
   // void _searchAttendance() {
@@ -155,19 +191,6 @@ class _AttendanceState extends State<Attendance> {
     final punch = a.punchList.first;
     final status = getAttendanceStatus(punch);
 
-    if (punch.permissionStatus == PermissionsStatus.pending) {
-      Text(
-        "Permission Status : ${punch.permissionStatus?.name ?? '-'}",
-        style: TextStyle(
-          color: punch.permissionStatus == PermissionsStatus.approved
-              ? Colors.green
-              : punch.permissionStatus == PermissionsStatus.rejected
-              ? Colors.red
-              : Colors.orange,
-        ),
-      );
-    }
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -176,13 +199,22 @@ class _AttendanceState extends State<Attendance> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
+        String formatTime(String? time) {
+          if (time == null || time.isEmpty) return "-";
+          final dt = DateTime.tryParse(time);
+          if (dt == null) return "-";
+          return TimeOfDay.fromDateTime(dt).format(context);
+        }
+
         String checkIn = punch.punchTime.isNotEmpty
-            ? punch.punchTime.first
+            ? formatTime(punch.punchTime.first)
             : "-";
 
         String checkOut = punch.punchTime.length > 1
-            ? punch.punchTime.last
+            ? formatTime(punch.punchTime.last)
             : "-";
+
+        final date = _parseDate(punch.punchDate);
 
         return Container(
           padding: const EdgeInsets.all(20),
@@ -193,9 +225,9 @@ class _AttendanceState extends State<Attendance> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
+                width: 50,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(10),
@@ -203,15 +235,14 @@ class _AttendanceState extends State<Attendance> {
               ),
 
               Text(
-                DateFormat(
-                  'EEEE, MMM dd yyyy',
-                ).format(DateTime.parse(punch.punchDate)),
+                date != null
+                    ? DateFormat('EEEE, MMM dd yyyy').format(date)
+                    : "--",
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 15),
 
               Container(
@@ -234,7 +265,6 @@ class _AttendanceState extends State<Attendance> {
 
               const SizedBox(height: 20),
 
-              /// Checkin Checkout
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -243,21 +273,26 @@ class _AttendanceState extends State<Attendance> {
                 ],
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 20),
 
-              /// Work Summary
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _infoTile(Iconsax.clock, "Work", a.workingHourMinutes),
-                  _infoTile(Iconsax.flash, "OT", a.otHourMinutes),
-                  _infoTile(Iconsax.warning_2, "Less", a.lessHourMinutes),
-                ],
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _infoTile(Iconsax.clock, "Work", a.formattedWork),
+                    _infoTile(Iconsax.pause, "Break", a.formattedBreak),
+                    _infoTile(Iconsax.flash, "OT", a.formattedOT),
+                    _infoTile(Iconsax.warning_2, "Less", a.formattedLess),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 15),
 
-              /// Permission info
               if (punch.permissionType != null)
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -280,15 +315,19 @@ class _AttendanceState extends State<Attendance> {
               const SizedBox(height: 10),
 
               if (punch.permissionStatus != null)
-                Text(
-                  "Status : ${punch.permissionStatus!.name}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: punch.permissionStatus == PermissionsStatus.approved
-                        ? Colors.green
-                        : punch.permissionStatus == PermissionsStatus.rejected
-                        ? Colors.red
-                        : Colors.orange,
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    "Permission Status : ${punch.permissionStatus!.name}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color:
+                          punch.permissionStatus == PermissionsStatus.approved
+                          ? Colors.green
+                          : punch.permissionStatus == PermissionsStatus.rejected
+                          ? Colors.red
+                          : Colors.orange,
+                    ),
                   ),
                 ),
             ],
@@ -298,7 +337,7 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  void _applyFilters() {
+  void applyFilters() {
     List<AttendanceModel> filtered = _tempAList.where((a) {
       if (a.punchList.isEmpty) return false;
 
@@ -308,27 +347,48 @@ class _AttendanceState extends State<Attendance> {
 
       bool matchesStatus = _selectedStatus == "All"
           ? true
-          : status == _selectedStatus;
+          : status.toLowerCase() == _selectedStatus.toLowerCase();
+
       bool matchesType = _selectedType == "All" ? true : type == _selectedType;
+
       bool matchesDate = true;
 
       if (_selectedDateRange != null) {
-        final punchDate = DateTime.parse(punch.punchDate);
+        final punchDate = _parseDate(punch.punchDate);
+        if (punchDate == null) return false;
+
         matchesDate =
-            punchDate.isAfter(
-              _selectedDateRange!.start.subtract(const Duration(days: 1)),
-            ) &&
-            punchDate.isBefore(
-              _selectedDateRange!.end.add(const Duration(days: 1)),
-            );
+            !punchDate.isBefore(_selectedDateRange!.start) &&
+            !punchDate.isAfter(_selectedDateRange!.end);
       }
 
       return matchesStatus && matchesType && matchesDate;
     }).toList();
 
     setState(() {
-      _aList = filtered;
+      filteredList = filtered;
     });
+  }
+
+  void _onDayTap(DateTime date) {
+    final aListForDay = _aList.where((e) {
+      if (e.punchList.isEmpty) return false;
+
+      final parsedDate = _parseDate(e.punchList.first.punchDate);
+      if (parsedDate == null) return false;
+
+      return parsedDate.year == date.year &&
+          parsedDate.month == date.month &&
+          parsedDate.day == date.day;
+    }).toList();
+
+    if (aListForDay.isNotEmpty) {
+      _showAttendanceDetails(aListForDay.first);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No attendance record for this day')),
+      );
+    }
   }
 
   @override
@@ -366,85 +426,157 @@ class _AttendanceState extends State<Attendance> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const WaitingLoading();
             }
+            return isAdmin ? _buildAdminView() : _buildEmployeeView();
             // if (_aList.isEmpty) {
             //   return const NoData();
             // }
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Column(
-                  children: [
-                    // Row(
-                    //   children: [
-                    //     IconButton(
-                    //       icon: const Icon(Iconsax.arrow_left),
-                    //       onPressed: prevMonth,
-                    //     ),
-                    //     Expanded(
-                    //       child: Text(
-                    //         DateFormat('MMM yyyy').format(focusedMonth),
-                    //         textAlign: TextAlign.center,
-                    //         style: const TextStyle(
-                    //           fontSize: 16,
-                    //           fontWeight: FontWeight.bold,
-                    //         ),
-                    //       ),
-                    //     ),
-                    //     IconButton(
-                    //       icon: const Icon(Iconsax.arrow_right),
-                    //       onPressed: nextMonth,
-                    //     ),
-                    //   ],
-                    // ),
-                    const SizedBox(height: 12),
-                    if (isAdmin) ...[
-                      _permissionApprovalPanel(),
-                      const SizedBox(height: 16),
-                      _filterPanel(),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: _buildSummaryCards(_stats!),
-                    ),
-                    const SizedBox(height: 16),
-                    if (isAdmin) _attendanceListView(),
-                    const SizedBox(height: 20),
-                    _AttendanceCalendar(
-                      attendanceList: _aList,
-                      onDayTap: (date) {
-                        final aListForDay = _aList
-                            .where(
-                              (e) =>
-                                  e.punchList.isNotEmpty &&
-                                  e.punchList.first.punchDate.startsWith(
-                                    DateFormat('yyyy-MM-dd').format(date),
-                                  ),
-                            )
-                            .toList();
+            // return SingleChildScrollView(
+            //   physics: const AlwaysScrollableScrollPhysics(),
+            //   child: Padding(
+            //     padding: const EdgeInsets.symmetric(
+            //       horizontal: 16,
+            //       vertical: 12,
+            //     ),
+            //     child: Column(
+            //       children: [
+            //         // Row(
+            //         //   children: [
+            //         //     IconButton(
+            //         //       icon: const Icon(Iconsax.arrow_left),
+            //         //       onPressed: prevMonth,
+            //         //     ),
+            //         //     Expanded(
+            //         //       child: Text(
+            //         //         DateFormat('MMM yyyy').format(focusedMonth),
+            //         //         textAlign: TextAlign.center,
+            //         //         style: const TextStyle(
+            //         //           fontSize: 16,
+            //         //           fontWeight: FontWeight.bold,
+            //         //         ),
+            //         //       ),
+            //         //     ),
+            //         //     IconButton(
+            //         //       icon: const Icon(Iconsax.arrow_right),
+            //         //       onPressed: nextMonth,
+            //         //     ),
+            //         //   ],
+            //         // ),
+            //         const SizedBox(height: 12),
+            //         if (isAdmin) ...[
+            //           _permissionApprovalPanel(),
+            //           const SizedBox(height: 16),
+            //           _filterPanel(),
+            //         ],
+            //         Padding(
+            //           padding: const EdgeInsets.symmetric(vertical: 8),
+            //           child: _buildSummaryCards(_stats!),
+            //         ),
+            //         const SizedBox(height: 16),
+            //         _attendanceListView(),
+            //         const SizedBox(height: 20),
+            //         _AttendanceCalendar(
+            //           attendanceList: filteredList,
+            //           userType: user!.userType,
+            //           employeeId: user!.uid,
+            //           employees: _employees,
+            //           departments: _departments,
+            //           onDayTap: (date) {
+            //             final aListForDay = _aList.where((e) {
+            //               if (e.punchList.isEmpty) return false;
 
-                        if (aListForDay.isNotEmpty) {
-                          _showAttendanceDetails(aListForDay.first);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No attendance record for this day',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
+            //               final parsedDate = _parseDate(
+            //                 e.punchList.first.punchDate,
+            //               );
+            //               if (parsedDate == null) return false;
+
+            //               return parsedDate.year == date.year &&
+            //                   parsedDate.month == date.month &&
+            //                   parsedDate.day == date.day;
+            //             }).toList();
+
+            //             if (aListForDay.isNotEmpty) {
+            //               _showAttendanceDetails(aListForDay.first);
+            //             } else {
+            //               ScaffoldMessenger.of(context).showSnackBar(
+            //                 const SnackBar(
+            //                   content: Text(
+            //                     'No attendance record for this day',
+            //                   ),
+            //                 ),
+            //               );
+            //             }
+            //           },
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildAdminView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// 🔴 Pending Approvals (TOP PRIORITY)
+          _permissionApprovalPanel(),
+          const SizedBox(height: 16),
+
+          /// 📊 Summary
+          _buildSummaryCards(_stats!),
+          const SizedBox(height: 16),
+
+          /// 🔍 Filters
+          _filterPanel(),
+          const SizedBox(height: 16),
+
+          /// 📋 Attendance List
+          _attendanceListView(),
+          const SizedBox(height: 20),
+
+          /// 📅 Calendar
+          _AttendanceCalendar(
+            attendanceList: filteredList,
+            userType: user!.userType,
+            employeeId: user!.uid,
+            employees: _employees,
+            departments: _departments,
+            onDayTap: _onDayTap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmployeeView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          /// 📊 Personal Summary
+          _buildSummaryCards(_stats!),
+          const SizedBox(height: 16),
+
+          /// 📅 Calendar (MAIN FOCUS)
+          _AttendanceCalendar(
+            attendanceList: filteredList,
+            userType: user!.userType,
+            employeeId: user!.uid,
+            employees: _employees,
+            departments: _departments,
+            onDayTap: _onDayTap,
+          ),
+
+          const SizedBox(height: 16),
+
+          /// 📋 My Attendance
+          _attendanceListView(),
+        ],
       ),
     );
   }
@@ -516,6 +648,23 @@ class _AttendanceState extends State<Attendance> {
 
             ...pendingPermissions.map((a) {
               final punch = a.punchList.first;
+              final date = _parseDate(punch.punchDate);
+              String formatTime(String? time) {
+                if (time == null || time.isEmpty) return "-";
+                final dt = DateTime.tryParse(time);
+                if (dt == null) return "-";
+                return TimeOfDay.fromDateTime(dt).format(context);
+              }
+
+              bool hasCheckIn = punch.punchTime.isNotEmpty;
+              bool hasCheckOut = punch.punchTime.length > 1;
+
+              final checkIn = hasCheckIn
+                  ? formatTime(punch.punchTime.first)
+                  : "-";
+              final checkOut = hasCheckOut
+                  ? formatTime(punch.punchTime.last)
+                  : "-";
 
               return Card(
                 elevation: 0,
@@ -528,10 +677,89 @@ class _AttendanceState extends State<Attendance> {
                     punch.permissionType!.name,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text(
-                    DateFormat(
-                      'dd MMM yyyy',
-                    ).format(DateTime.parse(punch.punchDate)),
+
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// 📅 DATE
+                      Row(
+                        children: [
+                          const Icon(
+                            Iconsax.calendar,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            date != null
+                                ? DateFormat('dd MMM yyyy').format(date)
+                                : "--",
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      /// ⏱ CLOCK IN / OUT
+                      Row(
+                        children: [
+                          const Icon(
+                            Iconsax.login,
+                            size: 14,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(checkIn, style: const TextStyle(fontSize: 12)),
+
+                          const SizedBox(width: 12),
+
+                          const Icon(
+                            Iconsax.logout,
+                            size: 14,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(checkOut, style: const TextStyle(fontSize: 12)),
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      if (punch.permissionStatus != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                punch.permissionStatus ==
+                                    PermissionsStatus.approved
+                                ? Colors.green.withOpacity(.15)
+                                : punch.permissionStatus ==
+                                      PermissionsStatus.rejected
+                                ? Colors.red.withOpacity(.15)
+                                : Colors.orange.withOpacity(.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            punch.permissionStatus!.name.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  punch.permissionStatus ==
+                                      PermissionsStatus.approved
+                                  ? Colors.green
+                                  : punch.permissionStatus ==
+                                        PermissionsStatus.rejected
+                                  ? Colors.red
+                                  : Colors.orange,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -727,8 +955,8 @@ class _AttendanceState extends State<Attendance> {
       "HalfDay",
       "Late",
       "EarlyExit",
-      "Pending Permission",
-      "Permission Rejected",
+      "Pending",
+      "Rejected",
     ];
 
     final typeOptions = [
@@ -773,7 +1001,7 @@ class _AttendanceState extends State<Attendance> {
                     onChanged: (val) {
                       setState(() {
                         _selectedStatus = val!;
-                        _applyFilters();
+                        applyFilters();
                       });
                     },
                   ),
@@ -794,7 +1022,7 @@ class _AttendanceState extends State<Attendance> {
                     onChanged: (val) {
                       setState(() {
                         _selectedType = val!;
-                        _applyFilters();
+                        applyFilters();
                       });
                     },
                   ),
@@ -816,7 +1044,7 @@ class _AttendanceState extends State<Attendance> {
                         _selectedDateRange = picked;
                         _dateRangeText =
                             "${DateFormat('dd MMM').format(picked.start)} - ${DateFormat('dd MMM').format(picked.end)}";
-                        _applyFilters();
+                        applyFilters();
                       });
                     }
                   },
@@ -830,54 +1058,17 @@ class _AttendanceState extends State<Attendance> {
   }
 
   Widget _attendanceListView() {
-    if (_aList.isEmpty) {
+    if (filteredList.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            /// ICON
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Iconsax.calendar_remove,
-                size: 40,
-                color: Colors.blue,
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            /// TITLE
+            Icon(Iconsax.search_status, size: 40, color: Colors.grey),
+            const SizedBox(height: 10),
             const Text(
-              "No Attendance Records",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              "No records found",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-
-            const SizedBox(height: 6),
-
-            /// SUBTITLE
-            Text(
-              "Attendance data will appear here once records are available.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-
-            const SizedBox(height: 20),
-
-            // if (isAdmin)
-            //   OutlinedButton.icon(
-            //     icon: const Icon(Iconsax.refresh),
-            //     label: const Text("Refresh"),
-            //     onPressed: () {
-            //       _aHandler = _init();
-            //       setState(() {});
-            //     },
-            //   ),
           ],
         ),
       );
@@ -886,19 +1077,44 @@ class _AttendanceState extends State<Attendance> {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _aList.length,
+      itemCount: filteredList.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final a = _aList[index];
+        final a = filteredList[index];
         final punch = a.punchList.first;
+
         final status = getAttendanceStatus(punch);
         final color = _statusColor(status);
+        final date = _parseDate(punch.punchDate);
+
+        final isToday =
+            date != null &&
+            date.year == DateTime.now().year &&
+            date.month == DateTime.now().month &&
+            date.day == DateTime.now().day;
+
+        /// ✅ FORMAT TIME
+        String formatTime(String? time) {
+          if (time == null || time.isEmpty) return "-";
+          final dt = DateTime.tryParse(time);
+          if (dt == null) return "-";
+          return TimeOfDay.fromDateTime(dt).format(context);
+        }
+
+        final checkIn = punch.punchTime.isNotEmpty
+            ? formatTime(punch.punchTime.first)
+            : "-";
+
+        final checkOut = punch.punchTime.length > 1
+            ? formatTime(punch.punchTime.last)
+            : "-";
 
         return InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () => _showAttendanceDetails(a),
           child: Card(
             elevation: 1,
+            color: isToday ? Colors.blue.withOpacity(0.05) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -911,7 +1127,7 @@ class _AttendanceState extends State<Attendance> {
                     radius: 22,
                     backgroundColor: color.withOpacity(.15),
                     child: Text(
-                      DateFormat('dd').format(DateTime.parse(punch.punchDate)),
+                      date != null ? DateFormat('dd').format(date) : "--",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: color,
@@ -921,28 +1137,30 @@ class _AttendanceState extends State<Attendance> {
 
                   const SizedBox(width: 14),
 
-                  /// DATE + STATUS
+                  /// MAIN CONTENT
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        /// DATE
                         Text(
-                          DateFormat(
-                            'EEE, MMM dd yyyy',
-                          ).format(DateTime.parse(punch.punchDate)),
+                          date != null
+                              ? DateFormat('EEE, MMM dd yyyy').format(date)
+                              : "--",
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
 
                         const SizedBox(height: 4),
 
+                        /// STATUS CHIP
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 12,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
                             color: color.withOpacity(.15),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(50),
                           ),
                           child: Text(
                             status,
@@ -953,15 +1171,58 @@ class _AttendanceState extends State<Attendance> {
                             ),
                           ),
                         ),
+
+                        const SizedBox(height: 6),
+
+                        /// 🆕 CLOCK IN / OUT ROW
+                        Row(
+                          children: [
+                            Icon(Iconsax.login, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              checkIn,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            Icon(Iconsax.logout, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              checkOut,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
 
-                  /// PERMISSION
+                  /// PERMISSION TYPE
                   if (punch.permissionType != null)
-                    Text(
-                      punch.permissionType!.name,
-                      style: const TextStyle(fontSize: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        punch.permissionType!.name.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -976,10 +1237,18 @@ class _AttendanceState extends State<Attendance> {
 class _AttendanceCalendar extends StatefulWidget {
   final List<AttendanceModel> attendanceList;
   final void Function(DateTime) onDayTap;
+  final UserType userType;
+  final String? employeeId;
+  final List<EmployeeModel> employees;
+  final List<DepartmentModel> departments;
 
   const _AttendanceCalendar({
     required this.attendanceList,
     required this.onDayTap,
+    required this.userType,
+    this.employeeId,
+    required this.employees,
+    required this.departments,
   });
 
   @override
@@ -988,6 +1257,71 @@ class _AttendanceCalendar extends StatefulWidget {
 
 class _AttendanceCalendarState extends State<_AttendanceCalendar> {
   DateTime focusedMonth = DateTime.now();
+  late Map<DateTime, String> attendanceMap;
+  late Map<String, EmployeeModel> employeeMap;
+  String? currentUserId;
+  late List<AttendanceModel> filteredList;
+  DateTime? selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    employeeMap = {for (var e in widget.employees) e.employeeId: e};
+
+    filteredList = widget.attendanceList;
+    attendanceMap = _buildAttendanceMap();
+    _loadUser();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AttendanceCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.attendanceList != widget.attendanceList) {
+      setState(() {
+        attendanceMap = _buildAttendanceMap();
+      });
+    }
+  }
+
+  Future<void> _loadUser() async {
+    final uid = await Spdb.getUid();
+    setState(() {
+      currentUserId = uid;
+    });
+  }
+
+  Map<DateTime, String> _buildAttendanceMap() {
+    final map = <DateTime, String>{};
+
+    for (var a in widget.attendanceList) {
+      if (widget.userType == UserType.employee &&
+          a.employeeId != widget.employeeId) {
+        continue;
+      }
+
+      if (a.punchList.isEmpty) continue;
+
+      var punch = a.punchList.first;
+      final date = _parseDate(punch.punchDate);
+      if (date == null) continue;
+
+      String status = getAttendanceStatus(punch);
+
+      if (a.permissionDetails.isNotEmpty) {
+        final key = DateFormat('yyyy-MM-dd').format(date);
+        final permission = a.permissionDetails[key];
+
+        if (permission != null) {
+          status = permission.name;
+        }
+      }
+
+      map[DateTime(date.year, date.month, date.day)] = status;
+    }
+
+    return map;
+  }
 
   void prevMonth() {
     setState(() {
@@ -1001,23 +1335,45 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     });
   }
 
+  // IconData _getStatusIcon(String? status) {
+  //   switch (status) {
+  //     case "Present":
+  //       return Icons.check_circle;
+
+  //     case "Absent":
+  //       return Icons.cancel;
+
+  //     case "Leave":
+  //       return Icons.beach_access;
+
+  //     case "HalfDay":
+  //       return Icons.timelapse;
+
+  //     case "WFH":
+  //       return Icons.home;
+
+  //     case "Late":
+  //       return Icons.access_time;
+
+  //     case "EarlyExit":
+  //       return Icons.logout;
+
+  //     case "Pending":
+  //       return Icons.hourglass_empty;
+
+  //     case "Permission":
+  //       return Icons.verified;
+
+  //     case "Rejected":
+  //       return Icons.block;
+
+  //     default:
+  //       return Icons.circle;
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
-    Map<DateTime, String> attendanceMap = {};
-
-    for (var a in widget.attendanceList) {
-      if (a.punchList.isEmpty) continue;
-
-      var punch = a.punchList.first;
-
-      DateTime? date = DateTime.tryParse(punch.punchDate);
-      if (date == null) continue;
-
-      String status = getAttendanceStatus(punch);
-
-      attendanceMap[DateTime(date.year, date.month, date.day)] = status;
-    }
-
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1051,112 +1407,309 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                TableCalendar(
-                  firstDay: DateTime(2025, 1, 1),
-                  lastDay: DateTime(2027, 12, 31),
-                  focusedDay: focusedMonth,
-                  headerStyle: const HeaderStyle(
-                    formatButtonVisible: false,
-                    titleCentered: true,
-                  ),
-                  calendarStyle: CalendarStyle(
-                    todayDecoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(.3),
-                      shape: BoxShape.circle,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: TableCalendar(
+                    firstDay: DateTime(2025, 1, 1),
+                    lastDay: DateTime(2027, 12, 31),
+                    focusedDay: focusedMonth,
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
                     ),
-                    weekendTextStyle: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(.5),
+                        shape: BoxShape.circle,
+                      ),
+                      weekendTextStyle: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  calendarBuilders: CalendarBuilders(
-                    defaultBuilder: (context, day, focusedDay) {
-                      final status =
-                          attendanceMap[DateTime(day.year, day.month, day.day)];
+                    calendarBuilders: CalendarBuilders(
+                      defaultBuilder: (context, day, focusedDay) {
+                        final status =
+                            attendanceMap[DateTime(
+                              day.year,
+                              day.month,
+                              day.day,
+                            )];
+                        final isSelected =
+                            selectedDay != null &&
+                            day.year == selectedDay!.year &&
+                            day.month == selectedDay!.month &&
+                            day.day == selectedDay!.day;
 
-                      Color? markerColor;
+                        Color? markerColor;
 
-                      switch (status) {
-                        case "Present":
-                          markerColor = Colors.green;
-                          break;
+                        switch (status) {
+                          case "Present":
+                            markerColor = Colors.green;
+                            break;
 
-                        case "Absent":
-                          markerColor = Colors.red;
-                          break;
+                          case "Absent":
+                            markerColor = Colors.red;
+                            break;
 
-                        case "Leave":
-                          markerColor = Colors.orange;
-                          break;
+                          case "Leave":
+                            markerColor = Colors.orange;
+                            break;
 
-                        case "HalfDay":
-                          markerColor = Colors.amber;
-                          break;
+                          case "HalfDay":
+                            markerColor = Colors.amber;
+                            break;
 
-                        case "WFH":
-                          markerColor = Colors.blue;
-                          break;
+                          case "WFH":
+                            markerColor = Colors.blue;
+                            break;
 
-                        case "Late":
-                          markerColor = Colors.purple;
-                          break;
+                          case "Late":
+                            markerColor = Colors.purple;
+                            break;
 
-                        case "EarlyExit":
-                          markerColor = Colors.deepOrange;
-                          break;
+                          case "EarlyExit":
+                            markerColor = Colors.deepOrange;
+                            break;
 
-                        case "Pending Permission":
-                          markerColor = Colors.grey;
-                          break;
-                      }
+                          case "Pending":
+                            markerColor = Colors.grey;
+                            break;
 
-                      bool isToday =
-                          day.year == DateTime.now().year &&
-                          day.month == DateTime.now().month &&
-                          day.day == DateTime.now().day;
+                          case "Permission":
+                            markerColor = Colors.teal;
+                            break;
 
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color:
-                                  markerColor?.withOpacity(0.3) ??
-                                  Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: isToday
-                                  ? Border.all(color: Colors.blue, width: 2)
-                                  : null,
+                          case "Rejected":
+                            markerColor = Colors.black45;
+                            break;
+                        }
+
+                        bool isToday =
+                            day.year == DateTime.now().year &&
+                            day.month == DateTime.now().month &&
+                            day.day == DateTime.now().day;
+
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.all(6),
+                          transform: Matrix4.identity()
+                            ..scale(
+                              isSelected
+                                  ? 1.12
+                                  : isToday
+                                  ? 1.04
+                                  : 1.0,
                             ),
-                            child: Center(child: Text("${day.day}")),
-                          ),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
 
-                          if (isToday)
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Colors.blue,
-                                  shape: BoxShape.circle,
+                            color: isSelected
+                                ? Colors.deepPurple
+                                : isToday
+                                ? Colors.transparent
+                                : Colors.white,
+
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.deepPurple
+                                  : isToday
+                                  ? Colors.blue
+                                  : Colors.grey.shade200,
+                              width: isSelected
+                                  ? 2.5
+                                  : isToday
+                                  ? 2
+                                  : 1,
+                            ),
+
+                            boxShadow: [
+                              if (isSelected)
+                                BoxShadow(
+                                  color: Colors.deepPurple.withOpacity(0.45),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                )
+                              else if (isToday)
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.15),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                )
+                              else
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 2),
+                                ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: Text(
+                                  "${day.day}",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    // fontSize: isSelected ? 16 : 14,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : isToday
+                                        ? Colors.blue
+                                        : Colors.black87,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
+
+                              if (isToday && !isSelected)
+                                Positioned.fill(
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.blue.withOpacity(0.3),
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              if (markerColor != null)
+                                Positioned(
+                                  bottom: 6,
+                                  right: 6,
+                                  child: Container(
+                                    width: isSelected ? 10 : 8,
+                                    height: isSelected ? 10 : 8,
+                                    decoration: BoxDecoration(
+                                      color: markerColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    onDaySelected: (selected, focusedDay) {
+                      setState(() {
+                        selectedDay = selected;
+                        focusedMonth = focusedDay;
+                      });
+
+                      final status =
+                          attendanceMap[DateTime(
+                            selected.year,
+                            selected.month,
+                            selected.day,
+                          )];
+
+                      if (status == null) return;
+
+                      final attendance = widget.attendanceList.firstWhere(
+                        (e) => e.employeeId == widget.employeeId,
+                        orElse: () => widget.attendanceList.first,
                       );
+
+                      if (widget.userType == UserType.admin) {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          builder: (_) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    DateFormat('dd MMM yyyy').format(selected),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  _buildDetailRow("Status", status),
+                                  _buildDetailRow(
+                                    "Work",
+                                    attendance.formattedWork,
+                                  ),
+                                  _buildDetailRow(
+                                    "Break",
+                                    attendance.formattedBreak,
+                                  ),
+                                  _buildDetailRow("OT", attendance.formattedOT),
+                                  _buildDetailRow(
+                                    "Less",
+                                    attendance.formattedLess,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      } else {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          builder: (_) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    DateFormat('dd MMM yyyy').format(selected),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+
+                                  Text("Status: $status"),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      }
                     },
                   ),
-                  onDaySelected: (selectedDay, focusedDay) {
-                    setState(() => focusedMonth = focusedDay);
-                    widget.onDayTap(selectedDay);
-                  },
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value),
         ],
       ),
     );

@@ -1,7 +1,7 @@
-
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/models/src/filter_model.dart';
+import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/firebase_config.dart';
 
@@ -83,12 +83,13 @@ class AttendanceService {
       return AttendanceModel(
         employeeId: uid ?? '',
         punchList: punchList,
+        breakMinutes: 0,
         present: punchList.length.toString(),
         holiday: '0',
         absent: '0',
-        workingHourMinutes: '0',
-        lessHourMinutes: '0',
-        otHourMinutes: '0',
+        workingHourMinutes: 0,
+        lessHourMinutes: 0,
+        otHourMinutes: 0,
       );
     } catch (e) {
       throw e.toString();
@@ -273,12 +274,13 @@ class AttendanceService {
       return AttendanceModel(
         employeeId: uid ?? '',
         punchList: punchList,
+        breakMinutes: 0,
         present: punchList.length.toString(),
         holiday: '0',
         absent: '0',
-        workingHourMinutes: '0',
-        lessHourMinutes: '0',
-        otHourMinutes: '0',
+        workingHourMinutes: 0,
+        lessHourMinutes: 0,
+        otHourMinutes: 0,
       );
     } catch (e) {
       throw e.toString();
@@ -323,20 +325,19 @@ class AttendanceService {
     }
   }
 
-  static int _convertHourToMinutes(String time) {
-    if (time.isEmpty) return 0;
+  // static int _convertHourToMinutes(String time) {
+  //   if (time.isEmpty) return 0;
 
-    final parts = time.split(':');
+  //   final parts = time.split(':');
 
-    if (parts.length != 2) return 0;
+  //   if (parts.length != 2) return 0;
 
-    final hours = int.tryParse(parts[0]) ?? 0;
-    final minutes = int.tryParse(parts[1]) ?? 0;
+  //   final hours = int.tryParse(parts[0]) ?? 0;
+  //   final minutes = int.tryParse(parts[1]) ?? 0;
 
-    return (hours * 60) + minutes;
-  }
+  //   return (hours * 60) + minutes;
+  // }
 
-  /// ✅ Get monthly attendance summary for salary calculation
   static Future<List<AttendanceModel>> getMonthlyAttendanceSummary({
     required String userUid,
     required DateTime fromDate,
@@ -344,77 +345,102 @@ class AttendanceService {
   }) async {
     try {
       var cid = await Spdb.getCid();
-      var uid = await Spdb.getUid();
 
-      var query = firebase.users
+      /// 1️⃣ Fetch Worktime instead of Attendance
+      var snapshot = await firebase.users
           .doc(cid)
-          .collection(Collections.attendance.name)
-          .where('userUid', isEqualTo: uid)
+          .collection(Collections.worktime.name)
+          .where('userUid', isEqualTo: userUid)
           .where(
-            'created',
+            'clockIn',
             isGreaterThanOrEqualTo: fromDate.millisecondsSinceEpoch,
           )
-          .where('created', isLessThanOrEqualTo: toDate.millisecondsSinceEpoch)
-          .orderBy('created');
+          .where('clockIn', isLessThanOrEqualTo: toDate.millisecondsSinceEpoch)
+          .get();
 
-      var snapshot = await query.get();
+      Map<String, WorktimeModel> workMap = {
+        for (var doc in snapshot.docs)
+          DateTime.fromMillisecondsSinceEpoch(
+            doc['clockIn'],
+          ).toIso8601String().split('T').first: WorktimeModel.fromMap(
+            doc.id,
+            doc.data(),
+          ),
+      };
 
-      // Group by date and process
-      Map<String, List<PunchModel>> dailyPunches = {};
+      List<AttendanceModel> result = [];
 
-      for (var doc in snapshot.docs) {
-        var punch = PunchModel.fromMap({...doc.data(), 'uid': doc.id});
-        String dateKey = punch.punchDate.isNotEmpty
-            ? punch.punchDate.split('T').first
-            : '';
-        dailyPunches.putIfAbsent(dateKey, () => []).add(punch);
-      }
+      /// 2️⃣ Loop ALL days (fix absent issue)
+      for (
+        DateTime d = fromDate;
+        d.isBefore(toDate.add(const Duration(days: 1)));
+        d = d.add(const Duration(days: 1))
+      ) {
+        final key = d.toIso8601String().split('T').first;
+        final work = workMap[key];
 
-      List<AttendanceModel> monthlyData = [];
+        int workingMinutes = 0;
+        int otMinutes = 0;
+        int lessMinutes = 0;
 
-      for (var entry in dailyPunches.entries) {
-        var punches = entry.value;
-        // var firstPunch = punches.first;
+        String status = "absent";
 
-        int workingMinutes = punches.fold(
-          0,
-          (sum, p) => sum + _convertHourToMinutes(p.totalHours),
-        );
+        if (work != null && work.clockOut != null) {
+          workingMinutes = work.clockOut!.difference(work.clockIn).inMinutes;
 
-        int otMinutes = punches.fold(
-          0,
-          (sum, p) => sum + _convertHourToMinutes(p.otHours),
-        );
-        int lessMinutes = punches.fold(
-          0,
-          (sum, p) => sum + _convertHourToMinutes(p.lessHours),
-        );
-        monthlyData.add(
+          if (workingMinutes >= 480) {
+            status = "present";
+          } else if (workingMinutes >= 240) {
+            status = "halfday";
+          }
+
+          if (workingMinutes > 480) {
+            otMinutes = workingMinutes - 480;
+          } else {
+            lessMinutes = 480 - workingMinutes;
+          }
+        }
+
+        result.add(
           AttendanceModel(
             employeeId: userUid,
-            punchList: punches,
-            present: punches.isNotEmpty ? '1' : '0',
-            holiday: '0',
-            absent: punches.isEmpty ? '1' : '0',
-            workingHourMinutes: workingMinutes.toString(),
-            lessHourMinutes: lessMinutes.toString(),
-            otHourMinutes: otMinutes.toString(),
-            permissions: punches
-                .map((p) => p.permissionType ?? PermissionType.permission)
-                .toSet()
-                .toList(),
-            permissionDetails: {
-              entry.key:
-                  punches.first.permissionType ?? PermissionType.permission,
-            },
+            punchList: [
+              PunchModel(
+                punchDate: key,
+                punchTime: [],
+                totalHours: _minutesToHHmm(workingMinutes),
+                lessHours: _minutesToHHmm(lessMinutes),
+                otHours: _minutesToHHmm(otMinutes),
+                status: status,
+                day: d.weekday.toString(),
+                otApproval: "0",
+              ),
+            ],
+            breakMinutes: 0,
+            present: status == "present" ? "1" : "0",
+            absent: status == "absent" ? "1" : "0",
+            holiday: "0",
+            workingHourMinutes: workingMinutes,
+            lessHourMinutes: lessMinutes,
+            otHourMinutes: otMinutes,
           ),
         );
       }
 
-      return monthlyData;
+      return result;
     } catch (e) {
       throw e.toString();
     }
+  }
+
+  static String _minutesToHHmm(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+
+    final hStr = hours.toString().padLeft(2, '0');
+    final mStr = mins.toString().padLeft(2, '0');
+
+    return "$hStr:$mStr";
   }
 
   // static String _calculateWorkingHours(List<PunchModel> punches) {
@@ -482,49 +508,55 @@ class AttendanceService {
 
       var punch = a.punchList.first;
 
-      /// Convert hours
-      totalWorkingHours += double.tryParse(a.workingHourMinutes) ?? 0;
-      totalLessHours += double.tryParse(a.lessHourMinutes) ?? 0;
-      totalOTHours += double.tryParse(a.otHourMinutes) ?? 0;
+      totalWorkingHours += a.workingHourMinutes;
+      totalLessHours += a.lessHourMinutes;
+      totalOTHours += a.otHourMinutes;
 
-      /// Permission logic
       if (punch.permissionType != null &&
           punch.permissionStatus == PermissionsStatus.approved) {
         switch (punch.permissionType!) {
           case PermissionType.leaveFullDay:
             leaveDays++;
-            break;
+            continue;
 
           case PermissionType.leaveHalfDay:
             halfDayDays++;
-            presentDays++; // half day counts as present
-            break;
+            presentDays++;
+            continue;
 
           case PermissionType.workFromHome:
             wfhDays++;
             presentDays++;
-            break;
+            continue;
 
           case PermissionType.lateEntry:
             lateDays++;
             presentDays++;
-            break;
+            continue;
 
           case PermissionType.earlyExit:
             earlyExitDays++;
             presentDays++;
-            break;
+            continue;
 
           case PermissionType.permission:
             presentDays++;
-            break;
+            continue;
         }
       } else {
-        /// Normal attendance
-        if (punch.status == "1") {
-          presentDays++;
-        } else {
-          absentDays++;
+        switch (punch.status) {
+          case "present":
+            presentDays++;
+            break;
+
+          case "halfday":
+            halfDayDays++;
+            presentDays++;
+            break;
+
+          case "absent":
+            absentDays++;
+            break;
         }
       }
     }
@@ -652,24 +684,24 @@ class AttendanceService {
   }
 
   static Future<void> updatePermissionStatus({
-  required String punchId,
-  required PermissionsStatus status,
-}) async {
-  try {
-    var cid = await Spdb.getCid();
+    required String punchId,
+    required PermissionsStatus status,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
 
-    if (cid != null) {
-      await firebase.users
-          .doc(cid)
-          .collection(Collections.attendance.name)
-          .doc(punchId)
-          .update({
-        "permissionStatus": status.name,
-        "modified": DateTime.now().millisecondsSinceEpoch,
-      });
+      if (cid != null) {
+        await firebase.users
+            .doc(cid)
+            .collection(Collections.attendance.name)
+            .doc(punchId)
+            .update({
+              "permissionStatus": status.name,
+              "modified": DateTime.now().millisecondsSinceEpoch,
+            });
+      }
+    } catch (e) {
+      throw e.toString();
     }
-  } catch (e) {
-    throw e.toString();
   }
-}
 }

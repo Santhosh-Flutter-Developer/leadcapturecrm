@@ -145,7 +145,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   ) async {
     try {
       // 🔥 FIREBASE DELETE
-      if (event.user.userType == UserTypes.employee) {
+      if (event.user.userType == UserType.employee) {
         await EmployeeService.deleteEmployee(uid: event.user.uid);
       } else {
         await AdminService.deleteAdmin(uid: event.user.uid);

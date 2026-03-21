@@ -27,12 +27,11 @@ class AdminModel {
   }) : isActive = isActive ?? true,
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
-       
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'name': name.encrypt,
-      'email': email.encrypt,
+      'email': email.trim().toLowerCase(),
       'password': password.encrypt,
       'mobileNumber': mobileNumber.encrypt,
       'profileImageUrl': profileImageUrl,
@@ -46,7 +45,7 @@ class AdminModel {
   Map<String, dynamic> toUpdateMap() {
     return <String, dynamic>{
       'name': name.encrypt,
-      'email': email.encrypt,
+      'email': email.trim().toLowerCase(),
       'password': password.encrypt,
       'mobileNumber': mobileNumber.encrypt,
       'profileImageUrl': profileImageUrl,
@@ -93,9 +92,7 @@ class AdminModel {
       name: map['name'] != null && map['name'] is String
           ? (map['name'] as String).decrypt
           : '',
-      email: map['email'] != null && map['email'] is String
-          ? (map['email'] as String).decrypt
-          : '',
+      email: map['email'] ?? '',
       password: map['password'] != null && map['password'] is String
           ? (map['password'] as String).decrypt
           : '',

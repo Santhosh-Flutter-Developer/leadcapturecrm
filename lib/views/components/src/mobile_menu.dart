@@ -2,8 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/views/screens/attendance/attendance.dart';
 import 'package:leadcapture/views/screens/chat/listing/bloc/chat_bloc.dart';
 import 'package:leadcapture/views/screens/download/download_history.dart';
+import 'package:leadcapture/views/screens/permission/src/permission_listing.dart';
+import 'package:leadcapture/views/screens/permission/src/permission_requests/src/permission_requests_listing.dart';
+import 'package:leadcapture/views/screens/salary_ledger/salary_ledger_listing.dart';
+import 'package:leadcapture/views/screens/worktime/src/index_worktime.dart';
+import 'package:leadcapture/views/screens/worktime/src/worktime_create.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -390,6 +396,47 @@ class _MobileMenuState extends State<MobileMenu> {
                       ),
                       SizedBox(height: 8),
                     ],
+
+                    Text(
+                      "Payroll",
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                    ),
+                    _buildListTile(
+                      icon: Iconsax.timer_1,
+                      title: 'Work Time',
+                      onTap: () => Navigate.route(
+                        context,
+                        _adminModel != null
+                            ? const DashboardWorktime()
+                            : const WorktimeCreate(),
+                      ),
+                    ),
+
+                    _buildListTile(
+                      icon: Iconsax.clipboard_tick,
+                      title: 'Attendance Ledger',
+                      onTap: () => Navigate.route(context, Attendance()),
+                    ),
+
+                    _buildListTile(
+                      icon: Iconsax.security_user,
+                      title: 'Permissions',
+                      onTap: () => Navigate.route(
+                        context,
+                        _adminModel != null
+                            ? const PermissionRequestsListing()
+                            : const PermissionListing(),
+                      ),
+                    ),
+
+                    _buildListTile(
+                      icon: Iconsax.wallet_3,
+                      title: 'Salary Ledger',
+                      onTap: () =>
+                          Navigate.route(context, const SalaryLedgerList()),
+                    ),
                     Text(
                       "Others",
                       style: Theme.of(

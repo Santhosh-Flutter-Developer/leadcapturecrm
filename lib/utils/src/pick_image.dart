@@ -16,7 +16,7 @@ class PickImage {
     );
     if (pickOption != null) {
       if (pickOption == 1) {
-        var image = await PickImage._captureImage();
+        var image = await PickImage.captureImage();
         if (image != null) {
           return image;
         }
@@ -30,7 +30,7 @@ class PickImage {
     return null;
   }
 
-  static Future<File?> _captureImage() async {
+  static Future<File?> captureImage() async {
     try {
       XFile? tmpImage = await _picker.pickImage(source: ImageSource.camera);
       if (tmpImage != null) {

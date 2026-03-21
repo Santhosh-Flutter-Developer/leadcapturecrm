@@ -18,13 +18,13 @@ import 'package:leadcapture/constants/src/svg.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/db.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
-import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 import 'package:leadcapture/services/firebase/src/workpermission_service.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/utils/src/time_format.dart';
 import 'package:leadcapture/views/components/src/sheet.dart';
 import 'package:leadcapture/views/screens/worktime/src/clockout_dialog.dart';
+import 'package:leadcapture/views/screens/worktime/src/face_scan.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/button.dart';
 import 'package:leadcapture/views/ui/src/error_display.dart';
@@ -455,40 +455,56 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       int otMinutes = result["ot"]!;
       int lessMinutes = result["less"]!;
 
-      // ✅ Check today's permissions
       var permissions = await WorkPermissionService.getTodayPermissions(
         work.userUid,
       );
 
-      // check permission types
-      bool leaveFullDay = permissions.any(
+      var approvedPermissions = permissions
+          .where((p) => p.status == PermissionsStatus.approved)
+          .toList();
+
+      bool leaveFullDay = approvedPermissions.any(
         (p) => p.type == PermissionType.leaveFullDay,
       );
 
-      bool leaveHalfDay = permissions.any(
+      bool leaveHalfDay = approvedPermissions.any(
         (p) => p.type == PermissionType.leaveHalfDay,
       );
 
-      bool workFromHome = permissions.any(
+      bool workFromHome = approvedPermissions.any(
         (p) => p.type == PermissionType.workFromHome,
       );
 
-      bool lateEntry = permissions.any(
+      bool lateEntry = approvedPermissions.any(
         (p) => p.type == PermissionType.lateEntry,
       );
 
-      bool earlyExit = permissions.any(
+      bool earlyExit = approvedPermissions.any(
         (p) => p.type == PermissionType.earlyExit,
       );
 
-      // FULL DAY LEAVE
+      String status;
+
+      if (workingMinutes == 0) {
+        status = "absent";
+      } else if (workingMinutes < 240) {
+        status = "absent";
+      } else if (workingMinutes < 480) {
+        status = "halfday";
+      } else {
+        status = "present";
+      }
+
       if (leaveFullDay) {
+        status = "leave";
         workingMinutes = 0;
         otMinutes = 0;
         lessMinutes = 0;
       }
-      // HALF DAY LEAVE (only 4 hours required)
+      // HALF DAY LEAVE
       else if (leaveHalfDay) {
+        status = "halfday";
+
         int requiredMinutes = 240;
 
         if (workingMinutes >= requiredMinutes) {
@@ -496,51 +512,25 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
         } else {
           lessMinutes = requiredMinutes - workingMinutes;
         }
-      }
-      // WORK FROM HOME
-      else if (workFromHome) {
-        // treat as normal working day
-      }
-
-      // LATE ENTRY
-      if (lateEntry) {
-        lessMinutes = 0;
-      }
-
-      // EARLY EXIT
-      if (earlyExit) {
-        lessMinutes = 0;
-      }
-      String status = "present";
-
-      var exists = await AttendanceService.checkTodayPunch();
-
-      if (exists) {
-        print("Attendance already created today");
-      } else {
-        await AttendanceService.createPunch(
-          userUid: work.userUid,
-          workingMinutes: workingMinutes,
-          otMinutes: otMinutes,
-          lessMinutes: lessMinutes,
-        );
-      }
-
-      if (leaveFullDay) {
-        status = "leave";
-      } else if (leaveHalfDay) {
-        status = "halfday";
       } else if (workFromHome) {
-        status = "wfh";
+        status = "present";
       }
 
-      await AttendanceService.createPunch(
-        userUid: work.userUid,
-        workingMinutes: workingMinutes,
-        otMinutes: otMinutes,
-        lessMinutes: lessMinutes,
-        status: status,
-      );
+      if (lateEntry || earlyExit) {
+        lessMinutes = 0;
+      }
+
+      // var exists = await AttendanceService.checkTodayPunch();
+
+      // if (!exists) {
+      //   await AttendanceService.createPunch(
+      //     userUid: work.userUid,
+      //     workingMinutes: workingMinutes,
+      //     otMinutes: otMinutes,
+      //     lessMinutes: lessMinutes,
+      //     status: status,
+      //   );
+      // }
 
       await Db.clearClockIn();
 
@@ -691,20 +681,20 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
                           const SizedBox(height: 10),
                           Button(
                             event: () async {
-                              // var result = await Navigator.push(
-                              //   context,
-                              //   CupertinoPageRoute(
-                              //     builder: (context) {
-                              //       return const FaceScan();
-                              //     },
-                              //   ),
-                              // );
+                              var result = await Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (context) {
+                                    return const FaceScan();
+                                  },
+                                ),
+                              );
 
-                              // if (result != null) {
-                              //   if (result) {
-                              //     _clockInByFace();
-                              //   }
-                              // }
+                              if (result != null) {
+                                if (result) {
+                                  _clockInByFace();
+                                }
+                              }
                             },
                             text: "Clock in by face",
                             icon: CupertinoIcons

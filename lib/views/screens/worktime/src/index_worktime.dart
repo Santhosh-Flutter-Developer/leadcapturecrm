@@ -550,7 +550,6 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   String calculateTotalHours(WorktimeModel worktime) {
-    // Implement your total hours calculation logic here
     return "8.5";
   }
 

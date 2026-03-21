@@ -126,6 +126,10 @@ class AppStrings {
     "Clients",
     "Projects",
     "Tasks",
+    "Work Time",
+    "Attendance Ledger",
+    "Salary Ledger",
+    "Permissions",
     "Developer Area",
   ];
 

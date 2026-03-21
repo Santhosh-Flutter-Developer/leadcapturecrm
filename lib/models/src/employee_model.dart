@@ -308,7 +308,7 @@ class EmployeeModel {
 
 class UserRowModel {
   /// Common
-  final UserTypes userType;
+  final UserType userType;
   final String uid;
   final String name;
   final String email;
@@ -382,14 +382,14 @@ class UserRowModel {
 
   // ---------------- SAFE GETTERS ----------------
 
-  bool get isEmployee => userType == UserTypes.employee;
-  bool get isAdmin => userType == UserTypes.admin;
+  bool get isEmployee => userType == UserType.employee;
+  bool get isAdmin => userType == UserType.admin;
 }
 
 extension EmployeeToRow on EmployeeModel {
   UserRowModel toUserRowModel() {
     return UserRowModel(
-      userType: UserTypes.employee,
+      userType: UserType.employee,
       uid: uid ?? '',
       employeeId: employeeId,
       name: name,
@@ -425,7 +425,7 @@ extension EmployeeToRow on EmployeeModel {
 extension AdminToRow on AdminModel {
   UserRowModel toUserRowModel() {
     return UserRowModel(
-      userType: UserTypes.admin,
+      userType: UserType.admin,
       uid: uid ?? '',
       name: name,
       email: email,
@@ -442,7 +442,7 @@ extension AdminToRow on AdminModel {
 
 extension UserRowToEmployee on UserRowModel {
   EmployeeModel toEmployeeModel() {
-    assert(userType == UserTypes.employee, 'UserRowModel is not an employee');
+    assert(userType == UserType.employee, 'UserRowModel is not an employee');
 
     return EmployeeModel(
       uid: uid,
@@ -480,7 +480,7 @@ extension UserRowToEmployee on UserRowModel {
 
 extension UserRowToAdmin on UserRowModel {
   AdminModel toAdminModel() {
-    assert(userType == UserTypes.admin, 'UserRowModel is not an admin');
+    assert(userType == UserType.admin, 'UserRowModel is not an admin');
 
     return AdminModel(
       uid: uid,
@@ -498,6 +498,6 @@ extension UserRowToAdmin on UserRowModel {
 }
 
 extension UserRowActions on UserRowModel {
-  bool get isEmployee => userType == UserTypes.employee;
-  bool get isAdmin => userType == UserTypes.admin;
+  bool get isEmployee => userType == UserType.employee;
+  bool get isAdmin => userType == UserType.admin;
 }

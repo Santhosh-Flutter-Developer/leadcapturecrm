@@ -5,18 +5,20 @@ import 'package:leadcapture/constants/src/enum.dart';
 class AttendanceModel {
   String employeeId;
   List<PunchModel> punchList;
+  int breakMinutes;
   String present;
   String holiday;
   String absent;
-  String workingHourMinutes;
-  String lessHourMinutes;
-  String otHourMinutes;
+  int workingHourMinutes;
+  int lessHourMinutes;
+  int otHourMinutes;
   List<PermissionType> permissions;
   Map<String, PermissionType> permissionDetails;
 
   AttendanceModel({
     required this.employeeId,
     required this.punchList,
+    required this.breakMinutes,
     required this.present,
     required this.holiday,
     required this.absent,
@@ -30,18 +32,20 @@ class AttendanceModel {
   AttendanceModel copyWith({
     String? employeeId,
     List<PunchModel>? punchList,
+    int? breakMinutes,
     String? present,
     String? holiday,
     String? absent,
-    String? workingHourMinutes,
-    String? lessHourMinutes,
-    String? otHourMinutes,
+    int? workingHourMinutes,
+    int? lessHourMinutes,
+    int? otHourMinutes,
     List<PermissionType>? permissions,
     Map<String, PermissionType>? permissionDetails,
   }) {
     return AttendanceModel(
       employeeId: employeeId ?? this.employeeId,
       punchList: punchList ?? this.punchList,
+      breakMinutes: breakMinutes ?? this.breakMinutes,
       present: present ?? this.present,
       holiday: holiday ?? this.holiday,
       absent: absent ?? this.absent,
@@ -57,6 +61,7 @@ class AttendanceModel {
     return <String, dynamic>{
       'employeeId': employeeId,
       'punchList': punchList.map((x) => x.toMap()).toList(),
+      'breakMinutes': breakMinutes,
       'present': present,
       'holiday': holiday,
       'absent': absent,
@@ -65,29 +70,27 @@ class AttendanceModel {
       'otHourMinutes': otHourMinutes,
       'permissions': permissions
           .map((e) => e.toString().split('.').last)
-          .toList(), // ✅ Serialize enum
+          .toList(),
       'permissionDetails': {
         for (var entry in permissionDetails.entries)
           entry.key: entry.value.toString().split('.').last,
-      }, // ✅ Serialize map
+      },
     };
   }
 
   factory AttendanceModel.fromMap(Map<String, dynamic> map) {
-    final punchRaw = map['punch_list'] as List?;
-
-    // ✅ Deserialize permissions
+    final punchRaw = map['punchList'] ?? map['punch_list'];
     List<PermissionType> permissions = [];
     final permissionsRaw = map['permissions'] as List?;
     if (permissionsRaw != null) {
       permissions = permissionsRaw.map<PermissionType>((e) {
         return PermissionType.values.firstWhere(
           (type) => type.toString().split('.').last == e.toString(),
+          orElse: () => PermissionType.permission,
         );
       }).toList();
     }
 
-    // ✅ Deserialize permission details
     Map<String, PermissionType> permissionDetails = {};
     final permissionDetailsRaw = map['permissionDetails'] as Map?;
     if (permissionDetailsRaw != null) {
@@ -95,6 +98,7 @@ class AttendanceModel {
         for (var entry in permissionDetailsRaw.entries)
           entry.key: PermissionType.values.firstWhere(
             (type) => type.toString().split('.').last == entry.value.toString(),
+            orElse: () => PermissionType.permission,
           ),
       };
     }
@@ -106,12 +110,21 @@ class AttendanceModel {
           : punchRaw
                 .map((e) => PunchModel.fromMap(e as Map<String, dynamic>))
                 .toList(),
+      breakMinutes: map['breakMinutes'] is int
+          ? map['breakMinutes']
+          : int.tryParse(map['breakMinutes']?.toString() ?? '0') ?? 0,
       present: map['present']?.toString() ?? '0',
       holiday: map['holiday']?.toString() ?? '0',
       absent: map['absent']?.toString() ?? '0',
-      workingHourMinutes: map['working_hour_minutes'] ?? '0',
-      lessHourMinutes: map['less_hour_minutes'] ?? '0',
-      otHourMinutes: map['ot_hour_minutes'] ?? '0',
+      workingHourMinutes: map['working_hour_minutes'] is int
+          ? map['working_hour_minutes']
+          : int.tryParse(map['working_hour_minutes']?.toString() ?? '0') ?? 0,
+      lessHourMinutes: map['less_hour_minutes'] is int
+          ? map['less_hour_minutes']
+          : int.tryParse(map['less_hour_minutes']?.toString() ?? '0') ?? 0,
+      otHourMinutes: map['ot_hour_minutes'] is int
+          ? map['ot_hour_minutes']
+          : int.tryParse(map['ot_hour_minutes']?.toString() ?? '0') ?? 0,
       permissions: permissions,
       permissionDetails: permissionDetails,
     );
@@ -131,6 +144,7 @@ class AttendanceModel {
   bool operator ==(covariant AttendanceModel other) {
     if (identical(this, other)) return true;
     return listEquals(other.punchList, punchList) &&
+        other.breakMinutes == breakMinutes &&
         other.present == present &&
         other.holiday == holiday &&
         other.absent == absent &&
@@ -144,6 +158,7 @@ class AttendanceModel {
   @override
   int get hashCode {
     return punchList.hashCode ^
+        breakMinutes.hashCode ^
         present.hashCode ^
         holiday.hashCode ^
         absent.hashCode ^
@@ -173,9 +188,22 @@ class AttendanceModel {
         .map((entry) => entry.key)
         .toList();
   }
+
+  String _formatMinutes(int m) {
+    final h = m ~/ 60;
+    final r = m % 60;
+    return "${h.toString().padLeft(2, '0')}:${r.toString().padLeft(2, '0')}";
+  }
+
+  String get formattedWork => _formatMinutes(workingHourMinutes);
+
+  String get formattedLess => _formatMinutes(lessHourMinutes);
+
+  String get formattedOT => _formatMinutes(otHourMinutes);
+
+  String get formattedBreak => _formatMinutes(breakMinutes);
 }
 
-// ✅ Updated PunchModel with permission support
 class PunchModel {
   String? uid;
   String punchDate;
