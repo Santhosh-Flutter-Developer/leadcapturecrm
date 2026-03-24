@@ -345,8 +345,6 @@ class AttendanceService {
   }) async {
     try {
       var cid = await Spdb.getCid();
-
-      /// 1️⃣ Fetch Worktime instead of Attendance
       var snapshot = await firebase.users
           .doc(cid)
           .collection(Collections.worktime.name)
@@ -367,15 +365,19 @@ class AttendanceService {
             doc.data(),
           ),
       };
-
       List<AttendanceModel> result = [];
+      final today = DateTime.now();
 
-      /// 2️⃣ Loop ALL days (fix absent issue)
       for (
         DateTime d = fromDate;
-        d.isBefore(toDate.add(const Duration(days: 1)));
+        d.isBefore(today.add(const Duration(days: 1)));
         d = d.add(const Duration(days: 1))
       ) {
+        if (d.isAfter(today)) break;
+
+        if (d.weekday == DateTime.saturday || d.weekday == DateTime.sunday) {
+          continue;
+        }
         final key = d.toIso8601String().split('T').first;
         final work = workMap[key];
 
@@ -385,13 +387,19 @@ class AttendanceService {
 
         String status = "absent";
 
-        if (work != null && work.clockOut != null) {
-          workingMinutes = work.clockOut!.difference(work.clockIn).inMinutes;
+        if (work != null) {
+          final now = DateTime.now();
+
+          final endTime = work.clockOut ?? now;
+
+          workingMinutes = endTime.difference(work.clockIn).inMinutes;
 
           if (workingMinutes >= 480) {
             status = "present";
           } else if (workingMinutes >= 240) {
             status = "halfday";
+          } else {
+            status = "present";
           }
 
           if (workingMinutes > 480) {

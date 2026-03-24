@@ -8,6 +8,7 @@ import 'package:leadcapture/models/src/employee_model.dart';
 import 'package:leadcapture/models/src/user_data_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/attendance_service.dart';
+import 'package:leadcapture/services/firebase/src/employee_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/screens/permission/src/permisson_create.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
@@ -18,39 +19,86 @@ String getAttendanceStatus(PunchModel punch) {
   final type = punch.permissionType;
   final status = punch.permissionStatus;
 
+  /// 🔴 PRIORITY 1: Pending
   if (status == PermissionsStatus.pending) return "Pending";
+
+  /// 🔴 PRIORITY 2: Rejected
   if (status == PermissionsStatus.rejected) return "Rejected";
 
+  /// 🟢 PRIORITY 3: Approved Permission Overrides
   if (status == PermissionsStatus.approved && type != null) {
     switch (type) {
       case PermissionType.leaveFullDay:
         return "Leave";
+
       case PermissionType.leaveHalfDay:
         return "HalfDay";
+
       case PermissionType.workFromHome:
         return "WFH";
+
       case PermissionType.lateEntry:
         return "Late";
+
       case PermissionType.earlyExit:
         return "EarlyExit";
+
       case PermissionType.permission:
         return "Permission";
     }
   }
 
-  final punchStatus = (punch.status).toLowerCase();
+  if (punch.punchTime.isNotEmpty) {
+    final checkIn = DateTime.tryParse(punch.punchTime.first);
+    final checkOut = punch.punchTime.length > 1
+        ? DateTime.tryParse(punch.punchTime.last)
+        : null;
 
-  switch (punchStatus) {
-    case "present":
-      return "Present";
-    case "halfday":
-      return "HalfDay";
-    case "leave":
-      return "Leave";
-    case "absent":
-    default:
-      return "Absent";
+    /// ❌ No check-in
+    if (checkIn == null) return "Absent";
+
+    /// 🕘 Define office rules
+    final officeStart = DateTime(
+      checkIn.year,
+      checkIn.month,
+      checkIn.day,
+      9,
+      30,
+    );
+
+    final officeEnd = DateTime(
+      checkIn.year,
+      checkIn.month,
+      checkIn.day,
+      18,
+      30,
+    );
+
+    /// ⏳ Late Entry
+    if (checkIn.isAfter(officeStart)) {
+      return "Late";
+    }
+
+    /// ⏳ Early Exit
+    if (checkOut != null && checkOut.isBefore(officeEnd)) {
+      return "EarlyExit";
+    }
+
+    /// ⏳ Work Hours Calculation
+    if (checkOut != null) {
+      final workedMinutes = checkOut.difference(checkIn).inMinutes;
+
+      if (workedMinutes >= 480) return "Present"; // 8 hrs
+      if (workedMinutes >= 240) return "HalfDay"; // 4 hrs
+      return "LessHours";
+    }
+
+    /// ⏳ Still working
+    return "InProgress";
   }
+
+  /// ❌ Default fallback
+  return "Absent";
 }
 
 DateTime? _parseDate(String? date) {
@@ -81,26 +129,54 @@ class Attendance extends StatefulWidget {
   State<Attendance> createState() => _AttendanceState();
 }
 
-class _AttendanceState extends State<Attendance> {
-  late Future _aHandler;
+class _AttendanceState extends State<Attendance>
+    with SingleTickerProviderStateMixin {
+  late Future aHandler;
   UserDataModel? user;
   // bool _searchApplied = false;
-  // final TextEditingController _search = TextEditingController();
-  String _selectedStatus = "All";
-  String _selectedType = "All";
-  DateTimeRange? _selectedDateRange;
-  String _dateRangeText = "Select Date Range";
+  final TextEditingController _search = TextEditingController();
+  String selectedStatus = "All";
+  String selectedType = "All";
+  DateTimeRange? selectedDateRange;
+  String dateRangeText = "Select Date Range";
 
-  List<AttendanceModel> _aList = [];
+  List<AttendanceModel> aList = [];
   List<AttendanceModel> filteredList = [];
-  final List<AttendanceModel> _tempAList = [];
-  final List<EmployeeModel> _employees = [];
-  final List<DepartmentModel> _departments = [];
-  AttendanceStats? _stats;
+  final List<AttendanceModel> tempAList = [];
+  final List<EmployeeModel> employees = [];
+  final List<DepartmentModel> departments = [];
+  String selectedEmployee = "All";
+  String selectedDepartment = "All";
+  AttendanceStats? stats;
   bool isAdmin = false;
   bool isEmployee = false;
+  String selectedSummaryFilter = "All";
+  late Map<String, EmployeeModel> employeeMap;
 
-  Color _statusColor(String status) {
+  late TabController tabController;
+
+  bool isToday0(AttendanceModel a) {
+    if (a.punchList.isEmpty) return false;
+
+    final date = _parseDate(a.punchList.first.punchDate);
+    if (date == null) return false;
+
+    final now = DateTime.now();
+
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  EmployeeModel? findEmployee(String uid) {
+    try {
+      return employees.firstWhere((e) => e.uid == uid);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Color statusColor(String status) {
     switch (status) {
       case "Present":
         return Colors.green;
@@ -123,40 +199,105 @@ class _AttendanceState extends State<Attendance> {
       case "EarlyExit":
         return Colors.deepOrange;
 
+      case "Pending":
+        return Colors.orange;
+
+      case "Rejected":
+        return Colors.redAccent;
+
+      case "LessHours":
+        return Colors.brown;
+
+      case "InProgress":
+        return Colors.blueGrey;
+
       default:
         return Colors.grey;
     }
   }
 
-  @override
-  void initState() {
-    _aHandler = _init();
-    super.initState();
+  void applySummaryFilter(String label) {
+    setState(() {
+      selectedSummaryFilter = label;
+
+      if (label == "All") {
+        filteredList = List.from(tempAList);
+        return;
+      }
+
+      filteredList = tempAList.where((a) {
+        if (a.punchList.isEmpty) return false;
+
+        final punch = a.punchList.first;
+        final status = getAttendanceStatus(punch);
+
+        switch (label) {
+          case "Present":
+            return status == "Present";
+
+          case "Absent":
+            return status == "Absent";
+
+          case "Leave":
+            return status == "Leave";
+
+          case "WFH":
+            return status == "WFH";
+
+          case "Half Day":
+            return status == "HalfDay";
+
+          case "Late":
+            return status == "Late";
+
+          case "Early Exit":
+            return status == "EarlyExit";
+
+          default:
+            return true;
+        }
+      }).toList();
+    });
   }
 
-  Future<void> _init() async {
+  @override
+  void initState() {
+    super.initState();
+    aHandler = init();
+    tabController = TabController(length: 2, vsync: this);
+  }
+
+  Future<void> init() async {
     user = await Spdb.getUser();
     isAdmin = await Spdb.isAdminLoggedIn();
     isEmployee = await Spdb.isEmployeeLoggedIn();
+    if (isAdmin) {
+      employees.clear();
+      employees.addAll(await EmployeeService.getAllEmployees());
+
+      employeeMap = {for (var emp in employees) emp.uid!: emp};
+    }
+
     DateTime now = DateTime.now();
     DateTime fromDate = DateTime(now.year, now.month, 1);
     DateTime toDate = DateTime(now.year, now.month + 1, 0);
 
-    _stats = await AttendanceService.getAttendanceStats(
+    stats = await AttendanceService.getAttendanceStats(
       userUid: user!.userType == UserType.employee ? user!.uid : "",
       fromDate: fromDate,
       toDate: toDate,
     );
 
-    _aList.clear();
-    _tempAList.clear();
+    aList.clear();
+    tempAList.clear();
 
-    _aList = _stats!.attendanceData;
-    _tempAList.addAll(_aList);
+    aList = stats!.attendanceData;
+    tempAList.addAll(aList);
 
-    filteredList = List.from(_aList);
+    filteredList = List.from(aList);
+    stats = calculateStats(filteredList);
 
-    _aList.sort((a, b) {
+    aList.sort((a, b) {
       if (a.punchList.isEmpty || b.punchList.isEmpty) return 0;
 
       final dateA = _parseDate(a.punchList.first.punchDate);
@@ -168,26 +309,37 @@ class _AttendanceState extends State<Attendance> {
     });
   }
 
-  // void _searchAttendance() {
-  //   final query = _search.text.toLowerCase();
+  void sortByName(bool asc) {
+    setState(() {
+      filteredList.sort((a, b) {
+        final nameA = findEmployee(a.employeeId)?.name ?? "";
+        final nameB = findEmployee(b.employeeId)?.name ?? "";
+        return asc ? nameA.compareTo(nameB) : nameB.compareTo(nameA);
+      });
+    });
+  }
 
-  //   final filtered = _tempAList.where((a) {
-  //     if (a.punchList.isEmpty) return false;
+  void sortByDate(bool asc) {
+    setState(() {
+      filteredList.sort((a, b) {
+        final d1 = _parseDate(a.punchList.first.punchDate) ?? DateTime.now();
+        final d2 = _parseDate(b.punchList.first.punchDate) ?? DateTime.now();
+        return asc ? d1.compareTo(d2) : d2.compareTo(d1);
+      });
+    });
+  }
 
-  //     final punch = a.punchList.first;
+  void sortByStatus(bool asc) {
+    setState(() {
+      filteredList.sort((a, b) {
+        final s1 = getAttendanceStatus(a.punchList.first);
+        final s2 = getAttendanceStatus(b.punchList.first);
+        return asc ? s1.compareTo(s2) : s2.compareTo(s1);
+      });
+    });
+  }
 
-  //     final date = DateFormat(
-  //       'yyyy-MM-dd',
-  //     ).format(DateTime.parse(punch.punchDate)).toLowerCase();
-
-  //     final status = getAttendanceStatus(punch).toLowerCase();
-
-  //     return date.contains(query) || status.contains(query);
-  //   }).toList();
-  //   setState(() => _aList = filtered);
-  // }
-
-  void _showAttendanceDetails(AttendanceModel a) {
+  void showAttendanceDetails(AttendanceModel a) {
     final punch = a.punchList.first;
     final status = getAttendanceStatus(punch);
 
@@ -251,14 +403,14 @@ class _AttendanceState extends State<Attendance> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusColor(status).withOpacity(.15),
+                  color: statusColor(status).withOpacity(.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   status,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: _statusColor(status),
+                    color: statusColor(status),
                   ),
                 ),
               ),
@@ -268,8 +420,8 @@ class _AttendanceState extends State<Attendance> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _infoTile(Iconsax.login, "Check In", checkIn),
-                  _infoTile(Iconsax.logout, "Check Out", checkOut),
+                  infoTile(Iconsax.login, "Check In", checkIn),
+                  infoTile(Iconsax.logout, "Check Out", checkOut),
                 ],
               ),
 
@@ -283,10 +435,10 @@ class _AttendanceState extends State<Attendance> {
                 ),
                 child: Column(
                   children: [
-                    _infoTile(Iconsax.clock, "Work", a.formattedWork),
-                    _infoTile(Iconsax.pause, "Break", a.formattedBreak),
-                    _infoTile(Iconsax.flash, "OT", a.formattedOT),
-                    _infoTile(Iconsax.warning_2, "Less", a.formattedLess),
+                    infoTile(Iconsax.clock, "Work", a.formattedWork),
+                    infoTile(Iconsax.pause, "Break", a.formattedBreak),
+                    infoTile(Iconsax.flash, "OT", a.formattedOT),
+                    infoTile(Iconsax.warning_2, "Less", a.formattedLess),
                   ],
                 ),
               ),
@@ -338,40 +490,124 @@ class _AttendanceState extends State<Attendance> {
   }
 
   void applyFilters() {
-    List<AttendanceModel> filtered = _tempAList.where((a) {
+    List<AttendanceModel> filtered = tempAList.where((a) {
       if (a.punchList.isEmpty) return false;
 
       final punch = a.punchList.first;
       final status = getAttendanceStatus(punch);
       final type = punch.permissionType?.name ?? "";
 
-      bool matchesStatus = _selectedStatus == "All"
+      /// ✅ EMPLOYEE FILTER
+      bool matchesEmployee = selectedEmployee == "All"
           ? true
-          : status.toLowerCase() == _selectedStatus.toLowerCase();
+          : a.employeeId == selectedEmployee;
 
-      bool matchesType = _selectedType == "All" ? true : type == _selectedType;
+      /// ✅ DEPARTMENT FILTER
+      bool matchesDepartment = true;
 
+      if (selectedDepartment != "All") {
+        EmployeeModel? emp;
+
+        try {
+          emp = employees.firstWhere((e) => e.uid == a.employeeId);
+        } catch (_) {
+          emp = null;
+        }
+
+        matchesDepartment =
+            emp?.department?.contains(selectedDepartment) ?? false;
+      }
+
+      /// ✅ STATUS FILTER
+      bool matchesStatus = selectedStatus == "All"
+          ? true
+          : status.toLowerCase() == selectedStatus.toLowerCase();
+
+      /// ✅ TYPE FILTER
+      bool matchesType = selectedType == "All" ? true : type == selectedType;
+
+      /// ✅ DATE FILTER
       bool matchesDate = true;
 
-      if (_selectedDateRange != null) {
+      if (selectedDateRange != null) {
         final punchDate = _parseDate(punch.punchDate);
         if (punchDate == null) return false;
 
         matchesDate =
-            !punchDate.isBefore(_selectedDateRange!.start) &&
-            !punchDate.isAfter(_selectedDateRange!.end);
+            !punchDate.isBefore(selectedDateRange!.start) &&
+            !punchDate.isAfter(selectedDateRange!.end);
       }
 
-      return matchesStatus && matchesType && matchesDate;
+      return matchesEmployee &&
+          matchesDepartment &&
+          matchesStatus &&
+          matchesType &&
+          matchesDate;
     }).toList();
 
     setState(() {
       filteredList = filtered;
+
+      stats = calculateStats(filteredList);
     });
   }
 
-  void _onDayTap(DateTime date) {
-    final aListForDay = _aList.where((e) {
+  AttendanceStats calculateStats(List<AttendanceModel> list) {
+    int present = 0;
+    int absent = 0;
+    int leave = 0;
+    int wfh = 0;
+    int halfDay = 0;
+    int late = 0;
+    int earlyExit = 0;
+
+    for (var a in list) {
+      if (a.punchList.isEmpty) continue;
+
+      final status = getAttendanceStatus(a.punchList.first);
+
+      switch (status) {
+        case "Present":
+          present++;
+          break;
+        case "Absent":
+          absent++;
+          break;
+        case "Leave":
+          leave++;
+          break;
+        case "WFH":
+          wfh++;
+          break;
+        case "HalfDay":
+          halfDay++;
+          break;
+        case "Late":
+          late++;
+          break;
+        case "EarlyExit":
+          earlyExit++;
+          break;
+      }
+    }
+
+    return AttendanceStats(
+      presentDays: present,
+      absentDays: absent,
+      leaveDays: leave,
+      wfhDays: wfh,
+      halfDayDays: halfDay,
+      lateDays: late,
+      earlyExitDays: earlyExit,
+      totalWorkingHours: "0",
+      totalOTHours: "0",
+      totalLessHours: "0",
+      attendanceData: list,
+    );
+  }
+
+  void onDayTap(DateTime date) {
+    final aListForDay = aList.where((e) {
       if (e.punchList.isEmpty) return false;
 
       final parsedDate = _parseDate(e.punchList.first.punchDate);
@@ -383,7 +619,7 @@ class _AttendanceState extends State<Attendance> {
     }).toList();
 
     if (aListForDay.isNotEmpty) {
-      _showAttendanceDetails(aListForDay.first);
+      showAttendanceDetails(aListForDay.first);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No attendance record for this day')),
@@ -393,7 +629,7 @@ class _AttendanceState extends State<Attendance> {
 
   @override
   Widget build(BuildContext context) {
-    final hasPending = _aList.any(
+    final hasPending = aList.any(
       (a) =>
           a.punchList.isNotEmpty &&
           a.punchList.first.permissionStatus == PermissionsStatus.pending,
@@ -417,171 +653,141 @@ class _AttendanceState extends State<Attendance> {
           : null,
       body: RefreshIndicator(
         onRefresh: () async {
-          _aHandler = _init();
+          aHandler = init();
           setState(() {});
         },
         child: FutureBuilder<void>(
-          future: _aHandler,
+          future: aHandler,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const WaitingLoading();
             }
-            return isAdmin ? _buildAdminView() : _buildEmployeeView();
-            // if (_aList.isEmpty) {
-            //   return const NoData();
-            // }
-            // return SingleChildScrollView(
-            //   physics: const AlwaysScrollableScrollPhysics(),
-            //   child: Padding(
-            //     padding: const EdgeInsets.symmetric(
-            //       horizontal: 16,
-            //       vertical: 12,
-            //     ),
-            //     child: Column(
-            //       children: [
-            //         // Row(
-            //         //   children: [
-            //         //     IconButton(
-            //         //       icon: const Icon(Iconsax.arrow_left),
-            //         //       onPressed: prevMonth,
-            //         //     ),
-            //         //     Expanded(
-            //         //       child: Text(
-            //         //         DateFormat('MMM yyyy').format(focusedMonth),
-            //         //         textAlign: TextAlign.center,
-            //         //         style: const TextStyle(
-            //         //           fontSize: 16,
-            //         //           fontWeight: FontWeight.bold,
-            //         //         ),
-            //         //       ),
-            //         //     ),
-            //         //     IconButton(
-            //         //       icon: const Icon(Iconsax.arrow_right),
-            //         //       onPressed: nextMonth,
-            //         //     ),
-            //         //   ],
-            //         // ),
-            //         const SizedBox(height: 12),
-            //         if (isAdmin) ...[
-            //           _permissionApprovalPanel(),
-            //           const SizedBox(height: 16),
-            //           _filterPanel(),
-            //         ],
-            //         Padding(
-            //           padding: const EdgeInsets.symmetric(vertical: 8),
-            //           child: _buildSummaryCards(_stats!),
-            //         ),
-            //         const SizedBox(height: 16),
-            //         _attendanceListView(),
-            //         const SizedBox(height: 20),
-            //         _AttendanceCalendar(
-            //           attendanceList: filteredList,
-            //           userType: user!.userType,
-            //           employeeId: user!.uid,
-            //           employees: _employees,
-            //           departments: _departments,
-            //           onDayTap: (date) {
-            //             final aListForDay = _aList.where((e) {
-            //               if (e.punchList.isEmpty) return false;
-
-            //               final parsedDate = _parseDate(
-            //                 e.punchList.first.punchDate,
-            //               );
-            //               if (parsedDate == null) return false;
-
-            //               return parsedDate.year == date.year &&
-            //                   parsedDate.month == date.month &&
-            //                   parsedDate.day == date.day;
-            //             }).toList();
-
-            //             if (aListForDay.isNotEmpty) {
-            //               _showAttendanceDetails(aListForDay.first);
-            //             } else {
-            //               ScaffoldMessenger.of(context).showSnackBar(
-            //                 const SnackBar(
-            //                   content: Text(
-            //                     'No attendance record for this day',
-            //                   ),
-            //                 ),
-            //               );
-            //             }
-            //           },
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // );
+            return isAdmin ? buildAdminView() : buildEmployeeView();
           },
         ),
       ),
     );
   }
 
-  Widget _buildAdminView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// 🔴 Pending Approvals (TOP PRIORITY)
-          _permissionApprovalPanel(),
-          const SizedBox(height: 16),
+  Widget buildAdminView() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: Colors.white,
+          child: filterPanel(),
+        ),
 
-          /// 📊 Summary
-          _buildSummaryCards(_stats!),
-          const SizedBox(height: 16),
+        Expanded(
+          child: Column(
+            children: [
+              permissionApprovalPanel(),
 
-          /// 🔍 Filters
-          _filterPanel(),
-          const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: buildSummaryCards(stats!),
+              ),
 
-          /// 📋 Attendance List
-          _attendanceListView(),
-          const SizedBox(height: 20),
+              TabBar(
+                controller: tabController,
+                labelColor: Colors.blue,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.blue,
+                tabs: const [
+                  Tab(text: "Calendar"),
+                  Tab(text: "List"),
+                ],
+              ),
 
-          /// 📅 Calendar
-          _AttendanceCalendar(
-            attendanceList: filteredList,
-            userType: user!.userType,
-            employeeId: user!.uid,
-            employees: _employees,
-            departments: _departments,
-            onDayTap: _onDayTap,
+              Expanded(
+                child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    /// 📅 CALENDAR VIEW
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: _AttendanceCalendar(
+                        attendanceList: filteredList,
+                        userType: user!.userType,
+                        employeeId: user!.uid,
+                        employees: employees,
+                        departments: departments,
+                        onDayTap: onDayTap,
+                      ),
+                    ),
+
+                    attendanceTableView(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildEmployeeView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          /// 📊 Personal Summary
-          _buildSummaryCards(_stats!),
-          const SizedBox(height: 16),
-
-          /// 📅 Calendar (MAIN FOCUS)
-          _AttendanceCalendar(
-            attendanceList: filteredList,
-            userType: user!.userType,
-            employeeId: user!.uid,
-            employees: _employees,
-            departments: _departments,
-            onDayTap: _onDayTap,
+  Widget buildEmployeeView() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Column(
+            children: [
+              todaySummary(),
+              const SizedBox(height: 10),
+              buildSummaryCards(stats!),
+            ],
           ),
+        ),
 
-          const SizedBox(height: 16),
+        /// 🔹 TABS
+        TabBar(
+          controller: tabController,
+          labelColor: Colors.blue,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.blue,
+          tabs: const [
+            Tab(text: "Calendar"),
+            Tab(text: "List"),
+          ],
+        ),
 
-          /// 📋 My Attendance
-          _attendanceListView(),
-        ],
-      ),
+        Expanded(
+          child: TabBarView(
+            controller: tabController,
+            children: [
+              /// 📅 Calendar View
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    _AttendanceCalendar(
+                      attendanceList: filteredList,
+                      userType: user!.userType,
+                      employeeId: user!.uid,
+                      employees: employees,
+                      departments: departments,
+                      onDayTap: onDayTap,
+                    ),
+                  ],
+                ),
+              ),
+
+              /// 📋 List View
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: attendanceListView(),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _infoTile(IconData icon, String label, String minutes) {
+  Widget infoTile(IconData icon, String label, String minutes) {
     final m = int.tryParse(minutes) ?? 0;
     final h = m ~/ 60;
     final r = m % 60;
@@ -614,8 +820,8 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _permissionApprovalPanel() {
-    final pendingPermissions = _aList
+  Widget permissionApprovalPanel() {
+    final pendingPermissions = aList
         .where(
           (a) =>
               a.punchList.isNotEmpty &&
@@ -775,7 +981,7 @@ class _AttendanceState extends State<Attendance> {
                             status: PermissionsStatus.approved,
                           );
 
-                          _aHandler = _init();
+                          aHandler = init();
                           setState(() {});
                         },
                       ),
@@ -788,7 +994,7 @@ class _AttendanceState extends State<Attendance> {
                             status: PermissionsStatus.rejected,
                           );
 
-                          _aHandler = _init();
+                          aHandler = init();
                           setState(() {});
                         },
                       ),
@@ -803,7 +1009,7 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _buildSummaryCards(AttendanceStats stats) {
+  Widget buildSummaryCards(AttendanceStats stats) {
     final items = [
       ("Present", stats.presentDays.toString(), Colors.green),
       ("Absent", stats.absentDays.toString(), Colors.red),
@@ -833,7 +1039,7 @@ class _AttendanceState extends State<Attendance> {
         itemBuilder: (_, i) {
           final item = items[i];
 
-          return _summaryCard(
+          return summaryCard(
             label: item.$1,
             value: item.$2,
             color: item.$3,
@@ -844,74 +1050,99 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _summaryCard({
+  Widget summaryCard({
     required String label,
     required String value,
     required Color color,
     required double width,
   }) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+    final bool isPrimary = label == "Present" || label == "Absent";
+    final bool isSelected = selectedSummaryFilter == label;
+
+    return GestureDetector(
+      onTap: () {
+        applySummaryFilter(label);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: width,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withOpacity(.25)
+              : isPrimary
+              ? color.withOpacity(.12)
+              : Colors.white,
+
+          borderRadius: BorderRadius.circular(16),
+
+          border: Border.all(
+            color: isSelected
+                ? color
+                : isPrimary
+                ? color.withOpacity(.4)
+                : Colors.grey.shade200,
+            width: isSelected ? 2 : 1,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          /// ICON
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(.1),
-              borderRadius: BorderRadius.circular(10),
+
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? color.withOpacity(.4)
+                  : Colors.black.withOpacity(.05),
+              blurRadius: isSelected ? 12 : 6,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(_getSummaryIcon(label), color: color, size: 25),
-          ),
+          ],
+        ),
+        child: Row(
+          children: [
+            /// ICON
+            Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(getSummaryIcon(label), color: color, size: 25),
+            ),
 
-          const SizedBox(width: 10),
+            const SizedBox(width: 10),
 
-          /// TEXT
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+            /// TEXT
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  IconData _getSummaryIcon(String label) {
+  IconData getSummaryIcon(String label) {
     switch (label.toLowerCase()) {
       case 'present':
         return Iconsax.user_tick;
@@ -945,62 +1176,41 @@ class _AttendanceState extends State<Attendance> {
     }
   }
 
-  Widget _filterPanel() {
-    final statusOptions = [
-      "All",
-      "Present",
-      "Absent",
-      "Leave",
-      "WFH",
-      "HalfDay",
-      "Late",
-      "EarlyExit",
-      "Pending",
-      "Rejected",
-    ];
-
-    final typeOptions = [
-      "All",
-      "Leave",
-      "HalfDay",
-      "WFH",
-      "Late",
-      "EarlyExit",
-      "Permission",
-    ];
-
+  Widget filterPanel() {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            // const Text(
-            //   "Filters",
-            //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            // ),
-            // const SizedBox(height: 12),
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
+                /// 👤 EMPLOYEE DROPDOWN
                 SizedBox(
-                  width: MediaQuery.of(context).size.width * .2,
+                  width: 180,
                   child: DropdownButtonFormField<String>(
-                    initialValue: _selectedStatus,
+                    initialValue: selectedEmployee,
                     decoration: const InputDecoration(
-                      labelText: "Status",
+                      labelText: "Employee",
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    items: statusOptions
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
+                    items: [
+                      const DropdownMenuItem(value: "All", child: Text("All")),
+                      ...employees.map(
+                        (e) =>
+                            DropdownMenuItem(value: e.uid, child: Text(e.name)),
+                      ),
+                    ],
                     onChanged: (val) {
                       setState(() {
-                        _selectedStatus = val!;
+                        selectedEmployee = val!;
                         applyFilters();
                       });
                     },
@@ -1008,48 +1218,69 @@ class _AttendanceState extends State<Attendance> {
                 ),
 
                 SizedBox(
-                  width: MediaQuery.of(context).size.width * .2,
+                  width: 180,
                   child: DropdownButtonFormField<String>(
-                    initialValue: _selectedType,
+                    initialValue: selectedDepartment,
                     decoration: const InputDecoration(
-                      labelText: "Permission",
+                      labelText: "Department",
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    items: typeOptions
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
+                    items: [
+                      const DropdownMenuItem(value: "All", child: Text("All")),
+                      ...departments.map(
+                        (d) =>
+                            DropdownMenuItem(value: d.uid, child: Text(d.name)),
+                      ),
+                    ],
                     onChanged: (val) {
                       setState(() {
-                        _selectedType = val!;
+                        selectedDepartment = val!;
                         applyFilters();
                       });
                     },
                   ),
-                ),
-
-                OutlinedButton.icon(
-                  icon: const Icon(Iconsax.calendar),
-                  label: Text(_dateRangeText),
-                  onPressed: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2025),
-                      lastDate: DateTime(2027),
-                      initialDateRange: _selectedDateRange,
-                    );
-
-                    if (picked != null) {
-                      setState(() {
-                        _selectedDateRange = picked;
-                        _dateRangeText =
-                            "${DateFormat('dd MMM').format(picked.start)} - ${DateFormat('dd MMM').format(picked.end)}";
-                        applyFilters();
-                      });
-                    }
-                  },
                 ),
               ],
+            ),
+
+            const SizedBox(height: 12),
+
+            buildFilterChips(),
+
+            OutlinedButton.icon(
+              icon: const Icon(Iconsax.calendar),
+              label: Text(dateRangeText),
+              onPressed: () async {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2025),
+                  lastDate: DateTime(2027),
+                  initialDateRange: selectedDateRange,
+                );
+
+                if (picked != null) {
+                  setState(() {
+                    selectedDateRange = picked;
+                    dateRangeText =
+                        "${DateFormat('dd MMM').format(picked.start)} - ${DateFormat('dd MMM').format(picked.end)}";
+                    applyFilters();
+                  });
+                }
+              },
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  selectedEmployee = "All";
+                  selectedDepartment = "All";
+                  selectedStatus = "All";
+                  selectedDateRange = null;
+                  dateRangeText = "Select Date Range";
+                  applyFilters();
+                });
+              },
+              child: const Text("Reset"),
             ),
           ],
         ),
@@ -1057,19 +1288,77 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _attendanceListView() {
+  Widget buildFilterChips() {
+    final filters = [
+      "All",
+      "Present",
+      "Absent",
+      "Leave",
+      "WFH",
+      "Late",
+      "EarlyExit",
+      "HalfDay",
+      "Pending",
+      "Rejected",
+      "LessHours",
+      "InProgress",
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: filters.map((f) {
+        final isSelected = selectedStatus == f;
+
+        return ChoiceChip(
+          label: Text(f),
+          selected: isSelected,
+          selectedColor: statusColor(f).withOpacity(0.2),
+          onSelected: (_) {
+            setState(() {
+              selectedStatus = f;
+              applyFilters();
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget attendanceListView() {
+    String formatPermission(PermissionType type) {
+      switch (type) {
+        case PermissionType.leaveFullDay:
+          return "Full Day Leave";
+        case PermissionType.leaveHalfDay:
+          return "Half Day";
+        case PermissionType.workFromHome:
+          return "Work From Home";
+        case PermissionType.lateEntry:
+          return "Late Entry";
+        case PermissionType.earlyExit:
+          return "Early Exit";
+        case PermissionType.permission:
+          return "Permission";
+      }
+    }
+
     if (filteredList.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          children: [
-            Icon(Iconsax.search_status, size: 40, color: Colors.grey),
-            const SizedBox(height: 10),
-            const Text(
-              "No records found",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Iconsax.calendar_remove, size: 50, color: Colors.grey),
+              const SizedBox(height: 10),
+              const Text("No Attendance Found"),
+              const SizedBox(height: 5),
+              const Text(
+                "Try changing filters or date range",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1081,10 +1370,11 @@ class _AttendanceState extends State<Attendance> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final a = filteredList[index];
+        final emp = employeeMap[a.employeeId];
         final punch = a.punchList.first;
 
         final status = getAttendanceStatus(punch);
-        final color = _statusColor(status);
+        final color = statusColor(status);
         final date = _parseDate(punch.punchDate);
 
         final isToday =
@@ -1093,7 +1383,6 @@ class _AttendanceState extends State<Attendance> {
             date.month == DateTime.now().month &&
             date.day == DateTime.now().day;
 
-        /// ✅ FORMAT TIME
         String formatTime(String? time) {
           if (time == null || time.isEmpty) return "-";
           final dt = DateTime.tryParse(time);
@@ -1111,125 +1400,667 @@ class _AttendanceState extends State<Attendance> {
 
         return InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _showAttendanceDetails(a),
-          child: Card(
-            elevation: 1,
-            color: isToday ? Colors.blue.withOpacity(0.05) : Colors.white,
-            shape: RoundedRectangleBorder(
+          onTap: () => showAttendanceDetails(a),
+          child: Container(
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
+              border: Border(left: BorderSide(color: color, width: 4)),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  /// DATE CIRCLE
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: color.withOpacity(.15),
-                    child: Text(
-                      date != null ? DateFormat('dd').format(date) : "--",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: color,
+            child: Card(
+              elevation: 1,
+              color: isToday ? Colors.blue[50] : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// 🔷 EMPLOYEE HEADER
+                    if (isAdmin && emp != null)
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.blue.shade100,
+                            backgroundImage: emp.profileImageUrl != null
+                                ? NetworkImage(emp.profileImageUrl!)
+                                : null,
+                            child: emp.profileImageUrl == null
+                                ? Text(
+                                    emp.name.isNotEmpty
+                                        ? emp.name[0].toUpperCase()
+                                        : "?",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  emp.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  emp.department != null &&
+                                          emp.department!.isNotEmpty
+                                      ? emp.department!.first
+                                      : "No Department",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          buildStatusChip(status),
+                        ],
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(width: 14),
+                    if (isAdmin) const SizedBox(height: 10),
 
-                  /// MAIN CONTENT
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    /// 🔷 DATE + TIME
+                    Row(
                       children: [
-                        /// DATE
-                        Text(
-                          date != null
-                              ? DateFormat('EEE, MMM dd yyyy').format(date)
-                              : "--",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        /// STATUS CHIP
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(.15),
-                            borderRadius: BorderRadius.circular(50),
-                          ),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: color.withOpacity(.15),
                           child: Text(
-                            status,
+                            date != null ? DateFormat('dd').format(date) : "--",
                             style: TextStyle(
-                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: color,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(width: 12),
 
-                        /// 🆕 CLOCK IN / OUT ROW
-                        Row(
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                date != null
+                                    ? DateFormat(
+                                        'EEE, MMM dd yyyy',
+                                      ).format(date)
+                                    : "--",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Iconsax.login,
+                                    size: 14,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    checkIn,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+
+                                  const SizedBox(width: 12),
+
+                                  const Icon(
+                                    Iconsax.logout,
+                                    size: 14,
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    checkOut,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        /// EMPLOYEE VIEW STATUS
+                        if (!isAdmin) buildStatusChip(status),
+                      ],
+                    ),
+
+                    /// 🔷 WORK SUMMARY
+                    const SizedBox(height: 10),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        miniStat("Work", a.formattedWork, Colors.blue),
+                        miniStat("Break", a.formattedBreak, Colors.orange),
+                        miniStat("OT", a.formattedOT, Colors.green),
+                        miniStat("Less", a.formattedLess, Colors.red),
+                      ],
+                    ),
+
+                    /// 🔷 PERMISSION
+                    if (punch.permissionType != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
                           children: [
-                            Icon(Iconsax.login, size: 14, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            Text(
-                              checkIn,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade700,
-                              ),
+                            const Icon(
+                              Iconsax.warning_2,
+                              size: 14,
+                              color: Colors.orange,
                             ),
-
-                            const SizedBox(width: 12),
-
-                            Icon(Iconsax.logout, size: 14, color: Colors.grey),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             Text(
-                              checkOut,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade700,
-                              ),
+                              "${formatPermission(punch.permissionType!)} • ${punch.permissionStatus!.name.toUpperCase()}",
+                              style: const TextStyle(fontSize: 11),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-
-                  /// PERMISSION TYPE
-                  if (punch.permissionType != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        punch.permissionType!.name.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                ],
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget attendanceTableView() {
+    if (filteredList.isEmpty) {
+      return const Center(child: Text("No Attendance Data"));
+    }
+
+    return Column(
+      children: [
+        /// 🔍 SEARCH BAR
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            controller: _search,
+            decoration: InputDecoration(
+              hintText: "Search Employee...",
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+            ),
+            onChanged: (value) {
+              setState(() {
+                filteredList = tempAList.where((a) {
+                  final emp = findEmployee(a.employeeId);
+                  return emp?.name.toLowerCase().contains(
+                        value.toLowerCase(),
+                      ) ??
+                      false;
+                }).toList();
+              });
+            },
+          ),
+        ),
+
+        /// 📊 TABLE
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 24,
+              dataRowHeight: 60,
+              headingRowHeight: 50,
+              headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
+
+              columns: [
+                DataColumn(
+                  label: const Text("Employee"),
+                  onSort: (i, asc) => sortByName(asc),
+                ),
+                DataColumn(
+                  label: const Text("Date"),
+                  onSort: (i, asc) => sortByDate(asc),
+                ),
+                const DataColumn(label: Text("Check In")),
+                const DataColumn(label: Text("Check Out")),
+                const DataColumn(label: Text("Work")),
+                DataColumn(
+                  label: const Text("Status"),
+                  onSort: (i, asc) => sortByStatus(asc),
+                ),
+                const DataColumn(label: Text("Action")),
+              ],
+
+              rows: filteredList.map((a) {
+                final emp = findEmployee(a.employeeId);
+                final punch = a.punchList.first;
+
+                final status = getAttendanceStatus(punch);
+                final color = statusColor(status);
+                final date = _parseDate(punch.punchDate);
+
+                String formatTime(String? time) {
+                  if (time == null || time.isEmpty) return "-";
+                  final dt = DateTime.tryParse(time);
+                  if (dt == null) return "-";
+                  return TimeOfDay.fromDateTime(dt).format(context);
+                }
+
+                final checkIn = punch.punchTime.isNotEmpty
+                    ? formatTime(punch.punchTime.first)
+                    : "-";
+
+                final checkOut = punch.punchTime.length > 1
+                    ? formatTime(punch.punchTime.last)
+                    : "-";
+
+                return DataRow(
+                  cells: [
+                    /// 👤 EMPLOYEE
+                    DataCell(
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: color.withOpacity(.2),
+                            child: Text(
+                              emp?.name.substring(0, 1).toUpperCase() ?? "?",
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(emp?.name ?? "Unknown"),
+                        ],
+                      ),
+                    ),
+
+                    /// 📅 DATE
+                    DataCell(
+                      Text(
+                        date != null
+                            ? DateFormat('dd MMM yyyy').format(date)
+                            : "--",
+                      ),
+                    ),
+
+                    /// ⏱ TIME
+                    DataCell(Text(checkIn)),
+                    DataCell(Text(checkOut)),
+
+                    /// ⏳ WORK
+                    DataCell(Text(a.formattedWork)),
+
+                    /// 📊 STATUS
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    /// ⚡ ACTION
+                    DataCell(
+                      Row(
+                        children: [
+                          if (punch.permissionStatus ==
+                              PermissionsStatus.pending) ...[
+                            IconButton(
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              ),
+                              onPressed: () async {
+                                await AttendanceService.updatePermissionStatus(
+                                  punchId: punch.uid!,
+                                  status: PermissionsStatus.approved,
+                                );
+                                aHandler = init();
+                                setState(() {});
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () async {
+                                await AttendanceService.updatePermissionStatus(
+                                  punchId: punch.uid!,
+                                  status: PermissionsStatus.rejected,
+                                );
+                                aHandler = init();
+                                setState(() {});
+                              },
+                            ),
+                          ] else
+                            const Text("-"),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget miniStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: color,
+          ),
+        ),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget buildStatusChip(String status) {
+    final color = statusColor(status);
+    final icon = getSummaryIcon(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(.15), color.withOpacity(.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            status,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget todaySummary() {
+    AttendanceModel? today;
+
+    try {
+      today = filteredList.firstWhere((a) => isToday0(a));
+    } catch (_) {
+      today = null;
+    }
+
+    if (today == null || today.punchList.isEmpty) {
+      return const SizedBox();
+    }
+
+    final punch = today.punchList.first;
+    final status = getAttendanceStatus(punch);
+    final color = statusColor(status);
+
+    String formatTime(String? time) {
+      if (time == null || time.isEmpty) return "--";
+      final dt = DateTime.tryParse(time);
+      if (dt == null) return "--";
+      return TimeOfDay.fromDateTime(dt).format(context);
+    }
+
+    final hasCheckIn = punch.punchTime.isNotEmpty;
+    final hasCheckOut = punch.punchTime.length > 1;
+
+    final checkIn = hasCheckIn ? formatTime(punch.punchTime.first) : "--";
+
+    final checkOut = hasCheckOut
+        ? formatTime(punch.punchTime.last)
+        : (hasCheckIn ? "Working..." : "--");
+
+    double getProgress() {
+      if (!hasCheckIn) return 0;
+
+      final start = DateTime.tryParse(punch.punchTime.first);
+      if (start == null) return 0;
+
+      final end = hasCheckOut
+          ? DateTime.tryParse(punch.punchTime.last) ?? DateTime.now()
+          : DateTime.now();
+
+      final minutes = end.difference(start).inMinutes;
+
+      return (minutes / 480).clamp(0, 1); // 8 hrs = 480 mins
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                /// ICON
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(getSummaryIcon(status), color: color),
+                ),
+
+                const SizedBox(width: 12),
+
+                /// TITLE + STATUS
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Today's Attendance",
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 4),
+
+                      /// STATUS BADGE
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                /// WORK TIME
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      "Work",
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      today.formattedWork,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _timeTile(Iconsax.login, "Check In", checkIn, Colors.green),
+                _timeTile(
+                  Iconsax.logout,
+                  "Check Out",
+                  checkOut,
+                  hasCheckOut ? Colors.red : Colors.orange,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            LinearProgressIndicator(
+              value: getProgress(),
+              backgroundColor: Colors.grey.shade200,
+              color: color,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _timeTile(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class EmployeeInfoWidget extends StatelessWidget {
+  final EmployeeModel employee;
+
+  const EmployeeInfoWidget({super.key, required this.employee});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: Colors.blue.shade100,
+          backgroundImage: employee.profileImageUrl != null
+              ? NetworkImage(employee.profileImageUrl!)
+              : null,
+          child: employee.profileImageUrl == null
+              ? Text(
+                  employee.name.isNotEmpty
+                      ? employee.name[0].toUpperCase()
+                      : "?",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )
+              : null,
+        ),
+
+        const SizedBox(width: 8),
+
+        /// 👤 NAME + DEPARTMENT
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              employee.name,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 2),
+
+            Text(
+              employee.department != null && employee.department!.isNotEmpty
+                  ? employee.department!.join(", ")
+                  : "No Department",
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall!.copyWith(color: Colors.grey, fontSize: 11),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -1258,7 +2089,6 @@ class _AttendanceCalendar extends StatefulWidget {
 class _AttendanceCalendarState extends State<_AttendanceCalendar> {
   DateTime focusedMonth = DateTime.now();
   late Map<DateTime, String> attendanceMap;
-  late Map<String, EmployeeModel> employeeMap;
   String? currentUserId;
   late List<AttendanceModel> filteredList;
   DateTime? selectedDay;
@@ -1266,7 +2096,6 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
   @override
   void initState() {
     super.initState();
-    employeeMap = {for (var e in widget.employees) e.employeeId: e};
 
     filteredList = widget.attendanceList;
     attendanceMap = _buildAttendanceMap();
@@ -1335,42 +2164,9 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     });
   }
 
-  // IconData _getStatusIcon(String? status) {
-  //   switch (status) {
-  //     case "Present":
-  //       return Icons.check_circle;
-
-  //     case "Absent":
-  //       return Icons.cancel;
-
-  //     case "Leave":
-  //       return Icons.beach_access;
-
-  //     case "HalfDay":
-  //       return Icons.timelapse;
-
-  //     case "WFH":
-  //       return Icons.home;
-
-  //     case "Late":
-  //       return Icons.access_time;
-
-  //     case "EarlyExit":
-  //       return Icons.logout;
-
-  //     case "Pending":
-  //       return Icons.hourglass_empty;
-
-  //     case "Permission":
-  //       return Icons.verified;
-
-  //     case "Rejected":
-  //       return Icons.block;
-
-  //     default:
-  //       return Icons.circle;
-  //   }
-  // }
+  bool isWeekend(DateTime day) {
+    return day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1429,6 +2225,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                     ),
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, focusedDay) {
+                        final isWeekendDay = isWeekend(day);
                         final status =
                             attendanceMap[DateTime(
                               day.year,
@@ -1506,20 +2303,24 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
 
                             color: isSelected
                                 ? Colors.deepPurple
+                                : isWeekendDay
+                                ? Colors.red.withOpacity(0.05)
                                 : isToday
-                                ? Colors.transparent
-                                : Colors.white,
+                                ? Colors.blue.withOpacity(0.08)
+                                : Colors.transparent,
 
                             border: Border.all(
                               color: isSelected
                                   ? Colors.deepPurple
+                                  : isWeekendDay
+                                  ? Colors.red.withOpacity(0.4)
                                   : isToday
                                   ? Colors.blue
-                                  : Colors.grey.shade200,
+                                  : Colors.transparent,
                               width: isSelected
-                                  ? 2.5
-                                  : isToday
                                   ? 2
+                                  : isWeekendDay
+                                  ? 1.5
                                   : 1,
                             ),
 
@@ -1554,6 +2355,8 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                     // fontSize: isSelected ? 16 : 14,
                                     color: isSelected
                                         ? Colors.white
+                                        : isWeekendDay
+                                        ? Colors.redAccent
                                         : isToday
                                         ? Colors.blue
                                         : Colors.black87,
@@ -1652,11 +2455,11 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                     "Break",
                                     attendance.formattedBreak,
                                   ),
-                                  _buildDetailRow("OT", attendance.formattedOT),
-                                  _buildDetailRow(
-                                    "Less",
-                                    attendance.formattedLess,
-                                  ),
+                                  // _buildDetailRow("OT", attendance.formattedOT),
+                                  // _buildDetailRow(
+                                  //   "Less",
+                                  //   attendance.formattedLess,
+                                  // ),
                                 ],
                               ),
                             );
@@ -1665,28 +2468,92 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                       } else {
                         showModalBottomSheet(
                           context: context,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
                           ),
                           builder: (_) {
-                            return Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    DateFormat('dd MMM yyyy').format(selected),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
+                            return DraggableScrollableSheet(
+                              expand: false,
+                              initialChildSize: 0.4,
+                              minChildSize: 0.3,
+                              maxChildSize: 0.7,
+                              builder: (context, scrollController) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: ListView(
+                                    controller: scrollController,
+                                    children: [
+                                      /// Handle bar
+                                      Center(
+                                        child: Container(
+                                          width: 40,
+                                          height: 5,
+                                          margin: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade300,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
 
-                                  Text("Status: $status"),
-                                ],
-                              ),
+                                      /// Date Title
+                                      Text(
+                                        DateFormat(
+                                          'dd MMM yyyy',
+                                        ).format(selected),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 16),
+
+                                      /// Status Card
+                                      _infoCard(
+                                        title: "Status",
+                                        value: status,
+                                        icon: Icons.info,
+                                        color: _statusColor(status),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      /// Attendance Details
+                                      _infoCard(
+                                        title: "Work Hours",
+                                        value: attendance.formattedWork,
+                                        icon: Icons.access_time,
+                                      ),
+
+                                      _infoCard(
+                                        title: "Break Time",
+                                        value: attendance.formattedBreak,
+                                        icon: Icons.free_breakfast,
+                                      ),
+
+                                      // _infoCard(
+                                      //   title: "OT Hours",
+                                      //   value: attendance.formattedOT,
+                                      //   icon: Icons.trending_up,
+                                      // ),
+
+                                      // _infoCard(
+                                      //   title: "Less Hours",
+                                      //   value: attendance.formattedLess,
+                                      //   icon: Icons.trending_down,
+                                      // ),
+                                    ],
+                                  ),
+                                );
+                              },
                             );
                           },
                         );
@@ -1696,6 +2563,68 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case "Present":
+        return Colors.green;
+      case "Absent":
+        return Colors.red;
+      case "Leave":
+        return Colors.orange;
+      case "HalfDay":
+        return Colors.amber;
+      case "WFH":
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _infoCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    Color? color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: (color ?? Colors.blue).withOpacity(0.1),
+            child: Icon(icon, size: 18, color: color ?? Colors.blue),
+          ),
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ),
+
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ],
       ),

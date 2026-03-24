@@ -216,6 +216,8 @@ class PunchModel {
   String otApproval;
   PermissionType? permissionType;
   PermissionsStatus? permissionStatus;
+  int? clockIn;
+  int? clockOut;
 
   PunchModel({
     this.uid,
@@ -229,6 +231,8 @@ class PunchModel {
     required this.otApproval,
     this.permissionType,
     this.permissionStatus,
+    this.clockIn,
+    this.clockOut,
   });
 
   PunchModel copyWith({
@@ -243,6 +247,8 @@ class PunchModel {
     String? otApproval,
     PermissionType? permissionType,
     PermissionsStatus? permissionStatus,
+    int? clockIn,
+    int? clockOut,
   }) {
     return PunchModel(
       uid: uid ?? this.uid,
@@ -256,6 +262,8 @@ class PunchModel {
       otApproval: otApproval ?? this.otApproval,
       permissionType: permissionType ?? this.permissionType,
       permissionStatus: permissionStatus ?? this.permissionStatus,
+      clockIn: clockIn ?? this.clockIn,
+      clockOut: clockOut ?? this.clockOut,
     );
   }
 
@@ -272,6 +280,8 @@ class PunchModel {
       'otApproval': otApproval,
       'permissionType': permissionType?.toString().split('.').last,
       'permissionStatus': permissionStatus?.toString().split('.').last,
+      'clockIn': clockIn,
+      'clockOut': clockOut,
     };
   }
 
@@ -291,7 +301,6 @@ class PunchModel {
       }
     }
 
-    /// Convert minutes → HH:mm if needed
     String minutesToTime(dynamic minutes) {
       if (minutes == null) return '';
 
@@ -310,7 +319,6 @@ class PunchModel {
           ? List<String>.from(map['punchTime'].map((e) => e.toString()))
           : [],
 
-      /// Support both formats
       totalHours: map['totalHours'] ?? minutesToTime(map['workingMinutes']),
       lessHours: map['lessHours'] ?? minutesToTime(map['lessMinutes']),
       otHours: map['otHours'] ?? minutesToTime(map['otMinutes']),
@@ -327,8 +335,21 @@ class PunchModel {
               orElse: () => PermissionsStatus.pending,
             )
           : null,
+      clockIn: map['clockIn'] is int
+          ? map['clockIn']
+          : int.tryParse(map['clockIn']?.toString() ?? ''),
+
+      clockOut: map['clockOut'] is int
+          ? map['clockOut']
+          : int.tryParse(map['clockOut']?.toString() ?? ''),
     );
   }
+
+  DateTime? get clockInDate =>
+      clockIn != null ? DateTime.fromMillisecondsSinceEpoch(clockIn!) : null;
+
+  DateTime? get clockOutDate =>
+      clockOut != null ? DateTime.fromMillisecondsSinceEpoch(clockOut!) : null;
 
   String toJson() => json.encode(toMap());
 
@@ -398,7 +419,6 @@ class AttendanceStats {
     required this.attendanceData,
   });
 
-  /// ✅ Deserialize from Map
   factory AttendanceStats.fromMap(Map<String, dynamic> map) {
     return AttendanceStats(
       presentDays: map['presentDays'] is int
