@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/models/src/salary_ledger_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
+import 'package:leadcapture/services/firebase/firebase.dart';
 import 'package:leadcapture/services/firebase/src/salary_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
@@ -20,6 +21,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
   Future<SalarySummary>? _handler;
   int _selectedMonth = DateTime.now().month;
   int monthCode = DateTime.now().year * 100 + DateTime.now().month;
+  Set<String> expandedCards = {};
 
   bool isAdmin = false;
   bool isEmployee = false;
@@ -38,8 +40,66 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
     monthCode = DateTime.now().year * 100 + _selectedMonth;
 
     setState(() {
-      _handler = SalaryLedgerService.getMonthlySummary(monthCode);
+      _handler = SalaryLedgerService.getMonthlySummary(
+        monthCode,
+        userId: isEmployee ? user : null,
+      );
     });
+  }
+
+  String searchQuery = "";
+
+  void _showSearch() {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Search Employee"),
+          content: TextField(
+            onChanged: (val) {
+              setState(() => searchQuery = val.toLowerCase());
+            },
+            decoration: const InputDecoration(hintText: "Enter Employee ID"),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _generateSalary() async {
+    final monthCode = DateTime.now().year * 100 + _selectedMonth;
+
+    if (isAdmin) {
+      final users = await EmployeeService.getAllEmployees();
+
+      for (var emp in users) {
+        final attendance =
+            await SalaryLedgerService.getAttendanceSummaryForUser(
+              emp.employeeId,
+              monthCode,
+            );
+
+        await SalaryLedgerService.processMonthlySalary(
+          monthCode: monthCode,
+          attendance: attendance,
+        );
+      }
+    } else {
+      final attendance = await SalaryLedgerService.getAttendanceSummary(
+        monthCode,
+      );
+
+      await SalaryLedgerService.processMonthlySalary(
+        monthCode: monthCode,
+        attendance: attendance,
+      );
+    }
+
+    _init();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Salary Generated Successfully")),
+    );
   }
 
   @override
@@ -48,33 +108,36 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
-      body: FutureBuilder<SalarySummary>(
-        future: _handler,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const WaitingLoading();
-          }
+      body: RefreshIndicator(
+        onRefresh: () async => _init(),
+        child: FutureBuilder<SalarySummary>(
+          future: _handler,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const WaitingLoading();
+            }
 
-          if (!snap.hasData) {
-            return const Center(child: Text("No salary data found"));
-          }
+            if (!snap.hasData) {
+              return const Center(child: Text("No salary data found"));
+            }
 
-          final summary = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _monthFilter(),
-
-              const SizedBox(height: 16),
-
-              _summaryCards(summary),
-
-              const SizedBox(height: 16),
-
-              _salaryList(summary.items),
-            ],
-          );
-        },
+            final summary = snap.data!;
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _monthFilter(),
+                const SizedBox(height: 8),
+                _monthTitle(),
+                const SizedBox(height: 16),
+                _header(),
+                const SizedBox(height: 16),
+                _summaryCards(summary),
+                const SizedBox(height: 16),
+                _salaryList(summary.items),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -124,10 +187,8 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
             ),
 
             onSelected: (_) {
-              setState(() {
-                _selectedMonth = index + 1;
-                _init();
-              });
+              _selectedMonth = index + 1;
+              _init();
             },
           );
         },
@@ -135,14 +196,76 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
     );
   }
 
-  Widget _summaryCards(SalarySummary summary) {
-    final items = [
-      ("Gross Pay", summary.totalGrossPay, Iconsax.wallet_3, Colors.blue),
-      ("Net Pay", summary.totalAmount, Iconsax.money_recive, Colors.green),
-      ("Deductions", summary.totalDeductions, Iconsax.money_send, Colors.red),
-      ("OT Hours", summary.totalHours, Iconsax.timer_1, Colors.orange),
-    ];
+  Widget _monthTitle() {
+    final year = DateTime.now().year;
 
+    return Text(
+      "Salary for ${_selectedMonth.toString().padLeft(2, '0')}/$year",
+      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+    );
+  }
+
+  Widget _header() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          isAdmin ? "Employee Salaries" : "My Salary",
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        if (isAdmin)
+          IconButton(
+            icon: const Icon(Iconsax.search_normal),
+            onPressed: () {
+              _showSearch();
+            },
+          ),
+        if (isAdmin)
+          IconButton(
+            icon: const Icon(Icons.calculate),
+            onPressed: _generateSalary,
+          ),
+      ],
+    );
+  }
+
+  Widget _summaryCards(SalarySummary summary) {
+    final items = isAdmin
+        ? [
+            (
+              "Employees",
+              summary.items.length.toDouble(),
+              Iconsax.people,
+              Colors.purple,
+            ),
+            ("Gross Pay", summary.totalGrossPay, Iconsax.wallet_3, Colors.blue),
+            (
+              "Net Pay",
+              summary.totalAmount,
+              Iconsax.money_recive,
+              Colors.green,
+            ),
+            (
+              "Deductions",
+              summary.totalDeductions,
+              Iconsax.money_send,
+              Colors.red,
+            ),
+          ]
+        : [
+            (
+              "Net Pay",
+              summary.totalAmount,
+              Iconsax.money_recive,
+              Colors.green,
+            ),
+            (
+              "Deductions",
+              summary.totalDeductions,
+              Iconsax.money_send,
+              Colors.red,
+            ),
+          ];
     final screenWidth = MediaQuery.of(context).size.width;
 
     return SizedBox(
@@ -232,55 +355,47 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
           .toList();
     }
 
+    if (isAdmin && searchQuery.isNotEmpty) {
+      filteredList = filteredList
+          .where(
+            (e) =>
+                e.employeeId.toLowerCase().contains(searchQuery.toLowerCase()),
+          )
+          .toList();
+    }
+
+    filteredList.sort((a, b) => b.toDate.compareTo(a.toDate));
+
     if (filteredList.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            /// ICON
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blue.withOpacity(.15),
-                    Colors.blue.withOpacity(.05),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Iconsax.empty_wallet,
-                size: 46,
-                color: Colors.blue,
-              ),
+      return Column(
+        children: [
+          const SizedBox(height: 60),
+
+          Icon(Iconsax.empty_wallet, size: 60, color: Colors.grey),
+
+          const SizedBox(height: 12),
+
+          const Text(
+            "No Salary Records",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            "No salary found for selected month",
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          ),
+
+          const SizedBox(height: 16),
+
+          if (isAdmin)
+            ElevatedButton.icon(
+              onPressed: _generateSalary,
+              icon: const Icon(Icons.calculate),
+              label: const Text("Generate Salary"),
             ),
-
-            const SizedBox(height: 20),
-
-            /// TITLE
-            const Text(
-              "No Salary Records Available",
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-            ),
-
-            const SizedBox(height: 8),
-
-            /// SUBTITLE
-            Text(
-              "Salary details for the selected month are not available yet.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-          ],
-        ),
+        ],
       );
     }
     return ListView.builder(
@@ -294,6 +409,17 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
   }
 
   Widget _salaryCard(SalaryModel salary) {
+    String formatCurrency(String value) {
+      final val = double.tryParse(value) ?? 0;
+      return "₹${val.toStringAsFixed(2)}";
+    }
+
+    bool isExpanded = expandedCards.contains(salary.salaryNumber);
+    String getStatus(SalaryModel s) {
+      // temporary logic
+      return s.netPayValue > 0 ? "Generated" : "Pending";
+    }
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 14),
@@ -302,16 +428,25 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            /// HEADER
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Salary #${salary.salaryNumber}",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Salary #${salary.salaryNumber}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (isAdmin)
+                      Text(
+                        "Emp: ${salary.employeeId}",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                  ],
                 ),
 
                 Container(
@@ -320,24 +455,60 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(.1),
+                    color: getStatus(salary) == "Generated"
+                        ? Colors.blue.withOpacity(.1)
+                        : Colors.orange.withOpacity(.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    "Paid",
+                  child: Text(
+                    getStatus(salary),
                     style: TextStyle(
-                      color: Colors.green,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
+                      color: getStatus(salary) == "Generated"
+                          ? Colors.blue
+                          : Colors.orange,
                     ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.green.withOpacity(.15),
+                    Colors.green.withOpacity(.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "Net Salary",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatCurrency(salary.netPay),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 16),
 
-            /// WORK DETAILS
+            /// 📊 WORK INFO
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -349,16 +520,18 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
 
             const Divider(height: 28),
 
-            /// EARNINGS
+            /// 💰 EARNINGS
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: _info("Earned", "₹${salary.earnAmount}")),
-                Expanded(child: _info("OT", "₹${salary.otAmount}")),
+                Expanded(
+                  child: _info("Earned", formatCurrency(salary.earnAmount)),
+                ),
+                Expanded(child: _info("OT", formatCurrency(salary.otAmount))),
                 Expanded(
                   child: _info(
                     "Gross",
-                    "₹${salary.grossPay}",
+                    formatCurrency(salary.grossPay),
                     color: Colors.blue,
                   ),
                 ),
@@ -367,32 +540,109 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
 
             const Divider(height: 28),
 
-            /// FINAL
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: _info(
                     "Deduction",
-                    "₹${salary.totalDeduction}",
+                    formatCurrency(salary.totalDeduction),
                     color: Colors.red,
                   ),
                 ),
-
-                Expanded(
-                  child: _info(
-                    "Net Pay",
-                    "₹${salary.netPay}",
-                    color: Colors.green,
-                  ),
-                ),
               ],
+            ),
+            if (isExpanded) ...[
+              const Divider(),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: _info("PF", formatCurrency(salary.pfAmount))),
+                  Expanded(
+                    child: _info("ESI", formatCurrency(salary.esiAmount)),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: _info(
+                      "Other",
+                      formatCurrency(salary.otherDeduction),
+                    ),
+                  ),
+                  Expanded(
+                    child: _info(
+                      "Advance",
+                      formatCurrency(salary.advanceDeduction),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 6),
+
+            /// 📄 ACTION
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    if (isExpanded) {
+                      expandedCards.remove(salary.salaryNumber);
+                    } else {
+                      expandedCards.add(salary.salaryNumber);
+                    }
+                  });
+                },
+                child: Text(isExpanded ? "Hide Details" : "View Details"),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  // void _openSalaryDetails(SalaryModel salary) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     builder: (_) {
+  //       return Padding(
+  //         padding: const EdgeInsets.all(16),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Text(
+  //               "Salary Breakdown",
+  //               style: TextStyle(fontWeight: FontWeight.bold),
+  //             ),
+
+  //             const SizedBox(height: 10),
+
+  //             _info("Earned", "₹${salary.earnAmount}"),
+  //             _info("OT Amount", "₹${salary.otAmount}"),
+  //             _info("PF", "₹${salary.pfAmount}"),
+  //             _info("ESI", "₹${salary.esiAmount}"),
+  //             _info("Other Deduction", "₹${salary.otherDeduction}"),
+  //             _info("Total Deduction", "₹${salary.totalDeduction}"),
+
+  //             const Divider(),
+
+  //             _info("Net Pay", "₹${salary.netPay}", color: Colors.green),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _info(String title, String value, {Color? color}) {
     return Column(

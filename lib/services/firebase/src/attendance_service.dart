@@ -4,6 +4,7 @@ import 'package:leadcapture/models/src/filter_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/firebase_config.dart';
+import 'package:leadcapture/views/screens/attendance/attendance_status.dart';
 
 class AttendanceService {
   static FirebaseConfig firebase = FirebaseConfig();
@@ -22,6 +23,8 @@ class AttendanceService {
       String result = "";
 
       if (cid != null) {
+        var now = DateTime.now().millisecondsSinceEpoch;
+
         var punchData = {
           'punchDate': DateTime.now().toIso8601String(),
           'punchTime': [DateTime.now().toIso8601String()],
@@ -32,6 +35,8 @@ class AttendanceService {
           'lessMinutes': lessMinutes,
           'status': status,
           'created': DateTime.now().millisecondsSinceEpoch,
+          'clockIn': now,
+          'clockOut': null,
           'permissionType': null,
         };
 
@@ -44,6 +49,26 @@ class AttendanceService {
       }
 
       return result;
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  static Future<void> clockOut(String punchId) async {
+    try {
+      var cid = await Spdb.getCid();
+      var uid = await Spdb.getUid();
+
+      if (cid != null) {
+        await firebase.users
+            .doc(cid)
+            .collection(Collections.attendance.name)
+            .doc(punchId)
+            .update({
+              "clockOut": DateTime.now().millisecondsSinceEpoch,
+              "modified": DateTime.now().millisecondsSinceEpoch,
+            });
+      }
     } catch (e) {
       throw e.toString();
     }
@@ -306,7 +331,6 @@ class AttendanceService {
     }
   }
 
-  // ✅ Get attendance count
   static Future<int> attendanceCount() async {
     try {
       var cid = await Spdb.getCid();
@@ -324,19 +348,6 @@ class AttendanceService {
       throw e.toString();
     }
   }
-
-  // static int _convertHourToMinutes(String time) {
-  //   if (time.isEmpty) return 0;
-
-  //   final parts = time.split(':');
-
-  //   if (parts.length != 2) return 0;
-
-  //   final hours = int.tryParse(parts[0]) ?? 0;
-  //   final minutes = int.tryParse(parts[1]) ?? 0;
-
-  //   return (hours * 60) + minutes;
-  // }
 
   static Future<List<AttendanceModel>> getMonthlyAttendanceSummary({
     required String userUid,
@@ -375,7 +386,7 @@ class AttendanceService {
       ) {
         if (d.isAfter(today)) break;
 
-        if (d.weekday == DateTime.saturday || d.weekday == DateTime.sunday) {
+        if (d.weekday == DateTime.sunday) {
           continue;
         }
         final key = d.toIso8601String().split('T').first;
@@ -395,11 +406,11 @@ class AttendanceService {
           workingMinutes = endTime.difference(work.clockIn).inMinutes;
 
           if (workingMinutes >= 480) {
-            status = "present";
+            status = AttendanceStatus.present;
           } else if (workingMinutes >= 240) {
-            status = "halfday";
+            status = AttendanceStatus.halfDay;
           } else {
-            status = "present";
+            status = AttendanceStatus.present;
           }
 
           if (workingMinutes > 480) {
@@ -512,8 +523,10 @@ class AttendanceService {
     double totalOTHours = 0;
 
     for (var a in monthlyAttendance) {
-      if (a.punchList.isEmpty) continue;
-
+      if (a.punchList.isEmpty) {
+        absentDays++;
+        continue;
+      }
       var punch = a.punchList.first;
 
       totalWorkingHours += a.workingHourMinutes;
@@ -590,11 +603,8 @@ class AttendanceService {
       var uid = await Spdb.getUid();
 
       if (cid == null || uid == null) return;
-
       DateTime now = DateTime.now();
-
       int start = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
-
       int end = DateTime(
         now.year,
         now.month,
@@ -604,7 +614,17 @@ class AttendanceService {
         59,
       ).millisecondsSinceEpoch;
 
-      // 1️⃣ Get today's worktime
+      var existing = await firebase.users
+          .doc(cid)
+          .collection(Collections.attendance.name)
+          .where('userUid', isEqualTo: uid)
+          .where('created', isGreaterThanOrEqualTo: start)
+          .where('created', isLessThanOrEqualTo: end)
+          .limit(1)
+          .get();
+
+      if (existing.docs.isNotEmpty) return;
+
       var worktime = await firebase.users
           .doc(cid)
           .collection(Collections.worktime.name)
@@ -615,63 +635,59 @@ class AttendanceService {
           .get();
 
       if (worktime.docs.isEmpty) return;
-
       var data = worktime.docs.first.data();
-
-      int workingMinutes = 0;
-
-      if (data['clockOut'] != null) {
-        workingMinutes = ((data['clockOut'] - data['clockIn']) / 1000 / 60)
-            .round();
+      DateTime clockIn = DateTime.fromMillisecondsSinceEpoch(data['clockIn']);
+      DateTime clockOut = data['clockOut'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(data['clockOut'])
+          : now;
+      int totalMinutes = clockOut.difference(clockIn).inMinutes;
+      int breakMinutes = 0;
+      if (data['breaks'] != null) {
+        Map breaks = data['breaks'];
+        for (var b in breaks.values) {
+          if (b['start'] != null && b['end'] != null) {
+            DateTime startBreak = DateTime.parse(b['start']);
+            DateTime endBreak = DateTime.parse(b['end']);
+            breakMinutes += endBreak.difference(startBreak).inMinutes;
+          }
+        }
       }
 
-      // 2️⃣ Default status from worktime
-      String status = "present";
-
+      int workingMinutes = totalMinutes - breakMinutes;
+      String status;
       if (workingMinutes >= 480) {
-        status = "present";
+        status = AttendanceStatus.present;
       } else if (workingMinutes >= 240) {
-        status = "halfday";
+        status = AttendanceStatus.halfDay;
       } else {
-        status = "absent";
+        status = AttendanceStatus.absent;
       }
-
-      // 3️⃣ Check permission
+      String? permissionType;
       var permission = await firebase.users
           .doc(cid)
           .collection(Collections.permission.name)
           .where("userId", isEqualTo: uid)
           .where("status", isEqualTo: "approved")
-          .where("created", isGreaterThanOrEqualTo: start)
-          .where("created", isLessThanOrEqualTo: end)
+          .where("from", isLessThanOrEqualTo: end)
+          .where("to", isGreaterThanOrEqualTo: start)
           .get();
 
       if (permission.docs.isNotEmpty) {
-        var type = permission.docs.first.data()["type"];
+        permissionType = permission.docs.first.data()["type"];
 
-        if (type == "leaveFullDay") {
-          status = "leave";
+        switch (permissionType) {
+          case "leaveFullDay":
+            status = AttendanceStatus.leave;
+            break;
+
+          case "leaveHalfDay":
+            status = AttendanceStatus.halfDay;
+            break;
+
+          case "workFromHome":
+            status = AttendanceStatus.present;
+            break;
         }
-
-        if (type == "leaveHalfDay") {
-          status = "halfday";
-        }
-
-        if (type == "workFromHome") {
-          status = "present";
-        }
-      }
-
-      var alreadyCreated = await firebase.users
-          .doc(cid)
-          .collection(Collections.attendance.name)
-          .where('userUid', isEqualTo: uid)
-          .where('created', isGreaterThanOrEqualTo: start)
-          .where('created', isLessThanOrEqualTo: end)
-          .get();
-
-      if (alreadyCreated.docs.isNotEmpty) {
-        return;
       }
 
       await firebase.users
@@ -680,10 +696,10 @@ class AttendanceService {
           .add({
             "userUid": uid,
             "workingMinutes": workingMinutes,
+            "breakMinutes": breakMinutes,
             "status": status,
-            "permissionType": permission.docs.isNotEmpty
-                ? permission.docs.first.data()["type"]
-                : null,
+            "permissionType": permissionType,
+            "permissionStatus": "approved",
             "created": DateTime.now().millisecondsSinceEpoch,
           });
     } catch (e) {
@@ -705,6 +721,70 @@ class AttendanceService {
             .doc(punchId)
             .update({
               "permissionStatus": status.name,
+              "modified": DateTime.now().millisecondsSinceEpoch,
+            });
+
+        if (status == PermissionsStatus.approved) {
+          await applyPermissionToAttendance(punchId: punchId);
+        }
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  static Future<void> applyPermissionToAttendance({
+    required String punchId,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      if (cid == null) return;
+
+      // Get the punch
+      var punchDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.attendance.name)
+          .doc(punchId)
+          .get();
+
+      if (!punchDoc.exists) return;
+
+      var punchData = punchDoc.data()!;
+      String? permissionType = punchData['permissionType'];
+      String? permissionStatus = punchData['permissionStatus'];
+
+      if (permissionStatus == PermissionsStatus.approved.name &&
+          permissionType != null) {
+        String status = punchData['status'] ?? AttendanceStatus.present;
+
+        switch (permissionType) {
+          case "leaveFullDay":
+            status = AttendanceStatus.leave;
+            break;
+
+          case "leaveHalfDay":
+            status = AttendanceStatus.halfDay;
+            break;
+
+          case "workFromHome":
+            status = AttendanceStatus.present;
+            break;
+
+          case "lateEntry":
+          case "earlyExit":
+          case "permission":
+            status = AttendanceStatus.present;
+            break;
+        }
+
+        // Update punch with new status
+        await firebase.users
+            .doc(cid)
+            .collection(Collections.attendance.name)
+            .doc(punchId)
+            .update({
+              "status": status,
               "modified": DateTime.now().millisecondsSinceEpoch,
             });
       }

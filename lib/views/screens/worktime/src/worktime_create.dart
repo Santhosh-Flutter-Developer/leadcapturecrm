@@ -23,6 +23,7 @@ import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/utils/src/time_format.dart';
 import 'package:leadcapture/views/components/src/sheet.dart';
+import 'package:leadcapture/views/screens/attendance/attendance_status.dart';
 import 'package:leadcapture/views/screens/worktime/src/clockout_dialog.dart';
 import 'package:leadcapture/views/screens/worktime/src/face_scan.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
@@ -486,34 +487,32 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       String status;
 
       if (workingMinutes == 0) {
-        status = "absent";
+        status = AttendanceStatus.absent;
       } else if (workingMinutes < 240) {
-        status = "absent";
+        status = AttendanceStatus.absent;
       } else if (workingMinutes < 480) {
-        status = "halfday";
+        status = AttendanceStatus.halfDay;
       } else {
-        status = "present";
+        status = AttendanceStatus.present;
       }
 
       if (leaveFullDay) {
-        status = "leave";
+        status = AttendanceStatus.leave;
         workingMinutes = 0;
         otMinutes = 0;
         lessMinutes = 0;
       }
       // HALF DAY LEAVE
       else if (leaveHalfDay) {
-        status = "halfday";
-
+        status = AttendanceStatus.halfDay;
         int requiredMinutes = 240;
-
         if (workingMinutes >= requiredMinutes) {
           lessMinutes = 0;
         } else {
           lessMinutes = requiredMinutes - workingMinutes;
         }
       } else if (workFromHome) {
-        status = "present";
+        status = AttendanceStatus.present;
       }
 
       if (lateEntry || earlyExit) {

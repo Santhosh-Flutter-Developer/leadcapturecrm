@@ -519,7 +519,10 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text("${staff.name} is not enrolled for worktime"),
+                  content: Text(
+                    "${staff.name} is not enrolled for worktime",
+                    style: TextStyle(color: Colors.black),
+                  ),
                   backgroundColor: Colors.red.shade100,
                 ),
               );

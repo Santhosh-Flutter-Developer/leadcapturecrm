@@ -326,13 +326,15 @@ class PunchModel {
       status: map['status'] ?? '',
       day: map['day'] ?? '',
       otApproval: map['otApproval']?.toString() ?? '0',
-      permissionType: permissionType,
+      permissionType: map['permissionType'] != null
+          ? PermissionType.values.firstWhere(
+              (e) => e.name == map['permissionType'],
+            )
+          : null,
+
       permissionStatus: map['permissionStatus'] != null
           ? PermissionsStatus.values.firstWhere(
-              (status) =>
-                  status.toString().split('.').last ==
-                  map['permissionStatus'].toString(),
-              orElse: () => PermissionsStatus.pending,
+              (e) => e.name == map['permissionStatus'],
             )
           : null,
       clockIn: map['clockIn'] is int
@@ -399,6 +401,12 @@ class AttendanceStats {
   final int lateDays;
   final int earlyExitDays;
 
+  final int pendingDays;
+  final int rejectedDays;
+  final int permissionDays;
+  final int inProgressDays;
+  final int lessHoursDays;
+
   final String totalWorkingHours;
   final String totalLessHours;
   final String totalOTHours;
@@ -413,6 +421,13 @@ class AttendanceStats {
     required this.halfDayDays,
     required this.lateDays,
     required this.earlyExitDays,
+
+    this.pendingDays = 0,
+    this.rejectedDays = 0,
+    this.permissionDays = 0,
+    this.inProgressDays = 0,
+    this.lessHoursDays = 0,
+
     required this.totalWorkingHours,
     required this.totalLessHours,
     required this.totalOTHours,
@@ -421,30 +436,24 @@ class AttendanceStats {
 
   factory AttendanceStats.fromMap(Map<String, dynamic> map) {
     return AttendanceStats(
-      presentDays: map['presentDays'] is int
-          ? map['presentDays'] as int
-          : int.tryParse(map['presentDays']?.toString() ?? '0') ?? 0,
-      absentDays: map['absentDays'] is int
-          ? map['absentDays'] as int
-          : int.tryParse(map['absentDays']?.toString() ?? '0') ?? 0,
-      leaveDays: map['leaveDays'] is int
-          ? map['leaveDays'] as int
-          : int.tryParse(map['leaveDays']?.toString() ?? '0') ?? 0,
-      wfhDays: map['wfhDays'] is int
-          ? map['wfhDays'] as int
-          : int.tryParse(map['wfhDays']?.toString() ?? '0') ?? 0,
-      halfDayDays: map['halfDayDays'] is int
-          ? map['halfDayDays'] as int
-          : int.tryParse(map['halfDayDays']?.toString() ?? '0') ?? 0,
-      lateDays: map['lateDays'] is int
-          ? map['lateDays'] as int
-          : int.tryParse(map['lateDays']?.toString() ?? '0') ?? 0,
-      earlyExitDays: map['earlyExitDays'] is int
-          ? map['earlyExitDays'] as int
-          : int.tryParse(map['earlyExitDays']?.toString() ?? '0') ?? 0,
+      presentDays: _parseInt(map['presentDays']),
+      absentDays: _parseInt(map['absentDays']),
+      leaveDays: _parseInt(map['leaveDays']),
+      wfhDays: _parseInt(map['wfhDays']),
+      halfDayDays: _parseInt(map['halfDayDays']),
+      lateDays: _parseInt(map['lateDays']),
+      earlyExitDays: _parseInt(map['earlyExitDays']),
+
+      pendingDays: _parseInt(map['pendingDays']),
+      rejectedDays: _parseInt(map['rejectedDays']),
+      permissionDays: _parseInt(map['permissionDays']),
+      inProgressDays: _parseInt(map['inProgressDays']),
+      lessHoursDays: _parseInt(map['lessHoursDays']),
+
       totalWorkingHours: map['totalWorkingHours']?.toString() ?? '0',
       totalLessHours: map['totalLessHours']?.toString() ?? '0',
       totalOTHours: map['totalOTHours']?.toString() ?? '0',
+
       attendanceData:
           map['attendanceData'] != null && map['attendanceData'] is List
           ? List<AttendanceModel>.from(
@@ -456,7 +465,6 @@ class AttendanceStats {
     );
   }
 
-  /// ✅ Serialize to Map
   Map<String, dynamic> toMap() {
     return {
       'presentDays': presentDays,
@@ -466,11 +474,23 @@ class AttendanceStats {
       'halfDayDays': halfDayDays,
       'lateDays': lateDays,
       'earlyExitDays': earlyExitDays,
+
+      'pendingDays': pendingDays,
+      'rejectedDays': rejectedDays,
+      'permissionDays': permissionDays,
+      'inProgressDays': inProgressDays,
+      'lessHoursDays': lessHoursDays,
+
       'totalWorkingHours': totalWorkingHours,
       'totalLessHours': totalLessHours,
       'totalOTHours': totalOTHours,
       'attendanceData': attendanceData.map((e) => e.toMap()).toList(),
     };
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '0') ?? 0;
   }
 
   String toJson() => json.encode(toMap());

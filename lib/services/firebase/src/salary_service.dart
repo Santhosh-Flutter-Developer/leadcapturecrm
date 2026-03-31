@@ -2,7 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/models/src/salary_ledger_model.dart';
-import 'package:leadcapture/utils/src/extensions.dart';
+import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 import '/constants/constants.dart';
 import '/services/services.dart';
 
@@ -21,30 +21,21 @@ class SalaryLedgerService {
           .doc(cid)
           .collection(Collections.salaryLedger.name)
           .orderBy('createdAt', descending: true);
-
-      // Filter by month
       if (month != null) {
         query = query.where('month', isEqualTo: month);
       }
-
-      // Filter by user
       if (userId?.isNotEmpty == true) {
-        query = query.where('userId', isEqualTo: userId!.encrypt);
+        query = query.where('employeeId', isEqualTo: userId);
       }
-
       final snapshot = await query.get(
         const GetOptions(source: Source.serverAndCache),
       );
-
       List<SalaryModel> result = [];
-
       for (final doc in snapshot.docs) {
-        // ✅ data is guaranteed non-null with Query<Map<String, dynamic>>
         final data = doc.data();
         final typedData = <String, dynamic>{...data, 'id': doc.id};
         result.add(SalaryModel.fromMap(typedData));
       }
-
       return result;
     } catch (e) {
       print("Salary ledger fetch error: $e");
@@ -52,29 +43,27 @@ class SalaryLedgerService {
     }
   }
 
-  static Future<SalarySummary> getMonthlySummary(int month) async {
-    final ledger = await getSalaryLedger(month: month);
-
+  static Future<SalarySummary> getMonthlySummary(
+    int month, {
+    String? userId,
+  }) async {
+    final ledger = await getSalaryLedger(month: month, userId: userId);
     final totalNetPay = ledger.fold<double>(
       0,
       (sum, item) => sum + double.parse(item.netPay),
     );
-
     final totalGrossPay = ledger.fold<double>(
       0,
       (sum, item) => sum + double.parse(item.grossPay),
     );
-
     final totalDeductions = ledger.fold<double>(
       0,
       (sum, item) => sum + double.parse(item.totalDeduction),
     );
-
     final totalOtHours = ledger.fold<double>(
       0,
       (sum, item) => sum + double.parse(item.otHours),
     );
-
     return SalarySummary(
       month: month,
       totalAmount: totalNetPay,
@@ -85,7 +74,6 @@ class SalaryLedgerService {
     );
   }
 
-  /// ✅ Create salary deduction (from permission)
   static Future<void> createDeduction(SalaryModel model) async {
     try {
       final cid = await Spdb.getCid();
@@ -108,112 +96,92 @@ class SalaryLedgerService {
 
       final year = (monthCode / 100).floor();
       final month = (monthCode % 100);
-
       final workingDays = _getWorkingDays(year, month);
-
       const monthlySalary = 30000.0;
-
       final perDaySalary = monthlySalary / workingDays;
-      final perHourSalary = monthlySalary / (workingDays * 8);
+      final perHourSalary = perDaySalary / 8;
       final perMinuteSalary = perHourSalary / 60;
-
-      final present = int.parse(attendance.present);
-      final absent = int.parse(attendance.absent);
-
+      final present = int.tryParse(attendance.present) ?? 0;
+      final leaveDays = (workingDays - present).clamp(0, workingDays);
       final earnedSalary = present * perDaySalary;
-
-      final absentDeduction = absent * perDaySalary;
+      final permissionCounts = <PermissionType, int>{};
+      for (var p in attendance.permissions) {
+        permissionCounts[p] = (permissionCounts[p] ?? 0) + 1;
+      }
 
       double permissionDeduction = 0;
 
-      for (final permission in attendance.permissions) {
-        switch (permission) {
-          case PermissionType.leaveFullDay:
-            permissionDeduction += perDaySalary;
-            break;
+      permissionDeduction +=
+          (permissionCounts[PermissionType.leaveHalfDay] ?? 0) *
+          (perDaySalary * 0.5);
 
-          case PermissionType.leaveHalfDay:
-            permissionDeduction += perDaySalary * 0.5;
-            break;
+      permissionDeduction +=
+          (permissionCounts[PermissionType.lateEntry] ?? 0) *
+          (perDaySalary * 0.1);
 
-          case PermissionType.lateEntry:
-            permissionDeduction += perDaySalary * 0.1;
-            break;
+      permissionDeduction +=
+          (permissionCounts[PermissionType.earlyExit] ?? 0) *
+          (perDaySalary * 0.1);
 
-          case PermissionType.earlyExit:
-            permissionDeduction += perDaySalary * 0.1;
-            break;
+      permissionDeduction +=
+          (permissionCounts[PermissionType.permission] ?? 0) *
+          (perHourSalary * 2);
 
-          case PermissionType.permission:
-            permissionDeduction += perDaySalary * 0.25;
-            break;
-
-          case PermissionType.workFromHome:
-            break;
-        }
+      final lessHourDeduction = attendance.lessHourMinutes * perMinuteSalary;
+      final otHours = attendance.otHourMinutes / 60;
+      const otMultiplier = 1.5;
+      final otAmount = otHours * perHourSalary * otMultiplier;
+      double incentive = 0;
+      if (present == workingDays) {
+        incentive = 2000; // you can change this rule
       }
-
-      final lessMinutes = attendance.lessHourMinutes;
-
-      final lessHourDeduction = lessMinutes * perMinuteSalary;
-
-      final otMinutes = attendance.otHourMinutes;
-
-      final otHours = otMinutes / 60;
-
-      final otAmount = otHours * perHourSalary * 1.5;
-
-      const incentiveAmount = 0.0;
-
-      final grossPay = earnedSalary + otAmount + incentiveAmount;
-
-      final pfAmount = grossPay * 0.12;
-      final esiAmount = grossPay * 0.0075;
+      final grossPay = earnedSalary + otAmount + incentive;
+      final pfAmount = earnedSalary * 0.12;
+      final esiAmount = earnedSalary * 0.0075;
       const advanceDeduction = 0.0;
-
       final totalDeduction =
-          absentDeduction +
           permissionDeduction +
           lessHourDeduction +
           pfAmount +
           esiAmount +
           advanceDeduction;
-
-      final netPay = grossPay - totalDeduction;
+      final netPay = (grossPay - totalDeduction).clamp(0, double.infinity);
 
       final salary = SalaryModel(
         salaryNumber: monthCode.toString(),
         employeeId: attendance.employeeId,
         permissionId: attendance.permissions.map((e) => e.name).join(','),
         workingDays: present.toString(),
-        leaveDays: absent.toString(),
+        leaveDays: leaveDays.toString(),
         otHours: otHours.toStringAsFixed(2),
         earnAmount: earnedSalary.toStringAsFixed(2),
         otAmount: otAmount.toStringAsFixed(2),
-        incentive: "0",
+        incentive: incentive.toStringAsFixed(2),
         grossPay: grossPay.toStringAsFixed(2),
         otherDeduction: permissionDeduction.toStringAsFixed(2),
-        pfAmount: "0",
-        esiAmount: "0",
-        advanceDeduction: "0",
+        pfAmount: pfAmount.toStringAsFixed(2),
+        esiAmount: esiAmount.toStringAsFixed(2),
+        advanceDeduction: advanceDeduction.toStringAsFixed(2),
         totalDeduction: totalDeduction.toStringAsFixed(2),
         netPay: netPay.toStringAsFixed(2),
         salaryFromDate: DateTime(year, month, 1).toIso8601String(),
         salaryToDate: DateTime(year, month + 1, 0).toIso8601String(),
       );
 
-      /// SAVE ONE DOCUMENT PER MONTH
       await firebase.users
           .doc(cid)
           .collection(Collections.salaryLedger.name)
           .doc("${attendance.employeeId}_$monthCode")
-          .set(salary.toMap());
+          .set({
+            ...salary.toMap(),
+            "month": monthCode,
+            "createdAt": DateTime.now().millisecondsSinceEpoch,
+          });
     } catch (e) {
       print("Salary processing error: $e");
     }
   }
 
-  // Get working days in month (Sat/Sun excluded)
   static int _getWorkingDays(int year, int month) {
     final firstDay = DateTime(year, month, 1);
     final lastDay = DateTime(year, month + 1, 0);
@@ -223,51 +191,66 @@ class SalaryLedgerService {
       final day = firstDay.add(Duration(days: i));
       if (day.weekday < 6) workingDays++; // Mon-Fri only
     }
-    return workingDays.clamp(20, 26);
+    return workingDays;
   }
 
   static Future<AttendanceModel> getAttendanceSummary(int monthCode) async {
     try {
-      final salaries = await getSalaryLedger(month: monthCode);
-
-      // if (salaries.isEmpty) {
-      //   return AttendanceModel.empty();
-      // }
-
-      int presentDays = 0;
-      int holidayCount = 0;
-      int absentCount = 0;
-      int permissionCount = 0;
-
-      for (final salary in salaries) {
-        presentDays += int.tryParse(salary.workingDays) ?? 0;
-      }
-
+      final uid = await Spdb.getUid();
+      if (uid == null) throw "User not found";
       final year = (monthCode / 100).floor();
       final month = (monthCode % 100);
-      final workingDays = _getWorkingDays(year, month);
+      final fromDate = DateTime(year, month, 1);
+      final toDate = DateTime(year, month + 1, 0);
+      final attendanceList =
+          await AttendanceService.getMonthlyAttendanceSummary(
+            userUid: uid,
+            fromDate: fromDate,
+            toDate: toDate,
+          );
 
-      absentCount = (workingDays - presentDays).clamp(0, workingDays);
+      int presentDays = 0;
+      int totalLessMinutes = 0;
+      int totalOtMinutes = 0;
+
+      for (final a in attendanceList) {
+        presentDays += int.tryParse(a.present) ?? 0;
+        totalLessMinutes += a.lessHourMinutes;
+        totalOtMinutes += a.otHourMinutes;
+      }
+
+      final workingDays = _getWorkingDays(year, month);
+      final absentDays = (workingDays - presentDays).clamp(0, workingDays);
+      List<PermissionType> permissions = [];
+
+      for (final a in attendanceList) {
+        if (a.punchList.isNotEmpty) {
+          final punch = a.punchList.first;
+
+          if (punch.permissionType != null &&
+              punch.permissionStatus == PermissionsStatus.approved) {
+            permissions.add(punch.permissionType!);
+          }
+        }
+      }
 
       return AttendanceModel(
-        employeeId: salaries.isNotEmpty ? salaries.first.employeeId : '',
+        employeeId: uid,
         punchList: [],
         breakMinutes: 0,
         present: presentDays.toString(),
-        holiday: holidayCount.toString(),
-        absent: absentCount.toString(),
+        holiday: "0",
+        absent: absentDays.toString(),
         workingHourMinutes: 0,
-        lessHourMinutes: 0,
-        otHourMinutes: 0,
-        permissions: List.generate(
-          permissionCount,
-          (_) => PermissionType.permission,
-        ),
+        lessHourMinutes: totalLessMinutes,
+        otHourMinutes: totalOtMinutes,
+        permissions: permissions,
       );
     } catch (e) {
       print("Attendance summary error: $e");
 
       return AttendanceModel(
+        employeeId: '',
         punchList: [],
         breakMinutes: 0,
         present: '0',
@@ -277,7 +260,6 @@ class SalaryLedgerService {
         lessHourMinutes: 0,
         otHourMinutes: 0,
         permissions: [],
-        employeeId: '',
       );
     }
   }
@@ -335,6 +317,46 @@ class SalaryLedgerService {
     } catch (e) {
       throw e.toString();
     }
+  }
+
+  static Future<AttendanceModel> getAttendanceSummaryForUser(
+    String userId,
+    int monthCode,
+  ) async {
+    final year = (monthCode / 100).floor();
+    final month = (monthCode % 100);
+
+    final fromDate = DateTime(year, month, 1);
+    final toDate = DateTime(year, month + 1, 0);
+
+    final attendanceList = await AttendanceService.getMonthlyAttendanceSummary(
+      userUid: userId,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+
+    int presentDays = 0;
+    int totalLessMinutes = 0;
+    int totalOtMinutes = 0;
+
+    for (final a in attendanceList) {
+      presentDays += int.tryParse(a.present) ?? 0;
+      totalLessMinutes += a.lessHourMinutes;
+      totalOtMinutes += a.otHourMinutes;
+    }
+
+    return AttendanceModel(
+      employeeId: userId,
+      punchList: [],
+      breakMinutes: 0,
+      present: presentDays.toString(),
+      holiday: "0",
+      absent: "0",
+      workingHourMinutes: 0,
+      lessHourMinutes: totalLessMinutes,
+      otHourMinutes: totalOtMinutes,
+      permissions: [],
+    );
   }
 }
 
