@@ -13,6 +13,9 @@ class AdminModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserDataModel createdBy;
+  final DateTime? lastActive;
+  final List<Map<String, dynamic>>? devices; // Added devices
+
   AdminModel({
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -24,6 +27,8 @@ class AdminModel {
     this.profileImageUrl,
     bool? isActive,
     required this.createdBy,
+    this.lastActive,
+    this.devices,
   }) : isActive = isActive ?? true,
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
@@ -37,6 +42,8 @@ class AdminModel {
       'profileImageUrl': profileImageUrl,
       'isActive': isActive,
       'createdBy': createdBy.toMap(),
+      'lastActive': lastActive?.millisecondsSinceEpoch,
+      'devices': devices,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
@@ -51,6 +58,8 @@ class AdminModel {
       'profileImageUrl': profileImageUrl,
       'isActive': isActive,
       'createdBy': createdBy.toMap(),
+      'lastActive': lastActive?.millisecondsSinceEpoch,
+      'devices': devices,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
   }
@@ -66,11 +75,13 @@ class AdminModel {
     String? email,
     String? password,
     String? mobileNumber,
-    String? profilePictureUrl,
+    String? profileImageUrl,
     bool? isActive,
     UserDataModel? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastActive,
+    List<Map<String, dynamic>>? devices,
   }) {
     return AdminModel(
       uid: uid ?? this.uid,
@@ -78,11 +89,13 @@ class AdminModel {
       email: email ?? this.email,
       password: password ?? this.password,
       mobileNumber: mobileNumber ?? this.mobileNumber,
-      profileImageUrl: profilePictureUrl ?? profileImageUrl,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       isActive: isActive ?? this.isActive,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastActive: lastActive ?? this.lastActive,
+      devices: devices ?? this.devices,
     );
   }
 
@@ -99,10 +112,7 @@ class AdminModel {
       mobileNumber: map['mobileNumber'] != null && map['mobileNumber'] is String
           ? (map['mobileNumber'] as String).decrypt
           : '',
-      profileImageUrl:
-          map['profileImageUrl'] != null && map['profileImageUrl'] is String
-          ? map['profileImageUrl'] as String
-          : null,
+      profileImageUrl: map['profileImageUrl'] as String?,
       isActive: map['isActive'] is bool ? map['isActive'] as bool : false,
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
@@ -114,11 +124,17 @@ class AdminModel {
       updatedAt: map['updatedAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int)
           : DateTime.now(),
+      lastActive: map['lastActive'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastActive'] as int)
+          : null,
+      devices: map['devices'] != null && map['devices'] is List
+          ? List<Map<String, dynamic>>.from(map['devices'] as List)
+          : null,
     );
   }
 
   @override
   String toString() {
-    return 'AdminModel(uid: $uid, name: $name, email: $email, password: $password, mobileNumber: $mobileNumber, profileImageUrl: $profileImageUrl, isActive: $isActive, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AdminModel(uid: $uid, name: $name, email: $email, mobileNumber: $mobileNumber, profileImageUrl: $profileImageUrl, isActive: $isActive, lastActive: $lastActive, devices: $devices, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }

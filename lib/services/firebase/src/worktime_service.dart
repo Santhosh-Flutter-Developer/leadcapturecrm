@@ -281,7 +281,7 @@ class WorktimeService {
 
       return docRef
           .docs
-          .isEmpty; // if true allow clock in if false restrict clockin
+          .isEmpty; 
     } catch (e) {
       throw e.toString();
     }
@@ -605,7 +605,6 @@ class WorktimeService {
           }
         }
 
-        // Get all dates from day 1 to today
         for (int d = 1; d <= date.day; d++) {
           DateTime current = DateTime(date.year, date.month, d);
           if (current.weekday == DateTime.sunday) {

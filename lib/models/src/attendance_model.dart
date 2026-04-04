@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:leadcapture/constants/src/enum.dart';
+import 'package:leadcapture/models/src/worktime_model.dart';
 
 class AttendanceModel {
   String employeeId;
+  WorktimeModel? worktime;
   List<PunchModel> punchList;
   int breakMinutes;
   String present;
@@ -17,6 +19,7 @@ class AttendanceModel {
 
   AttendanceModel({
     required this.employeeId,
+    this.worktime,
     required this.punchList,
     required this.breakMinutes,
     required this.present,
@@ -31,6 +34,7 @@ class AttendanceModel {
 
   AttendanceModel copyWith({
     String? employeeId,
+    WorktimeModel? worktime,
     List<PunchModel>? punchList,
     int? breakMinutes,
     String? present,
@@ -44,6 +48,7 @@ class AttendanceModel {
   }) {
     return AttendanceModel(
       employeeId: employeeId ?? this.employeeId,
+      worktime: worktime ?? this.worktime,
       punchList: punchList ?? this.punchList,
       breakMinutes: breakMinutes ?? this.breakMinutes,
       present: present ?? this.present,
@@ -60,6 +65,7 @@ class AttendanceModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'employeeId': employeeId,
+      'worktime': worktime?.toMap(),
       'punchList': punchList.map((x) => x.toMap()).toList(),
       'breakMinutes': breakMinutes,
       'present': present,
@@ -105,6 +111,9 @@ class AttendanceModel {
 
     return AttendanceModel(
       employeeId: map['employeeId'] ?? '',
+      worktime: map['worktime'] != null
+          ? WorktimeModel.fromMap(map['worktime']['uid'] ?? '', map['worktime'])
+          : null,
       punchList: punchRaw == null
           ? []
           : punchRaw
@@ -169,7 +178,6 @@ class AttendanceModel {
         permissionDetails.hashCode;
   }
 
-  // ✅ NEW HELPER METHODS
   bool hasPermission(PermissionType type) {
     return permissions.contains(type);
   }
@@ -196,11 +204,8 @@ class AttendanceModel {
   }
 
   String get formattedWork => _formatMinutes(workingHourMinutes);
-
   String get formattedLess => _formatMinutes(lessHourMinutes);
-
   String get formattedOT => _formatMinutes(otHourMinutes);
-
   String get formattedBreak => _formatMinutes(breakMinutes);
 }
 
@@ -287,28 +292,36 @@ class PunchModel {
 
   factory PunchModel.fromMap(Map<String, dynamic> map) {
     PermissionType? permissionType;
-
     final permissionRaw = map['permissionType'];
 
     if (permissionRaw != null) {
       try {
         permissionType = PermissionType.values.firstWhere(
-          (type) => type.toString().split('.').last == permissionRaw,
-          orElse: () => PermissionType.permission,
+          (e) => e.name.toLowerCase() == permissionRaw.toString().toLowerCase(),
         );
       } catch (_) {
         permissionType = null;
       }
     }
 
+    PermissionsStatus? permissionStatus;
+    final statusRaw = map['permissionStatus'];
+
+    if (statusRaw != null) {
+      try {
+        permissionStatus = PermissionsStatus.values.firstWhere(
+          (e) => e.name.toLowerCase() == statusRaw.toString().toLowerCase(),
+        );
+      } catch (_) {
+        permissionStatus = null;
+      }
+    }
+
     String minutesToTime(dynamic minutes) {
       if (minutes == null) return '';
-
       int m = minutes is int ? minutes : int.tryParse(minutes.toString()) ?? 0;
-
       int h = m ~/ 60;
       int r = m % 60;
-
       return "${h.toString().padLeft(2, '0')}:${r.toString().padLeft(2, '0')}";
     }
 
@@ -318,35 +331,22 @@ class PunchModel {
       punchTime: map['punchTime'] != null
           ? List<String>.from(map['punchTime'].map((e) => e.toString()))
           : [],
-
       totalHours: map['totalHours'] ?? minutesToTime(map['workingMinutes']),
       lessHours: map['lessHours'] ?? minutesToTime(map['lessMinutes']),
       otHours: map['otHours'] ?? minutesToTime(map['otMinutes']),
-
       status: map['status'] ?? '',
       day: map['day'] ?? '',
       otApproval: map['otApproval']?.toString() ?? '0',
-      permissionType: map['permissionType'] != null
-          ? PermissionType.values.firstWhere(
-              (e) => e.name == map['permissionType'],
-            )
-          : null,
-
-      permissionStatus: map['permissionStatus'] != null
-          ? PermissionsStatus.values.firstWhere(
-              (e) => e.name == map['permissionStatus'],
-            )
-          : null,
+      permissionType: permissionType,
+      permissionStatus: permissionStatus,
       clockIn: map['clockIn'] is int
           ? map['clockIn']
           : int.tryParse(map['clockIn']?.toString() ?? ''),
-
       clockOut: map['clockOut'] is int
           ? map['clockOut']
           : int.tryParse(map['clockOut']?.toString() ?? ''),
     );
   }
-
   DateTime? get clockInDate =>
       clockIn != null ? DateTime.fromMillisecondsSinceEpoch(clockIn!) : null;
 
@@ -389,6 +389,13 @@ class PunchModel {
         otApproval.hashCode ^
         permissionType.hashCode;
   }
+}
+
+class Session {
+  final DateTime? inTime;
+  final DateTime? outTime;
+
+  Session({this.inTime, this.outTime});
 }
 
 class AttendanceStats {

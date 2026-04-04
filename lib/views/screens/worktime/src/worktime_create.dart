@@ -402,7 +402,7 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   Map<String, int> _calculateOtLess(int workingMinutes) {
-    const int officeMinutes = 480; // 8 hours
+    const int officeMinutes = 480; 
 
     int ot = 0;
     int less = 0;

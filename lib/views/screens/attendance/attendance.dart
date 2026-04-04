@@ -13,27 +13,18 @@ import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 import 'package:leadcapture/services/firebase/src/employee_service.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
+import 'package:leadcapture/utils/src/download.dart';
+import 'package:leadcapture/utils/src/open_file.dart';
 import 'package:leadcapture/utils/src/platform.dart';
+import 'package:leadcapture/utils/src/status_color.dart';
+import 'package:leadcapture/views/components/src/xlsx_writer.dart';
 import 'package:leadcapture/views/screens/attendance/attendance_helper.dart';
 import 'package:leadcapture/views/screens/attendance/employee_report.dart';
 import 'package:leadcapture/views/screens/permission/src/permisson_create.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
+import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 import 'package:table_calendar/table_calendar.dart';
-
-DateTime? parseDateTime(dynamic time) {
-  if (time == null) return null;
-
-  if (time is int) {
-    return DateTime.fromMillisecondsSinceEpoch(time);
-  } else if (time is String) {
-    return DateTime.tryParse(time);
-  } else if (time.runtimeType.toString() == 'Timestamp') {
-    return time.toDate();
-  }
-
-  return null;
-}
 
 const String _pageTitle = "Attendance";
 
@@ -74,8 +65,8 @@ class _AttendanceState extends State<Attendance>
   void initState() {
     super.initState();
     aHandler = init();
-    tabController = TabController(length: 3, vsync: this);
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+    tabController = TabController(length: 2, vsync: this);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {});
     });
   }
@@ -84,10 +75,10 @@ class _AttendanceState extends State<Attendance>
     user = await Spdb.getUser();
     isAdmin = await Spdb.isAdminLoggedIn();
     isEmployee = await Spdb.isEmployeeLoggedIn();
+
     if (isAdmin) {
       employees.clear();
       employees.addAll(await EmployeeService.getAllEmployees());
-
       employeeMap = {for (var emp in employees) emp.uid!: emp};
     }
 
@@ -95,11 +86,33 @@ class _AttendanceState extends State<Attendance>
     DateTime fromDate = DateTime(now.year, now.month, 1);
     DateTime toDate = DateTime(now.year, now.month + 1, 0);
 
-    stats = await AttendanceService.getAttendanceStats(
-      userUid: user!.userType == UserType.employee ? user!.uid : "",
-      fromDate: fromDate,
-      toDate: toDate,
-    );
+    aList.clear();
+
+    if (isEmployee) {
+      if (user?.uid == null) return;
+
+      final res = await AttendanceService.getAttendanceStats(
+        userUid: user!.uid,
+        fromDate: fromDate,
+        toDate: toDate,
+      );
+
+      aList.addAll(res.attendanceData);
+    } else if (isAdmin) {
+      final futures = employees.map((emp) {
+        return AttendanceService.getAttendanceStats(
+          userUid: emp.uid!,
+          fromDate: fromDate,
+          toDate: toDate,
+        );
+      }).toList();
+
+      final results = await Future.wait(futures);
+
+      for (var res in results) {
+        aList.addAll(res.attendanceData);
+      }
+    }
 
     if (isAdmin) {
       workList = await WorktimeService.dashboardWorktimeListing(
@@ -108,10 +121,6 @@ class _AttendanceState extends State<Attendance>
     } else {
       workList = await WorktimeService.userWorktimeListing(userId: user!.uid);
     }
-    aList.clear();
-    tempAList.clear();
-
-    aList.addAll(stats!.attendanceData);
 
     for (var work in workList) {
       final workAttendance = attendanceWorktime(work);
@@ -142,9 +151,7 @@ class _AttendanceState extends State<Attendance>
       }
     }
 
-    tempAList.addAll(aList);
-    filteredList = List.from(aList);
-    stats = calculateStats(filteredList);
+    tempAList.clear();
     tempAList.addAll(aList);
 
     filteredList = List.from(aList);
@@ -160,6 +167,31 @@ class _AttendanceState extends State<Attendance>
 
       return dateB.compareTo(dateA);
     });
+  }
+
+  Future<void> _updatePermission({
+    required String punchId,
+    required PermissionsStatus status,
+  }) async {
+    try {
+      await AttendanceService.updatePermissionStatus(
+        punchId: punchId,
+        status: status,
+      );
+
+      aHandler = init();
+      setState(() {});
+
+      FlushBar.show(
+        context,
+        status == PermissionsStatus.approved
+            ? "Permission Approved"
+            : "Permission Rejected",
+        isSuccess: true,
+      );
+    } catch (e) {
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
   }
 
   List<DropdownMenuItem<String>> _employeeItems() {
@@ -229,6 +261,70 @@ class _AttendanceState extends State<Attendance>
     return TimeOfDay.fromDateTime(dt).format(context);
   }
 
+  Future<void> exportAttendance() async {
+    try {
+      List<List<String>> exportData = [];
+
+      /// ✅ HEADER
+      exportData.add([
+        "Employee Name",
+        "Date",
+        "Check In",
+        "Check Out",
+        "Work Duration",
+        "Status",
+        "Permission Status",
+      ]);
+
+      /// ✅ DATA
+      for (var a in filteredList) {
+        final emp = findEmployee(a.employeeId);
+        final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
+
+        final date = punch?.punchDate != null
+            ? DateFormat('dd MMM yyyy').format(parseDateTime(punch!.punchDate)!)
+            : "-";
+
+        final checkIn = punch?.clockIn != null
+            ? formatTime(punch!.clockIn)
+            : "-";
+
+        final checkOut = punch?.clockOut != null
+            ? formatTime(punch!.clockOut)
+            : "-";
+
+        final status = getAttendanceStatus(a);
+
+        final permissionStatus = punch?.permissionStatus?.name ?? "-";
+
+        exportData.add([
+          emp?.name ?? "",
+          date,
+          checkIn,
+          checkOut,
+          a.formattedWork,
+          status,
+          permissionStatus,
+        ]);
+      }
+
+      /// ✅ CREATE EXCEL
+      var fileBytes = await XlsxWriter().create(exportData);
+
+      /// ✅ SAVE FILE
+      final filePath = await saveFileToDownloads(
+        fileBytes,
+        fileName:
+            "Attendance_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx",
+      );
+
+      /// ✅ OPEN FILE
+      openfile(filePath, context);
+    } catch (e) {
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
+  }
+
   bool isToday0(AttendanceModel a) {
     if (a.punchList.isEmpty) return false;
 
@@ -247,56 +343,6 @@ class _AttendanceState extends State<Attendance>
       return employees.firstWhere((e) => e.uid == uid);
     } catch (_) {
       return null;
-    }
-  }
-
-  Map<String, List<AttendanceModel>> groupByEmployee() {
-    final Map<String, List<AttendanceModel>> grouped = {};
-
-    for (var a in filteredList) {
-      grouped.putIfAbsent(a.employeeId, () => []).add(a);
-    }
-
-    return grouped;
-  }
-
-  Color statusColor(String status) {
-    switch (status) {
-      case "Present":
-        return Colors.green;
-
-      case "Absent":
-        return Colors.red;
-
-      case "Leave":
-        return Colors.orange;
-
-      case "WFH":
-        return Colors.blue;
-
-      case "HalfDay":
-        return Colors.amber;
-
-      case "Late":
-        return Colors.purple;
-
-      case "EarlyExit":
-        return Colors.deepOrange;
-
-      case "Pending":
-        return Colors.orange;
-
-      case "Rejected":
-        return Colors.redAccent;
-
-      case "LessHours":
-        return Colors.brown;
-
-      case "InProgress":
-        return Colors.blueGrey;
-
-      default:
-        return Colors.grey;
     }
   }
 
@@ -643,6 +689,23 @@ class _AttendanceState extends State<Attendance>
     }
   }
 
+  Map<String, bool> expandedMap = {};
+  Map<String, List<AttendanceModel>> groupByEmployee(
+    List<AttendanceModel> list,
+  ) {
+    Map<String, List<AttendanceModel>> map = {};
+
+    for (var a in list) {
+      map.putIfAbsent(a.employeeId, () => []).add(a);
+    }
+
+    return map;
+  }
+
+  String getCurrentMonth() {
+    return DateFormat("MMMM yyyy").format(DateTime.now());
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasPending = aList.any(
@@ -678,6 +741,11 @@ class _AttendanceState extends State<Attendance>
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const WaitingLoading();
             }
+
+            if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            }
+
             return isAdmin ? buildAdminView() : buildEmployeeView();
           },
         ),
@@ -688,6 +756,7 @@ class _AttendanceState extends State<Attendance>
   Widget buildAdminView() {
     return Column(
       children: [
+        monthHeader(),
         Expanded(
           child: CustomScrollView(
             slivers: [
@@ -697,7 +766,7 @@ class _AttendanceState extends State<Attendance>
                   color: Colors.grey.shade50,
                   child: Column(
                     children: [
-                      // todayAdminSummary(),
+                      filterPanel(),
                       const SizedBox(height: 10),
                       buildSummaryCards(stats!),
                     ],
@@ -707,20 +776,12 @@ class _AttendanceState extends State<Attendance>
 
               SliverToBoxAdapter(child: permissionApprovalPanel()),
 
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: filterPanel(),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: adminActionBar(),
-                ),
-              ),
-
+              // SliverToBoxAdapter(
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(12),
+              //     child: filterPanel(),
+              //   ),
+              // ),
               SliverFillRemaining(
                 hasScrollBody: true,
                 child: DefaultTabController(
@@ -736,21 +797,18 @@ class _AttendanceState extends State<Attendance>
                           unselectedLabelColor: Colors.grey,
                           indicatorWeight: 3,
                           tabs: const [
-                            // Tab(text: "Employee"),
-                            Tab(text: "Calendar"),
                             Tab(text: "Table"),
+                            Tab(text: "Calendar"),
                           ],
                         ),
                       ),
 
-                      /// 🔹 TAB CONTENT (Scrollable per tab)
                       Expanded(
                         child: TabBarView(
                           controller: tabController,
                           children: [
-                            // attendanceAdminView(),
-                            attendanceCalendar(),
                             attendanceTableView(),
+                            attendanceCalendar(),
                           ],
                         ),
                       ),
@@ -765,23 +823,10 @@ class _AttendanceState extends State<Attendance>
     );
   }
 
-  Widget attendanceCalendar() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: _AttendanceCalendar(
-        attendanceList: filteredList,
-        userType: user!.userType,
-        employeeId: selectedEmployee,
-        employees: employees,
-        departments: departments,
-        onDayTap: onDayTap,
-      ),
-    );
-  }
-
   Widget buildEmployeeView() {
     return Column(
       children: [
+        monthHeader(),
         Container(
           padding: const EdgeInsets.all(16),
           color: Colors.white,
@@ -829,6 +874,43 @@ class _AttendanceState extends State<Attendance>
           ),
         ),
       ],
+    );
+  }
+
+  Widget attendanceCalendar() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: _AttendanceCalendar(
+        attendanceList: filteredList,
+        userType: user!.userType,
+        employeeId: selectedEmployee,
+        employees: employees,
+        departments: departments,
+        onDayTap: onDayTap,
+      ),
+    );
+  }
+
+  Widget monthHeader() {
+    final month = getCurrentMonth();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Iconsax.calendar, color: Colors.blue),
+          const SizedBox(width: 10),
+          Text(
+            month,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 
@@ -973,7 +1055,7 @@ class _AttendanceState extends State<Attendance>
 
                       /// Permission Type
                       Text(
-                        punch.permissionType!.name,
+                        punch.permissionType?.name ?? "No Permission",
                         style: const TextStyle(fontSize: 12),
                       ),
 
@@ -1243,8 +1325,6 @@ class _AttendanceState extends State<Attendance>
   }
 
   Widget filterPanel() {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1253,29 +1333,9 @@ class _AttendanceState extends State<Attendance>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔹 HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Filters",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-
-                /// 🔁 RESET (Top Right - Better UX)
-                TextButton.icon(
-                  onPressed: _resetFilters,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text("Reset"),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            /// 🔽 DROPDOWNS (Responsive)
-            isMobile
+            kIsMobile
                 ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildDropdown(
                         label: "Employee",
@@ -1283,67 +1343,83 @@ class _AttendanceState extends State<Attendance>
                         items: _employeeItems(),
                         onChanged: _onEmployeeChanged,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
+
                       _buildDropdown(
                         label: "Department",
                         value: selectedDepartment,
                         items: _departmentItems(),
                         onChanged: _onDepartmentChanged,
                       ),
+                      const SizedBox(height: 12),
+
+                      _buildDatePicker(),
                     ],
                   )
                 : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: _buildDropdown(
-                          label: "Employee",
-                          value: selectedEmployee,
-                          items: _employeeItems(),
-                          onChanged: _onEmployeeChanged,
-                        ),
+                      /// 🔹 LEFT SIDE (Dropdowns)
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 180, // 👈 reduced width
+                            child: _buildDropdown(
+                              label: "Employee",
+                              value: selectedEmployee,
+                              items: _employeeItems(),
+                              onChanged: _onEmployeeChanged,
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          SizedBox(
+                            width: 180,
+                            child: _buildDropdown(
+                              label: "Department",
+                              value: selectedDepartment,
+                              items: _departmentItems(),
+                              onChanged: _onDepartmentChanged,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDropdown(
-                          label: "Department",
-                          value: selectedDepartment,
-                          items: _departmentItems(),
-                          onChanged: _onDepartmentChanged,
-                        ),
-                      ),
+
+                      /// 🔹 RIGHT SIDE (Date Picker)
+                      SizedBox(width: 200, child: _buildDatePicker()),
                     ],
                   ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 16),
-
-            /// 🎯 STATUS HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Status",
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-
-                /// 📅 DATE PICKER (Aligned Right)
-                OutlinedButton.icon(
-                  icon: const Icon(Iconsax.calendar, size: 16),
-                  label: Text(dateRangeText, overflow: TextOverflow.ellipsis),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                  onPressed: _pickDateRange,
-                ),
-              ],
+  Widget _buildDatePicker() {
+    return InkWell(
+      onTap: _pickDateRange,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.grey.shade50,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Iconsax.calendar, size: 18, color: Colors.blue),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                dateRangeText,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
             ),
-
-            const SizedBox(height: 10),
-
-            /// 🎯 FILTER CHIPS
-            buildFilterChips(),
           ],
         ),
       ),
@@ -1665,34 +1741,12 @@ class _AttendanceState extends State<Attendance>
   }
 
   Widget attendanceTableView() {
-    if (filteredList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Iconsax.calendar_remove,
-              size: 50,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 10),
-            const Text("No Attendance Data"),
-            const SizedBox(height: 5),
-            const Text(
-              "Try adjusting filters or search",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Column(
       children: [
-        /// 🔍 ENHANCED SEARCH
         Padding(
           padding: const EdgeInsets.all(12),
           child: Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -1700,42 +1754,95 @@ class _AttendanceState extends State<Attendance>
                 BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 6),
               ],
             ),
-            child: TextField(
-              controller: _search,
-              decoration: InputDecoration(
-                hintText: "Search employee or status...",
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _search.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _search.clear();
-                          setState(() {
-                            filteredList = tempAList;
-                          });
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  filteredList = tempAList.where((a) {
-                    final emp = findEmployee(a.employeeId);
-                    final name = emp?.name.toLowerCase() ?? "";
-                    final status = getAttendanceStatus(a).toLowerCase();
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 300),
+                      child: Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _search,
+                          decoration: InputDecoration(
+                            hintText: "Search employee or status...",
+                            hintStyle: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.only(left: 8, right: 4),
+                              child: Icon(
+                                Iconsax.search_normal,
+                                size: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            prefixIconConstraints: const BoxConstraints(
+                              minWidth: 30,
+                              minHeight: 30,
+                            ),
+                            suffixIcon: _search.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () {
+                                      _search.clear();
+                                      setState(() {
+                                        filteredList = tempAList;
+                                      });
+                                    },
+                                  )
+                                : null,
+                            isDense: true,
 
-                    return name.contains(value.toLowerCase()) ||
-                        status.contains(value.toLowerCase());
-                  }).toList();
-                });
-              },
+                            border: InputBorder.none,
+
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 0,
+                            ),
+                          ),
+                          textAlignVertical: TextAlignVertical.center,
+                          onChanged: (value) {
+                            setState(() {
+                              filteredList = tempAList.where((a) {
+                                final emp = findEmployee(a.employeeId);
+                                final name = emp?.name.toLowerCase() ?? "";
+                                final status = getAttendanceStatus(
+                                  a,
+                                ).toLowerCase();
+
+                                return name.contains(value.toLowerCase()) ||
+                                    status.contains(value.toLowerCase());
+                              }).toList();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    Row(
+                      children: [
+                        _exportButton(),
+                        const SizedBox(width: 8),
+                        _refreshButton(),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
 
-        /// 📊 TABLE CONTAINER
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1752,191 +1859,224 @@ class _AttendanceState extends State<Attendance>
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 28,
-                    dataRowHeight: 64,
-                    headingRowHeight: 56,
-
-                    headingRowColor: WidgetStateProperty.all(
-                      Colors.blue.shade50,
-                    ),
-
-                    columns: [
-                      DataColumn(
-                        label: const Text("Employee"),
-                        onSort: (i, asc) => sortByName(asc),
-                      ),
-                      DataColumn(
-                        label: const Text("Date"),
-                        onSort: (i, asc) => sortByDate(asc),
-                      ),
-                      const DataColumn(label: Text("In")),
-                      const DataColumn(label: Text("Out")),
-                      const DataColumn(label: Text("Work")),
-                      DataColumn(
-                        label: const Text("Status"),
-                        onSort: (i, asc) => sortByStatus(asc),
-                      ),
-                      const DataColumn(label: Text("Action")),
-                    ],
-
-                    rows: List.generate(filteredList.length, (index) {
-                      final a = filteredList[index];
-                      final emp = findEmployee(a.employeeId);
-                      final punch = a.punchList.first;
-
-                      final status = getAttendanceStatus(a);
-                      final color = statusColor(status);
-                      final date = parseDateTime(punch.punchDate);
-
-                      final checkIn = punch.clockIn != null
-                          ? formatTime(punch.clockIn)
-                          : "-";
-
-                      final checkOut = punch.clockOut != null
-                          ? formatTime(punch.clockOut)
-                          : "-";
-
-                      final baseColor = index % 2 == 0
-                          ? Colors.white
-                          : Colors.grey.shade50;
-
-                      return DataRow(
-                        color: WidgetStateProperty.resolveWith<Color?>((
-                          states,
-                        ) {
-                          if (states.contains(WidgetState.hovered)) {
-                            return Colors.blue.withOpacity(0.08);
-                          }
-                          return baseColor;
-                        }),
-
-                        cells: [
-                          /// 👤 EMPLOYEE
-                          DataCell(
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: color.withOpacity(.15),
-                                  child: Text(
-                                    emp?.name.substring(0, 1).toUpperCase() ??
-                                        "?",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  emp?.name ?? "Unknown",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          /// 📅 DATE
-                          DataCell(
-                            Text(
-                              date != null
-                                  ? DateFormat('dd MMM yyyy').format(date)
-                                  : "--",
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-
-                          /// ⏰ IN / OUT
-                          DataCell(Text(checkIn)),
-                          DataCell(Text(checkOut)),
-
-                          /// ⏱ WORK
-                          DataCell(
-                            Text(
-                              a.formattedWork,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-
-                          /// 🚦 STATUS CHIP
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(.12),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                status,
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          /// ⚡ ACTIONS
-                          DataCell(
-                            Row(
-                              children: [
-                                if (punch.permissionStatus ==
-                                    PermissionsStatus.pending) ...[
-                                  IconButton(
-                                    tooltip: "Approve",
-                                    icon: const Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                    ),
-                                    onPressed: () async {
-                                      await AttendanceService.updatePermissionStatus(
-                                        punchId: punch.uid!,
-                                        status: PermissionsStatus.approved,
-                                      );
-                                      aHandler = init();
-                                      setState(() {});
-                                    },
-                                  ),
-                                  IconButton(
-                                    tooltip: "Reject",
-                                    icon: const Icon(
-                                      Icons.cancel,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () async {
-                                      await AttendanceService.updatePermissionStatus(
-                                        punchId: punch.uid!,
-                                        status: PermissionsStatus.rejected,
-                                      );
-                                      aHandler = init();
-                                      setState(() {});
-                                    },
-                                  ),
-                                ] else
-                                  const Text("-"),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }),
-                  ),
-                ),
+                child: filteredList.isEmpty
+                    ? _emptyAttendanceView()
+                    : _attendanceDataTable(),
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _emptyAttendanceView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconsax.calendar_remove, size: 50, color: Colors.grey.shade400),
+          const SizedBox(height: 10),
+          const Text("No Attendance Data"),
+          const SizedBox(height: 5),
+          const Text(
+            "Try adjusting filters or search",
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _attendanceDataTable() {
+    final groupedData = groupByEmployee(filteredList);
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: DataTable(
+        columnSpacing: 28,
+        dataRowHeight: 64,
+        headingRowHeight: 56,
+        headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
+
+        columns: [
+          DataColumn(
+            label: const Text("Employee"),
+            onSort: (i, asc) => sortByName(asc),
+          ),
+          DataColumn(
+            label: const Text("Date"),
+            onSort: (i, asc) => sortByDate(asc),
+          ),
+          const DataColumn(label: Text("In 1")),
+          const DataColumn(label: Text("Out 1")),
+          const DataColumn(label: Text("In 2")),
+          const DataColumn(label: Text("Out 2")),
+          const DataColumn(label: Text("In 3")),
+          const DataColumn(label: Text("Out 3")),
+          const DataColumn(label: Text("Break")),
+          const DataColumn(label: Text("Work")),
+          DataColumn(
+            label: const Text("Status"),
+            // onSort: (i, asc) => sortByStatus(asc),
+          ),
+          const DataColumn(label: Text("Permission")),
+          const DataColumn(label: Text("Action")),
+        ],
+
+        rows: groupedData.entries.expand((entry) {
+          final empId = entry.key;
+          final list = entry.value;
+          final emp = findEmployee(empId);
+
+          expandedMap.putIfAbsent(empId, () => true);
+
+          List<DataRow> rows = [];
+
+          rows.add(
+            DataRow(
+              color: WidgetStateProperty.all(Colors.grey.shade300),
+              cells: [
+                DataCell(
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        expandedMap[empId] = !(expandedMap[empId] ?? true);
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          expandedMap[empId]!
+                              ? Icons.keyboard_arrow_down
+                              : Icons.keyboard_arrow_right,
+                        ),
+                        const SizedBox(width: 6),
+                        CircleAvatar(
+                          radius: 14,
+                          child: Text(
+                            emp?.name.substring(0, 1).toUpperCase() ?? "?",
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "${emp?.employeeId ?? ""} - ${emp?.name ?? ""}",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                ...List.generate(12, (_) => const DataCell(Text(""))),
+              ],
+            ),
+          );
+
+          if (!(expandedMap[empId] ?? true)) {
+            return rows;
+          }
+
+          for (var a in list) {
+            final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
+            final date = parseDateTime(punch?.punchDate);
+
+            final sessions = buildSessions(a.punchList);
+            final formattedWork = a.formattedWork;
+            final formattedBreak = a.formattedBreak;
+            final status = getStatus(a);
+            final color = getstatusColor(status);
+
+            rows.add(
+              DataRow(
+                cells: [
+                  const DataCell(Text("")),
+
+                  DataCell(
+                    Text(
+                      date != null
+                          ? DateFormat('dd MMM yyyy').format(date)
+                          : "--",
+                    ),
+                  ),
+
+                  ...buildSessionCells(sessions),
+                  DataCell(Text(formattedBreak)),
+                  DataCell(Text(formattedWork)),
+
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(status, style: TextStyle(color: color)),
+                    ),
+                  ),
+
+                  const DataCell(Text("")),
+                  const DataCell(Text("")),
+                ],
+              ),
+            );
+          }
+          int present = 0, absent = 0, holiday = 0;
+          for (var a in list) {
+            if (a.present == "1") present++;
+            if (a.absent == "1") absent++;
+            if (a.holiday == "1") holiday++;
+          }
+          rows.add(
+            DataRow(
+              color: WidgetStateProperty.all(Colors.blue.shade50),
+              cells: [
+                DataCell(Text("Present: $present")),
+                DataCell(Text("Absent: $absent")),
+                DataCell(Text("Holiday: $holiday")),
+                ...List.generate(10, (_) => const DataCell(Text(""))),
+              ],
+            ),
+          );
+          return rows;
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _permissionStatusChip(PermissionsStatus? status) {
+    Color color;
+
+    switch (status) {
+      case PermissionsStatus.approved:
+        color = Colors.green;
+        break;
+      case PermissionsStatus.rejected:
+        color = Colors.red;
+        break;
+      case PermissionsStatus.pending:
+        color = Colors.orange;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status?.name.toUpperCase() ?? "",
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
@@ -2106,7 +2246,7 @@ class _AttendanceState extends State<Attendance>
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () {
-          // TODO: Export logic
+          exportAttendance();
         },
         child: Container(
           padding: const EdgeInsets.all(10),
@@ -2114,7 +2254,7 @@ class _AttendanceState extends State<Attendance>
           //   border: Border.all(color: Colors.green),
           //   borderRadius: BorderRadius.circular(10),
           // ),
-          child: const Icon(Icons.download, size: 20, color: Colors.green),
+          child: const Icon(Iconsax.export_3, size: 20, color: Colors.green),
         ),
       ),
     );
@@ -2195,26 +2335,45 @@ class _AttendanceState extends State<Attendance>
 
   Widget todaySummary() {
     AttendanceModel? today;
+    final todayDate = DateFormat("EEE, dd MMM yyyy").format(DateTime.now());
     try {
       today = aList.firstWhere((a) => isToday0(a));
     } catch (_) {
       today = null;
     }
+
     if (today == null || today.punchList.isEmpty) {
-      return const SizedBox();
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.grey.shade100,
+        ),
+        child: Row(
+          children: const [
+            Icon(Iconsax.clock, color: Colors.grey),
+            SizedBox(width: 10),
+            Text("No activity today. Tap Check-In to start."),
+          ],
+        ),
+      );
     }
+
     final punch = today.punchList.first;
     final status = getAttendanceStatus(today);
     final color = statusColor(status);
+
     final hasCheckIn = punch.clockIn != null;
     final hasCheckOut = punch.clockOut != null;
+
     final checkIn = formatTime(punch.clockIn);
     final checkOut = hasCheckOut
         ? formatTime(punch.clockOut)
         : (hasCheckIn ? "Working..." : "--");
-    double getProgress() {
-      return (today!.workingHourMinutes / 480).clamp(0.0, 1.0);
-    }
+
+    final isWorking = hasCheckIn && !hasCheckOut;
+
+    double progress = (today.workingHourMinutes / 480).clamp(0.0, 1.0);
 
     return Container(
       decoration: BoxDecoration(
@@ -2236,7 +2395,9 @@ class _AttendanceState extends State<Attendance>
                   ),
                   child: Icon(getSummaryIcon(status), color: color),
                 ),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2245,28 +2406,48 @@ class _AttendanceState extends State<Attendance>
                         "Today's Attendance",
                         style: TextStyle(fontSize: 13, color: Colors.grey),
                       ),
+
+                      const SizedBox(height: 2),
+
+                      Text(
+                        todayDate,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
                       const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                            color: color,
+
+                      Row(
+                        children: [
+                          /// STATUS CHIP
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              status.toUpperCase(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                color: color,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+
+                /// WORK HOURS
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -2287,7 +2468,10 @@ class _AttendanceState extends State<Attendance>
                 ),
               ],
             ),
+
             const SizedBox(height: 14),
+
+            /// 🔹 TIME ROW
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -2300,16 +2484,58 @@ class _AttendanceState extends State<Attendance>
                 ),
               ],
             ),
+
+            if (punch.permissionType != null) ...[
+              const SizedBox(height: 10),
+              buildPermissionBadge(punch),
+            ],
+
             const SizedBox(height: 12),
+
             LinearProgressIndicator(
-              value: getProgress(),
+              value: progress,
               backgroundColor: Colors.grey.shade200,
               color: color,
               minHeight: 6,
               borderRadius: BorderRadius.circular(10),
             ),
+
+            const SizedBox(height: 6),
+
+            /// 🔹 PROGRESS LABEL
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                "${(progress * 100).toInt()}% of 8h",
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildPermissionBadge(PunchModel punch) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: punch.permissionStatus == PermissionsStatus.approved
+            ? Colors.green.withOpacity(.1)
+            : punch.permissionStatus == PermissionsStatus.rejected
+            ? Colors.red.withOpacity(.1)
+            : Colors.orange.withOpacity(.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Iconsax.warning_2, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            "${punch.permissionType} • ${punch.permissionStatus!.name}",
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
       ),
     );
   }
@@ -2335,58 +2561,6 @@ class _AttendanceState extends State<Attendance>
       ],
     );
   }
-
-  // Widget todayAdminSummary() {
-  //   final todayList = aList.where((a) => isToday0(a)).toList();
-
-  //   if (todayList.isEmpty) return const SizedBox();
-
-  //   int present = 0;
-  //   int absent = 0;
-  //   int late = 0;
-
-  //   for (var a in todayList) {
-  //     final status = getAttendanceStatus(a);
-
-  //     if (status == "Present") present++;
-  //     if (status == "Absent") absent++;
-  //     if (status == "Late") late++;
-  //   }
-
-  //   return Container(
-  //     margin: const EdgeInsets.all(12),
-  //     padding: const EdgeInsets.all(14),
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(16),
-  //       border: Border.all(color: Colors.blue.withOpacity(.2)),
-  //     ),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-  //       children: [
-  //         _miniTodayTile("Present", present.toString(), Colors.green),
-  //         _miniTodayTile("Absent", absent.toString(), Colors.red),
-  //         _miniTodayTile("Late", late.toString(), Colors.orange),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget _miniTodayTile(String label, String value, Color color) {
-  //   return Column(
-  //     children: [
-  //       Text(
-  //         value,
-  //         style: TextStyle(
-  //           fontWeight: FontWeight.bold,
-  //           fontSize: 16,
-  //           color: color,
-  //         ),
-  //       ),
-  //       Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-  //     ],
-  //   );
-  // }
 }
 
 class EmployeeInfoWidget extends StatelessWidget {
@@ -2504,8 +2678,8 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     for (var a in filteredList) {
       if (a.punchList.isEmpty) continue;
 
-      final punch = a.punchList.first;
-      final date = parseDateTime(punch.punchDate);
+      final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
+      final date = parseDateTime(punch?.punchDate);
       if (date == null) continue;
 
       String status = getAttendanceStatus(a);
@@ -2521,51 +2695,23 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     return map;
   }
 
-  // Map<DateTime, String> _buildAttendanceMap() {
-  //   final map = <DateTime, String>{};
-
-  //   for (var a in widget.attendanceList) {
-  //     if (widget.userType == UserType.employee &&
-  //         a.employeeId != widget.employeeId) {
-  //       continue;
-  //     }
-  //     if (widget.userType == UserType.admin &&
-  //         widget.employeeId != "All" &&
-  //         a.employeeId != widget.employeeId) {
-  //       continue;
-  //     }
-  //     if (a.punchList.isEmpty) continue;
-
-  //     var punch = a.punchList.first;
-  //     final date = parseDateTime(punch.punchDate);
-  //     if (date == null) continue;
-
-  //     String status = getAttendanceStatus(a);
-
-  //     if (a.permissionDetails.isNotEmpty) {
-  //       final key = DateFormat('yyyy-MM-dd').format(date);
-  //       final permission = a.permissionDetails[key];
-
-  //       if (permission != null) {
-  //         status = permission.name;
-  //       }
-  //     }
-
-  //     map[DateTime(date.year, date.month, date.day)] = status;
-  //   }
-
-  //   return map;
-  // }
-
   void prevMonth() {
     setState(() {
-      focusedMonth = DateTime(focusedMonth.year, focusedMonth.month - 1, 1);
+      focusedMonth = DateTime(
+        focusedMonth.year,
+        focusedMonth.month - 1,
+        focusedMonth.day,
+      );
     });
   }
 
   void nextMonth() {
     setState(() {
-      focusedMonth = DateTime(focusedMonth.year, focusedMonth.month + 1, 1);
+      focusedMonth = DateTime(
+        focusedMonth.year,
+        focusedMonth.month + 1,
+        focusedMonth.day,
+      );
     });
   }
 
@@ -2575,19 +2721,16 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
 
   void _applyFilter() {
     if (widget.userType == UserType.employee) {
-      // 👤 Employee → only own data
       filteredList = widget.attendanceList
           .where((a) => a.employeeId == widget.employeeId)
           .toList();
     } else if (widget.userType == UserType.admin &&
         widget.employeeId != null &&
         widget.employeeId != "All") {
-      // 👨‍💼 Admin → selected employee
       filteredList = widget.attendanceList
           .where((a) => a.employeeId == widget.employeeId)
           .toList();
     } else {
-      // 👨‍💼 Admin → All employees
       filteredList = widget.attendanceList;
     }
 
@@ -2613,13 +2756,13 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
       child: Column(
         children: [
           GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity! < 0) {
-                nextMonth();
-              } else {
-                prevMonth();
-              }
-            },
+            // onHorizontalDragEnd: (details) {
+            //   if (details.primaryVelocity! < 0) {
+            //     nextMonth();
+            //   } else {
+            //     prevMonth();
+            //   }
+            // },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2639,6 +2782,11 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                       formatButtonVisible: false,
                       titleCentered: true,
                     ),
+                    onPageChanged: (focusedDay) {
+                      setState(() {
+                        focusedMonth = focusedDay;
+                      });
+                    },
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
                         color: Colors.blue.withOpacity(.5),
@@ -2730,7 +2878,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                             color: isSelected
                                 ? Colors.deepPurple
                                 : isWeekendDay
-                                ? Colors.red.withOpacity(0.05)
+                                ? Colors.orange.withOpacity(0.05)
                                 : isToday
                                 ? Colors.blue.withOpacity(0.08)
                                 : Colors.transparent,
@@ -2739,7 +2887,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                               color: isSelected
                                   ? Colors.deepPurple
                                   : isWeekendDay
-                                  ? Colors.red.withOpacity(0.4)
+                                  ? Colors.orange.withOpacity(0.4)
                                   : isToday
                                   ? Colors.blue
                                   : Colors.transparent,
@@ -2781,7 +2929,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                     color: isSelected
                                         ? Colors.white
                                         : isWeekendDay
-                                        ? Colors.redAccent
+                                        ? Colors.orange
                                         : isToday
                                         ? Colors.blue
                                         : Colors.black87,
@@ -2851,17 +2999,6 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                             d?.month == selected.month &&
                             d?.day == selected.day;
                       }, orElse: () => filteredList.first);
-                      // final attendance = widget.attendanceList.firstWhere((e) {
-                      //   if (e.punchList.isEmpty) return false;
-
-                      //   final d = parseDateTime(e.punchList.first.punchDate);
-
-                      //   return e.employeeId == widget.employeeId &&
-                      //       d?.year == selected.year &&
-                      //       d?.month == selected.month &&
-                      //       d?.day == selected.day;
-                      // }, orElse: () => widget.attendanceList.first);
-
                       final dayRecords = filteredList.where((e) {
                         if (e.punchList.isEmpty) return false;
 
@@ -2974,7 +3111,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                         title: "Status",
                                         value: status,
                                         icon: Icons.info,
-                                        color: _statusColor(status),
+                                        color: statusColor(status),
                                       ),
                                       const SizedBox(height: 10),
                                       _infoCard(
@@ -3004,23 +3141,6 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
         ],
       ),
     );
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case "Present":
-        return Colors.green;
-      case "Absent":
-        return Colors.red;
-      case "Leave":
-        return Colors.orange;
-      case "HalfDay":
-        return Colors.amber;
-      case "WFH":
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 
   Widget _infoCard({

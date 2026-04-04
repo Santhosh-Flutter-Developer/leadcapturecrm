@@ -11,6 +11,7 @@ import 'package:leadcapture/models/src/activity_log_model.dart';
 import 'package:leadcapture/models/src/filter_model.dart';
 import 'package:leadcapture/models/src/notification_model.dart';
 import 'package:leadcapture/models/src/workpermission_model.dart';
+import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 
 // Project imports:
 import '/constants/constants.dart';
@@ -203,7 +204,7 @@ class WorkPermissionService {
       var user = await Spdb.getUser();
 
       if (uid == null || user.name.isEmpty) {
-        throw Exception("User not logged in. Cannot create permission.");
+        throw Exception("User not logged in.");
       }
 
       model = model.copyWith(
@@ -213,22 +214,47 @@ class WorkPermissionService {
         modified: DateTime.now(),
       );
 
-      await CommonService.add(
-        '${Collections.users.name}/$cid/${Collections.permission.name}',
-        model.toMap(),
-        activity: '${model.userName} requested permission',
-      );
+      final docRef = await firebase.users
+          .doc(cid)
+          .collection(Collections.permission.name)
+          .add(model.toMap());
 
-      await sendNotification(
-        model.userName,
-        model.reason,
-        model.from,
-        model.to,
-      );
-    } catch (e, st) {
-      await ErrorService.recordError(e, st);
-      debugPrint("$e, $st");
-      throw "Error creating permission: $e";
+      DateTime from = model.from;
+
+      int start = DateTime(
+        from.year,
+        from.month,
+        from.day,
+      ).millisecondsSinceEpoch;
+
+      int end = DateTime(
+        from.year,
+        from.month,
+        from.day,
+        23,
+        59,
+        59,
+      ).millisecondsSinceEpoch;
+
+      final attendanceSnap = await firebase.users
+          .doc(cid)
+          .collection(Collections.attendance.name)
+          .where('userUid', isEqualTo: uid)
+          .where('created', isGreaterThanOrEqualTo: start)
+          .where('created', isLessThanOrEqualTo: end)
+          .limit(1)
+          .get();
+
+      if (attendanceSnap.docs.isNotEmpty) {
+        final punchId = attendanceSnap.docs.first.id;
+
+        await AttendanceService.addPermissionToPunch(
+          punchId: punchId,
+          permissionType: model.type,
+        );
+      }
+    } catch (e) {
+      throw e.toString();
     }
   }
 
@@ -430,14 +456,18 @@ class WorkPermissionService {
         status: status,
         withSalary: withSalary,
       );
+
+      await AttendanceService.updateAttendanceFromPermission(
+        userId: userId,
+        permissionId: uid,
+        status: status,
+      );
     } catch (e) {
-      // ✅ Better error handling
       print("Permission approval error: $e");
       throw Exception("Failed to process permission: ${e.toString()}");
     }
   }
 
-  /// ✅ Salary Deduction Logic
   static Future<void> _deductSalaryForPermission({
     required String cid,
     required String userId,
@@ -464,7 +494,6 @@ class WorkPermissionService {
 
       final monthlySalary = (userDoc.data()?['monthlySalary'] ?? 0).toDouble();
 
-      // ✅ Fixed: Accurate working days calculation
       final now = DateTime.now();
       final firstDay = DateTime(now.year, now.month, 1);
       final lastDay = DateUtils.getDaysInMonth(now.year, now.month);
@@ -474,16 +503,14 @@ class WorkPermissionService {
       for (int i = 0; i < lastDay; i++) {
         final day = firstDay.add(Duration(days: i));
         if (day.weekday != DateTime.sunday) {
-          // Exclude Sundays
           workingDays++;
         }
       }
 
       final dailySalary = monthlySalary / workingDays;
-      final hourlySalary = dailySalary / 8; // 8-hour workday
+      final hourlySalary = dailySalary / 8;
       final deductionAmount = totalHours * hourlySalary;
 
-      // ✅ Create salary deduction record
       await firebase.users
           .doc(cid)
           .collection(Collections.salaryLedger.name)

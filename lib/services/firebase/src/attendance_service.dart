@@ -38,6 +38,7 @@ class AttendanceService {
           'clockIn': now,
           'clockOut': null,
           'permissionType': null,
+          'permissionStatus': null,
         };
 
         var docRef = await firebase.users
@@ -57,8 +58,6 @@ class AttendanceService {
   static Future<void> clockOut(String punchId) async {
     try {
       var cid = await Spdb.getCid();
-      var uid = await Spdb.getUid();
-
       if (cid != null) {
         await firebase.users
             .doc(cid)
@@ -121,7 +120,6 @@ class AttendanceService {
     }
   }
 
-  // ✅ Check if already punched today
   static Future<bool> checkTodayPunch() async {
     try {
       var cid = await Spdb.getCid();
@@ -159,7 +157,6 @@ class AttendanceService {
     }
   }
 
-  // ✅ Get punch count for today
   static Future<int> getTodayPunchCount() async {
     try {
       var cid = await Spdb.getCid();
@@ -211,7 +208,6 @@ class AttendanceService {
     }
   }
 
-  // ✅ Get attendance listing with pagination
   static Future<List<AttendanceModel>> attendanceListing({
     required FilterModel filter,
   }) async {
@@ -259,7 +255,6 @@ class AttendanceService {
     }
   }
 
-  // ✅ Get dashboard attendance summary
   static Future<AttendanceModel> getDashboardAttendance({
     required DateTime date,
   }) async {
@@ -356,7 +351,7 @@ class AttendanceService {
   }) async {
     try {
       var cid = await Spdb.getCid();
-      var snapshot = await firebase.users
+      var workSnap = await firebase.users
           .doc(cid)
           .collection(Collections.worktime.name)
           .where('userUid', isEqualTo: userUid)
@@ -367,8 +362,16 @@ class AttendanceService {
           .where('clockIn', isLessThanOrEqualTo: toDate.millisecondsSinceEpoch)
           .get();
 
+      var permissionSnap = await firebase.users
+          .doc(cid)
+          .collection(Collections.permission.name)
+          .where('userId', isEqualTo: userUid)
+          .where('from', isLessThanOrEqualTo: toDate.millisecondsSinceEpoch)
+          .where('to', isGreaterThanOrEqualTo: fromDate.millisecondsSinceEpoch)
+          .get();
+
       Map<String, WorktimeModel> workMap = {
-        for (var doc in snapshot.docs)
+        for (var doc in workSnap.docs)
           DateTime.fromMillisecondsSinceEpoch(
             doc['clockIn'],
           ).toIso8601String().split('T').first: WorktimeModel.fromMap(
@@ -376,6 +379,25 @@ class AttendanceService {
             doc.data(),
           ),
       };
+
+      Map<String, Map<String, dynamic>> permissionMap = {};
+
+      for (var doc in permissionSnap.docs) {
+        final data = doc.data();
+
+        DateTime from = DateTime.fromMillisecondsSinceEpoch(data['from']);
+        DateTime to = DateTime.fromMillisecondsSinceEpoch(data['to']);
+
+        for (
+          DateTime d = from;
+          !d.isAfter(to);
+          d = d.add(const Duration(days: 1))
+        ) {
+          final key = d.toIso8601String().split('T').first;
+          permissionMap[key] = data;
+        }
+      }
+
       List<AttendanceModel> result = [];
       final today = DateTime.now();
 
@@ -386,21 +408,47 @@ class AttendanceService {
       ) {
         if (d.isAfter(today)) break;
 
+        final key = d.toIso8601String().split('T').first;
+
         if (d.weekday == DateTime.sunday) {
+          result.add(
+            AttendanceModel(
+              employeeId: userUid,
+              punchList: [
+                PunchModel(
+                  punchDate: key,
+                  punchTime: [],
+                  totalHours: "00:00",
+                  lessHours: "00:00",
+                  otHours: "00:00",
+                  status: AttendanceStatus.absent,
+                  day: d.weekday.toString(),
+                  otApproval: "0",
+                ),
+              ],
+              breakMinutes: 0,
+              present: "0",
+              absent: "0",
+              holiday: "1",
+              workingHourMinutes: 0,
+              lessHourMinutes: 0,
+              otHourMinutes: 0,
+            ),
+          );
           continue;
         }
-        final key = d.toIso8601String().split('T').first;
+
         final work = workMap[key];
+        final permission = permissionMap[key];
 
         int workingMinutes = 0;
         int otMinutes = 0;
         int lessMinutes = 0;
 
-        String status = "absent";
+        String status = AttendanceStatus.absent;
 
         if (work != null) {
           final now = DateTime.now();
-
           final endTime = work.clockOut ?? now;
 
           workingMinutes = endTime.difference(work.clockIn).inMinutes;
@@ -409,14 +457,52 @@ class AttendanceService {
             status = AttendanceStatus.present;
           } else if (workingMinutes >= 240) {
             status = AttendanceStatus.halfDay;
-          } else {
-            status = AttendanceStatus.present;
+          } else if (workingMinutes > 0) {
+            status = AttendanceStatus.absent;
           }
 
           if (workingMinutes > 480) {
             otMinutes = workingMinutes - 480;
           } else {
             lessMinutes = 480 - workingMinutes;
+          }
+        }
+
+        if (permission != null) {
+          final type = permission['type'];
+          final pStatus = permission['status'];
+
+          if (pStatus == PermissionsStatus.approved.name) {
+            switch (type) {
+              case "leaveFullDay":
+                status = AttendanceStatus.leave;
+                workingMinutes = 0;
+                break;
+
+              case "leaveHalfDay":
+                status = AttendanceStatus.halfDay;
+                break;
+
+              case "workFromHome":
+                status = AttendanceStatus.present;
+                break;
+
+              case "lateEntry":
+                status = AttendanceStatus.late;
+                break;
+
+              case "earlyExit":
+                status = AttendanceStatus.earlyExit;
+                break;
+
+              case "permission":
+                status = AttendanceStatus.present;
+                break;
+            }
+          } else if (pStatus == PermissionsStatus.pending.name) {
+            status = "Pending";
+          } else if (pStatus == PermissionsStatus.rejected.name) {
+            status = "Rejected";
           }
         }
 
@@ -436,8 +522,8 @@ class AttendanceService {
               ),
             ],
             breakMinutes: 0,
-            present: status == "present" ? "1" : "0",
-            absent: status == "absent" ? "1" : "0",
+            present: status == AttendanceStatus.present ? "1" : "0",
+            absent: status == AttendanceStatus.absent ? "1" : "0",
             holiday: "0",
             workingHourMinutes: workingMinutes,
             lessHourMinutes: lessMinutes,
@@ -461,43 +547,6 @@ class AttendanceService {
 
     return "$hStr:$mStr";
   }
-
-  // static String _calculateWorkingHours(List<PunchModel> punches) {
-  //   if (punches.length < 2) return '0';
-
-  //   var firstTime = DateTime.parse(punches.first.punchTime.first);
-  //   var lastTime = DateTime.parse(punches.last.punchTime.last);
-
-  //   Duration duration = lastTime.difference(firstTime);
-
-  //   double hours = duration.inMinutes / 60;
-
-  //   return hours.toStringAsFixed(2);
-  // }
-
-  // static String _calculateLessHours(List<PunchModel> punches) {
-  //   double workingHours = double.tryParse(_calculateWorkingHours(punches)) ?? 0;
-
-  //   double lessHours = 0;
-
-  //   if (workingHours < 8) {
-  //     lessHours = 8 - workingHours;
-  //   }
-
-  //   return lessHours.toStringAsFixed(2);
-  // }
-
-  // static String _calculateOTHours(List<PunchModel> punches) {
-  //   double workingHours = double.tryParse(_calculateWorkingHours(punches)) ?? 0;
-
-  //   double otHours = 0;
-
-  //   if (workingHours > 8) {
-  //     otHours = workingHours - 8;
-  //   }
-
-  //   return otHours.toStringAsFixed(2);
-  // }
 
   static Future<AttendanceStats> getAttendanceStats({
     required String userUid,
@@ -523,6 +572,11 @@ class AttendanceService {
     double totalOTHours = 0;
 
     for (var a in monthlyAttendance) {
+      if (a.holiday == "1") {
+        leaveDays++;
+        continue;
+      }
+
       if (a.punchList.isEmpty) {
         absentDays++;
         continue;
@@ -565,7 +619,7 @@ class AttendanceService {
             continue;
         }
       } else {
-        switch (punch.status) {
+        switch (punch.status.toLowerCase()) {
           case "present":
             presentDays++;
             break;
@@ -738,10 +792,7 @@ class AttendanceService {
   }) async {
     try {
       var cid = await Spdb.getCid();
-
       if (cid == null) return;
-
-      // Get the punch
       var punchDoc = await firebase.users
           .doc(cid)
           .collection(Collections.attendance.name)
@@ -778,7 +829,6 @@ class AttendanceService {
             break;
         }
 
-        // Update punch with new status
         await firebase.users
             .doc(cid)
             .collection(Collections.attendance.name)
@@ -790,6 +840,132 @@ class AttendanceService {
       }
     } catch (e) {
       throw e.toString();
+    }
+  }
+
+  static Future<List<AttendanceModel>> getAllAttendance({
+    required FilterModel filter,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      var query = firebase.users
+          .doc(cid)
+          .collection(Collections.attendance.name)
+          .where(
+            'created',
+            isGreaterThanOrEqualTo: filter.fromDate.millisecondsSinceEpoch,
+          )
+          .where(
+            'created',
+            isLessThanOrEqualTo: filter.toDate.millisecondsSinceEpoch,
+          )
+          .orderBy('created', descending: true)
+          .limit(filter.pageLimit);
+
+      var snapshot = await query.get();
+
+      List<AttendanceModel> data = [];
+
+      for (var doc in snapshot.docs) {
+        data.add(AttendanceModel.fromMap({...doc.data(), 'uid': doc.id}));
+      }
+
+      return data;
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  static Future<void> updateAttendanceFromPermission({
+    required String userId,
+    required String permissionId,
+    required PermissionsStatus status,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      if (cid == null) return;
+
+      final permissionDoc = await firebase.users
+          .doc(cid)
+          .collection(Collections.permission.name)
+          .doc(permissionId)
+          .get();
+
+      if (!permissionDoc.exists) return;
+
+      final permission = permissionDoc.data()!;
+
+      DateTime from = DateTime.fromMillisecondsSinceEpoch(permission['from']);
+      DateTime to = DateTime.fromMillisecondsSinceEpoch(permission['to']);
+      String type = permission['type'];
+
+      final start = DateTime(
+        from.year,
+        from.month,
+        from.day,
+      ).millisecondsSinceEpoch;
+
+      final end = DateTime(
+        from.year,
+        from.month,
+        from.day,
+        23,
+        59,
+        59,
+      ).millisecondsSinceEpoch;
+
+      final attendanceSnap = await firebase.users
+          .doc(cid)
+          .collection(Collections.attendance.name)
+          .where('userUid', isEqualTo: userId)
+          .where('created', isGreaterThanOrEqualTo: start)
+          .where('created', isLessThanOrEqualTo: end)
+          .limit(1)
+          .get();
+
+      if (attendanceSnap.docs.isEmpty) return;
+
+      final doc = attendanceSnap.docs.first;
+      final docRef = doc.reference;
+
+      String newStatus = doc['status'];
+
+      if (status == PermissionsStatus.approved) {
+        switch (type) {
+          case "leaveFullDay":
+            newStatus = AttendanceStatus.leave;
+            break;
+
+          case "leaveHalfDay":
+            newStatus = AttendanceStatus.halfDay;
+            break;
+
+          case "workFromHome":
+            newStatus = AttendanceStatus.present;
+            break;
+
+          case "lateEntry":
+          case "earlyExit":
+          case "permission":
+            newStatus = AttendanceStatus.present;
+            break;
+        }
+      } else if (status == PermissionsStatus.rejected) {
+        // revert logic if needed
+        newStatus = doc['status'];
+      }
+
+      await docRef.update({
+        "status": newStatus,
+        "permissionType": type,
+        "permissionStatus": status.name,
+        "modified": DateTime.now().millisecondsSinceEpoch,
+      });
+
+      print("✅ Attendance updated based on permission");
+    } catch (e) {
+      print("❌ Attendance update failed: $e");
     }
   }
 }

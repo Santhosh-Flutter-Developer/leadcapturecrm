@@ -1069,9 +1069,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     required String? platformLabel,
     required DateTime? lastLogin,
   }) {
-    if (platformLabel == null) {
+    if (platformLabel == null && lastLogin == null) {
       return Text(
-        'Not installed',
+        'No activity',
         style: Theme.of(
           context,
         ).textTheme.bodySmall?.copyWith(color: AppColors.grey400),
@@ -1087,7 +1087,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             Icon(icon, size: 18, color: AppColors.success),
             const SizedBox(width: 4),
             Text(
-              platformLabel,
+              platformLabel ?? 'Unknown device',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
@@ -1108,66 +1108,64 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     );
   }
 
-  PlatformType? getPlatformFromDevice(Map<String, dynamic> device) {
-    final platform = (device['platform'] ?? '').toString().toLowerCase();
-    final model = (device['model'] ?? '').toString().toLowerCase();
-
+  PlatformType? getPlatformFromDevice(DeviceModel device) {
+    final platform = (device.platform ?? '').toLowerCase();
     if (platform.contains('android') || platform.contains('ios')) {
       return PlatformType.mobile;
-    }
-
-    if (model.contains('windows') ||
-        model.contains('mac') ||
-        model.contains('linux')) {
+    } else if (platform.contains('windows') ||
+        platform.contains('mac') ||
+        platform.contains('linux') ||
+        platform.contains('microsoft')) {
       return PlatformType.desktop;
     }
-
     return null;
   }
 
   DateTime? getLastLoginByPlatform(
-    List<Map<String, dynamic>> devices,
+    List<DeviceModel> devices,
     PlatformType type,
   ) {
-    DateTime? latest;
+    final filtered = devices.where((d) => getPlatformFromDevice(d) == type);
+    if (filtered.isEmpty) return null;
 
-    for (final device in devices) {
-      final platform = getPlatformFromDevice(device);
-      if (platform != type) continue;
-
-      final ts = device['lastLoginAt'];
-      if (ts is int) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(ts);
-        if (latest == null || dt.isAfter(latest)) {
-          latest = dt;
-        }
-      }
-    }
-    return latest;
+    return filtered
+        .map((d) => d.lastLoginAt)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (prev, curr) {
+          if (prev == null) return curr;
+          return curr.isAfter(prev) ? curr : prev;
+        });
   }
 
-  String? getPlatformLabelByType(
-    List<Map<String, dynamic>> devices,
-    PlatformType type,
-  ) {
-    for (final device in devices) {
-      final platform = getPlatformFromDevice(device);
-      if (platform == type) {
-        return device['model']?.toString() ?? device['platform']?.toString();
-      }
-    }
-    return null;
+  String? getPlatformLabelByType(List<DeviceModel> devices, PlatformType type) {
+    final filtered = devices.where((d) => getPlatformFromDevice(d) == type);
+    if (filtered.isEmpty) return null;
+
+    final sorted = filtered.toList()
+      ..sort((a, b) {
+        final aTime = a.lastLoginAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.lastLoginAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime); // descending
+      });
+
+    final device = sorted.first;
+    return device.model?.isNotEmpty == true
+        ? device.model
+        : device.platform?.isNotEmpty == true
+        ? device.platform
+        : 'Unknown';
   }
 
   DataRow _buildDataRow(
     BuildContext context,
-    UserRowModel employee,
+    UserRowModel user,
     int index,
     PaginatedDataController<UserRowModel> controllerWatch,
     PaginatedDataController<UserRowModel> controllerRead,
   ) {
-    final devices = (employee.devices ?? []).cast<Map<String, dynamic>>();
-
+    final devices = (user.devices ?? [])
+        .map((e) => DeviceModel.fromMap(e))
+        .toList();
     final mobileLastLogin = getLastLoginByPlatform(
       devices,
       PlatformType.mobile,
@@ -1186,7 +1184,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
       PlatformType.desktop,
     );
 
-    final isSelected = controllerWatch.selectedIds.contains(employee.uid);
+    final isSelected = controllerWatch.selectedIds.contains(user.uid);
 
     // String getDepartmentNames(EmployeeModel? employee) {
     //   if (employee!.department == null || employee.department!.isEmpty) {
@@ -1199,32 +1197,33 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     //       .join(', ');
     // }
 
-    /// Open Employee Details
-    void openEmployee(BuildContext context, UserRowModel employee) {
+    for (final d in devices) {
+      print("DEVICE: ${d.toMap()}");
+      print("DETECTED: ${getPlatformFromDevice(d)}");
+    }
+    void openUser(BuildContext context, UserRowModel user) {
       if (kIsMobile) {
         Sheet.showSheet(
           context,
-          widget: employee.isAdmin
-              ? AdminProfile(admin: employee.toAdminModel())
-              : EmployeeDetails(employee: employee.toEmployeeModel()),
+          widget: user.isAdmin
+              ? AdminProfile(admin: user.toAdminModel())
+              : EmployeeDetails(employee: user.toEmployeeModel()),
         );
       } else {
         GeneralDialog.showRTLSheet(
           context,
-          employee.isAdmin
-              ? AdminProfile(admin: employee.toAdminModel())
-              : EmployeeDetails(employee: employee.toEmployeeModel()),
+          user.isAdmin
+              ? AdminProfile(admin: user.toAdminModel())
+              : EmployeeDetails(employee: user.toEmployeeModel()),
         );
       }
     }
 
-    /// Reusable tappable DataCell
     DataCell dataCell(BuildContext context, Widget child) {
       return DataCell(
         InkWell(
           onTap: () {
-            // if (!employee.isEmployee) return;
-            openEmployee(context, employee);
+            openUser(context, user);
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1237,16 +1236,15 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     return DataRow(
       selected: isSelected,
       onSelectChanged: (selected) {
-        // if (!employee.isEmployee) return;
-        controllerRead.onSelected(employee.uid, selected);
+        controllerRead.onSelected(user.uid, selected);
         if (selected ?? false) {
-          if (!_selectedEmployees.any((e) => e.uid == employee.uid)) {
-            _selectedEmployees.add(employee);
-            _employeesList.add(employee);
+          if (!_selectedEmployees.any((e) => e.uid == user.uid)) {
+            _selectedEmployees.add(user);
+            _employeesList.add(user);
           }
         } else {
-          _selectedEmployees.removeWhere((e) => e.uid == employee.uid);
-          _employeesList.removeWhere((e) => e.uid == employee.uid);
+          _selectedEmployees.removeWhere((e) => e.uid == user.uid);
+          _employeesList.removeWhere((e) => e.uid == user.uid);
         }
         setState(() {});
       },
@@ -1255,7 +1253,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         dataCell(
           context,
           Text(
-            employee.employeeId ?? "",
+            user.employeeId ?? "",
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
@@ -1271,12 +1269,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 size: 32,
                 showCrown: true,
                 userData: UserDataModel(
-                  uid: employee.uid,
-                  name: employee.name,
-                  profilePic: employee.profileImageUrl,
-                  userType: employee.isAdmin
-                      ? UserType.admin
-                      : UserType.employee,
+                  uid: user.uid,
+                  name: user.name,
+                  profilePic: user.profileImageUrl,
+                  userType: user.isAdmin ? UserType.admin : UserType.employee,
                 ),
               ),
               const SizedBox(width: 8),
@@ -1286,7 +1282,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 children: [
                   Flexible(
                     child: Text(
-                      employee.name,
+                      user.name,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
@@ -1297,7 +1293,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   Flexible(
                     child: Text(
                       CacheService.designationByUid(
-                            employee.designation ?? "",
+                            user.designation ?? "",
                           )?.name ??
                           '',
                       style: Theme.of(
@@ -1325,12 +1321,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   context,
                 ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
               ),
-              if (employee.subDepartment != null &&
-                  employee.subDepartment!.isNotEmpty)
+              if (user.subDepartment != null && user.subDepartment!.isNotEmpty)
                 Text(
-                  CacheService.subDepartmentByUid(
-                        employee.subDepartment!,
-                      )?.name ??
+                  CacheService.subDepartmentByUid(user.subDepartment!)?.name ??
                       '',
                   style: Theme.of(
                     context,
@@ -1343,7 +1336,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         /// Email
         dataCell(
           context,
-          Text(employee.email, style: Theme.of(context).textTheme.bodySmall),
+          Text(user.email, style: Theme.of(context).textTheme.bodySmall),
         ),
 
         /// Mobile Platform
@@ -1370,7 +1363,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         dataCell(
           context,
           Text(
-            CacheService.roleByUid(employee.role ?? "")?.name ?? '',
+            CacheService.roleByUid(user.role ?? "")?.name ?? '',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -1381,11 +1374,11 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: employee.isActive ? AppColors.success : AppColors.danger,
+              color: user.isActive ? AppColors.success : AppColors.danger,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              employee.isActive ? 'Active' : 'Inactive',
+              user.isActive ? 'Active' : 'Inactive',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.w500,
@@ -1395,7 +1388,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         ),
 
         /// Created By
-        dataCell(context, CreatedByWidget(userData: employee.createdBy)),
+        dataCell(context, CreatedByWidget(userData: user.createdBy)),
 
         /// Actions (no row tap)
         DataCell(
@@ -1410,20 +1403,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                           Sheet.showSheet(
                             context,
                             widget: EmployeeEdit(
-                              uid: employee.uid,
-                              admin: employee.isAdmin
-                                  ? employee.toAdminModel()
-                                  : null,
+                              uid: user.uid,
+                              admin: user.isAdmin ? user.toAdminModel() : null,
                             ),
                           );
                         } else {
                           GeneralDialog.showRTLSheet(
                             context,
                             EmployeeEdit(
-                              uid: employee.uid,
-                              admin: employee.isAdmin
-                                  ? employee.toAdminModel()
-                                  : null,
+                              uid: user.uid,
+                              admin: user.isAdmin ? user.toAdminModel() : null,
                             ),
                           );
                         }
@@ -1433,13 +1422,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       icon: Icon(Iconsax.edit, color: AppColors.grey400),
                       onPressed: null,
                     ),
-              if (!employee.isAdmin)
+              if (!user.isAdmin)
                 (permissions?.canDelete ?? false)
                     ? IconButton(
                         icon: const Icon(Iconsax.trash),
                         color: AppColors.danger,
                         onPressed: () async {
-                          handleDelete(context, employee);
+                          handleDelete(context, user);
                         },
                       )
                     : IconButton(

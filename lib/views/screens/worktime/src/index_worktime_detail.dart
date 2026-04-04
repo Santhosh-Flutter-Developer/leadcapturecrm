@@ -136,7 +136,6 @@ class WorktimeCalendarDataSource extends CalendarDataSource {
           var breakEnd =
               sortedBreaks[i].value["end"]?.toDate() ?? DateTime.now();
 
-          // Add worktime from clockIn to break start
           appointments.add(
             Appointment(
               startTime: workStart,
@@ -147,7 +146,6 @@ class WorktimeCalendarDataSource extends CalendarDataSource {
             ),
           );
 
-          // Add break period
           appointments.add(
             Appointment(
               startTime: breakStart,
@@ -175,7 +173,6 @@ class WorktimeCalendarDataSource extends CalendarDataSource {
       }
     }
 
-    // Handle permissions
     for (var perm in permissions) {
       appointments.add(
         Appointment(

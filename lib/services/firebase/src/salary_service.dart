@@ -358,6 +358,24 @@ class SalaryLedgerService {
       permissions: [],
     );
   }
+
+  static Future<void> processSalaryForAllEmployees(int monthCode) async {
+  try {
+    final cid = await Spdb.getCid();
+    if (cid == null) return;
+
+    final employeesSnapshot =
+        await firebase.users.doc(cid).collection(Collections.users.name).get();
+
+    for (final doc in employeesSnapshot.docs) {
+      final userId = doc.id;
+      final attendance = await getAttendanceSummaryForUser(userId, monthCode);
+      await processMonthlySalary(monthCode: monthCode, attendance: attendance);
+    }
+  } catch (e) {
+    print("Error processing salary for all employees: $e");
+  }
+}
 }
 
 class SalarySummary {

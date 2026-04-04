@@ -174,13 +174,11 @@ class EmployeeModel {
     };
   }
 
-  Map<String, dynamic> toUpdateMap() {
-    return <String, dynamic>{
-      'employeeId': employeeId,
-      'lowercaseEmployeeId': lowercaseEmployeeId,
+  Map<String, dynamic> toUpdateMap({bool updatePassword = false}) {
+    return {
       'name': name.encrypt,
       'email': email.encrypt,
-      'password': password.encrypt,
+      if (updatePassword) 'password': password.encrypt,
       'designation': designation,
       'department': department,
       'subDepartment': subDepartment,
@@ -201,8 +199,7 @@ class EmployeeModel {
       'isActive': isActive,
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
-      'createdBy': createdBy.toMap(),
-      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
 
@@ -214,83 +211,59 @@ class EmployeeModel {
       return null;
     }
 
+    List<Map<String, dynamic>>? parseDevices(dynamic value) {
+      if (value == null) return null;
+      if (value is List) {
+        return value
+            .whereType<Map<String, dynamic>>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return null;
+    }
+
     return EmployeeModel(
       uid: uid,
-      employeeId: map['employeeId'] != null && map['employeeId'] is String
-          ? map['employeeId'] as String
-          : '',
-      lowercaseEmployeeId:
-          map['lowercaseEmployeeId'] != null &&
-              map['lowercaseEmployeeId'] is String
-          ? map['lowercaseEmployeeId'] as String
-          : '',
-      name: map['name'] != null && map['name'] is String
-          ? (map['name'] as String).decrypt
-          : '',
-      email: map['email'] != null && map['email'] is String
-          ? (map['email'] as String).decrypt
-          : '',
-      password: map['password'] != null && map['password'] is String
-          ? (map['password'] as String).decrypt
-          : '',
-      designation: map['designation'] != null && map['designation'] is String
-          ? map['designation'] as String
-          : '',
+      employeeId: map['employeeId'] ?? '',
+      lowercaseEmployeeId: map['lowercaseEmployeeId'] ?? '',
+      name: (map['name'] ?? '').toString().decrypt,
+      email: (map['email'] ?? '').toString().decrypt,
+      password: (map['password'] ?? '').toString().decrypt,
+      designation: map['designation'] ?? '',
       department: parseList(map['department']),
-      subDepartment: map['subDepartment'] as String?,
-      mobileNumber: map['mobileNumber'] != null && map['mobileNumber'] is String
-          ? (map['mobileNumber'] as String).decrypt
-          : '',
-      profileImageUrl: map['profileImageUrl'] as String?,
-      gender: map['gender'] != null && map['gender'] is String
-          ? map['gender'] as String
-          : '',
-      dateOfJoining: map['dateOfJoining'] != null && map['dateOfJoining'] is int
-          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfJoining'] as int)
+      subDepartment: map['subDepartment'],
+      mobileNumber: (map['mobileNumber'] ?? '').toString().decrypt,
+      profileImageUrl: map['profileImageUrl'],
+      gender: map['gender'] ?? '',
+      dateOfJoining: map['dateOfJoining'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfJoining'])
           : DateTime.now(),
-      dateOfBirth: map['dateOfBirth'] != null && map['dateOfBirth'] is int
-          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfBirth'] as int)
+      dateOfBirth: map['dateOfBirth'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfBirth'])
           : null,
-      role: map['role'] != null && map['role'] is String
-          ? map['role'] as String
-          : '',
-      address: map['address'] != null && map['address'] is String
-          ? (map['address'] as String).decrypt
-          : '',
-      about: map['about'] != null && map['about'] is String
-          ? (map['about'] as String).decrypt
-          : '',
-      loginAllowed: map['loginAllowed'] != null && map['loginAllowed'] is bool
-          ? map['loginAllowed'] as bool
-          : false,
-      receiveEmailNotifications:
-          map['receiveEmailNotifications'] != null &&
-              map['receiveEmailNotifications'] is bool
-          ? map['receiveEmailNotifications'] as bool
-          : false,
-      skills: map['skills'] != null && map['skills'] is String
-          ? (map['skills'] as String).decrypt
-          : '',
-      employeeType: map['employeeType'] as String?,
+      role: map['role'] ?? '',
+      address: (map['address'] ?? '').toString().decrypt,
+      about: (map['about'] ?? '').toString().decrypt,
+      loginAllowed: map['loginAllowed'] ?? false,
+      receiveEmailNotifications: map['receiveEmailNotifications'] ?? false,
+      skills: (map['skills'] ?? '').toString().decrypt,
+      employeeType: map['employeeType'],
       reportingTo: parseList(map['reportingTo']),
-      maritalStatus:
-          map['maritalStatus'] != null && map['maritalStatus'] is String
-          ? map['maritalStatus'] as String
-          : '',
-      isActive: map['isActive'] != null && map['isActive'] is bool
-          ? map['isActive'] as bool
-          : false,
-      isInitialPasswordChanged:
-          map['isInitialPasswordChanged'] as bool? ?? false,
-      createdBy:
-          map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
-          ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
+      maritalStatus: map['maritalStatus'] ?? '',
+      isActive: map['isActive'] ?? true,
+      lastActive: map['lastActive'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastActive'])
+          : null,
+      devices: parseDevices(map['devices']),
+      isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
+      createdBy: map['createdBy'] != null
+          ? UserDataModel.fromMap(map['createdBy'])
           : UserDataModel.fromEmptyMap(),
-      createdAt: map['createdAt'] != null && map['createdAt'] is int
-          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
+      createdAt: map['createdAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
           : DateTime.now(),
-      updatedAt: map['updatedAt'] != null && map['updatedAt'] is int
-          ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int)
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'])
           : DateTime.now(),
     );
   }
@@ -436,6 +409,7 @@ extension AdminToRow on AdminModel {
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      devices: devices,
     );
   }
 }
@@ -449,7 +423,7 @@ extension UserRowToEmployee on UserRowModel {
       employeeId: employeeId ?? '',
       name: name,
       email: email,
-      password: '', // not available in list
+      password: '',
       designation: designation ?? '',
       department: department ?? [],
       subDepartment: subDepartment,
@@ -486,7 +460,7 @@ extension UserRowToAdmin on UserRowModel {
       uid: uid,
       name: name,
       email: email,
-      password: adminPassword ?? '', // not available in list/edit
+      password: adminPassword ?? '',
       mobileNumber: mobileNumber,
       profileImageUrl: profileImageUrl,
       isActive: isActive,
