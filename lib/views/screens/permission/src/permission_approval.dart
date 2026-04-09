@@ -54,10 +54,9 @@ class _PermissionApprovalState extends State<PermissionApproval> {
     try {
       futureLoading(context);
 
-      // ✅ Call the complete approval service
       await WorkPermissionService.approveOrRejectPermission(
         status: PermissionsStatus.rejected,
-        withSalary: false, // Rejected always without salary
+        withSalary: false,
         uid: model!.uid,
       );
 
@@ -74,12 +73,10 @@ class _PermissionApprovalState extends State<PermissionApproval> {
     }
   }
 
-  /// ✅ UPDATED: Use WorkPermissionService.approveOrRejectPermission
   Future<void> _approvePermission() async {
     try {
       futureLoading(context);
 
-      // ✅ Call the complete approval service with salary option
       await WorkPermissionService.approveOrRejectPermission(
         status: PermissionsStatus.approved,
         withSalary: withSalary,

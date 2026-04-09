@@ -214,11 +214,6 @@ class WorkPermissionService {
         modified: DateTime.now(),
       );
 
-      final docRef = await firebase.users
-          .doc(cid)
-          .collection(Collections.permission.name)
-          .add(model.toMap());
-
       DateTime from = model.from;
 
       int start = DateTime(
@@ -410,10 +405,11 @@ class WorkPermissionService {
     try {
       // 1️⃣ Get company & admin info
       var cid = await Spdb.getCid();
-      var adminId = await Spdb.getUid();
+      var admin = await Spdb.getUser();
+      var adminname = admin.name;
 
-      if (cid == null || adminId == null) {
-        throw Exception("Company or admin not found. Please login again.");
+      if (cid == null) {
+        throw Exception("Company not found. Please login again.");
       }
 
       // 2️⃣ Get permission document
@@ -435,12 +431,11 @@ class WorkPermissionService {
       await docRef.update({
         'status': status.name.toString(),
         'withSalary': withSalary,
-        'approvedBy': adminId,
+        'approvedBy': adminname,
         'approvedAt': now.millisecondsSinceEpoch,
         'modified': now.millisecondsSinceEpoch,
       });
 
-      // 4️⃣ Handle Salary Deduction (ONLY for APPROVED without salary)
       if (status == PermissionsStatus.approved && !withSalary) {
         await _deductSalaryForPermission(
           cid: cid,

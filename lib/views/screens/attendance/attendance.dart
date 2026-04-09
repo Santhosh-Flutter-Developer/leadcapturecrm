@@ -16,7 +16,6 @@ import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/download.dart';
 import 'package:leadcapture/utils/src/open_file.dart';
 import 'package:leadcapture/utils/src/platform.dart';
-import 'package:leadcapture/utils/src/status_color.dart';
 import 'package:leadcapture/views/components/src/xlsx_writer.dart';
 import 'package:leadcapture/views/screens/attendance/attendance_helper.dart';
 import 'package:leadcapture/views/screens/attendance/employee_report.dart';
@@ -244,17 +243,6 @@ class _AttendanceState extends State<Attendance>
     }
   }
 
-  void _resetFilters() {
-    setState(() {
-      selectedEmployee = "All";
-      selectedDepartment = "All";
-      selectedStatus = "All";
-      selectedDateRange = null;
-      dateRangeText = "Select Date Range";
-      applyFilters();
-    });
-  }
-
   String formatTime(int? time) {
     if (time == null) return "-";
     final dt = DateTime.fromMillisecondsSinceEpoch(time);
@@ -265,7 +253,6 @@ class _AttendanceState extends State<Attendance>
     try {
       List<List<String>> exportData = [];
 
-      /// ✅ HEADER
       exportData.add([
         "Employee Name",
         "Date",
@@ -276,7 +263,6 @@ class _AttendanceState extends State<Attendance>
         "Permission Status",
       ]);
 
-      /// ✅ DATA
       for (var a in filteredList) {
         final emp = findEmployee(a.employeeId);
         final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
@@ -308,17 +294,14 @@ class _AttendanceState extends State<Attendance>
         ]);
       }
 
-      /// ✅ CREATE EXCEL
       var fileBytes = await XlsxWriter().create(exportData);
 
-      /// ✅ SAVE FILE
       final filePath = await saveFileToDownloads(
         fileBytes,
         fileName:
             "Attendance_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx",
       );
 
-      /// ✅ OPEN FILE
       openfile(filePath, context);
     } catch (e) {
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -1173,9 +1156,9 @@ class _AttendanceState extends State<Attendance>
       items.addAll([
         ("Half Day", stats.halfDayDays.toString(), Colors.amber),
         ("Late", stats.lateDays.toString(), Colors.purple),
-        ("Early Exit", stats.earlyExitDays.toString(), Colors.deepOrange),
-        ("OT Hours", stats.totalOTHours, Colors.teal),
-        ("Less Hours", stats.totalLessHours, Colors.brown),
+        // ("Early Exit", stats.earlyExitDays.toString(), Colors.deepOrange),
+        // ("OT Hours", stats.totalOTHours, Colors.teal),
+        // ("Less Hours", stats.totalLessHours, Colors.brown),
       ]);
     }
 
@@ -1557,181 +1540,136 @@ class _AttendanceState extends State<Attendance>
             : "-";
 
         return InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => showAttendanceDetails(a),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border(left: BorderSide(color: color, width: 4)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(.25)),
+              color: isToday ? Colors.blue.shade50 : Colors.white,
             ),
-            child: Card(
-              elevation: 1,
-              color: isToday ? Colors.blue[50] : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isAdmin && emp != null)
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.blue.shade100,
-                            backgroundImage: emp.profileImageUrl != null
-                                ? NetworkImage(emp.profileImageUrl!)
-                                : null,
-                            child: emp.profileImageUrl == null
-                                ? Text(
-                                    emp.name.isNotEmpty
-                                        ? emp.name[0].toUpperCase()
-                                        : "?",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : null,
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  emp.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Text(
-                                  emp.department != null &&
-                                          emp.department!.isNotEmpty
-                                      ? emp.department!.first
-                                      : "No Department",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          buildStatusChip(status),
-                        ],
-                      ),
-                    if (isAdmin) const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: color.withOpacity(.15),
-                          child: Text(
-                            date != null ? DateFormat('dd').format(date) : "--",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: color,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                date != null
-                                    ? DateFormat(
-                                        'EEE, MMM dd yyyy',
-                                      ).format(date)
-                                    : "--",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Iconsax.login,
-                                    size: 14,
-                                    color: Colors.green,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    checkIn,
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-
-                                  const SizedBox(width: 12),
-
-                                  const Icon(
-                                    Iconsax.logout,
-                                    size: 14,
-                                    color: Colors.red,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    checkOut,
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!isAdmin) buildStatusChip(status),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        miniStat("Work", a.formattedWork, Colors.blue),
-                        miniStat("Break", a.formattedBreak, Colors.orange),
-                        miniStat("OT", a.formattedOT, Colors.green),
-                        miniStat("Less", a.formattedLess, Colors.red),
-                      ],
-                    ),
-                    if (punch.permissionType != null) ...[
-                      const SizedBox(height: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// 🔹 TOP SECTION (LIKE TODAY SUMMARY)
+                  Row(
+                    children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 5,
-                        ),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(.1),
-                          borderRadius: BorderRadius.circular(8),
+                          color: color.withOpacity(.2),
+                          shape: BoxShape.circle,
                         ),
-                        child: Row(
+                        child: Icon(
+                          getSummaryIcon(status),
+                          color: color,
+                          size: 18,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      /// DATE + STATUS
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Iconsax.warning_2,
-                              size: 14,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 6),
                             Text(
-                              "${formatPermission(punch.permissionType!)} • ${punch.permissionStatus!.name.toUpperCase()}",
-                              style: const TextStyle(fontSize: 11),
+                              date != null
+                                  ? DateFormat('EEE, dd MMM yyyy').format(date)
+                                  : "--",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                status.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: color,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
+
+                      /// WORK TIME
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            "Work",
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            a.formattedWork,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: color,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// 🔹 CHECK-IN / CHECK-OUT (MATCH TODAY SUMMARY)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _timeTile(
+                        Iconsax.login,
+                        "Check In",
+                        checkIn,
+                        Colors.green,
+                      ),
+                      _timeTile(
+                        Iconsax.logout,
+                        "Check Out",
+                        checkOut,
+                        punch.clockOut != null ? Colors.red : Colors.orange,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// 🔹 STATS ROW
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      miniStat("Break", a.formattedBreak, Colors.orange),
+                      miniStat("OT", a.formattedOT, Colors.green),
+                      miniStat("Less", a.formattedLess, Colors.red),
+                    ],
+                  ),
+
+                  /// 🔹 PERMISSION BADGE
+                  if (punch.permissionType != null) ...[
+                    const SizedBox(height: 10),
+                    buildPermissionBadge(punch),
                   ],
-                ),
+                ],
               ),
             ),
           ),
@@ -1913,14 +1851,14 @@ class _AttendanceState extends State<Attendance>
           const DataColumn(label: Text("Out 2")),
           const DataColumn(label: Text("In 3")),
           const DataColumn(label: Text("Out 3")),
-          const DataColumn(label: Text("Break")),
+          // const DataColumn(label: Text("Break")),
           const DataColumn(label: Text("Work")),
           DataColumn(
             label: const Text("Status"),
             // onSort: (i, asc) => sortByStatus(asc),
           ),
-          const DataColumn(label: Text("Permission")),
-          const DataColumn(label: Text("Action")),
+          // const DataColumn(label: Text("Permission")),
+          // const DataColumn(label: Text("Action")),
         ],
 
         rows: groupedData.entries.expand((entry) {
@@ -1949,25 +1887,58 @@ class _AttendanceState extends State<Attendance>
                           expandedMap[empId]!
                               ? Icons.keyboard_arrow_down
                               : Icons.keyboard_arrow_right,
+                          size: 20,
+                          color: Colors.grey.shade700,
                         ),
-                        const SizedBox(width: 6),
+
+                        const SizedBox(width: 8),
+
                         CircleAvatar(
-                          radius: 14,
+                          radius: 16,
+                          backgroundColor: Colors.blue.shade100,
                           child: Text(
-                            emp?.name.substring(0, 1).toUpperCase() ?? "?",
+                            (emp?.name.isNotEmpty ?? false)
+                                ? emp!.name[0].toUpperCase()
+                                : "?",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "${emp?.employeeId ?? ""} - ${emp?.name ?? ""}",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+
+                        const SizedBox(width: 10),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                emp?.name ?? "",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                emp?.employeeId ?? "",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                ...List.generate(12, (_) => const DataCell(Text(""))),
+                ...List.generate(9, (_) => const DataCell(Text(""))),
               ],
             ),
           );
@@ -1977,12 +1948,31 @@ class _AttendanceState extends State<Attendance>
           }
 
           for (var a in list) {
-            final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
-            final date = parseDateTime(punch?.punchDate);
+            // print("------------");
+            // print("Worktime exists: ${a.worktime != null}");
+            // print("ClockIn: ${a.worktime?.clockIn}");
+            // print("ClockOut: ${a.worktime?.clockOut}");
+            // print("Breaks: ${a.worktime?.breaks}");
+            DateTime? date;
 
-            final sessions = buildSessions(a.punchList);
+            if (a.worktime != null) {
+              date = a.worktime!.clockIn;
+            } else if (a.punchList.isNotEmpty) {
+              final punch = a.punchList.first;
+
+              if (punch.clockInDate != null) {
+                date = punch.clockInDate;
+              } else if (punch.punchDate.isNotEmpty) {
+                date = DateTime.tryParse(punch.punchDate);
+              }
+            }
+            final sessions = a.worktime != null
+                ? buildSessionsFromWorktime(a.worktime!)
+                : buildSessions(a.punchList);
+            // print("Sessions length: ${sessions.length}");
+            // print("Sessions data: $sessions");
             final formattedWork = a.formattedWork;
-            final formattedBreak = a.formattedBreak;
+            // final formattedBreak = a.formattedBreak;
             final status = getStatus(a);
             final color = getstatusColor(status);
 
@@ -1999,8 +1989,8 @@ class _AttendanceState extends State<Attendance>
                     ),
                   ),
 
-                  ...buildSessionCells(sessions),
-                  DataCell(Text(formattedBreak)),
+                  ...buildSessionCells(sessions, date),
+                  // DataCell(Text(formattedBreak)),
                   DataCell(Text(formattedWork)),
 
                   DataCell(
@@ -2017,8 +2007,8 @@ class _AttendanceState extends State<Attendance>
                     ),
                   ),
 
-                  const DataCell(Text("")),
-                  const DataCell(Text("")),
+                  // const DataCell(Text("")),
+                  // const DataCell(Text("")),
                 ],
               ),
             );
@@ -2036,46 +2026,12 @@ class _AttendanceState extends State<Attendance>
                 DataCell(Text("Present: $present")),
                 DataCell(Text("Absent: $absent")),
                 DataCell(Text("Holiday: $holiday")),
-                ...List.generate(10, (_) => const DataCell(Text(""))),
+                ...List.generate(7, (_) => const DataCell(Text(""))),
               ],
             ),
           );
           return rows;
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _permissionStatusChip(PermissionsStatus? status) {
-    Color color;
-
-    switch (status) {
-      case PermissionsStatus.approved:
-        color = Colors.green;
-        break;
-      case PermissionsStatus.rejected:
-        color = Colors.red;
-        break;
-      case PermissionsStatus.pending:
-        color = Colors.orange;
-        break;
-      default:
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status?.name.toUpperCase() ?? "",
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }
@@ -2171,7 +2127,6 @@ class _AttendanceState extends State<Attendance>
 
           const SizedBox(height: 16),
 
-          /// 📊 SUMMARY
           buildSummaryCards(empStats),
 
           const SizedBox(height: 16),
@@ -2370,8 +2325,6 @@ class _AttendanceState extends State<Attendance>
     final checkOut = hasCheckOut
         ? formatTime(punch.clockOut)
         : (hasCheckIn ? "Working..." : "--");
-
-    final isWorking = hasCheckIn && !hasCheckOut;
 
     double progress = (today.workingHourMinutes / 480).clamp(0.0, 1.0);
 

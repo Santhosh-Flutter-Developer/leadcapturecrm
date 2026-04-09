@@ -1,6 +1,5 @@
 // Project imports:
 import '/constants/constants.dart';
-import '/utils/utils.dart';
 
 class WorkPermissionModel {
   String uid;
@@ -132,7 +131,7 @@ class WorkPermissionModel {
       'status': status.name,
       'type': type.name,
       'withSalary': withSalary,
-      'approvedBy': approvedBy?.encrypt,
+      'approvedBy': approvedBy,
       'approvedAt': approvedAt?.millisecondsSinceEpoch,
       'modified': modified.millisecondsSinceEpoch,
     };

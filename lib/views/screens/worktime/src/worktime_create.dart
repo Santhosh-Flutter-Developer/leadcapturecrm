@@ -69,6 +69,7 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
     _dayEnd = await WorktimeService.checkDayEnd();
     print("DayEnd status: $_dayEnd");
 
+    // ✅ If day ended → reset everything
     if (_dayEnd) {
       await Db.clearClockIn();
       _alreadyClockIned = false;
@@ -77,22 +78,32 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       setState(() {});
       return;
     }
-    var clockIned = await Db.getClockIn();
-    _alreadyClockIned = clockIned != null;
 
-    if (clockIned != null) {
-      var clockIn = await WorktimeService.getClockIn(id: clockIned);
+    // ✅ Get active clock-in from Firestore
+    String? workTimeId = await WorktimeService.checkAlreadyClockedInReturnId();
 
+    if (workTimeId != null) {
+      _alreadyClockIned = true;
+
+      // Save locally
+      await Db.setClockIn(workTimeId);
+
+      // Fetch data
+      var clockIn = await WorktimeService.getClockIn(id: workTimeId);
+
+      // Check previous day
       if (clockIn.created.year != DateTime.now().year ||
           clockIn.created.month != DateTime.now().month ||
           clockIn.created.day != DateTime.now().day) {
         _previousDayNotFinished = true;
-        _worktimeModel = clockIn;
-      } else {
-        _worktimeModel = clockIn;
       }
+
+      _worktimeModel = clockIn;
+    } else {
+      _alreadyClockIned = false;
     }
 
+    // ✅ Restore timers
     if (_worktimeModel != null) {
       final clockInTime = _worktimeModel!.clockIn;
 
@@ -105,8 +116,8 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
 
         if (breakEnd == null) {
           isInBreak = true;
-          totalBreak += DateTime.now().difference(breakStart);
           _elapsedBreakTime = DateTime.now().difference(breakStart);
+          totalBreak += _elapsedBreakTime;
         } else {
           totalBreak += breakEnd.difference(breakStart);
         }
@@ -402,7 +413,7 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   Map<String, int> _calculateOtLess(int workingMinutes) {
-    const int officeMinutes = 480; 
+    const int officeMinutes = 480;
 
     int ot = 0;
     int less = 0;

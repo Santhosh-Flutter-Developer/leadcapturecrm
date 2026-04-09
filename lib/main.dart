@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:leadcapture/constants/src/enum.dart';
-import 'package:leadcapture/models/src/admin_model.dart';
-import 'package:leadcapture/models/src/user_data_model.dart';
 import 'package:local_notifier/local_notifier.dart';
 import '/firebase_options.dart';
 import '/app/app.dart';

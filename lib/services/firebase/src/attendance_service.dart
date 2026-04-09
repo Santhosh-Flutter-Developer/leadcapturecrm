@@ -409,11 +409,13 @@ class AttendanceService {
         if (d.isAfter(today)) break;
 
         final key = d.toIso8601String().split('T').first;
+        WorktimeModel? work = workMap[key];
 
         if (d.weekday == DateTime.sunday) {
           result.add(
             AttendanceModel(
               employeeId: userUid,
+              worktime: work,
               punchList: [
                 PunchModel(
                   punchDate: key,
@@ -438,7 +440,6 @@ class AttendanceService {
           continue;
         }
 
-        final work = workMap[key];
         final permission = permissionMap[key];
 
         int workingMinutes = 0;
@@ -509,6 +510,7 @@ class AttendanceService {
         result.add(
           AttendanceModel(
             employeeId: userUid,
+            worktime: work,
             punchList: [
               PunchModel(
                 punchDate: key,
@@ -897,7 +899,6 @@ class AttendanceService {
       final permission = permissionDoc.data()!;
 
       DateTime from = DateTime.fromMillisecondsSinceEpoch(permission['from']);
-      DateTime to = DateTime.fromMillisecondsSinceEpoch(permission['to']);
       String type = permission['type'];
 
       final start = DateTime(

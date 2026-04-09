@@ -345,13 +345,6 @@ Color getstatusColor(String status) {
   }
 }
 
-class WorkSession {
-  final DateTime inTime;
-  final DateTime outTime;
-
-  WorkSession({required this.inTime, required this.outTime});
-}
-
 List<Session> buildSessions(List<PunchModel> punchList) {
   List<Session> sessions = [];
 
@@ -365,24 +358,41 @@ List<Session> buildSessions(List<PunchModel> punchList) {
   return sessions;
 }
 
-List<DataCell> buildSessionCells(List<Session> sessions) {
+List<DataCell> buildSessionCells(List<Session> sessions, DateTime? date) {
+  final now = DateTime.now();
+
+  bool isToday =
+      date != null &&
+      date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day;
+
   List<DataCell> cells = [];
+
   for (int i = 0; i < 3; i++) {
     if (i < sessions.length) {
+      final session = sessions[i];
+
+      bool isCurrentlyWorking =
+          isToday && session.inTime != null && session.outTime == null;
+
       cells.add(
         DataCell(
           Text(
-            sessions[i].inTime != null
-                ? DateFormat('HH:mm').format(sessions[i].inTime!)
+            session.inTime != null
+                ? DateFormat('HH:mm').format(session.inTime!)
                 : "-",
           ),
         ),
       );
+
       cells.add(
         DataCell(
           Text(
-            sessions[i].outTime != null
-                ? DateFormat('HH:mm').format(sessions[i].outTime!)
+            session.outTime != null
+                ? DateFormat('HH:mm').format(session.outTime!)
+                : isCurrentlyWorking
+                ? "Working..."
                 : "-",
           ),
         ),
@@ -397,28 +407,30 @@ List<DataCell> buildSessionCells(List<Session> sessions) {
 
 List<Session> buildSessionsFromWorktime(WorktimeModel w) {
   List<Session> sessions = [];
-
   DateTime currentIn = w.clockIn;
-
-  final sortedBreaks = w.breaks.entries.toList()
+  final sortedBreaks = (w.breaks).entries.toList()
     ..sort((a, b) => int.parse(a.key).compareTo(int.parse(b.key)));
-
+  if (sortedBreaks.isEmpty) {
+    if (w.clockOut != null) {
+      sessions.add(Session(inTime: currentIn, outTime: w.clockOut));
+    } else {
+      sessions.add(Session(inTime: currentIn, outTime: null));
+    }
+    return sessions;
+  }
   for (var entry in sortedBreaks) {
     final b = entry.value;
+
+    if (b['start'] == null || b['end'] == null) continue;
 
     final breakStart = (b['start'] as Timestamp).toDate();
     final breakEnd = (b['end'] as Timestamp).toDate();
 
-    /// Work before break
     sessions.add(Session(inTime: currentIn, outTime: breakStart));
 
-    /// Next session starts after break
     currentIn = breakEnd;
   }
-
-  /// Final session
   sessions.add(Session(inTime: currentIn, outTime: w.clockOut));
-
   return sessions;
 }
 

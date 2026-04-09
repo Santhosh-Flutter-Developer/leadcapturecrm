@@ -112,7 +112,7 @@ class AttendanceModel {
     return AttendanceModel(
       employeeId: map['employeeId'] ?? '',
       worktime: map['worktime'] != null
-          ? WorktimeModel.fromMap(map['worktime']['uid'] ?? '', map['worktime'])
+          ? WorktimeModel.fromMap('', map['worktime'])
           : null,
       punchList: punchRaw == null
           ? []

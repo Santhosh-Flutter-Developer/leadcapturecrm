@@ -234,574 +234,283 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
 
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
-                                      14,
-                                      12,
-                                      14,
-                                      14,
+                                      10,
+                                      8,
+                                      10,
+                                      10,
                                     ),
-                                    child: Row(
+                                    child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          height: 34,
-                                          width: 34,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                AppColors.primaryColor
-                                                    .withOpacity(0.75),
-                                                AppColors.primaryColor,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                _rList[index].userName,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.primaryColor
-                                                    .withOpacity(0.25),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 3),
+
+                                            const SizedBox(width: 6),
+
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: getStatusColor(
+                                                  permission.status.name,
+                                                ).withOpacity(0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: getStatusColor(
+                                                    permission.status.name,
+                                                  ).withOpacity(0.4),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                permission
+                                                    .status
+                                                    .name
+                                                    .capitalizeFirst,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      color: getStatusColor(
+                                                        permission.status.name,
+                                                      ),
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 6),
+
+                                        RichText(
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          text: TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: _permissionTypeText(
+                                                  permission,
+                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppColors
+                                                          .primaryColor,
+                                                    ),
+                                              ),
+                                              const TextSpan(
+                                                text: "  •  ",
+                                                style: TextStyle(
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text:
+                                                    permission.reason.isNotEmpty
+                                                    ? permission.reason
+                                                    : 'No reason provided',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color:
+                                                          permission
+                                                              .reason
+                                                              .isNotEmpty
+                                                          ? Colors.grey[700]
+                                                          : Colors.grey[400],
+                                                    ),
                                               ),
                                             ],
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              (index + 1).toString().padLeft(
-                                                2,
-                                                '0',
-                                              ),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                          ),
                                         ),
 
-                                        const SizedBox(width: 12),
+                                        const SizedBox(height: 8),
 
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              // Row 1: Name + Status indicator
-                                              Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      _rList[index].userName,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleMedium
-                                                          ?.copyWith(
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
                                                   ),
-                                                  const SizedBox(width: 8),
-                                                  // Status dot + label
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 9,
-                                                          vertical: 4,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: getStatusColor(
-                                                        permission.status.name,
-                                                      ).withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            20,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: getStatusColor(
-                                                          permission
-                                                              .status
-                                                              .name,
-                                                        ).withOpacity(0.3),
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Container(
-                                                          width: 7,
-                                                          height: 7,
-                                                          decoration: BoxDecoration(
-                                                            color:
-                                                                getStatusColor(
-                                                                  permission
-                                                                      .status
-                                                                      .name,
-                                                                ),
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 5,
-                                                        ),
-                                                        Text(
-                                                          permission
-                                                              .status
-                                                              .name
-                                                              .capitalizeFirst,
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                color:
-                                                                    getStatusColor(
-                                                                      permission
-                                                                          .status
-                                                                          .name,
-                                                                    ),
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                letterSpacing:
-                                                                    0.3,
-                                                              ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
+                                              decoration: BoxDecoration(
+                                                color: Colors.green[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
                                               ),
-
-                                              const SizedBox(height: 8),
-
-                                              // Permission Type Chip
-                                              // Row / Wrap for Permission Type + Chips
-                                              Wrap(
-                                                spacing: 8,
-                                                runSpacing: 6,
-                                                crossAxisAlignment:
-                                                    WrapCrossAlignment.center,
-                                                children: [
-                                                  // Permission Type badge
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 6,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: [
-                                                          AppColors.primaryColor
-                                                              .withOpacity(0.1),
-                                                          AppColors.primaryColor
-                                                              .withOpacity(
-                                                                0.05,
-                                                              ),
-                                                        ],
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            20,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: AppColors
-                                                            .primaryColor
-                                                            .withOpacity(0.2),
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      _permissionTypeText(
-                                                        permission,
-                                                      ),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .labelSmall
-                                                          ?.copyWith(
-                                                            color: AppColors
-                                                                .primaryColor,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            letterSpacing: 0.2,
-                                                          ),
-                                                    ),
-                                                  ),
-
-                                                  // With Salary chip
-                                                  if (permission.withSalary)
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 5,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.blue[50],
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              20,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.blue
-                                                              .withOpacity(
-                                                                0.25,
-                                                              ),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            Icons
-                                                                .attach_money_rounded,
-                                                            size: 13,
-                                                            color: Colors
-                                                                .blue[700],
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 4,
-                                                          ),
-                                                          Text(
-                                                            'With Salary',
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .labelSmall
-                                                                ?.copyWith(
-                                                                  color: Colors
-                                                                      .blue[700],
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-
-                                                  // Approved by chip
-                                                  if (permission.approvedBy !=
-                                                      null)
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 5,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green[50],
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              20,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.green
-                                                              .withOpacity(
-                                                                0.25,
-                                                              ),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.person,
-                                                            size: 13,
-                                                            color: Colors
-                                                                .green[700],
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 4,
-                                                          ),
-                                                          Text(
-                                                            permission
-                                                                .approvedBy!,
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .labelSmall
-                                                                ?.copyWith(
-                                                                  color: Colors
-                                                                      .green[700],
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-
-                                                  // Approved at chip
-                                                  if (permission.approvedAt !=
-                                                      null)
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 5,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            Colors.orange[50],
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              20,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.orange
-                                                              .withOpacity(
-                                                                0.25,
-                                                              ),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            Icons
-                                                                .calendar_today,
-                                                            size: 13,
-                                                            color: Colors
-                                                                .orange[700],
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 4,
-                                                          ),
-                                                          Text(
-                                                            DateFormat(
-                                                              'MMM dd, yyyy',
-                                                            ).format(
-                                                              permission
-                                                                  .approvedAt!,
-                                                            ),
-                                                            style: Theme.of(context)
-                                                                .textTheme
-                                                                .labelSmall
-                                                                ?.copyWith(
-                                                                  color: Colors
-                                                                      .orange[700],
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-
-                                              const SizedBox(height: 10),
-
-                                              // ─── Duration + Date Row ────────────────────────────
-                                              Row(
-                                                children: [
-                                                  // Duration pill
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 5,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green[50],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            20,
-                                                          ),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Iconsax.clock,
-                                                          size: 13,
-                                                          color:
-                                                              Colors.green[700],
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        Text(
-                                                          _formatDuration(
-                                                            duration,
-                                                          ),
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                color: Colors
-                                                                    .green[700],
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-
-                                                  const Spacer(),
-
-                                                  // Date badge (calendar-style)
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 5,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.blue[50],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            10,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: Colors.blue
-                                                            .withOpacity(0.2),
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Column(
-                                                      children: [
-                                                        Text(
-                                                          DateFormat(
-                                                            'MMM',
-                                                          ).format(
-                                                            permission.created,
-                                                          ),
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: Colors
-                                                                    .blue[400],
-                                                                letterSpacing:
-                                                                    0.5,
-                                                                height: 1.2,
-                                                              ),
-                                                        ),
-                                                        Text(
-                                                          DateFormat(
-                                                            'dd',
-                                                          ).format(
-                                                            permission.created,
-                                                          ),
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .titleSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color: Colors
-                                                                    .blue[700],
-                                                                height: 1.1,
-                                                              ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-
-                                              const SizedBox(height: 10),
-
-                                              Divider(
-                                                color: Colors.grey[200],
-                                                height: 1,
-                                              ),
-
-                                              const SizedBox(height: 8),
-
-                                              // ─── Reason + timeago ───────────────────────────────
-                                              Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Icon(
-                                                    Icons.notes_rounded,
-                                                    size: 14,
-                                                    color: Colors.grey[400],
+                                                    Iconsax.clock,
+                                                    size: 11,
+                                                    color: Colors.green[700],
                                                   ),
-                                                  const SizedBox(width: 5),
-                                                  Expanded(
-                                                    child: Text(
-                                                      permission
-                                                              .reason
-                                                              .isNotEmpty
-                                                          ? permission.reason
-                                                          : 'No reason provided',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color:
-                                                                permission
-                                                                    .reason
-                                                                    .isNotEmpty
-                                                                ? Colors
-                                                                      .grey[600]
-                                                                : Colors
-                                                                      .grey[400],
-                                                            fontStyle:
-                                                                permission
-                                                                    .reason
-                                                                    .isNotEmpty
-                                                                ? FontStyle
-                                                                      .normal
-                                                                : FontStyle
-                                                                      .italic,
-                                                            height: 1.4,
-                                                          ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
+                                                  const SizedBox(width: 4),
                                                   Text(
-                                                    timeago(
-                                                      permission.modified,
-                                                    ),
+                                                    _formatDuration(duration),
                                                     style: Theme.of(context)
                                                         .textTheme
                                                         .labelSmall
                                                         ?.copyWith(
-                                                          color: AppColors
-                                                              .greyColor,
+                                                          color:
+                                                              Colors.green[700],
                                                           fontWeight:
-                                                              FontWeight.w500,
-                                                          fontStyle:
-                                                              FontStyle.italic,
+                                                              FontWeight.w600,
                                                         ),
                                                   ),
                                                 ],
                                               ),
+                                            ),
+
+                                            const Spacer(),
+
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                /// 📅 DATE BADGE
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue[50],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.blue
+                                                          .withOpacity(0.2),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Column(
+                                                    children: [
+                                                      Text(
+                                                        DateFormat(
+                                                          'MMM',
+                                                        ).format(
+                                                          permission.created,
+                                                        ),
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .labelSmall
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              color: Colors
+                                                                  .blue[400],
+                                                              letterSpacing:
+                                                                  0.5,
+                                                              height: 1.2,
+                                                            ),
+                                                      ),
+                                                      Text(
+                                                        DateFormat('dd').format(
+                                                          permission.created,
+                                                        ),
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleSmall
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Colors
+                                                                  .blue[700],
+                                                              height: 1.1,
+                                                            ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                                const SizedBox(height: 4),
+
+                                                Text(
+                                                  timeago(permission.modified),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        fontSize: 10,
+                                                        color:
+                                                            AppColors.greyColor,
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 6),
+                                        Divider(
+                                          color: Colors.grey[200],
+                                          height: 1,
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        if (permission.withSalary ||
+                                            permission.approvedBy != null ||
+                                            permission.approvedAt != null)
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 4,
+                                            children: [
+                                              if (permission.withSalary)
+                                                _smallChip(
+                                                  "With Salary",
+                                                  Colors.blue,
+                                                ),
+
+                                              if (permission.approvedBy != null)
+                                                _iconText(
+                                                  Icons.person_outline,
+                                                  permission.approvedBy!,
+                                                ),
+
+                                              if (permission.approvedAt != null)
+                                                _iconText(
+                                                  Icons.event,
+                                                  DateFormat('MMM dd').format(
+                                                    permission.approvedAt!,
+                                                  ),
+                                                ),
                                             ],
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -847,6 +556,35 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _smallChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _iconText(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12),
+        const SizedBox(width: 3),
+        Text(text, style: const TextStyle(fontSize: 11)),
+      ],
     );
   }
 }
