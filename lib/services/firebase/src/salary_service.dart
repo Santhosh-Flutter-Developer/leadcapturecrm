@@ -105,9 +105,6 @@ class SalaryLedgerService {
       final leaveDays = (workingDays - present).clamp(0, workingDays);
       final earnedSalary = present * perDaySalary;
       final permissionCounts = <PermissionType, int>{};
-      for (var p in attendance.permissions) {
-        permissionCounts[p] = (permissionCounts[p] ?? 0) + 1;
-      }
 
       double permissionDeduction = 0;
 
@@ -150,7 +147,6 @@ class SalaryLedgerService {
       final salary = SalaryModel(
         salaryNumber: monthCode.toString(),
         employeeId: attendance.employeeId,
-        permissionId: attendance.permissions.map((e) => e.name).join(','),
         workingDays: present.toString(),
         leaveDays: leaveDays.toString(),
         otHours: otHours.toStringAsFixed(2),
@@ -244,7 +240,6 @@ class SalaryLedgerService {
         workingHourMinutes: 0,
         lessHourMinutes: totalLessMinutes,
         otHourMinutes: totalOtMinutes,
-        permissions: permissions,
       );
     } catch (e) {
       print("Attendance summary error: $e");

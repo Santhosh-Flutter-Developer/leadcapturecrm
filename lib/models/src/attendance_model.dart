@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:leadcapture/constants/src/enum.dart';
+import 'package:leadcapture/models/src/workpermission_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 
 class AttendanceModel {
@@ -14,8 +15,7 @@ class AttendanceModel {
   int workingHourMinutes;
   int lessHourMinutes;
   int otHourMinutes;
-  List<PermissionType> permissions;
-  Map<String, PermissionType> permissionDetails;
+  List<WorkPermissionModel>? permissions;
 
   AttendanceModel({
     required this.employeeId,
@@ -28,8 +28,7 @@ class AttendanceModel {
     required this.workingHourMinutes,
     required this.lessHourMinutes,
     required this.otHourMinutes,
-    this.permissions = const [],
-    this.permissionDetails = const {},
+    this.permissions,
   });
 
   AttendanceModel copyWith({
@@ -43,8 +42,7 @@ class AttendanceModel {
     int? workingHourMinutes,
     int? lessHourMinutes,
     int? otHourMinutes,
-    List<PermissionType>? permissions,
-    Map<String, PermissionType>? permissionDetails,
+    List<WorkPermissionModel>? permissions,
   }) {
     return AttendanceModel(
       employeeId: employeeId ?? this.employeeId,
@@ -58,7 +56,6 @@ class AttendanceModel {
       lessHourMinutes: lessHourMinutes ?? this.lessHourMinutes,
       otHourMinutes: otHourMinutes ?? this.otHourMinutes,
       permissions: permissions ?? this.permissions,
-      permissionDetails: permissionDetails ?? this.permissionDetails,
     );
   }
 
@@ -74,40 +71,12 @@ class AttendanceModel {
       'workingHourMinutes': workingHourMinutes,
       'lessHourMinutes': lessHourMinutes,
       'otHourMinutes': otHourMinutes,
-      'permissions': permissions
-          .map((e) => e.toString().split('.').last)
-          .toList(),
-      'permissionDetails': {
-        for (var entry in permissionDetails.entries)
-          entry.key: entry.value.toString().split('.').last,
-      },
+      'permissions': permissions?.map((x) => x.toMap()).toList(),
     };
   }
 
   factory AttendanceModel.fromMap(Map<String, dynamic> map) {
     final punchRaw = map['punchList'] ?? map['punch_list'];
-    List<PermissionType> permissions = [];
-    final permissionsRaw = map['permissions'] as List?;
-    if (permissionsRaw != null) {
-      permissions = permissionsRaw.map<PermissionType>((e) {
-        return PermissionType.values.firstWhere(
-          (type) => type.toString().split('.').last == e.toString(),
-          orElse: () => PermissionType.permission,
-        );
-      }).toList();
-    }
-
-    Map<String, PermissionType> permissionDetails = {};
-    final permissionDetailsRaw = map['permissionDetails'] as Map?;
-    if (permissionDetailsRaw != null) {
-      permissionDetails = {
-        for (var entry in permissionDetailsRaw.entries)
-          entry.key: PermissionType.values.firstWhere(
-            (type) => type.toString().split('.').last == entry.value.toString(),
-            orElse: () => PermissionType.permission,
-          ),
-      };
-    }
 
     return AttendanceModel(
       employeeId: map['employeeId'] ?? '',
@@ -134,8 +103,11 @@ class AttendanceModel {
       otHourMinutes: map['ot_hour_minutes'] is int
           ? map['ot_hour_minutes']
           : int.tryParse(map['ot_hour_minutes']?.toString() ?? '0') ?? 0,
-      permissions: permissions,
-      permissionDetails: permissionDetails,
+      permissions: map['permissions'] == null
+          ? []
+          : (map['permissions'] as List)
+                .map((e) => WorkPermissionModel.fromMap(e))
+                .toList(),
     );
   }
 
@@ -146,7 +118,7 @@ class AttendanceModel {
 
   @override
   String toString() {
-    return 'AttendanceModel(punchList: $punchList, present: $present, holiday: $holiday, absent: $absent, workingHourMinutes: $workingHourMinutes, lessHourMinutes: $lessHourMinutes, otHourMinutes: $otHourMinutes, permissions: $permissions, permissionDetails: $permissionDetails)';
+    return 'AttendanceModel(punchList: $punchList, present: $present, holiday: $holiday, absent: $absent, workingHourMinutes: $workingHourMinutes, lessHourMinutes: $lessHourMinutes, otHourMinutes: $otHourMinutes)';
   }
 
   @override
@@ -159,9 +131,7 @@ class AttendanceModel {
         other.absent == absent &&
         other.workingHourMinutes == workingHourMinutes &&
         other.lessHourMinutes == lessHourMinutes &&
-        other.otHourMinutes == otHourMinutes &&
-        listEquals(other.permissions, permissions) &&
-        mapEquals(other.permissionDetails, permissionDetails);
+        other.otHourMinutes == otHourMinutes;
   }
 
   @override
@@ -173,28 +143,7 @@ class AttendanceModel {
         absent.hashCode ^
         workingHourMinutes.hashCode ^
         lessHourMinutes.hashCode ^
-        otHourMinutes.hashCode ^
-        permissions.hashCode ^
-        permissionDetails.hashCode;
-  }
-
-  bool hasPermission(PermissionType type) {
-    return permissions.contains(type);
-  }
-
-  bool hasPermissionOnDate(String dateKey, PermissionType type) {
-    return permissionDetails[dateKey] == type;
-  }
-
-  int permissionCount() {
-    return permissions.length;
-  }
-
-  List<String> getPermissionDates(PermissionType type) {
-    return permissionDetails.entries
-        .where((entry) => entry.value == type)
-        .map((entry) => entry.key)
-        .toList();
+        otHourMinutes.hashCode;
   }
 
   String _formatMinutes(int m) {
@@ -207,6 +156,65 @@ class AttendanceModel {
   String get formattedLess => _formatMinutes(lessHourMinutes);
   String get formattedOT => _formatMinutes(otHourMinutes);
   String get formattedBreak => _formatMinutes(breakMinutes);
+
+  AttendanceModel applyPermissions() {
+    if (permissions == null || permissions!.isEmpty) return this;
+
+    int updatedWorking = workingHourMinutes;
+    int updatedLess = lessHourMinutes;
+    int updatedOt = otHourMinutes;
+
+    bool isAbsentDay = absent == '1';
+    bool isHolidayDay = holiday == '1';
+
+    for (final p in permissions!) {
+      if (p.status != PermissionsStatus.approved) continue;
+
+      switch (p.type) {
+        case PermissionType.leaveFullDay:
+          return copyWith(
+            present: '0',
+            absent: '0',
+            holiday: holiday,
+            workingHourMinutes: 0,
+            lessHourMinutes: 0,
+            otHourMinutes: 0,
+          );
+
+        case PermissionType.leaveHalfDay:
+          updatedLess = (updatedLess - (workingHourMinutes ~/ 2)).clamp(
+            0,
+            updatedLess,
+          );
+          updatedWorking += (workingHourMinutes ~/ 2);
+          break;
+
+        case PermissionType.workFromHome:
+          updatedWorking = workingHourMinutes;
+          updatedLess = 0;
+          break;
+
+        case PermissionType.lateEntry:
+          updatedLess = (updatedLess - 30).clamp(0, updatedLess);
+          break;
+
+        case PermissionType.earlyExit:
+          updatedLess = (updatedLess - 30).clamp(0, updatedLess);
+          break;
+
+        case PermissionType.permission:
+          updatedLess = (updatedLess - 60).clamp(0, updatedLess);
+          break;
+      }
+    }
+
+    return copyWith(
+      workingHourMinutes: updatedWorking,
+      lessHourMinutes: updatedLess,
+      otHourMinutes: updatedOt,
+      present: isAbsentDay ? '0' : '1',
+    );
+  }
 }
 
 class PunchModel {

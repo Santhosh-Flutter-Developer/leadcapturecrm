@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
+import 'package:leadcapture/models/src/workpermission_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 
 String getEmployeeSummary(List<AttendanceModel> list) {
@@ -108,12 +109,61 @@ AttendanceStats calculateStats(List<AttendanceModel> list) {
   int lessHours = 0;
 
   for (var a in list) {
-    if (a.punchList.isEmpty) {
+    // 🔥 STEP 1: APPLY PERMISSION IMPACT
+    final updated = a.applyPermissions();
+
+    // 🔥 STEP 2: CHECK PERMISSIONS FIRST (PRIORITY)
+    if (a.permissions != null && a.permissions!.isNotEmpty) {
+      final p = a.permissions!.firstWhere(
+        (p) => p.status == PermissionsStatus.approved,
+        orElse: () => a.permissions!.first,
+      );
+
+      switch (p.status) {
+        case PermissionsStatus.pending:
+          pending++;
+          continue;
+
+        case PermissionsStatus.rejected:
+          rejected++;
+          continue;
+
+        case PermissionsStatus.approved:
+          switch (p.type) {
+            case PermissionType.leaveFullDay:
+              leave++;
+              continue;
+
+            case PermissionType.leaveHalfDay:
+              halfDay++;
+              continue;
+
+            case PermissionType.workFromHome:
+              wfh++;
+              continue;
+
+            case PermissionType.lateEntry:
+              late++;
+              break;
+
+            case PermissionType.earlyExit:
+              earlyExit++;
+              break;
+
+            case PermissionType.permission:
+              permission++;
+              break;
+          }
+      }
+    }
+
+    // 🔥 STEP 3: FALLBACK TO ATTENDANCE
+    if (updated.punchList.isEmpty) {
       absent++;
       continue;
     }
 
-    final status = getAttendanceStatus(a);
+    final status = getAttendanceStatus(updated);
 
     switch (status) {
       case "Present":
@@ -124,44 +174,12 @@ AttendanceStats calculateStats(List<AttendanceModel> list) {
         absent++;
         break;
 
-      case "Leave":
-        leave++;
-        break;
-
-      case "WFH":
-        wfh++;
-        break;
-
-      case "HalfDay":
-        halfDay++;
-        break;
-
-      case "Late":
-        late++;
-        break;
-
-      case "EarlyExit":
-        earlyExit++;
-        break;
-
-      case "Pending":
-        pending++;
-        break;
-
-      case "Rejected":
-        rejected++;
-        break;
-
-      case "Permission":
-        permission++;
+      case "LessHours":
+        lessHours++;
         break;
 
       case "InProgress":
         inProgress++;
-        break;
-
-      case "LessHours":
-        lessHours++;
         break;
     }
   }
@@ -219,6 +237,36 @@ String getAttendanceStatus(AttendanceModel a) {
     return "InProgress";
   }
   return _calculateWorkingStatus(a);
+}
+
+String getPermissionStatus(WorkPermissionModel p) {
+  if (p.status == PermissionsStatus.rejected) {
+    return "Rejected";
+  }
+
+  if (p.status == PermissionsStatus.pending) {
+    return "Pending";
+  }
+
+  switch (p.type) {
+    case PermissionType.leaveFullDay:
+      return "Leave";
+
+    case PermissionType.leaveHalfDay:
+      return "HalfDay";
+
+    case PermissionType.workFromHome:
+      return "WFH";
+
+    case PermissionType.lateEntry:
+      return "Late";
+
+    case PermissionType.earlyExit:
+      return "EarlyExit";
+
+    case PermissionType.permission:
+      return "Permission";
+  }
 }
 
 String _calculateWorkingStatus(AttendanceModel a) {
@@ -464,4 +512,57 @@ Map<String, List<WorktimeModel>> groupByUser(List<WorktimeModel> list) {
   }
 
   return map;
+}
+
+class AttendanceTimeData {
+  final DateTime? date;
+  final DateTime? checkIn;
+  final DateTime? checkOut;
+
+  AttendanceTimeData({this.date, this.checkIn, this.checkOut});
+}
+
+AttendanceTimeData getAttendanceTime(AttendanceModel a) {
+  // ✅ PRIORITY 1: Worktime
+  if (a.worktime != null) {
+    return AttendanceTimeData(
+      date: a.worktime!.clockIn,
+      checkIn: a.worktime!.clockIn,
+      checkOut: a.worktime!.clockOut,
+    );
+  }
+
+  // ✅ PRIORITY 2: Punch
+  if (a.punchList.isNotEmpty) {
+    final punch = a.punchList.first;
+
+    DateTime? date;
+    if (punch.clockInDate != null) {
+      date = punch.clockInDate;
+    } else if (punch.punchDate.isNotEmpty) {
+      date = DateTime.tryParse(punch.punchDate);
+    }
+
+    return AttendanceTimeData(
+      date: date,
+      checkIn: punch.clockIn != null
+          ? DateTime.fromMillisecondsSinceEpoch(punch.clockIn!)
+          : null,
+      checkOut: punch.clockOut != null
+          ? DateTime.fromMillisecondsSinceEpoch(punch.clockOut!)
+          : null,
+    );
+  }
+
+  return AttendanceTimeData();
+}
+
+String getWorkHours(AttendanceModel a) {
+  if (a.worktime != null && a.worktime!.clockOut != null) {
+    final diff = a.worktime!.clockOut!.difference(a.worktime!.clockIn);
+
+    return "${diff.inHours}h ${diff.inMinutes.remainder(60)}m";
+  }
+
+  return a.formattedWork;
 }

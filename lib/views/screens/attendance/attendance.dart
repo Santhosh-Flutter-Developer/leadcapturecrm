@@ -19,7 +19,6 @@ import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/components/src/xlsx_writer.dart';
 import 'package:leadcapture/views/screens/attendance/attendance_helper.dart';
 import 'package:leadcapture/views/screens/attendance/employee_report.dart';
-import 'package:leadcapture/views/screens/permission/src/permisson_create.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
@@ -168,31 +167,6 @@ class _AttendanceState extends State<Attendance>
     });
   }
 
-  Future<void> _updatePermission({
-    required String punchId,
-    required PermissionsStatus status,
-  }) async {
-    try {
-      await AttendanceService.updatePermissionStatus(
-        punchId: punchId,
-        status: status,
-      );
-
-      aHandler = init();
-      setState(() {});
-
-      FlushBar.show(
-        context,
-        status == PermissionsStatus.approved
-            ? "Permission Approved"
-            : "Permission Rejected",
-        isSuccess: true,
-      );
-    } catch (e) {
-      FlushBar.show(context, e.toString(), isSuccess: false);
-    }
-  }
-
   List<DropdownMenuItem<String>> _employeeItems() {
     return [
       const DropdownMenuItem(value: "All", child: Text("All")),
@@ -247,6 +221,11 @@ class _AttendanceState extends State<Attendance>
     if (time == null) return "-";
     final dt = DateTime.fromMillisecondsSinceEpoch(time);
     return TimeOfDay.fromDateTime(dt).format(context);
+  }
+
+  String formatDatetime(DateTime? time) {
+    if (time == null) return "-";
+    return TimeOfDay.fromDateTime(time).format(context);
   }
 
   Future<void> exportAttendance() async {
@@ -403,8 +382,9 @@ class _AttendanceState extends State<Attendance>
   }
 
   void showAttendanceDetails(AttendanceModel a) {
-    final punch = a.punchList.first;
+    final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
     final status = getAttendanceStatus(a);
+    final isAbsent = status.toLowerCase() == "absent";
 
     showModalBottomSheet(
       context: context,
@@ -414,24 +394,28 @@ class _AttendanceState extends State<Attendance>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        String checkIn = punch.clockIn != null
-            ? formatTime(punch.clockIn)
+        DateTime? date;
+
+        if (punch != null) {
+          date = parseDateTime(punch.punchDate);
+        } else if (a.worktime != null) {
+          date = a.worktime!.clockIn;
+        }
+
+        String checkIn = punch?.clockIn != null
+            ? formatTime(punch!.clockIn)
             : "-";
 
-        String checkOut = punch.clockOut != null
-            ? formatTime(punch.clockOut)
+        String checkOut = punch?.clockOut != null
+            ? formatTime(punch!.clockOut)
             : "-";
-
-        final date = parseDateTime(punch.punchDate);
 
         return Container(
           padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              /// 🔹 DRAG HANDLE
               Container(
                 width: 50,
                 height: 5,
@@ -442,6 +426,7 @@ class _AttendanceState extends State<Attendance>
                 ),
               ),
 
+              /// 🔹 DATE
               Text(
                 date != null
                     ? DateFormat('EEEE, MMM dd yyyy').format(date)
@@ -451,8 +436,10 @@ class _AttendanceState extends State<Attendance>
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 15),
 
+              /// 🔹 STATUS
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -473,71 +460,95 @@ class _AttendanceState extends State<Attendance>
 
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  infoTile(Iconsax.login, "Check In", checkIn),
-                  infoTile(Iconsax.logout, "Check Out", checkOut),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
+              /// 🔥 ABSENT UI
+              if (isAbsent)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: const [
+                      Icon(Iconsax.close_circle, color: Colors.red, size: 40),
+                      SizedBox(height: 10),
+                      Text(
+                        "No Attendance Recorded",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                /// 🔹 CHECK-IN / CHECK-OUT
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    infoTile(Iconsax.clock, "Work", a.formattedWork),
-                    infoTile(Iconsax.pause, "Break", a.formattedBreak),
-                    infoTile(Iconsax.flash, "OT", a.formattedOT),
-                    infoTile(Iconsax.warning_2, "Less", a.formattedLess),
+                    infoTile(Iconsax.login, "Check In", checkIn),
+                    infoTile(Iconsax.logout, "Check Out", checkOut),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 15),
+                const SizedBox(height: 20),
 
-              if (punch.permissionType != null)
+                /// 🔹 WORK STATS
                 Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  padding: const EdgeInsets.all(12),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      const Icon(Iconsax.warning_2, color: Colors.orange),
-                      const SizedBox(width: 10),
-                      Text(
-                        "Permission : ${punch.permissionType!.name}",
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                      infoTile(Iconsax.clock, "Work", a.formattedWork),
+                      infoTile(Iconsax.pause, "Break", a.formattedBreak),
+                      infoTile(Iconsax.flash, "OT", a.formattedOT),
+                      infoTile(Iconsax.warning_2, "Less", a.formattedLess),
                     ],
                   ),
                 ),
 
-              const SizedBox(height: 10),
-
-              if (punch.permissionStatus != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    "Permission Status : ${punch.permissionStatus!.name}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          punch.permissionStatus == PermissionsStatus.approved
-                          ? Colors.green
-                          : punch.permissionStatus == PermissionsStatus.rejected
-                          ? Colors.red
-                          : Colors.orange,
+                /// 🔹 PERMISSION
+                if (punch?.permissionType != null) ...[
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Iconsax.warning_2, color: Colors.orange),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Permission : ${punch!.permissionType!.name}",
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
+
+                if (punch?.permissionStatus != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      "Permission Status : ${punch!.permissionStatus!.name}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color:
+                            punch.permissionStatus == PermissionsStatus.approved
+                            ? Colors.green
+                            : punch.permissionStatus ==
+                                  PermissionsStatus.rejected
+                            ? Colors.red
+                            : Colors.orange,
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         );
@@ -595,62 +606,6 @@ class _AttendanceState extends State<Attendance>
     });
   }
 
-  AttendanceStats calculateStats(List<AttendanceModel> list) {
-    int present = 0;
-    int absent = 0;
-    int leave = 0;
-    int wfh = 0;
-    int halfDay = 0;
-    int late = 0;
-    int earlyExit = 0;
-
-    for (var a in list) {
-      if (a.punchList.isEmpty) {
-        absent++;
-        continue;
-      }
-      final status = getAttendanceStatus(a);
-
-      switch (status) {
-        case "Present":
-          present++;
-          break;
-        case "Absent":
-          absent++;
-          break;
-        case "Leave":
-          leave++;
-          break;
-        case "WFH":
-          wfh++;
-          break;
-        case "HalfDay":
-          halfDay++;
-          break;
-        case "Late":
-          late++;
-          break;
-        case "EarlyExit":
-          earlyExit++;
-          break;
-      }
-    }
-
-    return AttendanceStats(
-      presentDays: present,
-      absentDays: absent,
-      leaveDays: leave,
-      wfhDays: wfh,
-      halfDayDays: halfDay,
-      lateDays: late,
-      earlyExitDays: earlyExit,
-      totalWorkingHours: "0",
-      totalOTHours: "0",
-      totalLessHours: "0",
-      attendanceData: list,
-    );
-  }
-
   void onDayTap(DateTime date) {
     final aListForDay = aList.where((e) {
       if (e.punchList.isEmpty) return false;
@@ -691,25 +646,7 @@ class _AttendanceState extends State<Attendance>
 
   @override
   Widget build(BuildContext context) {
-    final hasPending = aList.any(
-      (a) =>
-          a.punchList.isNotEmpty &&
-          a.punchList.first.permissionStatus == PermissionsStatus.pending,
-    );
-
     return Scaffold(
-      floatingActionButton: isEmployee && !hasPending
-          ? FloatingActionButton(
-              tooltip: "Request Permission",
-              child: const Icon(Iconsax.add),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PermissonCreate()),
-                );
-              },
-            )
-          : null,
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
@@ -1477,23 +1414,6 @@ class _AttendanceState extends State<Attendance>
   }
 
   Widget attendanceListView() {
-    String formatPermission(PermissionType type) {
-      switch (type) {
-        case PermissionType.leaveFullDay:
-          return "Full Day Leave";
-        case PermissionType.leaveHalfDay:
-          return "Half Day";
-        case PermissionType.workFromHome:
-          return "Work From Home";
-        case PermissionType.lateEntry:
-          return "Late Entry";
-        case PermissionType.earlyExit:
-          return "Early Exit";
-        case PermissionType.permission:
-          return "Permission";
-      }
-    }
-
     if (filteredList.isEmpty) {
       return Center(
         child: Padding(
@@ -1521,23 +1441,52 @@ class _AttendanceState extends State<Attendance>
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final a = filteredList[index];
-        final emp = employeeMap[a.employeeId];
-        final punch = a.punchList.first;
+        final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
         final status = getAttendanceStatus(a);
         final color = statusColor(status);
-        final date = parseDateTime(punch.punchDate);
+        final isAbsent = status.toLowerCase() == "absent";
+        DateTime? date;
+        DateTime? checkInTime;
+        DateTime? checkOutTime;
 
+        if (a.worktime != null) {
+          date = a.worktime!.clockIn;
+          checkInTime = a.worktime!.clockIn;
+          checkOutTime = a.worktime!.clockOut;
+        } else if (a.punchList.isNotEmpty) {
+          final punch = a.punchList.first;
+
+          if (punch.clockInDate != null) {
+            date = punch.clockInDate;
+          } else if (punch.punchDate.isNotEmpty) {
+            date = DateTime.tryParse(punch.punchDate);
+          }
+
+          if (punch.clockIn != null) {
+            checkInTime = DateTime.fromMillisecondsSinceEpoch(punch.clockIn!);
+          }
+
+          if (punch.clockOut != null) {
+            checkOutTime = DateTime.fromMillisecondsSinceEpoch(punch.clockOut!);
+          }
+        }
+
+        final now = DateTime.now();
         final isToday =
             date != null &&
-            date.year == DateTime.now().year &&
-            date.month == DateTime.now().month &&
-            date.day == DateTime.now().day;
+            date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
+        final checkIn = checkInTime != null ? formatDatetime(checkInTime) : "-";
+        final checkOut = checkOutTime != null
+            ? formatDatetime(checkOutTime)
+            : (isToday ? "Working..." : "-");
 
-        final checkIn = punch.clockIn != null ? formatTime(punch.clockIn) : "-";
-
-        final checkOut = punch.clockOut != null
-            ? formatTime(punch.clockOut)
-            : "-";
+        final isTodayByDate =
+            date != null &&
+            date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
 
         return InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1546,14 +1495,14 @@ class _AttendanceState extends State<Attendance>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: color.withOpacity(.25)),
-              color: isToday ? Colors.blue.shade50 : Colors.white,
+              color: isTodayByDate ? Colors.blue.shade50 : Colors.white,
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// 🔹 TOP SECTION (LIKE TODAY SUMMARY)
+                  /// 🔹 TOP SECTION
                   Row(
                     children: [
                       Container(
@@ -1609,65 +1558,75 @@ class _AttendanceState extends State<Attendance>
                         ),
                       ),
 
-                      /// WORK TIME
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text(
-                            "Work",
-                            style: TextStyle(fontSize: 10, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            a.formattedWork,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: color,
+                      /// 🔥 Hide work time if absent
+                      if (!isAbsent)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              "Work",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
                             ),
+                            const SizedBox(height: 3),
+                            Text(
+                              a.formattedWork,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: color,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// 🔥 CONDITIONAL UI
+                  if (isAbsent)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "No Attendance Recorded",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
-                    ],
-                  ),
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _timeTile(
+                          Iconsax.login,
+                          "Check In",
+                          checkIn,
+                          Colors.green,
+                        ),
+                        _timeTile(
+                          Iconsax.logout,
+                          "Check Out",
+                          checkOut,
+                          checkOutTime != null ? Colors.red : Colors.orange,
+                        ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 12),
-
-                  /// 🔹 CHECK-IN / CHECK-OUT (MATCH TODAY SUMMARY)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _timeTile(
-                        Iconsax.login,
-                        "Check In",
-                        checkIn,
-                        Colors.green,
-                      ),
-                      _timeTile(
-                        Iconsax.logout,
-                        "Check Out",
-                        checkOut,
-                        punch.clockOut != null ? Colors.red : Colors.orange,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  /// 🔹 STATS ROW
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      miniStat("Break", a.formattedBreak, Colors.orange),
-                      miniStat("OT", a.formattedOT, Colors.green),
-                      miniStat("Less", a.formattedLess, Colors.red),
-                    ],
-                  ),
-
-                  /// 🔹 PERMISSION BADGE
-                  if (punch.permissionType != null) ...[
+                  if (!isAbsent && punch?.permissionType != null) ...[
                     const SizedBox(height: 10),
-                    buildPermissionBadge(punch),
+                    buildPermissionBadge(punch!),
                   ],
                 ],
               ),
@@ -2596,13 +2555,13 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
   String? currentUserId;
   late List<AttendanceModel> filteredList;
   DateTime? selectedDay;
+  late AttendanceStats stats;
 
   @override
   void initState() {
     super.initState();
     _applyFilter();
-    // filteredList = widget.attendanceList;
-    // attendanceMap = _buildAttendanceMap();
+    stats = calculateStats(filteredList);
     _loadUser();
   }
 
@@ -2631,20 +2590,61 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     for (var a in filteredList) {
       if (a.punchList.isEmpty) continue;
 
-      final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
-      final date = parseDateTime(punch?.punchDate);
+      final punch = a.punchList.first;
+      final date = parseDateTime(punch.punchDate);
       if (date == null) continue;
 
-      String status = getAttendanceStatus(a);
-      if (a.permissionDetails.isNotEmpty) {
-        final key = DateFormat('yyyy-MM-dd').format(date);
-        final permission = a.permissionDetails[key];
-        if (permission != null) {
-          status = permission.name;
+      // ✅ APPLY PERMISSION LOGIC FIRST
+      final updatedAttendance = a.applyPermissions();
+
+      String status = getAttendanceStatus(updatedAttendance);
+
+      // ✅ OVERRIDE STATUS USING PERMISSIONS
+      if (a.permissions != null && a.permissions!.isNotEmpty) {
+        final dayPermissions = a.permissions!.where((p) {
+          final pDate = p.date;
+          return pDate.year == date.year &&
+              pDate.month == date.month &&
+              pDate.day == date.day;
+        }).toList();
+
+        if (dayPermissions.isNotEmpty) {
+          final p = dayPermissions.firstWhere(
+            (p) => p.status == PermissionsStatus.approved,
+            orElse: () => dayPermissions.first,
+          );
+          if (p.status == PermissionsStatus.pending) {
+            status = "Pending";
+          } else if (p.status == PermissionsStatus.rejected) {
+            status = "Rejected";
+          } else if (p.status == PermissionsStatus.approved) {
+            switch (p.type) {
+              case PermissionType.leaveFullDay:
+                status = "Leave";
+                break;
+              case PermissionType.leaveHalfDay:
+                status = "HalfDay";
+                break;
+              case PermissionType.workFromHome:
+                status = "WFH";
+                break;
+              case PermissionType.lateEntry:
+                status = "Late";
+                break;
+              case PermissionType.earlyExit:
+                status = "EarlyExit";
+                break;
+              case PermissionType.permission:
+                status = "Permission";
+                break;
+            }
+          }
         }
       }
+
       map[DateTime(date.year, date.month, date.day)] = status;
     }
+
     return map;
   }
 
@@ -2686,7 +2686,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     } else {
       filteredList = widget.attendanceList;
     }
-
+    stats = calculateStats(filteredList);
     attendanceMap = _buildAttendanceMap();
   }
 
@@ -2951,7 +2951,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                         return d?.year == selected.year &&
                             d?.month == selected.month &&
                             d?.day == selected.day;
-                      }, orElse: () => filteredList.first);
+                      }, orElse: () => filteredList.first).applyPermissions();
                       final dayRecords = filteredList.where((e) {
                         if (e.punchList.isEmpty) return false;
 

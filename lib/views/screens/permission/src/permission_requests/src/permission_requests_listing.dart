@@ -81,7 +81,7 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
     _tempRList.addAll(_rList);
   }
 
-  final bool _searchApplied = false;
+  // final bool _searchApplied = false;
   _searchPermission() {
     List<WorkPermissionModel> filteredList = _tempRList.where((payments) {
       return payments.userName.toString().toLowerCase().contains(

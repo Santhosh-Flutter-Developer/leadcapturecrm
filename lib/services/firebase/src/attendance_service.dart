@@ -569,28 +569,48 @@ class AttendanceService {
     int lateDays = 0;
     int earlyExitDays = 0;
 
+    int pendingDays = 0;
+    int rejectedDays = 0;
+    int permissionDays = 0;
+
     double totalWorkingHours = 0;
     double totalLessHours = 0;
     double totalOTHours = 0;
 
     for (var a in monthlyAttendance) {
+      // ✅ Holiday
       if (a.holiday == "1") {
         leaveDays++;
         continue;
       }
 
+      // ✅ No punch
       if (a.punchList.isEmpty) {
         absentDays++;
         continue;
       }
-      var punch = a.punchList.first;
 
+      final punch = a.punchList.first;
+
+      // ✅ Hours
       totalWorkingHours += a.workingHourMinutes;
       totalLessHours += a.lessHourMinutes;
       totalOTHours += a.otHourMinutes;
 
-      if (punch.permissionType != null &&
-          punch.permissionStatus == PermissionsStatus.approved) {
+      // ✅ Permission Status Tracking
+      if (punch.permissionStatus == PermissionsStatus.pending) {
+        pendingDays++;
+        continue;
+      }
+
+      if (punch.permissionStatus == PermissionsStatus.rejected) {
+        rejectedDays++;
+        continue;
+      }
+
+      // ✅ Approved Permissions
+      if (punch.permissionStatus == PermissionsStatus.approved &&
+          punch.permissionType != null) {
         switch (punch.permissionType!) {
           case PermissionType.leaveFullDay:
             leaveDays++;
@@ -617,24 +637,26 @@ class AttendanceService {
             continue;
 
           case PermissionType.permission:
+            permissionDays++;
             presentDays++;
             continue;
         }
-      } else {
-        switch (punch.status.toLowerCase()) {
-          case "present":
-            presentDays++;
-            break;
+      }
 
-          case "halfday":
-            halfDayDays++;
-            presentDays++;
-            break;
+      // ✅ Normal Attendance
+      switch (punch.status.toLowerCase()) {
+        case "present":
+          presentDays++;
+          break;
 
-          case "absent":
-            absentDays++;
-            break;
-        }
+        case "halfday":
+          halfDayDays++;
+          presentDays++;
+          break;
+
+        case "absent":
+          absentDays++;
+          break;
       }
     }
 
@@ -646,9 +668,15 @@ class AttendanceService {
       halfDayDays: halfDayDays,
       lateDays: lateDays,
       earlyExitDays: earlyExitDays,
+
+      pendingDays: pendingDays,
+      rejectedDays: rejectedDays,
+      permissionDays: permissionDays,
+
       totalWorkingHours: totalWorkingHours.toStringAsFixed(1),
       totalLessHours: totalLessHours.toStringAsFixed(1),
       totalOTHours: totalOTHours.toStringAsFixed(1),
+
       attendanceData: monthlyAttendance,
     );
   }

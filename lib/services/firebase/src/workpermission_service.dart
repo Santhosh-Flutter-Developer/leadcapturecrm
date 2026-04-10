@@ -207,13 +207,23 @@ class WorkPermissionService {
         throw Exception("User not logged in.");
       }
 
+      final docRef = firebase.users
+          .doc(cid)
+          .collection(Collections.permission.name)
+          .doc();
+
       model = model.copyWith(
+        uid: docRef.id,
         userId: uid,
         userName: user.name,
         created: DateTime.now(),
         modified: DateTime.now(),
       );
 
+      // ✅ SAVE PERMISSION
+      await docRef.set(model.toMap());
+
+      /// 👉 EXISTING ATTENDANCE LOGIC
       DateTime from = model.from;
 
       int start = DateTime(

@@ -132,7 +132,6 @@ class _PermissionListingState extends State<PermissionListing> {
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /// ADD
           FloatingActionButton(
             heroTag: "addPermission",
             backgroundColor: AppColors.primaryColor,
@@ -140,7 +139,15 @@ class _PermissionListingState extends State<PermissionListing> {
             tooltip: "Add",
             child: const Icon(Iconsax.add),
             onPressed: () async {
-              _openSheet(context, const PermissonCreate());
+              final result = await Sheet.showSheet(
+                context,
+                widget: const PermissonCreate(),
+              );
+
+              if (result == true) {
+                _pHandler = _init();
+                setState(() {});
+              }
             },
           ),
 
@@ -380,8 +387,8 @@ class _PermissionListingState extends State<PermissionListing> {
                                           /// 📅 DATE BADGE
                                           Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 6,
+                                              horizontal: 6,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
                                               color: Colors.blue[50],

@@ -4,7 +4,7 @@ import 'dart:convert';
 class SalaryModel {
   String salaryNumber;
   String employeeId;
-  String permissionId;
+  String? permissionId;
   String workingDays;
   String leaveDays;
   String otHours;
@@ -23,7 +23,7 @@ class SalaryModel {
   SalaryModel({
     required this.salaryNumber,
     required this.employeeId,
-    required this.permissionId,
+    this.permissionId,
     required this.workingDays,
     required this.leaveDays,
     required this.otHours,
