@@ -344,6 +344,7 @@ class SalaryLedgerService {
       employeeId: userId,
       punchList: [],
       breakMinutes: 0,
+      status: AttendanceStatus.present,
       present: presentDays.toString(),
       holiday: "0",
       absent: "0",
@@ -355,22 +356,27 @@ class SalaryLedgerService {
   }
 
   static Future<void> processSalaryForAllEmployees(int monthCode) async {
-  try {
-    final cid = await Spdb.getCid();
-    if (cid == null) return;
+    try {
+      final cid = await Spdb.getCid();
+      if (cid == null) return;
 
-    final employeesSnapshot =
-        await firebase.users.doc(cid).collection(Collections.users.name).get();
+      final employeesSnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.users.name)
+          .get();
 
-    for (final doc in employeesSnapshot.docs) {
-      final userId = doc.id;
-      final attendance = await getAttendanceSummaryForUser(userId, monthCode);
-      await processMonthlySalary(monthCode: monthCode, attendance: attendance);
+      for (final doc in employeesSnapshot.docs) {
+        final userId = doc.id;
+        final attendance = await getAttendanceSummaryForUser(userId, monthCode);
+        await processMonthlySalary(
+          monthCode: monthCode,
+          attendance: attendance,
+        );
+      }
+    } catch (e) {
+      print("Error processing salary for all employees: $e");
     }
-  } catch (e) {
-    print("Error processing salary for all employees: $e");
   }
-}
 }
 
 class SalarySummary {

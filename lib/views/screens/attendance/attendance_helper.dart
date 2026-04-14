@@ -40,10 +40,15 @@ AttendanceModel attendanceWorktime(WorktimeModel work) {
   });
 
   final actualWork = totalMinutes - breakMinutes;
-  int workMinutes = 0;
+  final workMinutes = work.clockOut != null ? actualWork : 0;
 
-  if (work.clockOut != null) {
-    workMinutes = actualWork;
+  AttendanceStatus status;
+  if (workMinutes >= 480) {
+    status = AttendanceStatus.present;
+  } else if (workMinutes >= 240) {
+    status = AttendanceStatus.halfDay;
+  } else {
+    status = AttendanceStatus.absent;
   }
 
   String formatMinutes(int m) {
@@ -54,49 +59,45 @@ AttendanceModel attendanceWorktime(WorktimeModel work) {
 
   final punch = PunchModel(
     punchDate: work.clockIn.toIso8601String(),
-
     clockIn: work.clockIn.millisecondsSinceEpoch,
     clockOut: work.clockOut?.millisecondsSinceEpoch,
-
     punchTime: [
       work.clockIn.toIso8601String(),
       if (work.clockOut != null) work.clockOut!.toIso8601String(),
     ],
-
     totalHours: formatMinutes(workMinutes),
-
     lessHours: workMinutes < 480 ? formatMinutes(480 - workMinutes) : "0h 0m",
-
-    status: workMinutes >= 480
-        ? "Present"
-        : workMinutes >= 240
-        ? "HalfDay"
-        : "Absent",
-
+    status: status.name, // ✅ enum → string
     day: DateFormat('EEEE').format(work.clockIn),
-
     otHours: workMinutes > 480 ? formatMinutes(workMinutes - 480) : "0h 0m",
-
     otApproval: "Pending",
   );
 
   return AttendanceModel(
     employeeId: work.userUid,
+    worktime: work,
     punchList: [punch],
     breakMinutes: breakMinutes,
-    present: "1",
+    status: status,
+    present: status == AttendanceStatus.present ? "1" : "0",
+    absent: status == AttendanceStatus.absent ? "1" : "0",
     holiday: "0",
-    absent: "0",
+
     workingHourMinutes: actualWork,
     lessHourMinutes: actualWork < 480 ? 480 - actualWork : 0,
     otHourMinutes: actualWork > 480 ? actualWork - 480 : 0,
   );
 }
 
-AttendanceStats calculateStats(List<AttendanceModel> list) {
+AttendanceStats calculateStats(
+  List<AttendanceModel> list, {
+  required bool isAdmin,
+  required List<HolidayModel> holidays,
+}) {
   int present = 0;
   int absent = 0;
   int leave = 0;
+  int holidayCount = 0;
   int wfh = 0;
   int halfDay = 0;
   int late = 0;
@@ -108,61 +109,97 @@ AttendanceStats calculateStats(List<AttendanceModel> list) {
   int inProgress = 0;
   int lessHours = 0;
 
+  int totalWorking = 0;
+  int totalLess = 0;
+  int totalOT = 0;
+
+  bool isHoliday(DateTime date) {
+    return holidays.any(
+      (h) =>
+          h.date.year == date.year &&
+          h.date.month == date.month &&
+          h.date.day == date.day,
+    );
+  }
+
   for (var a in list) {
-    // 🔥 STEP 1: APPLY PERMISSION IMPACT
-    final updated = a.applyPermissions();
-
-    // 🔥 STEP 2: CHECK PERMISSIONS FIRST (PRIORITY)
-    if (a.permissions != null && a.permissions!.isNotEmpty) {
-      final p = a.permissions!.firstWhere(
-        (p) => p.status == PermissionsStatus.approved,
-        orElse: () => a.permissions!.first,
-      );
-
-      switch (p.status) {
-        case PermissionsStatus.pending:
-          pending++;
-          continue;
-
-        case PermissionsStatus.rejected:
-          rejected++;
-          continue;
-
-        case PermissionsStatus.approved:
-          switch (p.type) {
-            case PermissionType.leaveFullDay:
-              leave++;
-              continue;
-
-            case PermissionType.leaveHalfDay:
-              halfDay++;
-              continue;
-
-            case PermissionType.workFromHome:
-              wfh++;
-              continue;
-
-            case PermissionType.lateEntry:
-              late++;
-              break;
-
-            case PermissionType.earlyExit:
-              earlyExit++;
-              break;
-
-            case PermissionType.permission:
-              permission++;
-              break;
-          }
-      }
+    if (a.punchList.isEmpty) {
+      absent++;
+      continue;
     }
 
-    // 🔥 STEP 3: FALLBACK TO ATTENDANCE
+    final punchDate = parseDateTime(a.punchList.first.punchDate);
+    if (punchDate == null) continue;
+
+    final isHolidayDay = isHoliday(punchDate);
+
+    // ✅ 1. HOLIDAY PRIORITY (HIGHEST)
+    if (isHolidayDay) {
+      holidayCount++;
+      continue; // 🚨 stop further processing
+    }
+
+    final updated = a.applyPermissions(isAdmin: isAdmin);
+
+    // ✅ 2. PERMISSION HANDLING
+    if (a.permissions != null && a.permissions!.isNotEmpty) {
+      final approved = a.permissions!
+          .where((p) => p.status == PermissionsStatus.approved)
+          .toList();
+
+      final pendingList = a.permissions!
+          .where((p) => p.status == PermissionsStatus.pending)
+          .toList();
+
+      final rejectedList = a.permissions!
+          .where((p) => p.status == PermissionsStatus.rejected)
+          .toList();
+
+      if (pendingList.isNotEmpty) pending++;
+      if (rejectedList.isNotEmpty) rejected++;
+
+      bool skipAttendance = false;
+
+      for (var p in approved) {
+        switch (p.type) {
+          case PermissionType.leaveFullDay:
+            leave++;
+            skipAttendance = true;
+            break;
+
+          case PermissionType.leaveHalfDay:
+            halfDay++;
+            break;
+
+          case PermissionType.workFromHome:
+            wfh++;
+            skipAttendance = true;
+            break;
+
+          case PermissionType.lateEntry:
+            late++;
+            break;
+
+          case PermissionType.earlyExit:
+            earlyExit++;
+            break;
+
+          case PermissionType.permission:
+            permission++;
+            break;
+        }
+      }
+
+      if (skipAttendance) continue;
+    }
+
+    // ✅ 3. NO PUNCH → ABSENT
     if (updated.punchList.isEmpty) {
       absent++;
       continue;
     }
 
+    // ✅ 4. ATTENDANCE STATUS
     final status = getAttendanceStatus(updated);
 
     switch (status) {
@@ -182,12 +219,18 @@ AttendanceStats calculateStats(List<AttendanceModel> list) {
         inProgress++;
         break;
     }
+
+    // ✅ 5. TIME CALCULATIONS
+    totalWorking += updated.workingHourMinutes;
+    totalLess += updated.lessHourMinutes;
+    totalOT += updated.otHourMinutes;
   }
 
   return AttendanceStats(
     presentDays: present,
     absentDays: absent,
     leaveDays: leave,
+    holidayDays: holidayCount,
     wfhDays: wfh,
     halfDayDays: halfDay,
     lateDays: late,
@@ -199,9 +242,9 @@ AttendanceStats calculateStats(List<AttendanceModel> list) {
     inProgressDays: inProgress,
     lessHoursDays: lessHours,
 
-    totalWorkingHours: "0",
-    totalOTHours: "0",
-    totalLessHours: "0",
+    totalWorkingHours: formatMinutes(totalWorking),
+    totalLessHours: formatMinutes(totalLess),
+    totalOTHours: formatMinutes(totalOT),
 
     attendanceData: list,
   );

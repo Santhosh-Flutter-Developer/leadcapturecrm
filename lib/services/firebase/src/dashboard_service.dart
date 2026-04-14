@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 import 'package:leadcapture/services/firebase/src/salary_service.dart';
 import '/constants/constants.dart';
@@ -72,11 +73,14 @@ class DashboardService {
       final allLeads = await LeadService.getAllLeads();
       final allDeals = await DealService.getAllDeals();
       final allTasks = await TaskService.getAllTasks();
+        List<HolidayModel> holidays = [];
+
 
       final attendanceStats = await AttendanceService.getAttendanceStats(
         userUid: userId,
         fromDate: dateRange.start,
         toDate: dateRange.end,
+        holidays: holidays,        
       );
 
       final salary = await SalaryLedgerService.getSalarySummary(

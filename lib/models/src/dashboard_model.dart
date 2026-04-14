@@ -123,6 +123,7 @@ class DashboardModel {
               presentDays: 0,
               absentDays: 0,
               leaveDays: 0,
+              holidayDays: 0,
               wfhDays: 0,
               halfDayDays: 0,
               lateDays: 0,

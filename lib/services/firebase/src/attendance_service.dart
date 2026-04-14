@@ -4,7 +4,7 @@ import 'package:leadcapture/models/src/filter_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/firebase_config.dart';
-import 'package:leadcapture/views/screens/attendance/attendance_status.dart';
+import 'package:leadcapture/views/screens/attendance/attendance_helper.dart';
 
 class AttendanceService {
   static FirebaseConfig firebase = FirebaseConfig();
@@ -423,7 +423,7 @@ class AttendanceService {
                   totalHours: "00:00",
                   lessHours: "00:00",
                   otHours: "00:00",
-                  status: AttendanceStatus.absent,
+                  status: AttendanceStatus.absent.name,
                   day: d.weekday.toString(),
                   otApproval: "0",
                 ),
@@ -446,7 +446,7 @@ class AttendanceService {
         int otMinutes = 0;
         int lessMinutes = 0;
 
-        String status = AttendanceStatus.absent;
+        String status = AttendanceStatus.absent.name;
 
         if (work != null) {
           final now = DateTime.now();
@@ -455,11 +455,11 @@ class AttendanceService {
           workingMinutes = endTime.difference(work.clockIn).inMinutes;
 
           if (workingMinutes >= 480) {
-            status = AttendanceStatus.present;
+            status = AttendanceStatus.present.name;
           } else if (workingMinutes >= 240) {
-            status = AttendanceStatus.halfDay;
+            status = AttendanceStatus.halfDay.name;
           } else if (workingMinutes > 0) {
-            status = AttendanceStatus.absent;
+            status = AttendanceStatus.absent.name;
           }
 
           if (workingMinutes > 480) {
@@ -476,28 +476,28 @@ class AttendanceService {
           if (pStatus == PermissionsStatus.approved.name) {
             switch (type) {
               case "leaveFullDay":
-                status = AttendanceStatus.leave;
+                status = AttendanceStatus.leave.name;
                 workingMinutes = 0;
                 break;
 
               case "leaveHalfDay":
-                status = AttendanceStatus.halfDay;
+                status = AttendanceStatus.halfDay.name;
                 break;
 
               case "workFromHome":
-                status = AttendanceStatus.present;
+                status = AttendanceStatus.present.name;
                 break;
 
               case "lateEntry":
-                status = AttendanceStatus.late;
+                status = AttendanceStatus.late.name;
                 break;
 
               case "earlyExit":
-                status = AttendanceStatus.earlyExit;
+                status = AttendanceStatus.earlyExit.name;
                 break;
 
               case "permission":
-                status = AttendanceStatus.present;
+                status = AttendanceStatus.present.name;
                 break;
             }
           } else if (pStatus == PermissionsStatus.pending.name) {
@@ -554,6 +554,7 @@ class AttendanceService {
     required String userUid,
     required DateTime fromDate,
     required DateTime toDate,
+    required List<HolidayModel> holidays,
   }) async {
     var monthlyAttendance = await getMonthlyAttendanceSummary(
       userUid: userUid,
@@ -564,6 +565,7 @@ class AttendanceService {
     int presentDays = 0;
     int absentDays = 0;
     int leaveDays = 0;
+    int holidayDays = 0;
     int wfhDays = 0;
     int halfDayDays = 0;
     int lateDays = 0;
@@ -577,27 +579,38 @@ class AttendanceService {
     double totalLessHours = 0;
     double totalOTHours = 0;
 
+    bool isHoliday(DateTime date) {
+      return holidays.any(
+        (h) =>
+            h.date.year == date.year &&
+            h.date.month == date.month &&
+            h.date.day == date.day,
+      );
+    }
+
     for (var a in monthlyAttendance) {
-      // ✅ Holiday
-      if (a.holiday == "1") {
-        leaveDays++;
+      final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
+
+      DateTime? date = punch != null ? parseDateTime(punch.punchDate) : null;
+
+      // 🚨 1. HOLIDAY CHECK FIRST (NO PUNCH REQUIRED)
+      if (date != null && isHoliday(date)) {
+        holidayDays++;
         continue;
       }
 
-      // ✅ No punch
-      if (a.punchList.isEmpty) {
+      // 🚨 2. NO PUNCH → ABSENT
+      if (punch == null) {
         absentDays++;
         continue;
       }
 
-      final punch = a.punchList.first;
-
-      // ✅ Hours
+      // 🚨 3. WORK HOURS (ONLY VALID DAYS)
       totalWorkingHours += a.workingHourMinutes;
       totalLessHours += a.lessHourMinutes;
       totalOTHours += a.otHourMinutes;
 
-      // ✅ Permission Status Tracking
+      // 🚨 4. PENDING / REJECTED FIRST
       if (punch.permissionStatus == PermissionsStatus.pending) {
         pendingDays++;
         continue;
@@ -608,7 +621,7 @@ class AttendanceService {
         continue;
       }
 
-      // ✅ Approved Permissions
+      // 🚨 5. APPROVED PERMISSIONS
       if (punch.permissionStatus == PermissionsStatus.approved &&
           punch.permissionType != null) {
         switch (punch.permissionType!) {
@@ -643,7 +656,7 @@ class AttendanceService {
         }
       }
 
-      // ✅ Normal Attendance
+      // 🚨 6. NORMAL ATTENDANCE
       switch (punch.status.toLowerCase()) {
         case "present":
           presentDays++;
@@ -664,6 +677,7 @@ class AttendanceService {
       presentDays: presentDays,
       absentDays: absentDays,
       leaveDays: leaveDays,
+      holidayDays: holidayDays,
       wfhDays: wfhDays,
       halfDayDays: halfDayDays,
       lateDays: lateDays,
@@ -740,11 +754,11 @@ class AttendanceService {
       int workingMinutes = totalMinutes - breakMinutes;
       String status;
       if (workingMinutes >= 480) {
-        status = AttendanceStatus.present;
+        status = AttendanceStatus.present.name;
       } else if (workingMinutes >= 240) {
-        status = AttendanceStatus.halfDay;
+        status = AttendanceStatus.halfDay.name;
       } else {
-        status = AttendanceStatus.absent;
+        status = AttendanceStatus.absent.name;
       }
       String? permissionType;
       var permission = await firebase.users
@@ -761,15 +775,15 @@ class AttendanceService {
 
         switch (permissionType) {
           case "leaveFullDay":
-            status = AttendanceStatus.leave;
+            status = AttendanceStatus.leave.name;
             break;
 
           case "leaveHalfDay":
-            status = AttendanceStatus.halfDay;
+            status = AttendanceStatus.halfDay.name;
             break;
 
           case "workFromHome":
-            status = AttendanceStatus.present;
+            status = AttendanceStatus.present.name;
             break;
         }
       }
@@ -841,21 +855,21 @@ class AttendanceService {
 
         switch (permissionType) {
           case "leaveFullDay":
-            status = AttendanceStatus.leave;
+            status = AttendanceStatus.leave.name;
             break;
 
           case "leaveHalfDay":
-            status = AttendanceStatus.halfDay;
+            status = AttendanceStatus.halfDay.name;
             break;
 
           case "workFromHome":
-            status = AttendanceStatus.present;
+            status = AttendanceStatus.present.name;
             break;
 
           case "lateEntry":
           case "earlyExit":
           case "permission":
-            status = AttendanceStatus.present;
+            status = AttendanceStatus.present.name;
             break;
         }
 
@@ -963,21 +977,21 @@ class AttendanceService {
       if (status == PermissionsStatus.approved) {
         switch (type) {
           case "leaveFullDay":
-            newStatus = AttendanceStatus.leave;
+            newStatus = AttendanceStatus.leave.name;
             break;
 
           case "leaveHalfDay":
-            newStatus = AttendanceStatus.halfDay;
+            newStatus = AttendanceStatus.halfDay.name;
             break;
 
           case "workFromHome":
-            newStatus = AttendanceStatus.present;
+            newStatus = AttendanceStatus.present.name;
             break;
 
           case "lateEntry":
           case "earlyExit":
           case "permission":
-            newStatus = AttendanceStatus.present;
+            newStatus = AttendanceStatus.present.name;
             break;
         }
       } else if (status == PermissionsStatus.rejected) {

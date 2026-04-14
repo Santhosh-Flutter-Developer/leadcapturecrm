@@ -9,6 +9,7 @@ class AttendanceModel {
   WorktimeModel? worktime;
   List<PunchModel> punchList;
   int breakMinutes;
+  AttendanceStatus? status;
   String present;
   String holiday;
   String absent;
@@ -22,6 +23,7 @@ class AttendanceModel {
     this.worktime,
     required this.punchList,
     required this.breakMinutes,
+    this.status,
     required this.present,
     required this.holiday,
     required this.absent,
@@ -36,6 +38,7 @@ class AttendanceModel {
     WorktimeModel? worktime,
     List<PunchModel>? punchList,
     int? breakMinutes,
+    AttendanceStatus? status,
     String? present,
     String? holiday,
     String? absent,
@@ -49,6 +52,7 @@ class AttendanceModel {
       worktime: worktime ?? this.worktime,
       punchList: punchList ?? this.punchList,
       breakMinutes: breakMinutes ?? this.breakMinutes,
+      status: status ?? this.status,
       present: present ?? this.present,
       holiday: holiday ?? this.holiday,
       absent: absent ?? this.absent,
@@ -65,6 +69,7 @@ class AttendanceModel {
       'worktime': worktime?.toMap(),
       'punchList': punchList.map((x) => x.toMap()).toList(),
       'breakMinutes': breakMinutes,
+      'status': status,
       'present': present,
       'holiday': holiday,
       'absent': absent,
@@ -91,6 +96,12 @@ class AttendanceModel {
       breakMinutes: map['breakMinutes'] is int
           ? map['breakMinutes']
           : int.tryParse(map['breakMinutes']?.toString() ?? '0') ?? 0,
+      status: AttendanceStatus.values.firstWhere(
+        (e) =>
+            e.name.toLowerCase() ==
+            (map['status'] ?? '').toString().toLowerCase(),
+        orElse: () => AttendanceStatus.absent,
+      ),
       present: map['present']?.toString() ?? '0',
       holiday: map['holiday']?.toString() ?? '0',
       absent: map['absent']?.toString() ?? '0',
@@ -157,42 +168,41 @@ class AttendanceModel {
   String get formattedOT => _formatMinutes(otHourMinutes);
   String get formattedBreak => _formatMinutes(breakMinutes);
 
-  AttendanceModel applyPermissions() {
+  AttendanceModel applyPermissions({required bool isAdmin}) {
     if (permissions == null || permissions!.isEmpty) return this;
 
     int updatedWorking = workingHourMinutes;
     int updatedLess = lessHourMinutes;
     int updatedOt = otHourMinutes;
 
-    bool isAbsentDay = absent == '1';
-    bool isHolidayDay = holiday == '1';
+    bool isHolidayDay = status == AttendanceStatus.holiday;
 
     for (final p in permissions!) {
-      if (p.status != PermissionsStatus.approved) continue;
+      if (!isAdmin && p.status != PermissionsStatus.approved) continue;
 
       switch (p.type) {
         case PermissionType.leaveFullDay:
           return copyWith(
+            status: AttendanceStatus.leave,
             present: '0',
             absent: '0',
-            holiday: holiday,
             workingHourMinutes: 0,
             lessHourMinutes: 0,
             otHourMinutes: 0,
           );
 
         case PermissionType.leaveHalfDay:
-          updatedLess = (updatedLess - (workingHourMinutes ~/ 2)).clamp(
-            0,
-            updatedLess,
-          );
-          updatedWorking += (workingHourMinutes ~/ 2);
+          updatedWorking += 240; // 4 hours
+          updatedLess = (updatedLess - 240).clamp(0, updatedLess);
           break;
 
         case PermissionType.workFromHome:
-          updatedWorking = workingHourMinutes;
-          updatedLess = 0;
-          break;
+          return copyWith(
+            status: AttendanceStatus.wfh,
+            present: '1',
+            absent: '0',
+            lessHourMinutes: 0,
+          );
 
         case PermissionType.lateEntry:
           updatedLess = (updatedLess - 30).clamp(0, updatedLess);
@@ -212,7 +222,6 @@ class AttendanceModel {
       workingHourMinutes: updatedWorking,
       lessHourMinutes: updatedLess,
       otHourMinutes: updatedOt,
-      present: isAbsentDay ? '0' : '1',
     );
   }
 }
@@ -410,6 +419,7 @@ class AttendanceStats {
   final int presentDays;
   final int absentDays;
   final int leaveDays;
+  final int holidayDays;
 
   final int wfhDays;
   final int halfDayDays;
@@ -432,6 +442,7 @@ class AttendanceStats {
     required this.presentDays,
     required this.absentDays,
     required this.leaveDays,
+    required this.holidayDays,
     required this.wfhDays,
     required this.halfDayDays,
     required this.lateDays,
@@ -454,6 +465,7 @@ class AttendanceStats {
       presentDays: _parseInt(map['presentDays']),
       absentDays: _parseInt(map['absentDays']),
       leaveDays: _parseInt(map['leaveDays']),
+      holidayDays: _parseInt(map['holidayDays']),
       wfhDays: _parseInt(map['wfhDays']),
       halfDayDays: _parseInt(map['halfDayDays']),
       lateDays: _parseInt(map['lateDays']),
@@ -511,4 +523,15 @@ class AttendanceStats {
   String toJson() => json.encode(toMap());
   factory AttendanceStats.fromJson(String source) =>
       AttendanceStats.fromMap(json.decode(source) as Map<String, dynamic>);
+}
+
+
+class HolidayModel {
+  final DateTime date;
+  final String name;
+
+  HolidayModel({
+    required this.date,
+    required this.name,
+  });
 }

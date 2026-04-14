@@ -102,6 +102,20 @@ enum PermissionType {
   earlyExit,
 }
 
+enum AttendanceStatus {
+  present,
+  absent,
+  leave,
+  holiday,
+  wfh,
+  halfDay,
+  late,
+  earlyExit,
+  lessHours,
+  pending,
+  rejected,
+}
+
 enum NotificationType {
   alert,
   info,

@@ -58,6 +58,7 @@ class _AttendanceState extends State<Attendance>
   late TabController tabController;
   Timer? _timer;
   List<WorktimeModel> workList = [];
+  List<HolidayModel> holidays = [];
 
   @override
   void initState() {
@@ -93,6 +94,7 @@ class _AttendanceState extends State<Attendance>
         userUid: user!.uid,
         fromDate: fromDate,
         toDate: toDate,
+        holidays: holidays,
       );
 
       aList.addAll(res.attendanceData);
@@ -102,6 +104,7 @@ class _AttendanceState extends State<Attendance>
           userUid: emp.uid!,
           fromDate: fromDate,
           toDate: toDate,
+          holidays: holidays,
         );
       }).toList();
 
@@ -153,7 +156,7 @@ class _AttendanceState extends State<Attendance>
     tempAList.addAll(aList);
 
     filteredList = List.from(aList);
-    stats = calculateStats(filteredList);
+    stats = calculateStats(filteredList, isAdmin: isAdmin, holidays: holidays);
 
     aList.sort((a, b) {
       if (a.punchList.isEmpty || b.punchList.isEmpty) return 0;
@@ -602,7 +605,11 @@ class _AttendanceState extends State<Attendance>
     setState(() {
       filteredList = filtered;
 
-      stats = calculateStats(filteredList);
+      stats = calculateStats(
+        filteredList,
+        isAdmin: isAdmin,
+        holidays: holidays,
+      );
     });
   }
 
@@ -783,6 +790,8 @@ class _AttendanceState extends State<Attendance>
                   employees: employees,
                   departments: departments,
                   onDayTap: onDayTap,
+                  isAdmin: isAdmin,
+                  holidays: [],
                 ),
               ),
 
@@ -807,6 +816,8 @@ class _AttendanceState extends State<Attendance>
         employees: employees,
         departments: departments,
         onDayTap: onDayTap,
+        isAdmin: isAdmin,
+        holidays: [],
       ),
     );
   }
@@ -1084,8 +1095,8 @@ class _AttendanceState extends State<Attendance>
   Widget buildSummaryCards(AttendanceStats stats) {
     final items = [
       ("Present", stats.presentDays.toString(), Colors.green),
-      ("Absent", stats.absentDays.toString(), Colors.red),
-      ("Leave", stats.leaveDays.toString(), Colors.orange),
+      ("Absent", (stats.absentDays).toString(), Colors.red),
+      ("Holiday", stats.holidayDays.toString(), Colors.orange),
       ("WFH", stats.wfhDays.toString(), Colors.blue),
     ];
 
@@ -2025,7 +2036,11 @@ class _AttendanceState extends State<Attendance>
     }
 
     final emp = employeeMap[selectedEmployee];
-    final empStats = calculateStats(employeeAttendance);
+    final empStats = calculateStats(
+      employeeAttendance,
+      isAdmin: isAdmin,
+      holidays: holidays,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
@@ -2098,6 +2113,8 @@ class _AttendanceState extends State<Attendance>
             employees: employees,
             departments: departments,
             onDayTap: onDayTap,
+            isAdmin: isAdmin,
+            holidays: [],
           ),
         ],
       ),
@@ -2535,6 +2552,8 @@ class _AttendanceCalendar extends StatefulWidget {
   final String? employeeId;
   final List<EmployeeModel> employees;
   final List<DepartmentModel> departments;
+  final bool isAdmin;
+  final List<HolidayModel> holidays;
 
   const _AttendanceCalendar({
     required this.attendanceList,
@@ -2543,6 +2562,8 @@ class _AttendanceCalendar extends StatefulWidget {
     this.employeeId,
     required this.employees,
     required this.departments,
+    required this.isAdmin,
+    required this.holidays,
   });
 
   @override
@@ -2556,12 +2577,25 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
   late List<AttendanceModel> filteredList;
   DateTime? selectedDay;
   late AttendanceStats stats;
+  // final List<DateTime> holidays = [];
+  bool isHoliday(DateTime date) {
+    return widget.holidays.any(
+      (h) =>
+          h.date.year == date.year &&
+          h.date.month == date.month &&
+          h.date.day == date.day,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _applyFilter();
-    stats = calculateStats(filteredList);
+    stats = calculateStats(
+      filteredList,
+      isAdmin: widget.isAdmin,
+      holidays: widget.holidays,
+    );
     _loadUser();
   }
 
@@ -2594,12 +2628,17 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
       final date = parseDateTime(punch.punchDate);
       if (date == null) continue;
 
-      // ✅ APPLY PERMISSION LOGIC FIRST
-      final updatedAttendance = a.applyPermissions();
+      final dayKey = DateTime(date.year, date.month, date.day);
+
+      if (isHoliday(date)) {
+        map[dayKey] = "Holiday";
+        continue;
+      }
+
+      final updatedAttendance = a.applyPermissions(isAdmin: widget.isAdmin);
 
       String status = getAttendanceStatus(updatedAttendance);
 
-      // ✅ OVERRIDE STATUS USING PERMISSIONS
       if (a.permissions != null && a.permissions!.isNotEmpty) {
         final dayPermissions = a.permissions!.where((p) {
           final pDate = p.date;
@@ -2641,10 +2680,8 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
           }
         }
       }
-
-      map[DateTime(date.year, date.month, date.day)] = status;
+      map[dayKey] = status;
     }
-
     return map;
   }
 
@@ -2686,7 +2723,11 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
     } else {
       filteredList = widget.attendanceList;
     }
-    stats = calculateStats(filteredList);
+    stats = calculateStats(
+      filteredList,
+      isAdmin: widget.isAdmin,
+      holidays: widget.holidays,
+    );
     attendanceMap = _buildAttendanceMap();
   }
 
@@ -2778,6 +2819,10 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
 
                           case "Leave":
                             markerColor = Colors.orange;
+                            break;
+
+                          case "Holiday":
+                            markerColor = Colors.pinkAccent;
                             break;
 
                           case "HalfDay":
@@ -2943,15 +2988,19 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                           )];
 
                       if (status == null) return;
-                      final attendance = filteredList.firstWhere((e) {
-                        if (e.punchList.isEmpty) return false;
+                      final attendance = filteredList
+                          .firstWhere((e) {
+                            if (e.punchList.isEmpty) return false;
 
-                        final d = parseDateTime(e.punchList.first.punchDate);
+                            final d = parseDateTime(
+                              e.punchList.first.punchDate,
+                            );
 
-                        return d?.year == selected.year &&
-                            d?.month == selected.month &&
-                            d?.day == selected.day;
-                      }, orElse: () => filteredList.first).applyPermissions();
+                            return d?.year == selected.year &&
+                                d?.month == selected.month &&
+                                d?.day == selected.day;
+                          }, orElse: () => filteredList.first)
+                          .applyPermissions(isAdmin: widget.isAdmin);
                       final dayRecords = filteredList.where((e) {
                         if (e.punchList.isEmpty) return false;
 
