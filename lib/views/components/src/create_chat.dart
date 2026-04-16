@@ -402,7 +402,6 @@ class _CreateChatState extends State<CreateChat>
 
                               const SizedBox(height: 40),
 
-                              // --- Create Button ---
                               Center(
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
@@ -416,7 +415,6 @@ class _CreateChatState extends State<CreateChat>
                                     ),
                                   ),
                                   onPressed: () async {
-                                    // Handle group creation logic here
                                     if (_groupName.text.isEmpty ||
                                         _selectedMembers.isEmpty) {
                                       FlushBar.show(
@@ -424,31 +422,41 @@ class _CreateChatState extends State<CreateChat>
                                         "Please fill all required fields.",
                                         isSuccess: false,
                                       );
-
                                       return;
                                     }
 
                                     try {
                                       futureLoading(context);
-                                      var sessionUser =
-                                          await Spdb.getUser(); // the logged in user
+
+                                      var sessionUser = await Spdb.getUser();
 
                                       final creatorName = sessionUser.name;
                                       final creatorUid = sessionUser.uid;
 
+                                      // ✅ Step 1: Collect selected members
+                                      List<String> participants =
+                                          _selectedMembers
+                                              .map<String>(
+                                                (e) => e.uid ?? e.id ?? '',
+                                              )
+                                              .toList();
+
+                                      // ✅ Step 2: Add creator if not already added
+                                      if (!participants.contains(creatorUid)) {
+                                        participants.add(creatorUid);
+                                      }
+
+                                      // ✅ Step 3: Create participantsKey
+                                      participants
+                                          .sort(); // 🔥 important for consistency
+                                      final participantsKey = participants.join(
+                                        '_',
+                                      );
+
                                       ChatModel chatModel = ChatModel(
                                         createdBy: creatorUid,
-                                        participants: _selectedMembers
-                                            .map<String>(
-                                              (e) => e.uid ?? e.id ?? '',
-                                            )
-                                            .toList(),
-                                        participantsKey: _selectedMembers
-                                            .map<String>(
-                                              (e) => e.uid ?? e.id ?? '',
-                                            )
-                                            .toList()
-                                            .join('_'),
+                                        participants: participants,
+                                        participantsKey: participantsKey,
                                         title: _groupName.text,
                                         description: _description.text,
                                         isGroupChat: true,
@@ -464,22 +472,23 @@ class _CreateChatState extends State<CreateChat>
                                       await ChatService.createGroupChat(
                                         model: chatModel,
                                       );
+
                                       if (Navigator.canPop(context)) {
                                         Navigator.pop(context);
                                       }
                                       Navigator.pop(context, true);
+
                                       FlushBar.show(
                                         context,
                                         "Group chat created",
                                       );
                                     } catch (e, st) {
                                       await ErrorService.recordError(e, st);
-                                      debugPrint(
-                                        "${e.toString()}, ${st.toString()}",
-                                      );
+
                                       if (Navigator.canPop(context)) {
                                         Navigator.pop(context);
                                       }
+
                                       FlushBar.show(
                                         context,
                                         e.toString(),

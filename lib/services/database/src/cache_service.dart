@@ -98,11 +98,8 @@ class CacheService {
       final data = box.get(uid);
 
       if (data != null) {
-        // Found in cache
         return fromMap(uid, Map<String, dynamic>.from(data));
       }
-
-      // Not found: Fetch specific document from Firestore
       _fetchSingleDocument(uid, conf);
 
       return null;

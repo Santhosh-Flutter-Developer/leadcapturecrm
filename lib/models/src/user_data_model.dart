@@ -43,16 +43,17 @@ class UserDataModel {
   }
 
   factory UserDataModel.fromMap(Map<String, dynamic> map) {
-    return UserDataModel(
-      uid: map['uid'] as String,
-      name: map['name'] as String,
-      profilePic: map['profilePic'] != null
-          ? map['profilePic'] as String
-          : null,
-      desc: map['desc'] != null ? map['desc'] as String : null,
-      userType: UserType.values.byName(map['userType'] as String),
-    );
-  }
+  return UserDataModel(
+    uid: map['uid']?.toString() ?? '',
+    name: map['name']?.toString() ?? '',
+    profilePic: map['profilePic']?.toString(),
+    desc: map['desc']?.toString(),
+    userType: UserType.values.firstWhere(
+      (e) => e.name == map['userType']?.toString(),
+      orElse: () => UserType.employee,
+    ),
+  );
+}
 
   factory UserDataModel.fromEmptyMap() {
     return UserDataModel(

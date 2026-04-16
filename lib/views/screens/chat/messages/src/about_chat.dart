@@ -224,7 +224,7 @@ class _AboutChatState extends State<AboutChat> {
           itemBuilder: (context, index) {
             final uid = widget.chat.participants[index];
             final user = CacheService.getUserByUid(uid);
-            String name = 'Workspace User';
+            String name = '';
             String? image;
 
             if (user is AdminModel) {
@@ -344,17 +344,17 @@ class _AboutChatState extends State<AboutChat> {
 
           _buildActionTile(
             context,
-            icon: widget.chat.isPinned == true
+            icon: widget.chat.isPinnedForUser(widget.userUid) == true
                 ? Icons.push_pin
                 : Iconsax.percentage_circle,
             iconColor: Colors.orangeAccent,
-            title: widget.chat.isPinned == true
+            title: widget.chat.isPinnedForUser(widget.userUid) == true
                 ? 'Unpin this conversation'
                 : 'Pin to top',
             onTap: () async {
               await ChatService.toggleChatPin(
                 chatId: widget.chat.uid!,
-                value: !widget.chat.isPinned,
+                value: !widget.chat.isPinnedForUser(widget.userUid),
               );
               if (context.mounted) Navigator.pop(context);
             },
@@ -362,17 +362,17 @@ class _AboutChatState extends State<AboutChat> {
           _buildDivider(),
           _buildActionTile(
             context,
-            icon: widget.chat.isFavorite == true
+            icon: widget.chat.isFavoriteForUser(widget.userUid) == true
                 ? Iconsax.heart5
                 : Iconsax.heart,
             iconColor: Colors.redAccent,
-            title: widget.chat.isFavorite == true
+            title: widget.chat.isFavoriteForUser(widget.userUid) == true
                 ? 'Remove from favorites'
                 : 'Add to favorites',
             onTap: () async {
               await ChatService.toggleChatFavorite(
                 chatId: widget.chat.uid!,
-                value: !widget.chat.isFavorite,
+                value: !widget.chat.isFavoriteForUser(widget.userUid),
               );
               if (context.mounted) Navigator.pop(context);
             },

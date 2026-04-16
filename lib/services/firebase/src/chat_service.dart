@@ -267,6 +267,7 @@ class ChatService {
     required String message,
     List<File>? attachments,
     String? replyFor,
+    List<MentionModel>? mentions,
   }) async {
     try {
       var cid = await Spdb.getCid();
@@ -311,6 +312,7 @@ class ChatService {
         message: message,
         replyFor: replyFor,
         attachments: attachmentList,
+        mentions: mentions ?? [],
       );
 
       await CommonService.add(
@@ -553,7 +555,6 @@ class ChatService {
               }
             }
           }
-
           return totalUnviewed;
         });
   }
@@ -565,7 +566,6 @@ class ChatService {
     required String userId,
   }) async {
     var cid = await Spdb.getCid();
-
     final ref = FirebaseFirestore.instance
         .collection(Collections.users.name)
         .doc(cid)
@@ -573,30 +573,21 @@ class ChatService {
         .doc(chatId)
         .collection(Collections.messages.name)
         .doc(messageId);
-
-    /// Get current data once
     final snap = await ref.get();
-
     if (!snap.exists) return;
-
     final data = snap.data() as Map<String, dynamic>;
-
-    /// Existing reactions: { "😂": ["u1"], "❤️": ["u3"] }
     final reactions = Map<String, dynamic>.from(data["reactions"] ?? {});
-
-    /// Get list for this emoji
     final List<dynamic> users = List.from(reactions[emoji] ?? []);
-
-    /// Toggle logic
     if (users.contains(userId)) {
       users.remove(userId);
     } else {
       users.add(userId);
     }
-
-    reactions[emoji] = users;
-
-    /// Update normally (no transaction)
+    if (users.isEmpty) {
+      reactions.remove(emoji);
+    } else {
+      reactions[emoji] = users;
+    }
     await ref.update({"reactions": reactions});
   }
 
@@ -623,13 +614,14 @@ class ChatService {
   }) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       await FirebaseFirestore.instance
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
-          .update({'isPinned': value, 'updatedAt': DateTime.now()});
+          .update({'isPinnedBy.$uid': value, 'updatedAt': DateTime.now()});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;
@@ -646,9 +638,22 @@ class ChatService {
           .collection(Collections.chats.name)
           .doc(chatId);
 
+      final chatSnap = await chatRef.get();
+
+      if (!chatSnap.exists) return;
+
+      final data = chatSnap.data() as Map<String, dynamic>;
+
+      final createdBy = data['createdBy'];
+      final isGroupChat = data['isGroupChat'] ?? false;
+
+      final currentUser = await Spdb.getUid();
+      if (isGroupChat && createdBy != currentUser) {
+        throw "Only group creator can delete this chat";
+      }
+
       final messagesRef = chatRef.collection(Collections.messages.name);
 
-      // 🔥 1. Delete all messages in the chat
       final messagesSnapshot = await messagesRef.get();
       final batch = FirebaseFirestore.instance.batch();
 
@@ -656,7 +661,6 @@ class ChatService {
         batch.delete(doc.reference);
       }
 
-      // 🔥 2. Delete the chat document itself
       batch.delete(chatRef);
 
       await batch.commit();
@@ -672,13 +676,14 @@ class ChatService {
   }) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       await FirebaseFirestore.instance
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
-          .update({'isFavorite': value, 'updatedAt': DateTime.now()});
+          .update({'isFavoriteBy.$uid': value, 'updatedAt': DateTime.now()});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;

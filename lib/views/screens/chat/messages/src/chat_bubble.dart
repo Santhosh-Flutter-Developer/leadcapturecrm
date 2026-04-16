@@ -1,11 +1,5 @@
 part of 'chat_messages.dart';
 
-/// The main chat bubble widget.
-/// Refined for better UX:
-/// 1. Uses [OverlayPortal] for the hover menu so it floats above all other UI elements
-///    and ensures clicks (hit-testing) work reliably even outside widget bounds.
-/// 2. Implements a "Keep Alive" timer logic for smooth hovering.
-/// 3. Compact layout with pills for existing reactions.
 class ChatBubble extends StatefulWidget {
   final String chatUid;
   final MessagesModel message;
@@ -37,7 +31,7 @@ class _ChatBubbleState extends State<ChatBubble>
   Timer? _hoverTimer;
   bool _isMenuHovered = false;
   bool _isBubbleHovered = false;
-  bool _isPopupOpen = false; // FIX: Track if the popup menu is open
+  bool _isPopupOpen = false;
 
   late bool _isPinned;
   late MessagesModel _msg;
@@ -149,14 +143,11 @@ class _ChatBubbleState extends State<ChatBubble>
     _addReaction("❤️");
   }
 
-  // --- Actions ---
-
   void _addReaction(String emoji) async {
     // Optimistic UI update could be added here
     final uid = await Spdb.getUid();
     if (uid == null) return;
 
-    // Close menu after selection
     if (mounted) {
       _isMenuHovered = false;
       _overlayController.hide();
@@ -228,9 +219,27 @@ class _ChatBubbleState extends State<ChatBubble>
     }
   }
 
+  void _onReactionTap(String emoji) async {
+    final uid = await Spdb.getUid();
+    if (uid == null) return;
+
+    await ChatService.toggleReaction(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+      emoji: emoji,
+      userId: uid,
+    );
+
+    final updated = await ChatService.getChatMessage(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+    );
+
+    if (mounted) setState(() => _msg = updated);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // FIX: Capture the Provider instance here while the context is stable.
     final messageProvider = Provider.of<MessageProvider>(
       context,
       listen: false,
@@ -263,7 +272,6 @@ class _ChatBubbleState extends State<ChatBubble>
                   child: _ChatBubbleHoverMenu(
                     isSender: widget.isSender,
                     onReaction: _addReaction,
-                    // FIX: Pass callback to handle popup state
                     onMenuStateChanged: (isOpen) {
                       _isPopupOpen = isOpen;
                       // If closing, check if we need to hide the overlay
@@ -324,6 +332,7 @@ class _ChatBubbleState extends State<ChatBubble>
                 onHorizontalDragUpdate: _onHorizontalDragUpdate,
                 onHorizontalDragEnd: _onHorizontalDragEnd,
                 onLongPress: _showMobileChatOptions,
+                onReactionTap: _onReactionTap,
               ),
             ),
           ),
@@ -332,8 +341,6 @@ class _ChatBubbleState extends State<ChatBubble>
     );
   }
 }
-
-// --- CORE WIDGETS ---
 
 class _ChatBubbleCore extends StatelessWidget {
   final Offset slideOffset;
@@ -346,6 +353,7 @@ class _ChatBubbleCore extends StatelessWidget {
   final ValueChanged<DragUpdateDetails> onHorizontalDragUpdate;
   final ValueChanged<DragEndDetails> onHorizontalDragEnd;
   final VoidCallback onLongPress;
+  final Function(String)? onReactionTap;
 
   const _ChatBubbleCore({
     required this.slideOffset,
@@ -358,6 +366,7 @@ class _ChatBubbleCore extends StatelessWidget {
     required this.onHorizontalDragUpdate,
     required this.onHorizontalDragEnd,
     required this.onLongPress,
+    this.onReactionTap,
   });
 
   @override
@@ -439,6 +448,7 @@ class _ChatBubbleCore extends StatelessWidget {
                             child: _ReactionChips(
                               reactions: message.reactions,
                               isSender: isSender,
+                              onTap: onReactionTap,
                             ),
                           ),
                       ],
@@ -452,9 +462,7 @@ class _ChatBubbleCore extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      message.timestamp != null
-                          ? DateFormat('hh:mm a').format(message.timestamp!)
-                          : 'Just now',
+                      DateFormat('hh:mm a').format(message.timestamp),
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
@@ -490,6 +498,26 @@ class _ChatBubbleMessageBox extends StatelessWidget {
     required this.message,
     required this.replyChat,
   });
+
+  void _openUserProfile(BuildContext context, MentionModel mention) {
+    if (mention.uid.isEmpty) return;
+
+    final user = CacheService.getUserByUid(mention.uid);
+
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: CreatedByWidget(userData: user),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -569,7 +597,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       ],
                     ),
                   ),
-                MarkdownText(message: message.message),
+                _buildMessageWithMentions(context, message.message),
               ],
             ),
           ),
@@ -583,40 +611,111 @@ class _ChatBubbleMessageBox extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildMessageWithMentions(BuildContext context, String text) {
+    final mentions = message.mentions ?? [];
+
+    if (mentions.isEmpty) {
+      return Text(text);
+    }
+
+    final spans = <InlineSpan>[];
+    int currentIndex = 0;
+
+    // Sort mentions by start position
+    final sortedMentions = [...mentions]
+      ..sort((a, b) => (a.start ?? 0).compareTo(b.start ?? 0));
+
+    for (final mention in sortedMentions) {
+      if (mention.start == null || mention.end == null) continue;
+
+      // Add normal text before mention
+      if (currentIndex < mention.start!) {
+        spans.add(
+          TextSpan(
+            text: text.substring(currentIndex, mention.start),
+            style: const TextStyle(color: Colors.black),
+          ),
+        );
+      }
+
+      // Add mention text
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: GestureDetector(
+            onTap: () => _openUserProfile(context, mention),
+            child: Text(
+              text.substring(mention.start!, mention.end!),
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      currentIndex = mention.end!;
+    }
+
+    if (currentIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(currentIndex),
+          style: const TextStyle(color: Colors.black),
+        ),
+      );
+    }
+
+    return RichText(text: TextSpan(children: spans));
+  }
 }
 
-class _ReactionChips extends StatelessWidget {
+class _ReactionChips extends StatefulWidget {
   final Map<String, List<String>> reactions;
   final bool isSender;
+  final Function(String)? onTap;
+  const _ReactionChips({
+    required this.reactions,
+    required this.isSender,
+    this.onTap,
+  });
 
-  const _ReactionChips({required this.reactions, required this.isSender});
+  @override
+  State<_ReactionChips> createState() => _ReactionChipsState();
+}
 
+class _ReactionChipsState extends State<_ReactionChips> {
   @override
   Widget build(BuildContext context) {
     // reactions = { "😂": ["u1","u2"], "❤️": ["u3"] }
     final counts = <String, int>{};
 
-    for (var entry in reactions.entries) {
+    for (var entry in widget.reactions.entries) {
       final emoji = entry.key;
       final users = entry.value;
       counts[emoji] = users.length; // number of reactions for that emoji
     }
 
     return Wrap(
-      alignment: isSender ? WrapAlignment.end : WrapAlignment.start,
+      alignment: widget.isSender ? WrapAlignment.end : WrapAlignment.start,
       spacing: 4,
       runSpacing: 4,
       children: counts.entries.map((entry) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.white, width: 2),
-          ),
-          child: Text(
-            "${entry.key} ${entry.value > 1 ? entry.value : ''}",
-            style: Theme.of(context).textTheme.bodyMedium,
+        return GestureDetector(
+          onTap: () => widget.onTap?.call(entry.key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.grey200,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.white, width: 2),
+            ),
+            child: Text(
+              "${entry.key} ${entry.value > 1 ? entry.value : ''}",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
         );
       }).toList(),

@@ -1,7 +1,8 @@
 part of 'chat_messages.dart';
 
 class ChatInputBar extends StatefulWidget {
-  const ChatInputBar({super.key});
+  final ChatModel chat;
+  const ChatInputBar({super.key, required this.chat});
 
   @override
   State<ChatInputBar> createState() => _ChatInputBarState();
@@ -10,8 +11,11 @@ class ChatInputBar extends StatefulWidget {
 class _ChatInputBarState extends State<ChatInputBar> {
   final TextEditingController _controller = TextEditingController();
   final List<File> _pickedFiles = [];
-
+  bool _showMentionList = false;
+  List<MentionModel> _allUsers = [];
+  List<MentionModel> _filteredUsers = [];
   bool get hasText => _controller.text.trim().isNotEmpty;
+  final List<MentionModel> _mentions = [];
 
   Future<void> _pickFiles() async {
     final files = await FilePicker.platform.pickFiles(
@@ -49,10 +53,48 @@ class _ChatInputBarState extends State<ChatInputBar> {
   @override
   void initState() {
     super.initState();
+    _loadUsers();
+    _controller.addListener(_onTextChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _messageProvider = Provider.of<MessageProvider>(context, listen: false);
       _messageProvider?.addListener(_onMessageProviderChange);
+    });
+  }
+
+  Future<void> _loadUsers() async {
+    final participants = widget.chat.participants;
+    final currentUid = await Spdb.getUid();
+
+    List<MentionModel> users = [];
+
+    for (var uid in participants) {
+      if (uid == currentUid) continue;
+
+      final user = CacheService.getUserByUid(uid);
+
+      if (user is EmployeeModel) {
+        users.add(
+          MentionModel(
+            uid: user.uid ?? '',
+            name: user.name,
+            image: user.profileImageUrl,
+          ),
+        );
+      } else if (user is AdminModel) {
+        users.add(
+          MentionModel(
+            uid: user.uid ?? '',
+            name: user.name,
+            image: user.profileImageUrl,
+          ),
+        );
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _allUsers = users;
+      debugPrint("Mention users: ${_allUsers.map((e) => e.name)}");
     });
   }
 
@@ -76,6 +118,63 @@ class _ChatInputBarState extends State<ChatInputBar> {
             offset: _chat?.message.length ?? 0,
           ),
         );
+      });
+    }
+  }
+
+  void _onTextChanged() {
+    final text = _controller.text;
+    final cursorPos = _controller.selection.baseOffset;
+
+    if (cursorPos < 0) return;
+
+    final subText = text.substring(0, cursorPos);
+    final match = RegExp(r'@([\w\s]*)$').firstMatch(subText);
+
+    _mentions.removeWhere((m) => !text.contains('@${m.name}'));
+
+    if (match != null) {
+      final query = match.group(1)?.toLowerCase() ?? '';
+
+      setState(() {
+        _showMentionList = true;
+        _filteredUsers = _allUsers.where((user) {
+          return user.name.toLowerCase().contains(query);
+        }).toList();
+      });
+    } else {
+      setState(() {
+        _showMentionList = false;
+      });
+    }
+  }
+
+  void _selectMention(MentionModel user) {
+    final text = _controller.text;
+    final cursorPos = _controller.selection.baseOffset;
+    final subText = text.substring(0, cursorPos);
+    final match = RegExp(r'@([\w\s]*)$').firstMatch(subText);
+
+    if (match != null) {
+      final start = match.start;
+      final mentionText = '@${user.name} ';
+      final end = start + mentionText.length;
+
+      final newText = text.replaceRange(start, cursorPos, mentionText);
+
+      _controller.text = newText;
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: end),
+      );
+
+      _mentions.removeWhere((m) => m.uid == user.uid);
+
+      _mentions.add(
+        MentionModel(uid: user.uid, name: user.name, start: start, end: end),
+      );
+
+      setState(() {
+        _showMentionList = false;
       });
     }
   }
@@ -176,75 +275,85 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 },
               ),
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.white, AppColors.grey50],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_showMentionList) _mentionList(),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.white, AppColors.grey50],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: AppColors.black45,
+                          width: 1.2,
+                        ),
                       ),
-                    ],
-                    border: Border.all(color: AppColors.black45, width: 1.2),
-                  ),
-                  child: TextField(
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    textCapitalization: TextCapitalization.sentences,
-                    controller: _controller,
-                    minLines: 1,
-                    maxLines: 5,
-                    onChanged: (value) async {
-                      setState(() {});
-                      // if (value.isNotEmpty) {
-                      //   await ChatService.updateTypingOnChat(
-                      //     chatId: uid,
-                      //     status: true,
-                      //   );
-                      // } else {
-                      //   await ChatService.updateTypingOnChat(
-                      //     chatId: uid,
-                      //     status: false,
-                      //   );
-                      // }
-                    },
-                    onEditingComplete: () async {
-                      // await ChatService.updateTypingOnChat(
-                      //   chatId: uid,
-                      //   status: false,
-                      // );
-                    },
-                    onTapOutside: (event) async {
-                      // await ChatService.updateTypingOnChat(
-                      //   chatId: uid,
-                      //   status: false,
-                      // );
-                    },
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 10,
+                      child: TextField(
+                        controller: _controller,
+                        keyboardType: TextInputType.multiline,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.newline,
+                        minLines: 1,
+                        maxLines: 5,
+                        onChanged: (value) async {
+                          setState(() {});
+                          // if (value.isNotEmpty) {
+                          //   await ChatService.updateTypingOnChat(
+                          //     chatId: uid,
+                          //     status: true,
+                          //   );
+                          // } else {
+                          //   await ChatService.updateTypingOnChat(
+                          //     chatId: uid,
+                          //     status: false,
+                          //   );
+                          // }
+                        },
+                        onEditingComplete: () async {
+                          // await ChatService.updateTypingOnChat(
+                          //   chatId: uid,
+                          //   status: false,
+                          // );
+                        },
+                        onTapOutside: (event) async {
+                          // await ChatService.updateTypingOnChat(
+                          //   chatId: uid,
+                          //   status: false,
+                          // );
+                        },
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
+                          hintText: "Send a message...",
+                          border: InputBorder.none,
+                          filled: true,
+                          fillColor: AppColors.transparent,
+                          suffixIcon: !hasText && _pickedFiles.isEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.image_outlined),
+                                  onPressed: _pickFiles,
+                                )
+                              : null,
+                        ),
                       ),
-                      hintText: "Send a message...",
-                      border: InputBorder.none,
-                      filled: true,
-                      fillColor: AppColors.transparent,
-                      suffixIcon: !hasText && _pickedFiles.isEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.image_outlined),
-                              onPressed: _pickFiles,
-                            )
-                          : null,
                     ),
-                  ),
+                  ],
                 ),
               ),
               if (!hasText && _pickedFiles.isEmpty) ...[
@@ -308,6 +417,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         message: message,
         attachments: _pickedFiles,
         replyFor: _isReply ? _chat?.uid : null,
+        mentions: _mentions,
       );
     }
     _messageProvider?.clearMessage();
@@ -319,6 +429,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     }
     _controller.clear();
     _pickedFiles.clear();
+    _mentions.clear();
     setState(() {});
 
     ChatService.sendNotification(chatId: uid, message: message, isChat: true);
@@ -595,6 +706,32 @@ class _ChatInputBarState extends State<ChatInputBar> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _mentionList() {
+    return Container(
+      height: 200,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5),
+        ],
+      ),
+      child: ListView.builder(
+        itemCount: _filteredUsers.length,
+        itemBuilder: (context, index) {
+          final user = _filteredUsers[index];
+
+          return ListTile(
+            leading: CircleAvatar(child: Text(user.name[0])),
+            title: Text(user.name),
+            onTap: () => _selectMention(user),
+          );
+        },
       ),
     );
   }

@@ -133,7 +133,7 @@ class _ChatMessagesState extends State<ChatMessages> {
                       // Pass the raw list to BuildSliverChat
                       child: BuildSliverChat(chats: chats),
                     ),
-                    const ChatInputBar(),
+                    ChatInputBar(chat: widget.chat),
                   ],
                 );
               },

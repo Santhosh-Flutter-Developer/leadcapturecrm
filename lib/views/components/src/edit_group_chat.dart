@@ -41,7 +41,6 @@ class _EditGroupChatState extends State<EditGroupChat> {
       _members.clear();
       _selectedMembers.clear();
 
-      // 1️⃣ Fetch all members
       final employees = await EmployeeService.getAllEmployees();
       final admins = await AdminService.getAllAdmins();
 
