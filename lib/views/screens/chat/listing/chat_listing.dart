@@ -353,10 +353,8 @@ class _ChatListPanelState extends State<ChatListPanel> {
               // Use the filtered list
               itemCount: _filteredChats.length,
               itemBuilder: (context, index) {
-                // Get the chat from the filtered list
                 final chat = _filteredChats[index];
 
-                // Find the original index to maintain selection state
                 final originalIndex = widget.chats.indexOf(chat);
                 final isSelected = chat.uid == widget.selectedChatUid;
 

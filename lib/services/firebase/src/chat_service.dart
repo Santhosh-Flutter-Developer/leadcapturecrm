@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart';
@@ -38,21 +37,19 @@ class ChatService {
   }) async {
     var cid = await Spdb.getCid();
 
-    return await firebase.users
+    final snapshot = await firebase.users
         .doc(cid)
         .collection(Collections.chats.name)
         .doc(uid)
         .collection(Collections.messages.name)
         .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            var data = doc.data();
-            data['uid'] = doc.id;
-            return MessagesModel.fromMap(doc.id, data);
-          }).toList();
-        })
-        .first;
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['uid'] = doc.id;
+      return MessagesModel.fromMap(doc.id, data);
+    }).toList();
   }
 
   static Future<List<MessagesModel>> searchMessages({
@@ -196,7 +193,7 @@ class ChatService {
     required String uid,
     required String message,
     required String chatId,
-    List<File>? attachments,
+    List<FileModel>? attachments,
   }) async {
     try {
       var cid = await Spdb.getCid();
@@ -217,35 +214,12 @@ class ChatService {
         }
       }
 
-      List<FileModel> attachmentList = [];
-
-      if (attachments != null) {
-        for (var i in attachments) {
-          var url = await StorageService.uploadFile(
-            file: i,
-            folder: StorageFolder.chats,
-          );
-          attachmentList.add(
-            FileModel(
-              name: path.basename(i.path),
-              url: url,
-              size: i.lengthSync(),
-              extension: path.basename(i.path).split('.').last,
-              mimeType: lookupMimeType(i.path) ?? '',
-            ),
-          );
-        }
-      }
-
       MessagesModel chat = MessagesModel(
         chatId: chatId,
         senderId: userId ?? '',
-        // senderName: user.name,
         receiverId: receivers,
         message: message,
-        attachments: attachmentList,
-
-        // Edit related
+        attachments: attachments ?? [],
         edited: true,
         editHistory: [MessagesEditHistory(message: message)],
       );
@@ -265,7 +239,7 @@ class ChatService {
   static Future<void> sendChatMessage({
     required String chatId,
     required String message,
-    List<File>? attachments,
+    List<FileModel>? attachments,
     String? replyFor,
     List<MentionModel>? mentions,
   }) async {
@@ -285,33 +259,31 @@ class ChatService {
         receivers.remove(senderId);
       }
 
-      List<FileModel> attachmentList = [];
-      if (attachments != null) {
-        for (var file in attachments) {
-          var url = await StorageService.uploadFile(
-            file: file,
-            folder: StorageFolder.chats,
-          );
-          attachmentList.add(
-            FileModel(
-              name: path.basename(file.path),
-              url: url,
-              size: file.lengthSync(),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              mimeType: lookupMimeType(file.path) ?? "",
-            ),
-          );
+      final files = attachments ?? [];
+
+      String lastMsg = message;
+
+      if (files.isNotEmpty && message.trim().isEmpty) {
+        final mime = files.first.mimeType;
+
+        if (mime.startsWith('image')) {
+          lastMsg = "📷 Photo";
+        } else if (mime.startsWith('video')) {
+          lastMsg = "🎥 Video";
+        } else if (mime.startsWith('audio')) {
+          lastMsg = "🎵 Audio";
+        } else {
+          lastMsg = "📄 Document";
         }
       }
 
       MessagesModel chat = MessagesModel(
         chatId: chatId,
         senderId: senderId!,
-        // senderName: senderName,
         receiverId: receivers,
         message: message,
         replyFor: replyFor,
-        attachments: attachmentList,
+        attachments: attachments ?? [],
         mentions: mentions ?? [],
       );
 
@@ -325,7 +297,7 @@ class ChatService {
         chatId,
         {
           "lastMessage": LastMessageModel(
-            message: message,
+            message: lastMsg,
             senderId: senderId,
             timestamp: DateTime.now(),
           ).toMap(),

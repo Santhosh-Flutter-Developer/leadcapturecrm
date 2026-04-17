@@ -17,6 +17,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
   bool get hasText => _controller.text.trim().isNotEmpty;
   final List<MentionModel> _mentions = [];
 
+  String _getMimeType(String ext) {
+    if (imageExtensions.contains(ext)) return 'image/$ext';
+    if (videoExtensions.contains(ext)) return 'video/$ext';
+    if (audioExtensions.contains(ext)) return 'audio/$ext';
+    if (docExtensions.contains(ext)) return 'application/$ext';
+    return 'application/octet-stream';
+  }
+
   Future<void> _pickFiles() async {
     final files = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -177,6 +185,33 @@ class _ChatInputBarState extends State<ChatInputBar> {
         _showMentionList = false;
       });
     }
+  }
+
+  Future<List<FileModel>> _uploadFiles(List<File> files) async {
+    List<FileModel> uploadedFiles = [];
+
+    for (final file in files) {
+      final fileName = file.path.split('/').last;
+      final ext = fileName.split('.').last.toLowerCase();
+      final size = await file.length();
+
+      final url = await StorageService.uploadFile(
+        file: file,
+        folder: StorageFolder.chats,
+      );
+
+      uploadedFiles.add(
+        FileModel(
+          url: url,
+          name: fileName,
+          size: (size / 1024).round(),
+          extension: ext,
+          mimeType: _getMimeType(ext),
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+    return uploadedFiles;
   }
 
   @override
@@ -394,46 +429,53 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _sendMessage() async {
+    if (!mounted) return;
+
     final chatData = ChatData.of(context);
     final uid = chatData.uid;
 
+    List<FileModel> attachments = [];
     var message = _controller.text.trim();
 
     if (_pickedFiles.isEmpty && message.isEmpty) return;
 
     if (_pickedFiles.isNotEmpty) {
       futureLoading(context);
+
+      attachments = await _uploadFiles(_pickedFiles);
+
+      if (!mounted) return;
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
     }
+
     if (_isEdit) {
       await ChatService.editChatMessage(
         uid: uid,
         chatId: _chat?.uid ?? '',
         message: message,
-        attachments: _pickedFiles,
+        attachments: attachments,
       );
     } else {
       await ChatService.sendChatMessage(
         chatId: uid,
         message: message,
-        attachments: _pickedFiles,
+        attachments: attachments,
         replyFor: _isReply ? _chat?.uid : null,
         mentions: _mentions,
       );
     }
-    _messageProvider?.clearMessage();
 
-    if (_pickedFiles.isNotEmpty) {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-    }
+    if (!mounted) return;
+    _messageProvider?.clearMessage();
     _controller.clear();
     _pickedFiles.clear();
     _mentions.clear();
     setState(() {});
-
     ChatService.sendNotification(chatId: uid, message: message, isChat: true);
-  }
+  } 
 
   final imageExtensions = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff"];
   final videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
@@ -791,7 +833,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                       const SizedBox(height: 4),
                       // Message with ellipsis
                       SizedBox(
-                        width: double.infinity, // Force width constraint
+                        width: double.infinity,
                         child: Text(
                           chat?.message ?? '',
                           style: Theme.of(context).textTheme.bodyMedium!

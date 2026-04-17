@@ -295,10 +295,12 @@ class MessagesModel {
 class LastMessageModel {
   final String senderId;
   final String message;
+  final String? type;
   final DateTime? timestamp;
   LastMessageModel({
     required this.senderId,
     required this.message,
+    this.type,
     this.timestamp,
   });
 
@@ -306,6 +308,7 @@ class LastMessageModel {
     return <String, dynamic>{
       'senderId': senderId,
       'message': message,
+      'type': type,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
   }
@@ -314,6 +317,7 @@ class LastMessageModel {
     return LastMessageModel(
       senderId: map['senderId'] as String,
       message: map['message'] as String,
+      type: map['type'] as String?,
       timestamp: map['timestamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
           : null,

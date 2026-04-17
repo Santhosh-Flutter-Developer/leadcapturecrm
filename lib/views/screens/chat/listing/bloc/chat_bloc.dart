@@ -32,12 +32,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           .map((snapshot) {
             allChats = snapshot.docs
                 .map((doc) => ChatModel.fromMap(doc.id, doc.data()))
-                .where(
-                  (chat) =>
-                      chat.lastMessage != null  &&
-                      //  chat.lastMessage!.message != "Chat started" &&
-                      chat.lastMessage!.message.isNotEmpty,
-                )
+                .where((chat) {
+                  final last = chat.lastMessage;
+                  if (last == null) return false;
+
+                  return (last.message.isNotEmpty) ||
+                      (last.type != null &&
+                          last.type!.isNotEmpty);
+                })
                 .toList();
             // Optional: sort safely
             // allChats.sort(

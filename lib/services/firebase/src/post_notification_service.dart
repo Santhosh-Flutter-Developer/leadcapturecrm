@@ -63,7 +63,7 @@ class PostNotificationService {
       if (serverKey == null) return;
 
       String endpointFirebaseCloudMessaging =
-          "https://fcm.googleapis.com/v1/projects/srisoftwarez-crm/messages:send";
+          "https://fcm.googleapis.com/v1/projects/leadcapture-79a43/messages:send";
       if (model.toFcms.isNotEmpty) {
         for (var element in model.toFcms) {
           final Map<String, dynamic> message = {
