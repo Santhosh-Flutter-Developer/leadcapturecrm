@@ -98,7 +98,12 @@ class CacheService {
       final data = box.get(uid);
 
       if (data != null) {
-        return fromMap(uid, Map<String, dynamic>.from(data));
+        return fromMap(
+          uid,
+          Map<String, dynamic>.from(
+            data.map((key, value) => MapEntry(key.toString(), value)),
+          ),
+        );
       }
       _fetchSingleDocument(uid, conf);
 

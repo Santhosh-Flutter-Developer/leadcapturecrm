@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -176,6 +177,45 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  Future<void> _removeProfileImage() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Remove Profile Photo"),
+        content: const Text("Are you sure you want to remove this photo?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    FlushBar.show(context, "Removing profile picture...");
+    try {
+      if (!isAdmin) {
+        await EmployeeService.deleteEmployeeImage(uid: employee!.uid!);
+        setState(() {
+          employee = employee?.copyWith(profileImageUrl: null);
+        });
+      } else {
+        await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
+
+        setState(() {
+          admin = admin?.copyWith(profileImageUrl: null);
+        });
+      }
+    } catch (e) {
+      debugPrint("Remove image error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -289,31 +329,121 @@ class _ProfileState extends State<Profile> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: ProfileColors.primary.withValues(alpha: 0.1),
-                    width: 4,
+              GestureDetector(
+                onTap: (image != null && image.isNotEmpty)
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: EdgeInsets.zero,
+                            child: SafeArea(
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: InteractiveViewer(
+                                      child: CachedNetworkImage(
+                                        imageUrl: image,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          /// ❌ CLOSE
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                          ),
+
+                                          /// 🗑 DELETE
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () async {
+                                              Navigator.pop(context);
+                                              await _removeProfileImage();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    bottom: 20,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Text(
+                                        "Profile Photo",
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
+
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ProfileColors.primary.withValues(alpha: 0.1),
+                      width: 4,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundColor: ProfileColors.background,
+                    backgroundImage: image != null && image.isNotEmpty
+                        ? NetworkImage(image)
+                        : null,
+                    child: image == null || image.isEmpty
+                        ? Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : "?",
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              color: ProfileColors.primary,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundColor: ProfileColors.background,
-                  backgroundImage: image != null ? NetworkImage(image) : null,
-                  child: image == null
-                      ? Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : "?",
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: ProfileColors.primary,
-                          ),
-                        )
-                      : null,
-                ),
               ),
+
               if (!isAdmin)
                 Material(
                   color: ProfileColors.primary,

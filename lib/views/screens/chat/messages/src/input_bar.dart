@@ -16,13 +16,34 @@ class _ChatInputBarState extends State<ChatInputBar> {
   List<MentionModel> _filteredUsers = [];
   bool get hasText => _controller.text.trim().isNotEmpty;
   final List<MentionModel> _mentions = [];
+  String getExt(String path) {
+    return path.split('?').first.split('#').first.split('.').last.toLowerCase();
+  }
 
   String _getMimeType(String ext) {
+    ext = ext.toLowerCase();
     if (imageExtensions.contains(ext)) return 'image/$ext';
     if (videoExtensions.contains(ext)) return 'video/$ext';
     if (audioExtensions.contains(ext)) return 'audio/$ext';
-    if (docExtensions.contains(ext)) return 'application/$ext';
-    return 'application/octet-stream';
+
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt':
+        return 'application/vnd.ms-powerpoint';
+      case 'pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   Future<void> _pickFiles() async {
@@ -475,7 +496,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     _mentions.clear();
     setState(() {});
     ChatService.sendNotification(chatId: uid, message: message, isChat: true);
-  } 
+  }
 
   final imageExtensions = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff"];
   final videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
@@ -492,8 +513,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
           child: Row(
             children: List.generate(_pickedFiles.length, (index) {
               final file = _pickedFiles[index];
-              final ext = file.path.split('.').last.toLowerCase();
-
+              final ext = getExt(file.path);
               return Stack(
                 children: [
                   _buildFilePreview(file, ext),

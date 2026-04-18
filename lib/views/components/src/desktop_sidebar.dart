@@ -180,15 +180,15 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool clientsContact =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Contact')) != null;
-    // bool projects =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Projects')) != null;
+    bool projects =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Projects')) != null;
     bool calendar =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Calendar')) != null;
-    // bool tasks =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Tasks')) != null;
+    bool tasks =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Tasks')) != null;
     bool workTime =
         payrollEnabled &&
         (widget.isAdmin ||
@@ -278,8 +278,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         ],
       },
       if (calendar) {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
-      // if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
-      // if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
+      if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
+      if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
       {
         'icon': Iconsax.wallet,
         'title': 'Payroll',

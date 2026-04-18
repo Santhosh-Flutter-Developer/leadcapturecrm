@@ -114,9 +114,8 @@ class AdminModel {
           : '',
       profileImageUrl: map['profileImageUrl'] as String?,
       isActive: map['isActive'] is bool ? map['isActive'] as bool : false,
-      createdBy:
-          map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
-          ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
+      createdBy: map['createdBy'] != null && map['createdBy'] is Map
+          ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),
       createdAt: map['createdAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
@@ -128,7 +127,9 @@ class AdminModel {
           ? DateTime.fromMillisecondsSinceEpoch(map['lastActive'] as int)
           : null,
       devices: map['devices'] != null && map['devices'] is List
-          ? List<Map<String, dynamic>>.from(map['devices'] as List)
+          ? (map['devices'] as List)
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
           : null,
     );
   }

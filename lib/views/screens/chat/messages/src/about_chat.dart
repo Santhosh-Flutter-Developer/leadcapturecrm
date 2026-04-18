@@ -140,7 +140,6 @@ class _AboutChatState extends State<AboutChat> {
 
   Widget _buildHeader(BuildContext context, String title, String imageUrl) {
     final bool avatarValid = imageUrl.isNotEmpty;
-
     return Center(
       child: Column(
         children: [
@@ -154,6 +153,42 @@ class _AboutChatState extends State<AboutChat> {
               ),
             ),
             child: GestureDetector(
+              onTap: avatarValid
+                  ? () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.black,
+                          insetPadding: EdgeInsets.zero,
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: InteractiveViewer(
+                                  child: CachedNetworkImage(
+                                    imageUrl: imageUrl,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+
+                              /// ❌ CLOSE BUTTON
+                              Positioned(
+                                top: 40,
+                                right: 20,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
               child: CircleAvatar(
                 radius: 48,
                 backgroundColor: AboutChatColors.primary.withValues(
