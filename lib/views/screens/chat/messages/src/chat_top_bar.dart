@@ -53,34 +53,37 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
               child: Icon(Icons.group, size: 20),
             ),
           ] else ...[
-            if (userImage != null && userImage.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl: userImage,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
-                  ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                  height: 35,
-                  width: 35,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ] else ...[
-              CircleAvatar(
-                backgroundColor: AppColors.grey200,
-                radius: 22,
-                child: Text(
-                  (userName ?? '?').capitalizeFirst,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
-                ),
-              ),
-            ],
+            InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () => _openChatUserProfile(context, userUid),
+              child: userImage != null && userImage.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: CachedNetworkImage(
+                        imageUrl: userImage,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: AppColors.grey300,
+                          highlightColor: AppColors.grey100,
+                          child: Container(color: AppColors.white),
+                        ),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                        height: 35,
+                        width: 35,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : CircleAvatar(
+                      backgroundColor: AppColors.grey200,
+                      radius: 22,
+                      child: Text(
+                        (userName ?? '?').capitalizeFirst,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+            ),
           ],
           const SizedBox(width: 12),
           Expanded(
@@ -104,11 +107,14 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                     ).textTheme.bodyMedium?.copyWith(color: AppColors.grey200),
                   ),
                 ] else ...[
-                  Text(
-                    userName ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
+                  InkWell(
+                    onTap: () => _openChatUserProfile(context, userUid),
+                    child: Text(
+                      userName ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -223,7 +229,13 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
       leading: Padding(
         padding: const EdgeInsets.only(left: 8),
-        child: _buildLeadingAvatar(context, userName, userImage),
+        child: chat.isGroupChat
+            ? _buildLeadingAvatar(context, userName, userImage)
+            : InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _openChatUserProfile(context, userUid),
+                child: _buildLeadingAvatar(context, userName, userImage),
+              ),
       ),
 
       title: _buildTitle(context, userName, userImage),
@@ -339,11 +351,14 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  userName ?? "",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.black,
-                    fontWeight: FontWeight.w600,
+                InkWell(
+                  onTap: () => _openChatUserProfile(context, userUid),
+                  child: Text(
+                    userName ?? "",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 StreamBuilder<UserStatusModel?>(
@@ -423,6 +438,58 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
+}
+
+Future<dynamic> _resolveChatProfileByUid(String uid) async {
+  if (uid.trim().isEmpty) return null;
+
+  final cached = CacheService.getUserByUid(uid);
+  if (cached is EmployeeModel || cached is AdminModel) {
+    return cached;
+  }
+
+  try {
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) return employee;
+  } catch (_) {}
+
+  try {
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) return admin;
+  } catch (_) {}
+
+  return null;
+}
+
+Future<void> _openChatUserProfile(BuildContext context, String uid) async {
+  final profile = await _resolveChatProfileByUid(uid);
+  if (!context.mounted) return;
+
+  if (profile is EmployeeModel) {
+    if (kIsMobile) {
+      await Sheet.showSheet(
+        context,
+        widget: EmployeeDetails(employee: profile),
+      );
+    } else {
+      await GeneralDialog.showRTLSheet(
+        context,
+        EmployeeDetails(employee: profile),
+      );
+    }
+    return;
+  }
+
+  if (profile is AdminModel) {
+    if (kIsMobile) {
+      await Sheet.showSheet(context, widget: AdminProfile(admin: profile));
+    } else {
+      await GeneralDialog.showRTLSheet(context, AdminProfile(admin: profile));
+    }
+    return;
+  }
+
+  FlushBar.show(context, 'User profile not found', isSuccess: false);
 }
 
 String formatLastSeen(DateTime? time) {

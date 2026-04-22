@@ -18,8 +18,10 @@ class CommentSheet extends StatefulWidget {
 
 class CommentSheetState extends State<CommentSheet> {
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _editCommentController = TextEditingController();
   late List<CommentModel> _comments;
   late Future _future;
+  final Map<String, _CommentAuthorDisplay> _commentAuthors = {};
   EmployeeModel? _employee;
   AdminModel? _admin;
   bool _isPosting = false;
@@ -54,6 +56,91 @@ class CommentSheetState extends State<CommentSheet> {
     var feedModel = await FeedService.getFeed(uid: widget.feedId);
     _comments = feedModel.comments ?? [];
     _comments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    await _loadCommentAuthors();
+  }
+
+  Future<void> _loadCommentAuthors() async {
+    final ids = _comments
+        .map((c) => c.authorId)
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+
+    for (final id in ids) {
+      final display = await _loadCommentAuthorDisplay(id);
+      if (display != null) {
+        _commentAuthors[id] = display;
+      }
+    }
+  }
+
+  Future<_CommentAuthorDisplay?> _loadCommentAuthorDisplay(String uid) async {
+    final cachedUser = CacheService.getUserByUid(uid);
+    if (cachedUser is EmployeeModel) {
+      return _CommentAuthorDisplay(
+        name: cachedUser.name,
+        avatar: cachedUser.profileImageUrl ?? '',
+      );
+    }
+
+    if (cachedUser is AdminModel) {
+      return _CommentAuthorDisplay(
+        name: cachedUser.name,
+        avatar: cachedUser.profileImageUrl ?? '',
+      );
+    }
+
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) {
+      return _CommentAuthorDisplay(
+        name: employee.name,
+        avatar: employee.profileImageUrl ?? '',
+      );
+    }
+
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) {
+      return _CommentAuthorDisplay(
+        name: admin.name,
+        avatar: admin.profileImageUrl ?? '',
+      );
+    }
+
+    return const _CommentAuthorDisplay(name: 'Unknown user', avatar: '');
+  }
+
+  Future<void> _openCommentAuthorProfile(String uid) async {
+    if (uid.trim().isEmpty) return;
+
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) {
+      if (!mounted) return;
+      if (kIsMobile) {
+        await Sheet.showSheet(
+          context,
+          widget: EmployeeDetails(employee: employee),
+        );
+      } else {
+        await GeneralDialog.showRTLSheet(
+          context,
+          EmployeeDetails(employee: employee),
+        );
+      }
+      return;
+    }
+
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) {
+      if (!mounted) return;
+      if (kIsMobile) {
+        await Sheet.showSheet(context, widget: AdminProfile(admin: admin));
+      } else {
+        await GeneralDialog.showRTLSheet(context, AdminProfile(admin: admin));
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    FlushBar.show(context, 'User profile not found', isSuccess: false);
   }
 
   Future<void> _addComment() async {
@@ -82,6 +169,10 @@ class CommentSheetState extends State<CommentSheet> {
 
       await FeedService.addComment(feedId: widget.feedId, comment: newComment);
       setState(() {
+        _commentAuthors[widget.currentUserUid!] = _CommentAuthorDisplay(
+          name: authorName,
+          avatar: authorAvatar,
+        );
         _comments.insert(0, newComment);
         _isPosting = false;
         _replyingTo = null;
@@ -126,6 +217,114 @@ class CommentSheetState extends State<CommentSheet> {
       commentId: comment.commentId,
       reactions: reactions,
     );
+  }
+
+  Future<void> _editComment(CommentModel comment) async {
+    if (widget.currentUserUid == null ||
+        comment.authorId != widget.currentUserUid) {
+      return;
+    }
+
+    _editCommentController.text = comment.content;
+
+    final updatedContent = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Comment'),
+          content: TextField(
+            controller: _editCommentController,
+            minLines: 1,
+            maxLines: 4,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Update your comment'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                _editCommentController.text.trim(),
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (updatedContent == null || updatedContent.isEmpty) return;
+
+    try {
+      await FeedService.editComment(
+        feedId: widget.feedId,
+        commentId: comment.commentId,
+        content: updatedContent,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        final index = _comments.indexWhere(
+          (c) => c.commentId == comment.commentId,
+        );
+        if (index != -1) {
+          _comments[index] = _comments[index].copyWith(content: updatedContent);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
+  }
+
+  Future<void> _deleteComment(CommentModel comment) async {
+    if (widget.currentUserUid == null ||
+        comment.authorId != widget.currentUserUid) {
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Comment'),
+          content: const Text('Are you sure you want to delete this comment?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      await FeedService.deleteComment(
+        feedId: widget.feedId,
+        commentId: comment.commentId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _comments.removeWhere((c) => c.commentId == comment.commentId);
+        if (_replyingTo?.commentId == comment.commentId) {
+          _replyingTo = null;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      FlushBar.show(context, e.toString(), isSuccess: false);
+    }
   }
 
   @override
@@ -215,7 +414,8 @@ class CommentSheetState extends State<CommentSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _replyingTo!.authorName,
+                          _commentAuthors[_replyingTo!.authorId]?.name ??
+                              _replyingTo!.authorName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: FeedAppColors.primary,
@@ -243,16 +443,25 @@ class CommentSheetState extends State<CommentSheet> {
   }
 
   Widget _buildCommentItem(CommentModel comment) {
+    final isOwner = widget.currentUserUid == comment.authorId;
+    final liveAuthor = _commentAuthors[comment.authorId];
+    final authorName = liveAuthor?.name ?? comment.authorName;
+    final authorAvatar = liveAuthor?.avatar ?? comment.authorAvatar;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: FeedAppColors.background,
-          backgroundImage: NetworkImage(
-            comment.authorAvatar.isNotEmpty
-                ? comment.authorAvatar
-                : AppStrings.emptyProfilePhotoUrl,
+        InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openCommentAuthorProfile(comment.authorId),
+          child: CircleAvatar(
+            radius: 16,
+            backgroundColor: FeedAppColors.background,
+            backgroundImage: NetworkImage(
+              authorAvatar.isNotEmpty
+                  ? authorAvatar
+                  : AppStrings.emptyProfilePhotoUrl,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -284,6 +493,24 @@ class CommentSheetState extends State<CommentSheet> {
                         _toggleReaction(comment, "❤️");
                       },
                     ),
+                    if (isOwner)
+                      ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: const Text("Edit"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _editComment(comment);
+                        },
+                      ),
+                    if (isOwner)
+                      ListTile(
+                        leading: const Icon(Icons.delete, color: Colors.red),
+                        title: const Text("Delete"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _deleteComment(comment);
+                        },
+                      ),
                   ],
                 ),
               );
@@ -293,12 +520,15 @@ class CommentSheetState extends State<CommentSheet> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      comment.authorName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        color: FeedAppColors.textPrimary,
+                    InkWell(
+                      onTap: () => _openCommentAuthorProfile(comment.authorId),
+                      child: Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: FeedAppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -348,6 +578,20 @@ class CommentSheetState extends State<CommentSheet> {
                         ),
                       ),
                     ),
+                    if (isOwner) ...[
+                      const SizedBox(width: 16),
+                      GestureDetector(
+                        onTap: () => _deleteComment(comment),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 if (comment.reactions.isNotEmpty)
@@ -412,7 +656,7 @@ class CommentSheetState extends State<CommentSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            replied.authorName,
+            _commentAuthors[replied.authorId]?.name ?? replied.authorName,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
@@ -504,5 +748,12 @@ class CommentSheetState extends State<CommentSheet> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _editCommentController.dispose();
+    super.dispose();
   }
 }
