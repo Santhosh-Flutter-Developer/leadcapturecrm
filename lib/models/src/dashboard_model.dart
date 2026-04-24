@@ -15,7 +15,7 @@ class DashboardModel {
   final List<ActivityItem> recentActivities;
   final List<String> personalActivities;
   final List<NotificationModel> notifications;
-  final List<TaskModel> upcomingTasks;
+  final List<UpcomingDeadlineItemModel> upcomingTasks;
   final List<LeadModel> allLeads;
   final List<DealModel> allDeals;
   final List<TaskModel> allTasks;
@@ -93,7 +93,16 @@ class DashboardModel {
               ),
             )
           : [],
-      upcomingTasks: const [],
+      upcomingTasks:
+          map['upcomingTasks'] != null && map['upcomingTasks'] is List
+          ? List<UpcomingDeadlineItemModel>.from(
+              (map['upcomingTasks'] as List).map(
+                (e) => UpcomingDeadlineItemModel.fromMap(
+                  e as Map<String, dynamic>,
+                ),
+              ),
+            )
+          : const [],
       allLeads: map['allLeads'] != null && map['allLeads'] is List
           ? List<LeadModel>.from(
               (map['allLeads'] as List).map(

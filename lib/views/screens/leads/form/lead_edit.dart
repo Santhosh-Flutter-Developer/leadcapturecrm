@@ -43,7 +43,8 @@ class _LeadEditState extends State<LeadEdit> {
   List<LeadCategoryModel> _leadCategories = [];
   List<LeadPriorityModel> _leadPriorities = [];
   List<LeadStatusModel> _leadStatus = [];
-
+  List<ClientModel> _clients = [];
+  ClientModel? _selectedclient;
   LeadCategoryModel? _leadCategory;
   LeadPriorityModel? _leadPriority;
   LeadStatusModel? _leadStatusModel;
@@ -108,10 +109,13 @@ class _LeadEditState extends State<LeadEdit> {
       _leadCategories.clear();
       _leadPriorities.clear();
       _leadStatus.clear();
+      _clients.clear();
 
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
+      _clients = await ClientService.getAllClients();
+      _selectedclient= await ClientService.getClient(uid: _leadModel.clientId ?? '');
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -501,12 +505,79 @@ class _LeadEditState extends State<LeadEdit> {
       spacing: horizontalSpacing,
       runSpacing: verticalSpacing,
       children: [
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormFields(
+        //     label: 'Company Name',
+        //     controller: _companyNameController,
+        //     hintText: 'Enter Company Name',
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
-          child: FormFields(
-            label: 'Company Name',
-            controller: _companyNameController,
-            hintText: 'Enter Company Name',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: FormDropdownSearch(
+                  label: 'Company Name',
+                  initialItem: _selectedclient?.companyName,
+                  items: _clients.map((e) => e.companyName).toList(),
+                  onChanged: (value) {
+                    _selectedclient = _clients.firstWhere(
+                      (cat) => cat.companyName == value,
+                      orElse: () => _clients.first,
+                    );
+                    _companyNameController.text =
+                        _selectedclient?.companyName ?? '';
+                    _companyWebsiteController.text =
+                        _selectedclient?.officialWebsite ?? '';
+                    _companyMobileController.text =
+                        _selectedclient?.officePhoneNo ?? "";
+                    _regionModel = _selectedclient?.country;
+                    _stateModel = _selectedclient?.state;
+                    _cityModel = _selectedclient?.city;
+                    _companyZipController.text =
+                        _selectedclient?.postalCode ?? "";
+                    _companyAddressController.text =
+                        _selectedclient?.companyAddress ?? "";
+                  },
+                  validator: (value) => value == null ? "* Required" : null,
+                ),
+              ),
+              SizedBox(width: 8.0),
+              InkWell(
+                onTap: () async {
+                  if (kIsMobile) {
+                    Navigate.route(
+                      context,
+                      const ClientCompanyListing(
+                        section: ClientSection.company,
+                      ),
+                    );
+                  } else {
+                    var isAdmin = await Spdb.isAdminLoggedIn();
+                    Navigate.route(
+                      context,
+                      DesktopMainScreen(
+                        isAdmin: isAdmin,
+                        selectedMenu: "Company",
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Icon(Icons.add, color: AppColors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -632,31 +703,31 @@ class _LeadEditState extends State<LeadEdit> {
 
         final workflow = await EmployeeService.getUserWorkflow();
 
-        ClientModel clientModel = ClientModel(
-          clientName: '',
-          email: '',
-          password: '',
-          mobileNumber: '',
-          loginAllowed: false,
-          receiveEmailNotifications: false,
-          companyName: _companyNameController.text.trim(),
-          officePhoneNo: _companyMobileController.text,
-          officialWebsite: _companyWebsiteController.text.trim(),
-          postalCode: _companyZipController.text.trim(),
-          companyAddress: _companyAddressController.text.trim(),
-          country: _regionModel,
-          state: _stateModel,
-          city: _cityModel,
-          createdBy: await Spdb.getUser(),
-          isCompany: true,
-        );
+        // ClientModel clientModel = ClientModel(
+        //   clientName: '',
+        //   email: '',
+        //   password: '',
+        //   mobileNumber: '',
+        //   loginAllowed: false,
+        //   receiveEmailNotifications: false,
+        //   companyName: _companyNameController.text.trim(),
+        //   officePhoneNo: _companyMobileController.text,
+        //   officialWebsite: _companyWebsiteController.text.trim(),
+        //   postalCode: _companyZipController.text.trim(),
+        //   companyAddress: _companyAddressController.text.trim(),
+        //   country: _regionModel,
+        //   state: _stateModel,
+        //   city: _cityModel,
+        //   createdBy: await Spdb.getUser(),
+        //   isCompany: true,
+        // );
 
-        var clientId = _leadModel.clientId;
-        if (clientId != null) {
-          await ClientService.editClient(client: clientModel, uid: clientId);
-        } else {
-          clientId = await ClientService.createClient(client: clientModel);
-        }
+        // var clientId = _leadModel.clientId;
+        // if (clientId != null) {
+        //   await ClientService.editClient(client: clientModel, uid: clientId);
+        // } else {
+        //   clientId = await ClientService.createClient(client: clientModel);
+        // }
 
         LeadModel leadModel = LeadModel(
           // salutation: _salutation,
@@ -679,7 +750,7 @@ class _LeadEditState extends State<LeadEdit> {
           companyState: _stateModel,
           companyCity: _cityModel,
           workflow: workflow,
-          clientId: clientId,
+          clientId: _selectedclient?.uid,
           createdBy: await Spdb.getUser(),
         );
 

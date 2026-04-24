@@ -1,29 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
 import '/constants/constants.dart';
+import '/services/services.dart';
+import '/utils/utils.dart';
 import '/views/views.dart';
 
-class AdminProfile extends StatelessWidget {
+class AdminProfile extends StatefulWidget {
   final AdminModel admin;
   const AdminProfile({super.key, required this.admin});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.grey50,
-      appBar: FormWidgets.buildHeader(context: context, title: "Admin Profile"),
+  State<AdminProfile> createState() => _AdminProfileState();
+}
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildProfileCard(context),
-            const SizedBox(height: 22),
-            _buildDetailsCard(context),
-          ],
-        ),
-      ),
+class _AdminProfileState extends State<AdminProfile> {
+  PermissionModel? _permissions;
+  late AdminModel _admin;
+
+  @override
+  void initState() {
+    super.initState();
+    _admin = widget.admin;
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    _permissions = await PermissionService.getPermissions('Admin');
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openEdit() async {
+    final uid = _admin.uid;
+    if (uid == null || uid.isEmpty) {
+      FlushBar.show(
+        context,
+        'Unable to edit this admin profile',
+        isSuccess: false,
+      );
+      return;
+    }
+
+    final result = kIsMobile
+        ? await Sheet.showSheet(
+            context,
+            widget: AdminUpdate(id: uid, admin: _admin),
+          )
+        : await GeneralDialog.showRTLSheet(
+            context,
+            AdminUpdate(id: uid, admin: _admin),
+          );
+
+    if (result != true) return;
+
+    try {
+      final latest = await AdminService.getAdmin(uid: uid);
+      if (latest != null && mounted) {
+        setState(() {
+          _admin = latest;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<bool> _canEditAdmin() async {
+    final currentUid = await Spdb.getUid();
+    if (_admin.uid != null && _admin.uid == currentUid) return true;
+    return _permissions?.canEdit ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _canEditAdmin(),
+      builder: (context, snapshot) {
+        final canEdit = snapshot.data ?? false;
+
+        return Scaffold(
+          backgroundColor: AppColors.grey50,
+          appBar: FormWidgets.buildHeader(
+            context: context,
+            title: 'Admin Profile',
+            actions: [
+              IconButton(
+                onPressed: canEdit ? _openEdit : null,
+                tooltip: canEdit ? 'Edit Admin' : 'No edit permission',
+                icon: Icon(
+                  Iconsax.edit,
+                  color: canEdit ? AppColors.primary : AppColors.grey400,
+                ),
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildProfileCard(context),
+                const SizedBox(height: 22),
+                _buildDetailsCard(context),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -41,9 +122,9 @@ class AdminProfile extends StatelessWidget {
               radius: 60,
               backgroundColor: AppColors.grey300,
               backgroundImage:
-                  (admin.profileImageUrl != null &&
-                      admin.profileImageUrl!.isNotEmpty)
-                  ? NetworkImage(admin.profileImageUrl!)
+                  (_admin.profileImageUrl != null &&
+                      _admin.profileImageUrl!.isNotEmpty)
+                  ? NetworkImage(_admin.profileImageUrl!)
                   : const NetworkImage(AppStrings.emptyProfilePhotoUrl)
                         as ImageProvider,
             ),
@@ -51,7 +132,7 @@ class AdminProfile extends StatelessWidget {
             const SizedBox(height: 20),
 
             Text(
-              admin.name,
+              _admin.name,
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -62,13 +143,13 @@ class AdminProfile extends StatelessWidget {
             Chip(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               label: Text(
-                admin.isActive ? "Active" : "Inactive",
+                _admin.isActive ? 'Active' : 'Inactive',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              backgroundColor: admin.isActive
+              backgroundColor: _admin.isActive
                   ? AppColors.success
                   : AppColors.danger,
             ),
@@ -95,24 +176,24 @@ class AdminProfile extends StatelessWidget {
             _detailRow(
               context: context,
               icon: Icons.email_outlined,
-              label: "Email",
-              value: admin.email,
+              label: 'Email',
+              value: _admin.email,
             ),
             _divider(),
 
             _detailRow(
               context: context,
               icon: Icons.phone,
-              label: "Mobile Number",
-              value: admin.mobileNumber,
+              label: 'Mobile Number',
+              value: _admin.mobileNumber,
             ),
             _divider(),
 
             _detailRow(
               context: context,
               icon: Icons.verified_user_outlined,
-              label: "Status",
-              value: admin.isActive ? "Active" : "Inactive",
+              label: 'Status',
+              value: _admin.isActive ? 'Active' : 'Inactive',
             ),
           ],
         ),

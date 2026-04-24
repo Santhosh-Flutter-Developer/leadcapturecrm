@@ -6,17 +6,50 @@ import '/services/services.dart';
 class EventService {
   static final FirebaseConfig firebase = FirebaseConfig();
 
-  static Future<void> createEvent({required EventModel event}) async {
+  static Future<void> createEvent({
+    required EventModel event,
+    String? docId,
+  }) async {
     try {
       var cid = await Spdb.getCid();
 
       await CommonService.add(
         '${Collections.users.name}/$cid/${Collections.events.name}',
         event.toMap(),
+        docId: docId,
         activity: '${event.eventName} has been added as a event',
       );
 
-      var fcmIds = await AuthService.getUserFcmIds(uid: event.createdBy.uid);
+      final users = <String>{
+        ...event.eventAttendes,
+        event.createdBy.uid,
+      }.where((e) => e.isNotEmpty).toList();
+
+      final fcmIds = <String>[];
+      for (var i in users) {
+        final userFcmIds = await AuthService.getUserFcmIds(uid: i);
+        if (userFcmIds.isNotEmpty) {
+          fcmIds.addAll(userFcmIds);
+        }
+      }
+
+      final user = await Spdb.getUser();
+      await PostNotificationService.sendNotification(
+        model: NotificationModel(
+          collectionId: cid ?? '',
+          title: 'Event : ${event.eventName}',
+          body: 'New event created by ${user.name}',
+          toFcms: fcmIds,
+          toUids: users,
+          senderId: await Spdb.getUid(),
+          type: NotificationType.info,
+          payload: {},
+        ),
+      );
+
+      var creatorFcmIds = await AuthService.getUserFcmIds(
+        uid: event.createdBy.uid,
+      );
 
       ReminderService.createReminder(
         scheduledAt: event.eventDateTime,
@@ -24,7 +57,7 @@ class EventService {
           collectionId: cid ?? '',
           title: 'Event Reminder',
           body: 'You have an upcoming event: ${event.eventName}',
-          toFcms: fcmIds,
+          toFcms: creatorFcmIds,
           toUids: [event.createdBy.uid],
           payload: {},
           type: NotificationType.eventReminder,

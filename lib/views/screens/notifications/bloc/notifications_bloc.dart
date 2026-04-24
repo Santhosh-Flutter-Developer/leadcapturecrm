@@ -30,7 +30,6 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
           .doc(cid)
           .collection(Collections.notifications.name)
           .where('toUids', arrayContains: uid)
-          .where('senderId', isNotEqualTo: uid)
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
