@@ -103,22 +103,16 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   List<String> statusItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
-      final data = box.get(key) ?? {};
-      final model = LeadStatusModel.fromMap(
-        key,
-        Map<String, dynamic>.from(data),
-      );
+      final data = CacheService.normalizeFromCache(box.get(key) ?? {});
+      final model = LeadStatusModel.fromMap(key, data);
       return model.name;
     }).toList();
   }
 
   List<String> categoryItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
-      final data = box.get(key) ?? {};
-      final model = LeadCategoryModel.fromMap(
-        key,
-        Map<String, dynamic>.from(data),
-      );
+      final data = CacheService.normalizeFromCache(box.get(key) ?? {});
+      final model = LeadCategoryModel.fromMap(key, data);
       return model.name;
     }).toList();
   }
