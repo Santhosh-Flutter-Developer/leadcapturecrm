@@ -8,6 +8,20 @@ class FeedService {
   static final FirebaseConfig firebase = FirebaseConfig();
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  static CollectionReference<Map<String, dynamic>> _feedCollection(String cid) {
+    return firebase.users.doc(cid).collection(Collections.feed.name);
+  }
+
+  static Future<void> _addFeedHistory({
+    required String cid,
+    required String feedId,
+    required FeedHistoryModel history,
+  }) async {
+    await _feedCollection(
+      cid,
+    ).doc(feedId).collection('history').add(history.toMap());
+  }
+
   static Future<void> createFeed({required FeedModel feed}) async {
     try {
       final cid = await Spdb.getCid();
@@ -34,7 +48,18 @@ class FeedService {
       var map = feed.toMap();
       map['feedNumber'] = newFeedNumber;
 
-      await feedRef.add(map);
+      final feedDoc = await feedRef.add(map);
+
+      await _addFeedHistory(
+        cid: cid,
+        feedId: feedDoc.id,
+        history: FeedHistoryModel(
+          userId: uid,
+          action: 'Created',
+          content: feed.content,
+          timestamp: feed.createdAt,
+        ),
+      );
 
       // List<String> workflows = feed.workflow;
       // List<String> fcmIds = [];
@@ -216,18 +241,161 @@ class FeedService {
     }
   }
 
+  static Future<void> editComment({
+    required String feedId,
+    required String commentId,
+    required String content,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final currentUid = await Spdb.getUid();
+
+      if (cid == null || currentUid == null) {
+        throw 'Missing cid or uid';
+      }
+
+      final updatedContent = content.trim();
+      if (updatedContent.isEmpty) {
+        throw 'Comment content cannot be empty';
+      }
+
+      final docRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.feed.name)
+          .doc(feedId);
+
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) {
+        throw 'Feed not found';
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+
+      final index = comments.indexWhere((c) => c['commentId'] == commentId);
+      if (index == -1) {
+        throw 'Comment not found';
+      }
+
+      final authorId = comments[index]['authorId']?.toString() ?? '';
+      if (authorId != currentUid) {
+        throw 'Only comment creator can edit this comment';
+      }
+
+      comments[index] = {...comments[index], 'content': updatedContent};
+
+      await docRef.update({'comments': comments});
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error editing comment: $e';
+    }
+  }
+
+  static Future<void> deleteComment({
+    required String feedId,
+    required String commentId,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final currentUid = await Spdb.getUid();
+
+      if (cid == null || currentUid == null) {
+        throw 'Missing cid or uid';
+      }
+
+      final docRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.feed.name)
+          .doc(feedId);
+
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) {
+        throw 'Feed not found';
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final comments = List<Map<String, dynamic>>.from(data['comments'] ?? []);
+
+      final index = comments.indexWhere((c) => c['commentId'] == commentId);
+      if (index == -1) {
+        throw 'Comment not found';
+      }
+
+      final authorId = comments[index]['authorId']?.toString() ?? '';
+      if (authorId != currentUid) {
+        throw 'Only comment creator can delete this comment';
+      }
+
+      comments.removeAt(index);
+
+      await docRef.update({
+        'comments': comments,
+        'commentsCount': FieldValue.increment(-1),
+      });
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error deleting comment: $e';
+    }
+  }
+
   static Future<void> editFeed({
     required String uid,
     required FeedModel feed,
   }) async {
     try {
       var cid = await Spdb.getCid();
+      var currentUid = await Spdb.getUid();
+
+      if (cid == null || currentUid == null) {
+        throw 'Missing cid or uid';
+      }
+
+      final feedDoc = await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.feed.name)
+          .doc(uid)
+          .get();
+
+      if (!feedDoc.exists) {
+        throw 'Feed not found';
+      }
+
+      final feedData = feedDoc.data();
+      final authorId = feedData?['authorId']?.toString() ?? '';
+
+      if (authorId != currentUid) {
+        throw 'Only post creator can edit this post';
+      }
+
+      final updatedAt = DateTime.now();
+      final existingFeed = FeedModel.fromMap(uid, feedData ?? {});
+      final feedToSave = feed.copyWith(
+        updatedAt: updatedAt,
+        comments: existingFeed.comments,
+        commentsCount: existingFeed.commentsCount,
+      );
 
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.feed.name}',
         uid,
-        feed.toUpdateMap(),
+        feedToSave.toUpdateMap(),
         activity: '${feed.content} has been updated',
+      );
+
+      await _addFeedHistory(
+        cid: cid,
+        feedId: uid,
+        history: FeedHistoryModel(
+          userId: currentUid,
+          action: 'Edited',
+          content: feed.content,
+          timestamp: updatedAt,
+        ),
       );
 
       // List<String> workflows = feed.workflow;
@@ -258,12 +426,81 @@ class FeedService {
     }
   }
 
+  static Future<void> deleteFeed({required String uid}) async {
+    try {
+      final cid = await Spdb.getCid();
+      final currentUid = await Spdb.getUid();
+
+      if (cid == null || currentUid == null) {
+        throw 'Missing cid or uid';
+      }
+
+      final feedDocRef = _feedCollection(cid).doc(uid);
+      final feedDoc = await feedDocRef.get();
+
+      if (!feedDoc.exists) {
+        throw 'Feed not found';
+      }
+
+      final feedData = feedDoc.data() ?? {};
+      final authorId = feedData['authorId']?.toString() ?? '';
+      if (authorId != currentUid) {
+        throw 'Only post creator can delete this post';
+      }
+
+      final feed = FeedModel.fromMap(feedDoc.id, feedData);
+
+      // Best-effort cleanup of uploaded assets before deleting the post.
+      final urls = <String>{
+        ...feed.mediaImages.map((file) => file.url),
+        ...feed.attachments.map((file) => file.url),
+      };
+
+      for (final url in urls) {
+        if (url.trim().isEmpty) continue;
+        try {
+          await StorageService.deleteImage(url);
+        } catch (_) {
+          // Ignore media cleanup failures and continue deleting the post.
+        }
+      }
+
+      // Firestore does not auto-delete subcollections when parent doc is deleted.
+      while (true) {
+        final historySnap = await feedDocRef
+            .collection('history')
+            .limit(100)
+            .get();
+        if (historySnap.docs.isEmpty) {
+          break;
+        }
+
+        final batch = firestore.batch();
+        for (final doc in historySnap.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+
+      await feedDocRef.delete();
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      throw 'Error deleting feed: $e';
+    }
+  }
+
   static Future<void> votePoll({
     required String feedId,
     required String optionId,
   }) async {
     try {
       String cid = await Spdb.getCid() ?? '';
+      String uid = await Spdb.getUid() ?? '';
+
+      if (uid.isEmpty) {
+        throw 'User not found';
+      }
 
       final docRef = firestore
           .collection(Collections.users.name)
@@ -279,16 +516,33 @@ class FeedService {
 
       if (feed.poll == null) return;
 
+      if (feed.poll!.votedUserIds.contains(uid)) {
+        throw 'You have already participated in this poll';
+      }
+
       // Increase vote
+      var hasOption = false;
       for (var option in feed.poll!.options) {
         if (option.optionId == optionId) {
           option.votes += 1;
+          hasOption = true;
           break;
         }
       }
 
+      if (!hasOption) {
+        throw 'Invalid poll option selected';
+      }
+
+      final updatedPoll = PollModel(
+        pollId: feed.poll!.pollId,
+        question: feed.poll!.question,
+        options: feed.poll!.options,
+        votedUserIds: [...feed.poll!.votedUserIds, uid],
+      );
+
       // Upload back
-      await docRef.update({"poll": feed.poll!.toMap()});
+      await docRef.update({"poll": updatedPoll.toMap()});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("${e.toString()}, ${st.toString()}");

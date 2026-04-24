@@ -457,6 +457,58 @@ class _ChatListItem extends StatelessWidget {
     required this.onAction,
   });
 
+  Future<dynamic> _resolveProfileByUid(String uid) async {
+    if (uid.trim().isEmpty) return null;
+
+    final cached = CacheService.getUserByUid(uid);
+    if (cached is EmployeeModel || cached is AdminModel) {
+      return cached;
+    }
+
+    try {
+      final employee = await EmployeeService.getEmployee(uid: uid);
+      if (employee != null) return employee;
+    } catch (_) {}
+
+    try {
+      final admin = await AdminService.getAdmin(uid: uid);
+      if (admin != null) return admin;
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<void> _openChatUserProfile(BuildContext context, String uid) async {
+    final profile = await _resolveProfileByUid(uid);
+    if (!context.mounted) return;
+
+    if (profile is EmployeeModel) {
+      if (kIsMobile) {
+        await Sheet.showSheet(
+          context,
+          widget: EmployeeDetails(employee: profile),
+        );
+      } else {
+        await GeneralDialog.showRTLSheet(
+          context,
+          EmployeeDetails(employee: profile),
+        );
+      }
+      return;
+    }
+
+    if (profile is AdminModel) {
+      if (kIsMobile) {
+        await Sheet.showSheet(context, widget: AdminProfile(admin: profile));
+      } else {
+        await GeneralDialog.showRTLSheet(context, AdminProfile(admin: profile));
+      }
+      return;
+    }
+
+    FlushBar.show(context, 'User profile not found', isSuccess: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     String opponentUid = chat.participants.firstWhere(
@@ -483,39 +535,47 @@ class _ChatListItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: chat.isGroupChat
-                    ? AppColors.blue
-                    : nameValid
-                    ? LetterColors.getColor(name.first)
-                    : AppColors.success,
-                foregroundColor: AppColors.white,
-                child: chat.isGroupChat
-                    ? const Icon(Icons.group, size: 20)
-                    : avatarValid
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          placeholder: (context, url) => Shimmer.fromColors(
-                            baseColor: AppColors.grey300,
-                            highlightColor: AppColors.grey100,
-                            child: Container(color: AppColors.white),
-                          ),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.error),
-                          height: 80,
-                          width: 80,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Text(
-                        nameValid ? name.first : '',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              chat.isGroupChat
+                  ? CircleAvatar(
+                      backgroundColor: AppColors.blue,
+                      foregroundColor: AppColors.white,
+                      child: const Icon(Icons.group, size: 20),
+                    )
+                  : InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => _openChatUserProfile(context, opponentUid),
+                      child: CircleAvatar(
+                        backgroundColor: nameValid
+                            ? LetterColors.getColor(name.first)
+                            : AppColors.success,
+                        foregroundColor: AppColors.white,
+                        child: avatarValid
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(100),
+                                child: CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  placeholder: (context, url) =>
+                                      Shimmer.fromColors(
+                                        baseColor: AppColors.grey300,
+                                        highlightColor: AppColors.grey100,
+                                        child: Container(
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                  height: 80,
+                                  width: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Text(
+                                nameValid ? name.first : '',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.white),
+                              ),
                       ),
-              ),
+                    ),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
@@ -524,12 +584,25 @@ class _ChatListItem extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '${chat.isGroupChat ? (chat.title ?? '') : name} ${chat.isFavoriteForUser(currentUserUid) == true ? '❤️' : ''}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          chat.isGroupChat
+                              ? Text(
+                                  '${chat.title ?? ''} ${chat.isFavorite == true ? '❤️' : ''}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : InkWell(
+                                  onTap: () => _openChatUserProfile(
+                                    context,
+                                    opponentUid,
+                                  ),
+                                  child: Text(
+                                    '$name ${chat.isFavorite == true ? '❤️' : ''}',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                           Text(
                             chat.lastMessage?.senderId == currentUserUid
                                 ? ("You: ${chat.lastMessage?.message ?? ''}")

@@ -230,8 +230,13 @@ class _FeedCreateState extends State<FeedCreate> {
 
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
+      }
+
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context, true);
       } // Navigator.pop(context, true);
-      FlushBar.show(context, 'Feed created successfully', isSuccess: true);
+
+      return;
     } catch (e, st) {
       debugPrint("$e, $st");
       await ErrorService.recordError(e, st);

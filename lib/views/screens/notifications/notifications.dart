@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '/models/models.dart';
 import '/services/services.dart';
+import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import 'bloc/notifications_bloc.dart';
@@ -84,6 +85,61 @@ class _NotificationsListingState extends State<NotificationsListing> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return '${diff.inDays}d';
+  }
+
+  Future<dynamic> _resolveProfileByUid(String uid) async {
+    if (uid.trim().isEmpty) return null;
+
+    final cached = CacheService.getUserByUid(uid);
+    if (cached is EmployeeModel || cached is AdminModel) {
+      return cached;
+    }
+
+    try {
+      final employee = await EmployeeService.getEmployee(uid: uid);
+      if (employee != null) return employee;
+    } catch (_) {}
+
+    try {
+      final admin = await AdminService.getAdmin(uid: uid);
+      if (admin != null) return admin;
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<void> _openSenderProfile(NotificationModel item) async {
+    final senderUid = item.senderId?.trim() ?? '';
+    if (senderUid.isEmpty) return;
+
+    final profile = await _resolveProfileByUid(senderUid);
+    if (!mounted) return;
+
+    if (profile is EmployeeModel) {
+      if (kIsMobile) {
+        await Sheet.showSheet(
+          context,
+          widget: EmployeeDetails(employee: profile),
+        );
+      } else {
+        await GeneralDialog.showRTLSheet(
+          context,
+          EmployeeDetails(employee: profile),
+        );
+      }
+      return;
+    }
+
+    if (profile is AdminModel) {
+      if (kIsMobile) {
+        await Sheet.showSheet(context, widget: AdminProfile(admin: profile));
+      } else {
+        await GeneralDialog.showRTLSheet(context, AdminProfile(admin: profile));
+      }
+      return;
+    }
+
+    FlushBar.show(context, 'User profile not found', isSuccess: false);
   }
 
   @override
@@ -292,6 +348,10 @@ class _NotificationsListingState extends State<NotificationsListing> {
 
   Widget _buildNotificationCard(NotificationModel item, bool isDesktop) {
     final isSelected = _selectedNotification?.uid == item.uid;
+    final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
+    final titleText = item.title.isNotEmpty
+        ? item.title
+        : (item.type?.name.toUpperCase() ?? 'Alert');
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -336,7 +396,16 @@ class _NotificationsListingState extends State<NotificationsListing> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _smallAvatar(item.title, item.type?.name ?? 'info'),
+                hasSender
+                    ? InkWell(
+                        onTap: () => _openSenderProfile(item),
+                        borderRadius: BorderRadius.circular(12),
+                        child: _smallAvatar(
+                          item.title,
+                          item.type?.name ?? 'info',
+                        ),
+                      )
+                    : _smallAvatar(item.title, item.type?.name ?? 'info'),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -346,18 +415,30 @@ class _NotificationsListingState extends State<NotificationsListing> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Text(
-                              item.title.isNotEmpty
-                                  ? item.title
-                                  : (item.type?.name.toUpperCase() ?? 'Alert'),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: isSelected
-                                    ? NotifyColors.primary
-                                    : NotifyColors.textPrimary,
-                                fontSize: 14,
-                              ),
-                            ),
+                            child: hasSender
+                                ? InkWell(
+                                    onTap: () => _openSenderProfile(item),
+                                    child: Text(
+                                      titleText,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: isSelected
+                                            ? NotifyColors.primary
+                                            : NotifyColors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    titleText,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected
+                                          ? NotifyColors.primary
+                                          : NotifyColors.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                           ),
                           Text(
                             item.createdAt != null
@@ -411,6 +492,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Widget _buildDetailContent(NotificationModel item) {
+    final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
     return Container(
       color: NotifyColors.white,
       padding: const EdgeInsets.all(40),
@@ -587,6 +669,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Widget _buildMobileDetailSheet(NotificationModel item, BuildContext ctx) {
+    final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       maxChildSize: 0.95,
@@ -601,7 +684,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
           children: [
             Center(
               child: Container(
-                width: 40,
+                width: 42,
                 height: 4,
                 decoration: BoxDecoration(
                   color: NotifyColors.border,
@@ -610,13 +693,47 @@ class _NotificationsListingState extends State<NotificationsListing> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              item.title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-                color: NotifyColors.textPrimary,
-              ),
+            Center(
+              child: hasSender
+                  ? InkWell(
+                      onTap: () => _openSenderProfile(item),
+                      borderRadius: BorderRadius.circular(20),
+                      child: _smallAvatar(
+                        item.title,
+                        item.type?.name ?? 'info',
+                        size: 60,
+                      ),
+                    )
+                  : _smallAvatar(
+                      item.title,
+                      item.type?.name ?? 'info',
+                      size: 60,
+                    ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: hasSender
+                  ? InkWell(
+                      onTap: () => _openSenderProfile(item),
+                      child: Text(
+                        item.title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: NotifyColors.textPrimary,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      item.title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: NotifyColors.textPrimary,
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
             Text(

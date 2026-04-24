@@ -41,6 +41,20 @@ class CacheService {
   // Prevent duplicate network calls for the same missing ID
   static final Set<String> _pendingFetches = {};
 
+  static dynamic _normalizeCacheValue(dynamic value) {
+    if (value is Map) {
+      return value.map((key, entry) {
+        return MapEntry(key.toString(), _normalizeCacheValue(entry));
+      });
+    }
+
+    if (value is List) {
+      return value.map(_normalizeCacheValue).toList();
+    }
+
+    return value;
+  }
+
   // ---------------- INITIALIZATION ----------------
   Future<void> init() async {
     if (_isInitialized) return;
@@ -98,13 +112,12 @@ class CacheService {
       final data = box.get(uid);
 
       if (data != null) {
-        return fromMap(
-          uid,
-          Map<String, dynamic>.from(
-            data.map((key, value) => MapEntry(key.toString(), value)),
-          ),
-        );
+        // Found in cache
+        final normalized = _normalizeCacheValue(data);
+        return fromMap(uid, Map<String, dynamic>.from(normalized as Map));
       }
+
+      // Not found: Fetch specific document from Firestore
       _fetchSingleDocument(uid, conf);
 
       return null;

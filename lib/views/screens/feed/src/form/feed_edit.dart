@@ -183,6 +183,11 @@ class _FeedEditState extends State<FeedEdit> {
               PollOption(
                 optionId: optionId,
                 title: _pollOptionControllers[i].text,
+                votes:
+                    _feedModel.poll != null &&
+                        i < _feedModel.poll!.options.length
+                    ? _feedModel.poll!.options[i].votes
+                    : 0,
               ),
             );
           }
@@ -194,6 +199,7 @@ class _FeedEditState extends State<FeedEdit> {
                 'poll_${DateTime.now().millisecondsSinceEpoch}',
             question: _pollQuestionController.text,
             options: options,
+            votedUserIds: _feedModel.poll?.votedUserIds ?? [],
           );
         }
       }
@@ -257,6 +263,7 @@ class _FeedEditState extends State<FeedEdit> {
         taggedUsers: _feedModel.taggedUsers,
         reactions: _feedModel.reactions,
         commentsCount: _feedModel.commentsCount,
+        comments: _feedModel.comments,
         poll: poll,
       );
 
@@ -266,7 +273,12 @@ class _FeedEditState extends State<FeedEdit> {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      FlushBar.show(context, 'Post updated successfully', isSuccess: true);
+
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      }
+
+      return;
     } catch (e, st) {
       debugPrint("$e, $st");
       await ErrorService.recordError(e, st);

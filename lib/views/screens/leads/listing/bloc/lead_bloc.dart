@@ -231,14 +231,45 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   ) async {
     try {
       final cid = await Spdb.getCid();
+      final user = await Spdb.getUser();
 
-      await firestore
+      final activityRef = firestore
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.leads.name)
           .doc(event.leadUid)
           .collection('activities')
-          .add(event.activity.toMap());
+          .doc();
+
+      await activityRef.set(event.activity.toMap());
+
+      final calendarEventId = LeadService.leadActivityCalendarDocId(
+        leadUid: event.leadUid,
+        activityUid: activityRef.id,
+      );
+
+      final calendarEvent = EventModel(
+        eventName: event.activity.title,
+        eventDateTime: event.activity.scheduledAt,
+        eventEndDateTime: event.activity.scheduledAt.add(
+          const Duration(hours: 1),
+        ),
+        eventDescription: event.activity.description.isNotEmpty
+            ? event.activity.description
+            : 'Lead activity scheduled',
+        eventRepeatType: EventRepeatType.none,
+        eventAttendes: [user.uid],
+        createdBy: user,
+      );
+
+      try {
+        await EventService.createEvent(
+          event: calendarEvent,
+          docId: calendarEventId,
+        );
+      } catch (e, st) {
+        debugPrint('Failed to mirror lead activity to calendar: $e\n$st');
+      }
 
       await LeadService.addLeadHistory(
         leadUid: event.leadUid,

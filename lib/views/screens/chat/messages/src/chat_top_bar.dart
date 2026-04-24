@@ -462,6 +462,58 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+Future<dynamic> _resolveChatProfileByUid(String uid) async {
+  if (uid.trim().isEmpty) return null;
+
+  final cached = CacheService.getUserByUid(uid);
+  if (cached is EmployeeModel || cached is AdminModel) {
+    return cached;
+  }
+
+  try {
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) return employee;
+  } catch (_) {}
+
+  try {
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) return admin;
+  } catch (_) {}
+
+  return null;
+}
+
+Future<void> _openChatUserProfile(BuildContext context, String uid) async {
+  final profile = await _resolveChatProfileByUid(uid);
+  if (!context.mounted) return;
+
+  if (profile is EmployeeModel) {
+    if (kIsMobile) {
+      await Sheet.showSheet(
+        context,
+        widget: EmployeeDetails(employee: profile),
+      );
+    } else {
+      await GeneralDialog.showRTLSheet(
+        context,
+        EmployeeDetails(employee: profile),
+      );
+    }
+    return;
+  }
+
+  if (profile is AdminModel) {
+    if (kIsMobile) {
+      await Sheet.showSheet(context, widget: AdminProfile(admin: profile));
+    } else {
+      await GeneralDialog.showRTLSheet(context, AdminProfile(admin: profile));
+    }
+    return;
+  }
+
+  FlushBar.show(context, 'User profile not found', isSuccess: false);
+}
+
 String formatLastSeen(DateTime? time) {
   if (time == null) return "Unknown";
 

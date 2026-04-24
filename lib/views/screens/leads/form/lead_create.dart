@@ -54,6 +54,8 @@ class _LeadCreateState extends State<LeadCreate> {
   LeadStatusModel? _leadStatusModel;
   List<LeadSourceModel> _leadSource = [];
   LeadSourceModel? _selectedLeadSource;
+  List<ClientModel> _clients = [];
+  ClientModel? _selectedclient;
   RegionModel? _regionModel;
   StateModel? _stateModel;
   CityModel? _cityModel;
@@ -73,10 +75,12 @@ class _LeadCreateState extends State<LeadCreate> {
       _leadPriorities.clear();
       _leadStatus.clear();
       _leadSource.clear();
+      _clients.clear();
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
+      _clients = await ClientService.getAllClients();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -437,12 +441,76 @@ class _LeadCreateState extends State<LeadCreate> {
       spacing: horizontalSpacing,
       runSpacing: verticalSpacing,
       children: [
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormFields(
+        //     label: 'Company Name',
+        //     controller: _companyNameController,
+        //     hintText: 'Enter Company Name',
+        //   ),
+        // ),
         SizedBox(
           width: itemWidth,
-          child: FormFields(
-            label: 'Company Name',
-            controller: _companyNameController,
-            hintText: 'Enter Company Name',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: FormDropdownSearch(
+                  label: 'Company Name',
+                  items: _clients.map((e) => e.companyName).toList(),
+                  onChanged: (value) {
+                    _selectedclient = _clients.firstWhere(
+                      (cat) => cat.companyName == value,
+                      orElse: () => _clients.first,
+                    );
+                    _companyWebsiteController.text =
+                        _selectedclient?.officialWebsite ?? '';
+                    _companyMobileController.text =
+                        _selectedclient?.officePhoneNo ?? "";
+                    _regionModel = _selectedclient?.country;
+                    _stateModel = _selectedclient?.state;
+                    _cityModel = _selectedclient?.city;
+                    _companyZipController.text =
+                        _selectedclient?.postalCode ?? "";
+                    _companyAddressController.text =
+                        _selectedclient?.companyAddress ?? "";
+                  },
+                  validator: (value) => value == null ? "* Required" : null,
+                ),
+              ),
+              SizedBox(width: 8.0),
+              InkWell(
+                onTap: () async {
+                  if (kIsMobile) {
+                    Navigate.route(
+                      context,
+                      const ClientCompanyListing(
+                        section: ClientSection.company,
+                      ),
+                    );
+                  } else {
+                    var isAdmin = await Spdb.isAdminLoggedIn();
+                    Navigate.route(
+                      context,
+                      DesktopMainScreen(
+                        isAdmin: isAdmin,
+                        selectedMenu: "Company",
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Icon(Icons.add, color: AppColors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -466,6 +534,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<RegionModel>(
             label: 'Country',
+            initialValue: _regionModel,
             asyncItems: () async {
               var countries = await RegionService.getCountries();
               return countries;
@@ -481,6 +550,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<StateModel>(
             label: 'State',
+            initialValue: _stateModel,
             asyncItems: () async {
               if (_regionModel == null) return [];
               var states = await RegionService.getStates(
@@ -499,6 +569,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<CityModel>(
             label: 'City',
+            initialValue: _cityModel,
             asyncItems: () async {
               if (_regionModel == null || _stateModel == null) return [];
               var cities = await RegionService.getCities(
@@ -567,26 +638,27 @@ class _LeadCreateState extends State<LeadCreate> {
 
         final workflow = await EmployeeService.getUserWorkflow();
 
-        ClientModel clientModel = ClientModel(
-          clientName: '',
-          email: '',
-          password: '',
-          mobileNumber: '',
-          loginAllowed: false,
-          receiveEmailNotifications: false,
-          companyName: _companyNameController.text.trim(),
-          officePhoneNo: _companyMobileController.text,
-          officialWebsite: _companyWebsiteController.text.trim(),
-          postalCode: _companyZipController.text.trim(),
-          companyAddress: _companyAddressController.text.trim(),
-          country: _regionModel,
-          state: _stateModel,
-          city: _cityModel,
-          createdBy: await Spdb.getUser(),
-          isCompany: true,
-        );
+        // ClientModel clientModel = ClientModel(
+        //   clientName: '',
+        //   email: '',
+        //   password: '',
+        //   mobileNumber: '',
+        //   loginAllowed: false,
+        //   receiveEmailNotifications: false,
+        //   // companyName: _companyNameController.text.trim(),
+        //   companyName: _selectedclient?.companyName ?? '',
+        //   officePhoneNo: _companyMobileController.text,
+        //   officialWebsite: _companyWebsiteController.text.trim(),
+        //   postalCode: _companyZipController.text.trim(),
+        //   companyAddress: _companyAddressController.text.trim(),
+        //   country: _regionModel,
+        //   state: _stateModel,
+        //   city: _cityModel,
+        //   createdBy: await Spdb.getUser(),
+        //   isCompany: true,
+        // );
 
-        var clientId = await ClientService.createClient(client: clientModel);
+        // var clientId = await ClientService.createClient(client: clientModel);
 
         final leadModel = LeadModel(
           // salutation: _salutation,
@@ -610,7 +682,8 @@ class _LeadCreateState extends State<LeadCreate> {
           companyCity: _cityModel,
           createdBy: await Spdb.getUser(),
           workflow: workflow,
-          clientId: clientId,
+          clientId: _selectedclient?.uid,
+          // clientId: clientId,
         );
 
         await LeadService.createLead(lead: leadModel);

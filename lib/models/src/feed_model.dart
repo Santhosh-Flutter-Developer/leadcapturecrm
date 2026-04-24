@@ -2,6 +2,26 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '/models/models.dart';
 
+DateTime _dateTimeFromValue(dynamic value) {
+  if (value is Timestamp) {
+    return value.toDate();
+  }
+
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.now();
+  }
+
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value);
+  }
+
+  return DateTime.now();
+}
+
+dynamic _dateTimeToValue(DateTime? value) {
+  return value?.toIso8601String();
+}
+
 class FeedModel {
   final String? uid;
   final String authorId;
@@ -16,6 +36,7 @@ class FeedModel {
   final int commentsCount;
   final List<CommentModel>? comments;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   FeedModel({
     this.uid,
@@ -31,7 +52,42 @@ class FeedModel {
     this.poll,
     this.commentsCount = 0,
     this.comments,
+    this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  FeedModel copyWith({
+    String? uid,
+    String? authorId,
+    String? authorName,
+    String? authorAvatar,
+    String? content,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<FileModel>? mediaImages,
+    List<FileModel>? attachments,
+    List<TaggedUserModel>? taggedUsers,
+    List<ReactionModel>? reactions,
+    PollModel? poll,
+    int? commentsCount,
+    List<CommentModel>? comments,
+  }) {
+    return FeedModel(
+      uid: uid ?? this.uid,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      mediaImages: mediaImages ?? this.mediaImages,
+      attachments: attachments ?? this.attachments,
+      taggedUsers: taggedUsers ?? this.taggedUsers,
+      reactions: reactions ?? this.reactions,
+      poll: poll ?? this.poll,
+      commentsCount: commentsCount ?? this.commentsCount,
+      comments: comments ?? this.comments,
+    );
+  }
 
   factory FeedModel.fromMap(String uid, Map<String, dynamic> map) {
     return FeedModel(
@@ -48,9 +104,10 @@ class FeedModel {
       content: map['content'] != null && map['content'] is String
           ? map['content']
           : '',
-      createdAt: map['createdAt'] != null && map['createdAt'] is Timestamp
-          ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+      createdAt: _dateTimeFromValue(map['createdAt']),
+      updatedAt: map['updatedAt'] != null
+          ? _dateTimeFromValue(map['updatedAt'])
+          : null,
       mediaImages: map['mediaImages'] != null
           ? (map['mediaImages'] as List<dynamic>? ?? [])
                 .map((x) => FileModel.fromMap(x))
@@ -89,7 +146,8 @@ class FeedModel {
       'authorName': authorName,
       'authorAvatar': authorAvatar,
       'content': content,
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': _dateTimeToValue(createdAt),
+      'updatedAt': _dateTimeToValue(updatedAt),
       'mediaImages': mediaImages.map((e) => e.toMap()).toList(),
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'taggedUsers': taggedUsers.map((e) => e.toMap()).toList(),
@@ -106,6 +164,8 @@ class FeedModel {
       'authorName': authorName,
       'authorAvatar': authorAvatar,
       'content': content,
+      'createdAt': _dateTimeToValue(createdAt),
+      'updatedAt': _dateTimeToValue(updatedAt),
       'mediaImages': mediaImages.map((e) => e.toMap()).toList(),
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'taggedUsers': taggedUsers.map((e) => e.toMap()).toList(),
@@ -114,6 +174,44 @@ class FeedModel {
       'commentsCount': commentsCount,
       'comments': comments?.map((e) => e.toMap()).toList(),
     };
+  }
+}
+
+class FeedHistoryModel {
+  final DateTime timestamp;
+  final String userId;
+  final String action;
+  final String? content;
+
+  FeedHistoryModel({
+    required this.userId,
+    required this.action,
+    this.content,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'timestamp': timestamp.toIso8601String(),
+      'userId': userId,
+      'action': action,
+      'content': content,
+    };
+  }
+
+  factory FeedHistoryModel.fromMap(Map<String, dynamic> map) {
+    return FeedHistoryModel(
+      timestamp: map['timestamp'] is Timestamp
+          ? (map['timestamp'] as Timestamp).toDate()
+          : map['timestamp'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
+          : map['timestamp'] is String
+          ? DateTime.tryParse(map['timestamp'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      userId: map['userId']?.toString() ?? '',
+      action: map['action']?.toString() ?? '',
+      content: map['content']?.toString(),
+    );
   }
 }
 
@@ -181,11 +279,13 @@ class PollModel {
   final String pollId;
   final String question;
   final List<PollOption> options;
+  final List<String> votedUserIds;
 
   PollModel({
     required this.pollId,
     required this.question,
     required this.options,
+    this.votedUserIds = const [],
   });
 
   factory PollModel.fromMap(Map<String, dynamic> map) {
@@ -195,6 +295,9 @@ class PollModel {
       options: (map['options'] as List<dynamic>? ?? [])
           .map((x) => PollOption.fromMap(x))
           .toList(),
+      votedUserIds: (map['votedUserIds'] as List<dynamic>? ?? [])
+          .map((x) => x.toString())
+          .toList(),
     );
   }
 
@@ -203,6 +306,7 @@ class PollModel {
       'pollId': pollId,
       'question': question,
       'options': options.map((e) => e.toMap()).toList(),
+      'votedUserIds': votedUserIds,
     };
   }
 }

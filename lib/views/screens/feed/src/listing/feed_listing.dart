@@ -22,6 +22,13 @@ class FeedAppColors {
   static const Color textSecondary = Color(0xFF64748B);
 }
 
+class _CommentAuthorDisplay {
+  final String name;
+  final String avatar;
+
+  const _CommentAuthorDisplay({required this.name, required this.avatar});
+}
+
 class FeedListing extends StatefulWidget {
   const FeedListing({super.key});
 
@@ -90,11 +97,23 @@ class _FeedListingState extends State<FeedListing> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: FeedAppColors.primary,
         elevation: 4,
-        onPressed: () {
+        onPressed: () async {
           if (kIsMobile) {
-            Sheet.showSheet(context, widget: const FeedCreate());
+            final result = await Sheet.showSheet(
+              context,
+              widget: const FeedCreate(),
+            );
+            if (result == true && mounted) {
+              _refreshFeed();
+            }
           } else {
-            GeneralDialog.showRTLSheet(context, const FeedCreate());
+            final result = await GeneralDialog.showRTLSheet(
+              context,
+              const FeedCreate(),
+            );
+            if (result == true && mounted) {
+              _refreshFeed();
+            }
           }
         },
         child: const Icon(Iconsax.add, color: Colors.white),
@@ -166,14 +185,1203 @@ class FeedCardState extends State<FeedCard> {
   int _currentImageIndex = 0;
   late bool _isLiked;
   late int _likeCount;
+  late String _postAuthorName;
+  late String _postAuthorAvatar;
+
+  int get _commentCount {
+    final localCount = widget.feed.comments?.length ?? 0;
+    if (localCount > 0) return localCount;
+    return widget.feed.commentsCount;
+  }
+
+  Future<_CommentAuthorDisplay?> _loadCommentAuthorDisplay(String uid) async {
+    final cachedUser = CacheService.getUserByUid(uid);
+    if (cachedUser is EmployeeModel) {
+      return _CommentAuthorDisplay(
+        name: cachedUser.name,
+        avatar: cachedUser.profileImageUrl ?? '',
+      );
+    }
+
+    if (cachedUser is AdminModel) {
+      return _CommentAuthorDisplay(
+        name: cachedUser.name,
+        avatar: cachedUser.profileImageUrl ?? '',
+      );
+    }
+
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) {
+      return _CommentAuthorDisplay(
+        name: employee.name,
+        avatar: employee.profileImageUrl ?? '',
+      );
+    }
+
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) {
+      return _CommentAuthorDisplay(
+        name: admin.name,
+        avatar: admin.profileImageUrl ?? '',
+      );
+    }
+
+    return const _CommentAuthorDisplay(name: 'Unknown user', avatar: '');
+  }
+
+  Future<void> _loadPostAuthorDisplay() async {
+    final display = await _loadCommentAuthorDisplay(widget.feed.authorId);
+    if (!mounted || display == null) return;
+
+    setState(() {
+      _postAuthorName = display.name;
+      _postAuthorAvatar = display.avatar;
+    });
+  }
+
+  Future<Map<String, _CommentAuthorDisplay>> _loadCommentAuthors(
+    List<CommentModel> comments,
+  ) async {
+    final result = <String, _CommentAuthorDisplay>{};
+    final ids = comments
+        .map((c) => c.authorId)
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+
+    for (final id in ids) {
+      final display = await _loadCommentAuthorDisplay(id);
+      if (display != null) {
+        result[id] = display;
+      }
+    }
+
+    return result;
+  }
+
+  Future<void> _openUserProfileFromComment(String uid) async {
+    if (uid.trim().isEmpty) return;
+
+    final employee = await EmployeeService.getEmployee(uid: uid);
+    if (employee != null) {
+      if (!mounted) return;
+      if (kIsMobile) {
+        await Sheet.showSheet(
+          context,
+          widget: EmployeeDetails(employee: employee),
+        );
+      } else {
+        await GeneralDialog.showRTLSheet(
+          context,
+          EmployeeDetails(employee: employee),
+        );
+      }
+      return;
+    }
+
+    final admin = await AdminService.getAdmin(uid: uid);
+    if (admin != null) {
+      if (!mounted) return;
+      if (kIsMobile) {
+        await Sheet.showSheet(context, widget: AdminProfile(admin: admin));
+      } else {
+        await GeneralDialog.showRTLSheet(context, AdminProfile(admin: admin));
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    FlushBar.show(context, 'User profile not found', isSuccess: false);
+  }
+
+  Future<void> _openPostPreview({int initialImageIndex = 0}) async {
+    final imageCount = widget.feed.mediaImages.length;
+    final startIndex = imageCount == 0
+        ? 0
+        : initialImageIndex.clamp(0, imageCount - 1);
+
+    final postAuthorDisplay = await _loadCommentAuthorDisplay(
+      widget.feed.authorId,
+    );
+    final postAuthorName = postAuthorDisplay?.name ?? widget.feed.authorName;
+    final postAuthorAvatar =
+        postAuthorDisplay?.avatar ?? widget.feed.authorAvatar;
+
+    final pollModel = widget.feed.poll == null
+        ? null
+        : PollModel(
+            pollId: widget.feed.poll!.pollId,
+            question: widget.feed.poll!.question,
+            options: widget.feed.poll!.options
+                .map(
+                  (o) => PollOption(
+                    optionId: o.optionId,
+                    title: o.title,
+                    votes: o.votes,
+                  ),
+                )
+                .toList(),
+          );
+
+    String? selectedOptionId;
+    bool isVoting = false;
+    int dialogImageIndex = startIndex;
+    final List<CommentModel> dialogComments = List<CommentModel>.from(
+      widget.feed.comments ?? const <CommentModel>[],
+    );
+    final commentAuthors = await _loadCommentAuthors(dialogComments);
+    final TextEditingController dialogCommentController =
+        TextEditingController();
+    bool isPostingComment = false;
+    final PageController dialogPageController = PageController(
+      initialPage: startIndex,
+    );
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              final totalVotes = pollModel == null
+                  ? 0
+                  : pollModel.options.fold<int>(
+                      0,
+                      (sum, option) => sum + option.votes,
+                    );
+              final hasCurrentUserVoted =
+                  widget.currentUserUid != null &&
+                  pollModel != null &&
+                  pollModel.votedUserIds.contains(widget.currentUserUid);
+
+              return Dialog(
+                insetPadding: const EdgeInsets.all(16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 820,
+                    maxHeight: 900,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                        child: Row(
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _openUserProfileFromComment(
+                                widget.feed.authorId,
+                              ),
+                              child: CircleAvatar(
+                                radius: 16,
+                                backgroundColor: FeedAppColors.background,
+                                backgroundImage: NetworkImage(
+                                  postAuthorAvatar.isNotEmpty
+                                      ? postAuthorAvatar
+                                      : AppStrings.emptyProfilePhotoUrl,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () => _openUserProfileFromComment(
+                                      widget.feed.authorId,
+                                    ),
+                                    child: Text(
+                                      postAuthorName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        color: FeedAppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    _buildTimeLabel(widget.feed),
+                                    style: const TextStyle(
+                                      color: FeedAppColors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      // Images section
+                      if (widget.feed.mediaImages.isNotEmpty)
+                        SizedBox(
+                          height: 420,
+                          child: Stack(
+                            children: [
+                              PageView.builder(
+                                controller: dialogPageController,
+                                itemCount: widget.feed.mediaImages.length,
+                                onPageChanged: (index) {
+                                  setDialogState(() {
+                                    dialogImageIndex = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  return Container(
+                                    color: Colors.black,
+                                    alignment: Alignment.center,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Image.network(
+                                        widget.feed.mediaImages[index].url,
+                                        fit: BoxFit.contain,
+                                        height: 360,
+                                        width: double.infinity,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (widget.feed.mediaImages.length > 1)
+                                Positioned(
+                                  left: 12,
+                                  right: 12,
+                                  bottom: 10,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Swipe to see all images',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: List.generate(
+                                            widget.feed.mediaImages.length,
+                                            (idx) => Container(
+                                              width: 6,
+                                              height: 6,
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: dialogImageIndex == idx
+                                                    ? Colors.white
+                                                    : Colors.white54,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (widget.feed.mediaImages.length > 1)
+                                Positioned(
+                                  left: 6,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    onPressed: dialogImageIndex == 0
+                                        ? null
+                                        : () {
+                                            dialogPageController.previousPage(
+                                              duration: const Duration(
+                                                milliseconds: 220,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                    icon: const Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  ),
+                                ),
+                              if (widget.feed.mediaImages.length > 1)
+                                Positioned(
+                                  right: 6,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    onPressed:
+                                        dialogImageIndex ==
+                                            widget.feed.mediaImages.length - 1
+                                        ? null
+                                        : () {
+                                            dialogPageController.nextPage(
+                                              duration: const Duration(
+                                                milliseconds: 220,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                    icon: const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      // Text, Poll and Comments section
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (widget.feed.content.trim().isNotEmpty) ...[
+                                SelectableText(
+                                  widget.feed.content,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.4,
+                                    color: FeedAppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              if (pollModel != null) ...[
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: FeedAppColors.background,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: FeedAppColors.border,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pollModel.question,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: FeedAppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ...pollModel.options.map((option) {
+                                        final isSelected =
+                                            selectedOptionId == option.optionId;
+                                        final pct = totalVotes == 0
+                                            ? 0
+                                            : ((option.votes / totalVotes) *
+                                                      100)
+                                                  .round();
+
+                                        return GestureDetector(
+                                          onTap: hasCurrentUserVoted
+                                              ? null
+                                              : () {
+                                                  setDialogState(() {
+                                                    selectedOptionId =
+                                                        option.optionId;
+                                                  });
+                                                },
+                                          child: Container(
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 9,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? FeedAppColors.primary
+                                                        .withOpacity(0.1)
+                                                  : Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? FeedAppColors.primary
+                                                    : FeedAppColors.border,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    option.title,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: FeedAppColors
+                                                          .textPrimary,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '${option.votes} votes${totalVotes > 0 ? ' ($pct%)' : ''}',
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: FeedAppColors
+                                                        .textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          if (widget.currentUserUid != null)
+                                            ElevatedButton(
+                                              onPressed:
+                                                  (selectedOptionId == null ||
+                                                      hasCurrentUserVoted ||
+                                                      isVoting)
+                                                  ? null
+                                                  : () async {
+                                                      final feedId =
+                                                          widget.feed.uid;
+                                                      if (feedId == null) {
+                                                        FlushBar.show(
+                                                          context,
+                                                          'Feed id is missing',
+                                                          isSuccess: false,
+                                                        );
+                                                        return;
+                                                      }
+
+                                                      setDialogState(() {
+                                                        isVoting = true;
+                                                      });
+
+                                                      try {
+                                                        await FeedService.votePoll(
+                                                          feedId: feedId,
+                                                          optionId:
+                                                              selectedOptionId!,
+                                                        );
+
+                                                        setDialogState(() {
+                                                          final option = pollModel
+                                                              .options
+                                                              .firstWhere(
+                                                                (o) =>
+                                                                    o.optionId ==
+                                                                    selectedOptionId,
+                                                              );
+                                                          option.votes += 1;
+                                                          if (widget
+                                                                  .currentUserUid !=
+                                                              null) {
+                                                            pollModel
+                                                                .votedUserIds
+                                                                .add(
+                                                                  widget
+                                                                      .currentUserUid!,
+                                                                );
+                                                          }
+                                                          isVoting = false;
+                                                        });
+
+                                                        if (mounted) {
+                                                          widget.onRefresh();
+                                                        }
+                                                      } catch (e) {
+                                                        setDialogState(() {
+                                                          isVoting = false;
+                                                        });
+                                                        if (mounted) {
+                                                          FlushBar.show(
+                                                            context,
+                                                            e.toString(),
+                                                            isSuccess: false,
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                              child: Text(
+                                                hasCurrentUserVoted
+                                                    ? 'Already Participated'
+                                                    : isVoting
+                                                    ? 'Voting...'
+                                                    : 'Participate',
+                                              ),
+                                            ),
+                                          const SizedBox(width: 8),
+                                          if (widget.currentUserUid ==
+                                              widget.feed.authorId)
+                                            OutlinedButton(
+                                              onPressed: () {
+                                                Navigator.pop(dialogContext);
+                                                _openPostEdit();
+                                              },
+                                              child: const Text('Manage Poll'),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              if (widget.feed.attachments.isNotEmpty) ...[
+                                Text(
+                                  'Attachments (${widget.feed.attachments.length})',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: FeedAppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: FeedAppColors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: FeedAppColors.border,
+                                    ),
+                                  ),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    primary: false,
+                                    padding: const EdgeInsets.all(10),
+                                    itemCount: widget.feed.attachments.length,
+                                    separatorBuilder: (_, __) =>
+                                        const Divider(height: 14),
+                                    itemBuilder: (context, index) {
+                                      final file =
+                                          widget.feed.attachments[index];
+                                      return Row(
+                                        children: [
+                                          const Icon(
+                                            Iconsax.document,
+                                            size: 18,
+                                            color: FeedAppColors.textSecondary,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  file.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: FeedAppColors
+                                                        .textPrimary,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  _formatFileSize(file.size),
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: FeedAppColors
+                                                        .textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              await Download.downloadFromUrl(
+                                                context,
+                                                file.url,
+                                                file.name,
+                                              );
+                                            },
+                                            child: const Text('Open'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              const Divider(height: 1),
+                              const SizedBox(height: 8),
+
+                              Text(
+                                'Comments (${dialogComments.length})',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: FeedAppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 300,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: FeedAppColors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: FeedAppColors.border,
+                                    ),
+                                  ),
+                                  child: dialogComments.isEmpty
+                                      ? Center(
+                                          child: Text(
+                                            'No comments yet',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color:
+                                                  FeedAppColors.textSecondary,
+                                            ),
+                                          ),
+                                        )
+                                      : Scrollbar(
+                                          thumbVisibility: true,
+                                          child: ListView.separated(
+                                            physics:
+                                                const AlwaysScrollableScrollPhysics(),
+                                            primary: false,
+                                            padding: const EdgeInsets.all(10),
+                                            itemCount: dialogComments.length,
+                                            separatorBuilder: (_, __) =>
+                                                const SizedBox(height: 10),
+                                            itemBuilder: (context, index) {
+                                              final comment =
+                                                  dialogComments[index];
+                                              final liveAuthor =
+                                                  commentAuthors[comment
+                                                      .authorId];
+                                              final authorName =
+                                                  liveAuthor?.name ??
+                                                  comment.authorName;
+                                              final authorAvatar =
+                                                  liveAuthor?.avatar ??
+                                                  comment.authorAvatar;
+                                              final canDelete =
+                                                  widget.currentUserUid ==
+                                                  comment.authorId;
+
+                                              return Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      InkWell(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        onTap: () =>
+                                                            _openUserProfileFromComment(
+                                                              comment.authorId,
+                                                            ),
+                                                        child: CircleAvatar(
+                                                          radius: 12,
+                                                          backgroundColor:
+                                                              FeedAppColors
+                                                                  .background,
+                                                          backgroundImage: NetworkImage(
+                                                            authorAvatar
+                                                                    .isNotEmpty
+                                                                ? authorAvatar
+                                                                : AppStrings
+                                                                      .emptyProfilePhotoUrl,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            InkWell(
+                                                              onTap: () =>
+                                                                  _openUserProfileFromComment(
+                                                                    comment
+                                                                        .authorId,
+                                                                  ),
+                                                              child: Text(
+                                                                authorName,
+                                                                style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 11,
+                                                                  color: FeedAppColors
+                                                                      .textPrimary,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              timeago.format(
+                                                                comment
+                                                                    .createdAt,
+                                                                locale:
+                                                                    'en_short',
+                                                              ),
+                                                              style: const TextStyle(
+                                                                fontSize: 9,
+                                                                color: FeedAppColors
+                                                                    .textSecondary,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      if (canDelete)
+                                                        IconButton(
+                                                          icon: const Icon(
+                                                            Icons
+                                                                .delete_outline,
+                                                            size: 18,
+                                                            color: Colors.red,
+                                                          ),
+                                                          onPressed: () async {
+                                                            final shouldDelete = await showDialog<bool>(
+                                                              context: context,
+                                                              builder: (confirmContext) {
+                                                                return AlertDialog(
+                                                                  title: const Text(
+                                                                    'Delete Comment',
+                                                                  ),
+                                                                  content:
+                                                                      const Text(
+                                                                        'Are you sure you want to delete this comment?',
+                                                                      ),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                      onPressed: () =>
+                                                                          Navigator.pop(
+                                                                            confirmContext,
+                                                                            false,
+                                                                          ),
+                                                                      child: const Text(
+                                                                        'Cancel',
+                                                                      ),
+                                                                    ),
+                                                                    TextButton(
+                                                                      onPressed: () =>
+                                                                          Navigator.pop(
+                                                                            confirmContext,
+                                                                            true,
+                                                                          ),
+                                                                      child: const Text(
+                                                                        'Delete',
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                );
+                                                              },
+                                                            );
+
+                                                            if (shouldDelete !=
+                                                                true) {
+                                                              return;
+                                                            }
+
+                                                            try {
+                                                              await FeedService.deleteComment(
+                                                                feedId:
+                                                                    widget
+                                                                        .feed
+                                                                        .uid ??
+                                                                    '',
+                                                                commentId: comment
+                                                                    .commentId,
+                                                              );
+
+                                                              setDialogState(() {
+                                                                dialogComments
+                                                                    .removeWhere(
+                                                                      (c) =>
+                                                                          c.commentId ==
+                                                                          comment
+                                                                              .commentId,
+                                                                    );
+                                                              });
+
+                                                              if (mounted) {
+                                                                widget
+                                                                    .onRefresh();
+                                                              }
+                                                            } catch (e) {
+                                                              if (mounted) {
+                                                                FlushBar.show(
+                                                                  context,
+                                                                  e.toString(),
+                                                                  isSuccess:
+                                                                      false,
+                                                                );
+                                                              }
+                                                            }
+                                                          },
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    comment.content,
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      height: 1.3,
+                                                      color: FeedAppColors
+                                                          .textPrimary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: dialogCommentController,
+                                      minLines: 1,
+                                      maxLines: 3,
+                                      decoration: InputDecoration(
+                                        hintText: 'Add a comment...',
+                                        isDense: true,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 10,
+                                            ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton(
+                                    onPressed: isPostingComment
+                                        ? null
+                                        : () async {
+                                            final feedId = widget.feed.uid;
+                                            final uid = widget.currentUserUid;
+                                            final content =
+                                                dialogCommentController.text
+                                                    .trim();
+
+                                            if (feedId == null ||
+                                                feedId.isEmpty) {
+                                              FlushBar.show(
+                                                context,
+                                                'Feed id is missing',
+                                                isSuccess: false,
+                                              );
+                                              return;
+                                            }
+
+                                            if (uid == null || uid.isEmpty) {
+                                              FlushBar.show(
+                                                context,
+                                                'User not found',
+                                                isSuccess: false,
+                                              );
+                                              return;
+                                            }
+
+                                            if (content.isEmpty) {
+                                              return;
+                                            }
+
+                                            setDialogState(() {
+                                              isPostingComment = true;
+                                            });
+
+                                            try {
+                                              String authorName = 'Anonymous';
+                                              String authorAvatar = '';
+
+                                              final isAdmin =
+                                                  await Spdb.isAdminLoggedIn();
+                                              if (isAdmin) {
+                                                final admin =
+                                                    await AdminService.getAdmin(
+                                                      uid: uid,
+                                                    );
+                                                authorName =
+                                                    admin?.name ?? 'Anonymous';
+                                                authorAvatar =
+                                                    admin?.profileImageUrl ??
+                                                    '';
+                                              } else {
+                                                final employee =
+                                                    await EmployeeService.getEmployee(
+                                                      uid: uid,
+                                                    );
+                                                authorName =
+                                                    employee?.name ??
+                                                    'Anonymous';
+                                                authorAvatar =
+                                                    employee?.profileImageUrl ??
+                                                    '';
+                                              }
+
+                                              final newComment = CommentModel(
+                                                commentId: DateTime.now()
+                                                    .millisecondsSinceEpoch
+                                                    .toString(),
+                                                authorId: uid,
+                                                authorName: authorName,
+                                                authorAvatar: authorAvatar,
+                                                content: content,
+                                                createdAt: DateTime.now(),
+                                              );
+
+                                              await FeedService.addComment(
+                                                feedId: feedId,
+                                                comment: newComment,
+                                              );
+
+                                              setDialogState(() {
+                                                commentAuthors[uid] =
+                                                    _CommentAuthorDisplay(
+                                                      name: authorName,
+                                                      avatar: authorAvatar,
+                                                    );
+                                                dialogComments.insert(
+                                                  0,
+                                                  newComment,
+                                                );
+                                                dialogCommentController.clear();
+                                                isPostingComment = false;
+                                              });
+
+                                              if (mounted) {
+                                                widget.onRefresh();
+                                              }
+                                            } catch (e) {
+                                              setDialogState(() {
+                                                isPostingComment = false;
+                                              });
+                                              if (mounted) {
+                                                FlushBar.show(
+                                                  context,
+                                                  e.toString(),
+                                                  isSuccess: false,
+                                                );
+                                              }
+                                            }
+                                          },
+                                    child: Text(
+                                      isPostingComment ? 'Posting...' : 'Post',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      dialogCommentController.dispose();
+      dialogPageController.dispose();
+    }
+  }
+
+  Future<void> _showPostSavedDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Success'),
+          content: const Text('Post saved successfully.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showPostDeletedDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Success'),
+          content: const Text('Post deleted successfully.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmDeletePost() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text('Are you sure you want to delete this post?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _openPostEdit() async {
+    if (kIsMobile) {
+      final result = await Sheet.showSheet(
+        context,
+        widget: FeedEdit(uid: widget.feed.uid ?? ''),
+      );
+      if (result == true && mounted) {
+        widget.onRefresh();
+        await _showPostSavedDialog();
+      }
+    } else {
+      final result = await GeneralDialog.showRTLSheet(
+        context,
+        FeedEdit(uid: widget.feed.uid ?? ''),
+      );
+      if (result == true && mounted) {
+        widget.onRefresh();
+        await _showPostSavedDialog();
+      }
+    }
+  }
+
+  Future<void> _deletePost() async {
+    final shouldDelete = await _confirmDeletePost();
+    if (!shouldDelete) return;
+
+    try {
+      futureLoading(context);
+      await FeedService.deleteFeed(uid: widget.feed.uid ?? '');
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      if (!mounted) return;
+
+      widget.onRefresh();
+      await _showPostDeletedDialog();
+    } catch (e, st) {
+      debugPrint("$e, $st");
+      await ErrorService.recordError(e, st);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      if (mounted) {
+        FlushBar.show(context, e.toString(), isSuccess: false);
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _postAuthorName = widget.feed.authorName;
+    _postAuthorAvatar = widget.feed.authorAvatar;
+    _loadPostAuthorDisplay();
     _isLiked = widget.feed.reactions.any(
       (r) => r.userId == widget.currentUserUid,
     );
     _likeCount = widget.feed.reactions.length;
+  }
+
+  @override
+  void didUpdateWidget(covariant FeedCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.feed.authorId != widget.feed.authorId ||
+        oldWidget.feed.authorName != widget.feed.authorName ||
+        oldWidget.feed.authorAvatar != widget.feed.authorAvatar) {
+      _postAuthorName = widget.feed.authorName;
+      _postAuthorAvatar = widget.feed.authorAvatar;
+      _loadPostAuthorDisplay();
+    }
   }
 
   void _handleLike() {
@@ -209,13 +1417,18 @@ class FeedCardState extends State<FeedCard> {
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: FeedAppColors.background,
-                  backgroundImage: NetworkImage(
-                    widget.feed.authorAvatar.isNotEmpty
-                        ? widget.feed.authorAvatar
-                        : AppStrings.emptyProfilePhotoUrl,
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () =>
+                      _openUserProfileFromComment(widget.feed.authorId),
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: FeedAppColors.background,
+                    backgroundImage: NetworkImage(
+                      _postAuthorAvatar.isNotEmpty
+                          ? _postAuthorAvatar
+                          : AppStrings.emptyProfilePhotoUrl,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -223,18 +1436,22 @@ class FeedCardState extends State<FeedCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.feed.authorName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                          color: FeedAppColors.textPrimary,
+                      InkWell(
+                        onTap: () =>
+                            _openUserProfileFromComment(widget.feed.authorId),
+                        child: Text(
+                          _postAuthorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            color: FeedAppColors.textPrimary,
+                          ),
                         ),
                       ),
                       Text(
-                        _formatShortTime(widget.feed.createdAt),
+                        _buildTimeLabel(widget.feed),
                         style: const TextStyle(
                           color: FeedAppColors.textSecondary,
                           fontSize: 10,
@@ -243,106 +1460,118 @@ class FeedCardState extends State<FeedCard> {
                     ],
                   ),
                 ),
-                InkWell(
-                  onTap: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(
-                        context,
-                        widget: FeedEdit(uid: widget.feed.uid ?? ''),
-                      );
-                    } else {
-                      GeneralDialog.showRTLSheet(
-                        context,
-                        FeedEdit(uid: widget.feed.uid ?? ''),
-                      );
-                    }
-                  },
-                  child: const Icon(
-                    Iconsax.more,
-                    size: 16,
-                    color: FeedAppColors.textSecondary,
+                if (widget.currentUserUid == widget.feed.authorId)
+                  PopupMenuButton<String>(
+                    icon: const Icon(
+                      Iconsax.more,
+                      size: 16,
+                      color: FeedAppColors.textSecondary,
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await _openPostEdit();
+                        return;
+                      }
+
+                      if (value == 'delete') {
+                        await _deletePost();
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Text('Edit Post'),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text('Delete Post'),
+                      ),
+                    ],
                   ),
-                ),
               ],
             ),
           ),
 
           // Media Section - Instagram Like
           Expanded(
-            child: Stack(
-              children: [
-                if (widget.feed.mediaImages.isNotEmpty)
-                  CarouselSlider(
-                    options: CarouselOptions(
-                      height: double.infinity,
-                      viewportFraction: 1,
-                      enableInfiniteScroll: false,
-                      onPageChanged: (index, _) =>
-                          setState(() => _currentImageIndex = index),
-                    ),
-                    items: widget.feed.mediaImages
-                        .map(
-                          (m) => Image.network(
-                            m.url,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                        )
-                        .toList(),
-                  )
-                else if (widget.feed.content.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    color: FeedAppColors.background,
-                    padding: const EdgeInsets.all(12),
-                    alignment: Alignment.center,
-                    child: Text(
-                      widget.feed.content,
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: FeedAppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
+            child: InkWell(
+              onTap: () =>
+                  _openPostPreview(initialImageIndex: _currentImageIndex),
+              child: Stack(
+                children: [
+                  if (widget.feed.mediaImages.isNotEmpty)
+                    CarouselSlider(
+                      options: CarouselOptions(
+                        height: double.infinity,
+                        viewportFraction: 1,
+                        enableInfiniteScroll: false,
+                        onPageChanged: (index, _) =>
+                            setState(() => _currentImageIndex = index),
+                      ),
+                      items: widget.feed.mediaImages
+                          .map(
+                            (m) => Image.network(
+                              m.url,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
+                          )
+                          .toList(),
+                    )
+                  else if (widget.feed.content.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      color: FeedAppColors.background,
+                      padding: const EdgeInsets.all(12),
+                      alignment: Alignment.center,
+                      child: Text(
+                        widget.feed.content,
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: FeedAppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Icon(
+                        Iconsax.document_text,
+                        color: FeedAppColors.border,
+                        size: 40,
                       ),
                     ),
-                  )
-                else
-                  const Center(
-                    child: Icon(
-                      Iconsax.document_text,
-                      color: FeedAppColors.border,
-                      size: 40,
-                    ),
-                  ),
 
-                // Pagination Indicator Overlay
-                if (widget.feed.mediaImages.length > 1)
-                  Positioned(
-                    bottom: 8,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        widget.feed.mediaImages.length,
-                        (index) => Container(
-                          width: 4,
-                          height: 4,
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentImageIndex == index
-                                ? Colors.white
-                                : Colors.white54,
+                  // Pagination Indicator Overlay
+                  if (widget.feed.mediaImages.length > 1)
+                    Positioned(
+                      bottom: 8,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          widget.feed.mediaImages.length,
+                          (index) => Container(
+                            width: 4,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentImageIndex == index
+                                  ? Colors.white
+                                  : Colors.white54,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -363,6 +1592,21 @@ class FeedCardState extends State<FeedCard> {
                       color: FeedAppColors.textPrimary,
                     ),
                   ),
+                if (widget.feed.content.length > 120)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: InkWell(
+                      onTap: _openPostPreview,
+                      child: const Text(
+                        'View full post',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: FeedAppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 6),
 
                 // Interaction Bar
@@ -378,9 +1622,7 @@ class FeedCardState extends State<FeedCard> {
                     _interactionIcon(
                       Iconsax.message,
                       FeedAppColors.textSecondary,
-                      widget.feed.commentsCount > 0
-                          ? widget.feed.commentsCount.toString()
-                          : "",
+                      _commentCount > 0 ? _commentCount.toString() : "",
                       () => _showCommentSheet(),
                     ),
                     const Spacer(),
@@ -435,8 +1677,28 @@ class FeedCardState extends State<FeedCard> {
     return '${diff.inDays}d';
   }
 
-  void _showCommentSheet() {
-    showModalBottomSheet(
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const kb = 1024;
+    const mb = kb * 1024;
+    if (bytes >= mb) return '${(bytes / mb).toStringAsFixed(1)} MB';
+    if (bytes >= kb) return '${(bytes / kb).toStringAsFixed(1)} KB';
+    return '$bytes B';
+  }
+
+  String _buildTimeLabel(FeedModel feed) {
+    final createdLabel = _formatShortTime(feed.createdAt);
+    final updatedAt = feed.updatedAt;
+
+    if (updatedAt == null || updatedAt.isAtSameMomentAs(feed.createdAt)) {
+      return 'Posted ${createdLabel} ago';
+    }
+
+    return 'Posted ${createdLabel} ago · Edited ${_formatShortTime(updatedAt)} ago';
+  }
+
+  Future<void> _showCommentSheet() async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.transparent,
@@ -446,5 +1708,9 @@ class FeedCardState extends State<FeedCard> {
         initialComments: widget.feed.comments ?? [],
       ),
     );
+
+    if (mounted) {
+      widget.onRefresh();
+    }
   }
 }

@@ -32,3 +32,4 @@ export 'src/lead_source_model.dart';
 export 'src/event_model.dart';
 export 'src/lead_priority_model.dart';
 export 'src/reminder_model.dart';
+export 'src/upcoming_deadline_item_model.dart';
