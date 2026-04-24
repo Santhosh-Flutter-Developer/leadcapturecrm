@@ -1,9 +1,14 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:googleapis_auth/auth_io.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
@@ -197,22 +202,31 @@ class _ProfileState extends State<Profile> {
     );
 
     if (confirm != true) return;
+
     FlushBar.show(context, "Removing profile picture...");
+
     try {
       if (!isAdmin) {
         await EmployeeService.deleteEmployeeImage(uid: employee!.uid!);
-        setState(() {
-          employee = employee?.copyWith(profileImageUrl: null);
-        });
+
+        final updated = employee!.copyWith(profileImageUrl: '');
+
+        await Spdb.setEmployeeLogin(
+          model: updated,
+          cid: await Spdb.getCid() ?? '',
+        );
+
+        setState(() => employee = updated);
       } else {
         await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
 
-        setState(() {
-          admin = admin?.copyWith(profileImageUrl: null);
-        });
+        final updated = admin!.copyWith(profileImageUrl: '');
+        setState(() => admin = updated);
       }
+
+      FlushBar.show(context, "Profile removed", isSuccess: true);
     } catch (e) {
-      debugPrint("Remove image error: $e");
+      FlushBar.show(context, "Remove failed: $e", isSuccess: false);
     }
   }
 
@@ -375,16 +389,36 @@ class _ProfileState extends State<Profile> {
                                                 Navigator.pop(context),
                                           ),
 
-                                          /// 🗑 DELETE
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.delete,
-                                              color: Colors.red,
-                                            ),
-                                            onPressed: () async {
-                                              Navigator.pop(context);
-                                              await _removeProfileImage();
-                                            },
+                                          Row(
+                                            children: [
+                                              /// ✂️ CROP
+                                              if (image.isNotEmpty)
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.crop,
+                                                    color: Colors.white,
+                                                  ),
+                                                  onPressed: () async {
+                                                    if (image.isEmpty) return;
+                                                    Navigator.pop(context);
+                                                    await _cropExistingImage(
+                                                      image,
+                                                    );
+                                                  },
+                                                ),
+
+                                              /// 🗑 DELETE
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Iconsax.trash,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed: () async {
+                                                  Navigator.pop(context);
+                                                  await _removeProfileImage();
+                                                },
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
@@ -427,12 +461,14 @@ class _ProfileState extends State<Profile> {
                   child: CircleAvatar(
                     radius: 70,
                     backgroundColor: ProfileColors.background,
-                    backgroundImage: image != null && image.isNotEmpty
+                    backgroundImage: (image != null && image.isNotEmpty)
                         ? NetworkImage(image)
                         : null,
-                    child: image == null || image.isEmpty
+                    child: (image == null || image.isEmpty)
                         ? Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : "?",
+                            name.trim().isNotEmpty
+                                ? name.trim()[0].toUpperCase()
+                                : "?",
                             style: const TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w800,
@@ -499,6 +535,97 @@ class _ProfileState extends State<Profile> {
         ],
       ),
     );
+  }
+
+  Future<void> _cropExistingImage(String imageUrl) async {
+    try {
+      setState(() => isLoading = true);
+      final response = await dio.Dio().get(
+        imageUrl,
+        options: dio.Options(responseType: dio.ResponseType.bytes),
+      );
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/temp_profile.jpg');
+      await file.writeAsBytes(response.data);
+
+      final croppedFile = await _cropImage(file);
+
+      if (croppedFile != null) {
+        await _uploadProfileImage(croppedFile);
+      }
+    } catch (e) {
+      FlushBar.show(context, "Crop failed: $e", isSuccess: false);
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (employee == null) return;
+
+    FlushBar.show(context, "Uploading profile picture...");
+
+    try {
+      String uid = employee!.uid!;
+      String fileName = "profile_$uid.jpg";
+
+      final storageRef = FirebaseStorage.instance.ref().child(
+        "profile_images/$fileName",
+      );
+
+      await storageRef.putFile(imageFile);
+
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      final updatedEmployee = employee!.copyWith(
+        profileImageUrl: downloadUrl,
+        updatedAt: DateTime.now(),
+      );
+
+      await EmployeeService.editEmployee(
+        uid: updatedEmployee.uid!,
+        employee: updatedEmployee,
+      );
+
+      String? cid = await Spdb.getCid();
+
+      await Spdb.setEmployeeLogin(
+        model: updatedEmployee,
+        cid: cid ?? '',
+        logoUrl: downloadUrl,
+      );
+
+      setState(() => employee = updatedEmployee);
+
+      FlushBar.show(context, "Profile updated", isSuccess: true);
+    } catch (e) {
+      FlushBar.show(context, "Upload failed: $e", isSuccess: false);
+    }
+  }
+
+  Future<File?> _cropImage(File file) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: file.path,
+      compressQuality: 90,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      // cropStyle: CropStyle.circle, // ✅ IMPORTANT
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: "Adjust Profile Photo",
+          toolbarColor: Colors.black,
+          toolbarWidgetColor: Colors.white,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: "Adjust Profile Photo",
+          aspectRatioLockEnabled: true,
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return null;
+    return File(croppedFile.path);
   }
 
   Widget _buildStatsCard() {

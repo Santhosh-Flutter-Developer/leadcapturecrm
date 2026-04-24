@@ -1,5 +1,25 @@
 part of 'chat_messages.dart';
 
+void openUser(BuildContext context, dynamic user) {
+  if (user == null) return;
+
+  if (kIsMobile) {
+    Sheet.showSheet(
+      context,
+      widget: user is AdminModel
+          ? AdminProfile(admin: user)
+          : EmployeeDetails(employee: user),
+    );
+  } else {
+    GeneralDialog.showRTLSheet(
+      context,
+      user is AdminModel
+          ? AdminProfile(admin: user)
+          : EmployeeDetails(employee: user),
+    );
+  }
+}
+
 class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String userUid;
   final String lastSeen;
@@ -16,7 +36,6 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(70);
-
   @override
   Widget build(BuildContext context) {
     final dynamic user = CacheService.getUserByUid(userUid);
@@ -54,98 +73,107 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ] else ...[
             if (userImage != null && userImage.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: CachedNetworkImage(
-                  imageUrl: userImage,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
+              GestureDetector(
+                onTap: () => openUser(context, user),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: CachedNetworkImage(
+                    imageUrl: userImage,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: AppColors.grey300,
+                      highlightColor: AppColors.grey100,
+                      child: Container(color: AppColors.white),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
+                    height: 35,
+                    width: 35,
+                    fit: BoxFit.cover,
                   ),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                  height: 35,
-                  width: 35,
-                  fit: BoxFit.cover,
                 ),
               ),
             ] else ...[
-              CircleAvatar(
-                backgroundColor: AppColors.grey200,
-                radius: 22,
-                child: Text(
-                  (userName ?? '?').capitalizeFirst,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+              GestureDetector(
+                onTap: () => openUser(context, user),
+                child: CircleAvatar(
+                  backgroundColor: AppColors.grey200,
+                  radius: 22,
+                  child: Text(
+                    (userName ?? '?').capitalizeFirst,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+                  ),
                 ),
               ),
             ],
           ],
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (chat.isGroupChat) ...[
-                  Text(
-                    chat.title ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
+            child: GestureDetector(
+              onTap: () => openUser(context, user),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (chat.isGroupChat) ...[
+                    Text(
+                      chat.title ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${chat.participants.length} Members',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppColors.grey200),
-                  ),
-                ] else ...[
-                  Text(
-                    userName ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
+                    const SizedBox(height: 2),
+                    Text(
+                      '${chat.participants.length} Members',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.grey200,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
+                  ] else ...[
+                    Text(
+                      userName ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
 
-                  StreamBuilder<UserStatusModel?>(
-                    stream: UserStatusService.streamStatus(userUid),
-                    builder: (context, snapshot) {
-                      if (userUid.isEmpty) {
+                    StreamBuilder<UserStatusModel?>(
+                      stream: UserStatusService.streamStatus(userUid),
+                      builder: (context, snapshot) {
+                        if (userUid.isEmpty) {
+                          return Text(
+                            "Last seen: Unknown",
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.grey200),
+                          );
+                        }
+
+                        if (!snapshot.hasData) {
+                          return Text(
+                            "Last seen: loading...",
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.grey200),
+                          );
+                        }
+
+                        final status = snapshot.data!;
+
                         return Text(
-                          "Last seen: Unknown",
+                          status.isOnline
+                              ? "Online"
+                              : "Last seen: ${formatLastSeen(status.lastSeen)}",
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: AppColors.grey200),
                         );
-                      }
-
-                      if (!snapshot.hasData) {
-                        return Text(
-                          "Last seen: loading...",
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.grey200),
-                        );
-                      }
-
-                      final status = snapshot.data!;
-
-                      return Text(
-                        status.isOnline
-                            ? "Online"
-                            : "Last seen: ${formatLastSeen(status.lastSeen)}",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.grey200,
-                        ),
-                      );
-                    },
-                  ),
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
@@ -223,15 +251,16 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
       leading: Padding(
         padding: const EdgeInsets.only(left: 8),
-        child: _buildLeadingAvatar(context, userName, userImage),
+        child: _buildLeadingAvatar(context, user, userName, userImage),
       ),
 
-      title: _buildTitle(context, userName, userImage),
+      title: _buildTitle(context, user, userName, userImage),
     );
   }
 
   Widget _buildLeadingAvatar(
     BuildContext context,
+    dynamic user,
     String? userName,
     String? userImage,
   ) {
@@ -244,31 +273,38 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     }
 
     if (userImage != null && userImage.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(100),
-        child: CachedNetworkImage(
-          imageUrl: userImage,
-          height: 32,
-          width: 32,
-          fit: BoxFit.cover,
+      return GestureDetector(
+        onTap: () => openUser(context, user),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: CachedNetworkImage(
+            imageUrl: userImage,
+            height: 32,
+            width: 32,
+            fit: BoxFit.cover,
+          ),
         ),
       );
     }
 
-    return CircleAvatar(
-      radius: 15,
-      backgroundColor: LetterColors.getColor((userName ?? '?').first),
-      child: Text(
-        (userName ?? '?').first,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+    return GestureDetector(
+      onTap: () => openUser(context, user),
+      child: CircleAvatar(
+        radius: 15,
+        backgroundColor: LetterColors.getColor((userName ?? '?').first),
+        child: Text(
+          (userName ?? '?').first,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+        ),
       ),
     );
   }
 
   Widget _buildTitle(
     BuildContext context,
+    dynamic user,
     String? userName,
     String? userImage,
   ) {
@@ -336,47 +372,48 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
           ] else ...[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userName ?? "",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.black,
-                    fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: () => openUser(context, user),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName ?? "",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                StreamBuilder<UserStatusModel?>(
-                  stream: UserStatusService.streamStatus(userUid),
-                  builder: (context, snapshot) {
-                    if (userUid.isEmpty) {
+                  StreamBuilder<UserStatusModel?>(
+                    stream: UserStatusService.streamStatus(userUid),
+                    builder: (context, snapshot) {
+                      if (userUid.isEmpty) {
+                        return Text(
+                          "Last seen: ",
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.grey500),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return Text(
+                          "",
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.grey500),
+                        );
+                      }
+                      final status = snapshot.data!;
                       return Text(
-                        "Last seen: ",
+                        status.isOnline
+                            ? "Online"
+                            : "Last seen: ${formatLastSeen(status.lastSeen)}",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.grey500,
                         ),
                       );
-                    }
-                    if (!snapshot.hasData) {
-                      return Text(
-                        "",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey500,
-                        ),
-                      );
-                    }
-                    final status = snapshot.data!;
-                    return Text(
-                      status.isOnline
-                          ? "Online"
-                          : "Last seen: ${formatLastSeen(status.lastSeen)}",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey500),
-                    );
-                  },
-                ),
-              ],
+                    },
+                  ),
+                ],
+              ),
             ),
             // Actions
             Row(
