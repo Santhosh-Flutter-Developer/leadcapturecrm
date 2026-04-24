@@ -417,6 +417,30 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   }
 
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+    if (!Hive.isBoxOpen('leadStatus') ||
+        !Hive.isBoxOpen('leadCategory') ||
+        !Hive.isBoxOpen('employees')) {
+      return SizedBox(
+        width: 250,
+        child: TextField(
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search',
+            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(color: AppColors.grey, width: 1),
+            ),
+          ),
+        ),
+      );
+    }
     final statusBox = Hive.box<Map<dynamic, dynamic>>('leadStatus');
     final categoryBox = Hive.box<Map<dynamic, dynamic>>('leadCategory');
     final cache = CacheService();

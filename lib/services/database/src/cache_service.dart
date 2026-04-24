@@ -68,20 +68,22 @@ class CacheService {
   }
 
   Future<void> _openBoxes() async {
-    try {
-      final futures = <Future>[];
-
-      // Open all entity boxes defined in config
-      for (var conf in _config.values) {
-        futures.add(Hive.openBox<Map<dynamic, dynamic>>(conf.boxName));
+    for (var conf in _config.values) {
+      if (Hive.isBoxOpen(conf.boxName)) continue;
+      try {
+        await Hive.openBox<Map<dynamic, dynamic>>(conf.boxName);
+      } catch (e, st) {
+        debugPrint("Failed to open box ${conf.boxName}: $e");
+        await ErrorService.recordError(e, st);
       }
-      // Open meta box
-      futures.add(Hive.openBox(_metaBox));
-
-      await Future.wait(futures);
-    } catch (e, st) {
-      debugPrint("Hive box open failed: $e");
-      await ErrorService.recordError(e, st);
+    }
+    if (!Hive.isBoxOpen(_metaBox)) {
+      try {
+        await Hive.openBox(_metaBox);
+      } catch (e, st) {
+        debugPrint("Failed to open meta box: $e");
+        await ErrorService.recordError(e, st);
+      }
     }
   }
 
@@ -261,6 +263,9 @@ class CacheService {
 
   ValueListenable<List<EmployeeModel>> getAllListenableEmployees() {
     final conf = _config['employee']!;
+    if (!Hive.isBoxOpen(conf.boxName)) {
+      return ValueNotifier(<EmployeeModel>[]);
+    }
     return Hive.box<Map<dynamic, dynamic>>(conf.boxName).listenable().map((
       box,
     ) {

@@ -38,6 +38,7 @@ class _LeadEditState extends State<LeadEdit> {
   // final bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
+  bool _companyrefresh = false;
   late Future _future;
 
   List<LeadCategoryModel> _leadCategories = [];
@@ -515,6 +516,9 @@ class _LeadEditState extends State<LeadEdit> {
         //     hintText: 'Enter Company Name',
         //   ),
         // ),
+        _companyrefresh == true
+            ? SizedBox()
+            : 
         SizedBox(
           width: itemWidth,
           child: Row(
@@ -550,23 +554,22 @@ class _LeadEditState extends State<LeadEdit> {
               SizedBox(width: 8.0),
               InkWell(
                 onTap: () async {
-                  if (kIsMobile) {
-                    Navigate.route(
-                      context,
-                      const ClientCompanyListing(
-                        section: ClientSection.company,
-                      ),
-                    );
-                  } else {
-                    var isAdmin = await Spdb.isAdminLoggedIn();
-                    Navigate.route(
-                      context,
-                      DesktopMainScreen(
-                        isAdmin: isAdmin,
-                        selectedMenu: "Company",
-                      ),
-                    );
-                  }
+                final form = CompanyCreate();
+                        dynamic val;
+                        if (kIsMobile) {
+                          val = await Sheet.showSheet(context, widget: form);
+                        } else {
+                          val = await GeneralDialog.showRTLSheet(context, form);
+                        }
+                        if (val == true) {
+                          setState(() {
+                            _companyrefresh = true;
+                          });
+                          _clients = await ClientService.getAllClients();
+                          setState(() {
+                            _companyrefresh = false;
+                          });
+                        }
                 },
                 child: Container(
                   decoration: BoxDecoration(
