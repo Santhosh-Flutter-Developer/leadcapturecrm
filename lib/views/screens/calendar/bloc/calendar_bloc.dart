@@ -25,6 +25,8 @@ class CalendarBloc extends Bloc<CalendarCalendar, CalendarState> {
 
     final cid = await Spdb.getCid();
 
+    await LeadService.backfillLeadActivitiesToCalendar();
+
     final eventsStream = firestore
         .collection(Collections.users.name)
         .doc(cid)

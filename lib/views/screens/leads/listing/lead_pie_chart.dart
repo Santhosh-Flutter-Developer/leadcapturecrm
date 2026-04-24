@@ -111,6 +111,9 @@ class _LeadsSourcePieChartState extends State<LeadsSourcePieChart> {
   }
 
   Widget _buildPieChart(Map<String, int> data, int total) {
+     if (data.isEmpty) {
+      return const Center(child: Text("No data available"));
+    }
     return PieChart(
       PieChartData(
         pieTouchData: PieTouchData(
