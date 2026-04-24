@@ -11,7 +11,8 @@ import '/utils/utils.dart';
 
 class LeadKanbanListing extends StatefulWidget {
   final List<LeadModel> leadList;
-  const LeadKanbanListing({super.key, required this.leadList});
+  final VoidCallback? onLeadDeleted;
+  const LeadKanbanListing({super.key, required this.leadList, this.onLeadDeleted});
 
   @override
   State<LeadKanbanListing> createState() => _LeadKanbanListingState();
@@ -531,11 +532,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
         child: InkWell(
-          onTap: () {
-            if (kIsDesktop) {
-              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
-            } else {
-              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+          onTap: () async {
+            final result = kIsDesktop
+                ? await GeneralDialog.showRTLSheet(
+                    context,
+                    LeadsViewPage(lead: task),
+                  )
+                : await Sheet.showSheet(
+                    context,
+                    widget: LeadsViewPage(lead: task),
+                  );
+            if (result == 'deleted' && context.mounted) {
+              widget.onLeadDeleted?.call();
             }
           },
           child: Container(
@@ -623,11 +631,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           ),
         ),
         child: InkWell(
-          onTap: () {
-            if (kIsDesktop) {
-              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
-            } else {
-              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+          onTap: () async {
+            final result = kIsDesktop
+                ? await GeneralDialog.showRTLSheet(
+                    context,
+                    LeadsViewPage(lead: task),
+                  )
+                : await Sheet.showSheet(
+                    context,
+                    widget: LeadsViewPage(lead: task),
+                  );
+            if (result == 'deleted' && context.mounted) {
+              widget.onLeadDeleted?.call();
             }
           },
           borderRadius: BorderRadius.circular(12),
