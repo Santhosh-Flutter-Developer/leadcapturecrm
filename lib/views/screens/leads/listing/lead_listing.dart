@@ -168,9 +168,15 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       _buildActionRow(context),
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
-                        LeadKanbanListing(leadList: _filteredLeads),
+                        LeadKanbanListing(
+  leadList: _filteredLeads,
+  onLeadDeleted: () => context.read<LeadBloc>().add(StreamLead()),
+),
                       ] else if (_selectedView == 'Calendar') ...[
-                        LeadCalendarListing(leadList: _filteredLeads),
+                        LeadCalendarListing(
+  leadList: _filteredLeads,
+  onLeadCreated: () => context.read<LeadBloc>().add(StreamLead()),
+),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -788,11 +794,18 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         if (permissions?.canCreate ?? false) {
           actionButtons.add(
             ElevatedButton.icon(
-              onPressed: () {
-                if (kIsMobile) {
-                  Sheet.showSheet(context, widget: const LeadCreate());
-                } else {
-                  GeneralDialog.showRTLSheet(context, const LeadCreate());
+              onPressed: () async {
+                final result = kIsMobile
+                    ? await Sheet.showSheet(
+                        context,
+                        widget: const LeadCreate(),
+                      )
+                    : await GeneralDialog.showRTLSheet(
+                        context,
+                        const LeadCreate(),
+                      );
+                if (result == true && context.mounted) {
+                  context.read<LeadBloc>().add(StreamLead());
                 }
               },
               icon: const Icon(Icons.add, size: 18),
@@ -1030,11 +1043,16 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     var leadCategory = CacheService.leadCategoryByUid(lead.leadCategory);
 
     /// Open Lead View
-    void openLead(BuildContext context, LeadModel lead) {
-      if (kIsMobile) {
-        Sheet.showSheet(context, widget: LeadsViewPage(lead: lead));
-      } else {
-        GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: lead));
+    void openLead(BuildContext context, LeadModel lead) async {
+      final result = kIsMobile
+          ? await Sheet.showSheet(context, widget: LeadsViewPage(lead: lead))
+          : await GeneralDialog.showRTLSheet(
+              context,
+              LeadsViewPage(lead: lead),
+            );
+
+      if (result == 'deleted' && context.mounted) {
+        context.read<LeadBloc>().add(StreamLead());
       }
     }
 

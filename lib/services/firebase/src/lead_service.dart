@@ -241,7 +241,7 @@ class LeadService {
         docData: data,
         reason: 'user_deleted',
       );
-      docRef.reference.delete();
+      await docRef.reference.delete();
       var user = await Spdb.getUser();
       ActivityLogModel activityLogModel = ActivityLogModel(
         userData: user,

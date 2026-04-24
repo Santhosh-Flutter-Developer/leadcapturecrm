@@ -10,7 +10,8 @@ import '/services/services.dart';
 
 class LeadCalendarListing extends StatefulWidget {
   final List<LeadModel> leadList;
-  const LeadCalendarListing({super.key, required this.leadList});
+  final VoidCallback? onLeadCreated;
+  const LeadCalendarListing({super.key, required this.leadList, this.onLeadCreated});
 
   @override
   State<LeadCalendarListing> createState() => _LeadCalendarListingState();
@@ -227,10 +228,11 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
           child: InkWell(
             onTap: () async {
               if (count == 0) {
-                if (kIsDesktop) {
-                  GeneralDialog.showRTLSheet(context, LeadCreate());
-                } else {
-                  Sheet.showSheet(context, widget: LeadCreate());
+                final result = kIsDesktop
+                    ? await GeneralDialog.showRTLSheet(context, LeadCreate())
+                    : await Sheet.showSheet(context, widget: LeadCreate());
+                if (result == true && context.mounted) {
+                  widget.onLeadCreated?.call();
                 }
               } else {
                 showInfoGeneralDialog(
@@ -344,10 +346,17 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                           .toList(),
                     );
                   } else {
-                    if (kIsDesktop) {
-                      GeneralDialog.showRTLSheet(context, LeadCreate());
-                    } else {
-                      Sheet.showSheet(context, widget: LeadCreate());
+                    final result = kIsDesktop
+                        ? await GeneralDialog.showRTLSheet(
+                            context,
+                            LeadCreate(),
+                          )
+                        : await Sheet.showSheet(
+                            context,
+                            widget: LeadCreate(),
+                          );
+                    if (result == true && context.mounted) {
+                      widget.onLeadCreated?.call();
                     }
                   }
                 },

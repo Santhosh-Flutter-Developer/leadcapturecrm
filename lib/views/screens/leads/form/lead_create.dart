@@ -80,7 +80,9 @@ class _LeadCreateState extends State<LeadCreate> {
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
-      _clients = await ClientService.getAllClients();
+      _clients = (await ClientService.getAllClients())
+          .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+          .toList();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -459,9 +461,9 @@ class _LeadCreateState extends State<LeadCreate> {
                   label: 'Company Name',
                   items: _clients.map((e) => e.companyName).toList(),
                   onChanged: (value) {
-                    _selectedclient = _clients.firstWhere(
-                      (cat) => cat.companyName == value,
-                      orElse: () => _clients.first,
+                    _selectedclient = _clients.cast<ClientModel?>().firstWhere(
+                      (cat) => cat?.companyName == value,
+                      orElse: () => null,
                     );
                     _companyWebsiteController.text =
                         _selectedclient?.officialWebsite ?? '';
@@ -672,7 +674,7 @@ class _LeadCreateState extends State<LeadCreate> {
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text.trim(),
           attachments: attachments,
-          companyName: _companyNameController.text.trim(),
+          companyName: _selectedclient?.companyName ?? _companyNameController.text.trim(),
           companyWebsite: _companyWebsiteController.text.trim(),
           companyMobile: _companyMobileController.text.trim(),
           companyZipCode: _companyZipController.text.trim(),

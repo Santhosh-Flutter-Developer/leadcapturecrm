@@ -114,7 +114,9 @@ class _LeadEditState extends State<LeadEdit> {
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
-      _clients = await ClientService.getAllClients();
+      _clients = (await ClientService.getAllClients())
+          .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+          .toList();
       _selectedclient= await ClientService.getClient(uid: _leadModel.clientId ?? '');
     } catch (e, st) {
       await ErrorService.recordError(e, st);
@@ -524,9 +526,9 @@ class _LeadEditState extends State<LeadEdit> {
                   initialItem: _selectedclient?.companyName,
                   items: _clients.map((e) => e.companyName).toList(),
                   onChanged: (value) {
-                    _selectedclient = _clients.firstWhere(
-                      (cat) => cat.companyName == value,
-                      orElse: () => _clients.first,
+                    _selectedclient = _clients.cast<ClientModel?>().firstWhere(
+                      (cat) => cat?.companyName == value,
+                      orElse: () => null,
                     );
                     _companyNameController.text =
                         _selectedclient?.companyName ?? '';
@@ -741,7 +743,7 @@ class _LeadEditState extends State<LeadEdit> {
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text,
           attachments: attachments,
-          companyName: _companyNameController.text,
+          companyName: _selectedclient?.companyName ?? _companyNameController.text,
           companyWebsite: _companyWebsiteController.text,
           companyMobile: _companyMobileController.text,
           companyZipCode: _companyZipController.text,
