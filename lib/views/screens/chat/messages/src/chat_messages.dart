@@ -191,7 +191,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
     Map<String, List<MessagesModel>> grouped = {};
 
     for (var chat in chats) {
-      final date = chat.timestamp ?? DateTime.now();
+      final date = chat.timestamp;
       final now = DateTime.now();
       String key;
 

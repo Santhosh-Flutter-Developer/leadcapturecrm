@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dio/dio.dart';
+// import 'package:dio/dio.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:googleapis_auth/auth_io.dart';
+// import 'package:googleapis_auth/auth_io.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
