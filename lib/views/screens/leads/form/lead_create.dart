@@ -463,6 +463,7 @@ class _LeadCreateState extends State<LeadCreate> {
               Expanded(
                 child: FormDropdownSearch(
                   label: 'Company Name',
+                  initialItem: _selectedclient?.companyName??"",
                   items: _clients.map((e) => e.companyName).toList(),
                   onChanged: (value) {
                     _selectedclient = _clients.cast<ClientModel?>().firstWhere(
@@ -494,11 +495,25 @@ class _LeadCreateState extends State<LeadCreate> {
                         } else {
                           val = await GeneralDialog.showRTLSheet(context, form);
                         }
-                        if (val == true) {
+                       if (val is Map && val["status"] == true) {
                           setState(() {
                             _companyrefresh = true;
                           });
                           _clients = await ClientService.getAllClients();
+                          if (val["company"] != null) {
+                            _selectedclient = val["company"];
+                            _companyWebsiteController.text =
+                                _selectedclient?.officialWebsite ?? '';
+                            _companyMobileController.text =
+                                _selectedclient?.officePhoneNo ?? "";
+                            _regionModel = _selectedclient?.country;
+                            _stateModel = _selectedclient?.state;
+                            _cityModel = _selectedclient?.city;
+                            _companyZipController.text =
+                                _selectedclient?.postalCode ?? "";
+                            _companyAddressController.text =
+                                _selectedclient?.companyAddress ?? "";
+                          }
                           setState(() {
                             _companyrefresh = false;
                           });
