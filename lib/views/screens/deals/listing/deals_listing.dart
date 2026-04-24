@@ -101,11 +101,8 @@ class _DealsListingViewState extends State<DealsListingView> {
 
   List<String> statusItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
-      final data = box.get(key) ?? {};
-      final model = DealStatusModel.fromMap(
-        key,
-        Map<String, dynamic>.from(data),
-      );
+      final data = CacheService.normalizeFromCache(box.get(key) ?? {});
+      final model = DealStatusModel.fromMap(key, data);
       return model.name;
     }).toList();
   }
@@ -308,6 +305,28 @@ class _DealsListingViewState extends State<DealsListingView> {
   }
 
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+    if (!Hive.isBoxOpen('dealStatus') || !Hive.isBoxOpen('employees')) {
+      return SizedBox(
+        width: 250,
+        child: TextField(
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search',
+            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(color: AppColors.grey, width: 1),
+            ),
+          ),
+        ),
+      );
+    }
     final statusBox = Hive.box<Map<dynamic, dynamic>>('dealStatus');
     final cache = CacheService();
 

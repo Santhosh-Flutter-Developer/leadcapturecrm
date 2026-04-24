@@ -73,6 +73,33 @@ class _ProfileState extends State<Profile> {
     setState(() => isLoading = false);
   }
 
+  Future<void> _editAdminProfile() async {
+    if (admin == null || admin!.uid == null || admin!.uid!.isEmpty) return;
+
+    final result = kIsMobile
+        ? await Sheet.showSheet(
+            context,
+            widget: AdminUpdate(id: admin!.uid!, admin: admin!),
+          )
+        : await GeneralDialog.showRTLSheet(
+            context,
+            AdminUpdate(id: admin!.uid!, admin: admin!),
+          );
+
+    if (result == true) {
+      final latest = await AdminService.getAdmin(uid: admin!.uid!);
+      if (latest != null && mounted) {
+        final cid = await Spdb.getCid();
+        if (cid != null && cid.isNotEmpty) {
+          await Spdb.setAdminLogin(model: latest, cid: cid);
+        }
+        setState(() {
+          admin = latest;
+        });
+      }
+    }
+  }
+
   IconData getSectionIcon(String title) {
     switch (title) {
       case "Personal Information":
@@ -196,6 +223,14 @@ class _ProfileState extends State<Profile> {
           preferredSize: const Size.fromHeight(1),
           child: Container(color: ProfileColors.border, height: 1),
         ),
+        actions: [
+          if (isAdmin)
+            IconButton(
+              tooltip: 'Edit Profile',
+              onPressed: _editAdminProfile,
+              icon: const Icon(Iconsax.edit, color: ProfileColors.textPrimary),
+            ),
+        ],
       ),
       body: isLoading
           ? const Center(child: WaitingLoading())

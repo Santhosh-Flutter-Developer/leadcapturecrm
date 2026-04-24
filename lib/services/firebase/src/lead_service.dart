@@ -8,6 +8,13 @@ class LeadService {
   static final FirebaseConfig firebase = FirebaseConfig();
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  static String leadActivityCalendarDocId({
+    required String leadUid,
+    required String activityUid,
+  }) {
+    return 'lead_${leadUid}_activity_${activityUid}';
+  }
+
   static Future<void> createLead({required LeadModel lead}) async {
     try {
       var cid = await Spdb.getCid();
@@ -234,7 +241,7 @@ class LeadService {
         docData: data,
         reason: 'user_deleted',
       );
-      docRef.reference.delete();
+      await docRef.reference.delete();
       var user = await Spdb.getUser();
       ActivityLogModel activityLogModel = ActivityLogModel(
         userData: user,
@@ -445,6 +452,60 @@ class LeadService {
       await ErrorService.recordError(e, st);
       debugPrint("Error adding lead history: $e\n$st");
       rethrow;
+    }
+  }
+
+  static Future<void> backfillLeadActivitiesToCalendar() async {
+    try {
+      final cid = await Spdb.getCid();
+      final user = await Spdb.getUser();
+
+      final leadsSnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .get();
+
+      for (final leadDoc in leadsSnapshot.docs) {
+        final activitiesSnapshot = await leadDoc.reference
+            .collection('activities')
+            .get();
+
+        for (final activityDoc in activitiesSnapshot.docs) {
+          final activity = LeadActivityModel.fromMap(
+            activityDoc.id,
+            activityDoc.data(),
+          );
+
+          final calendarDocId = leadActivityCalendarDocId(
+            leadUid: leadDoc.id,
+            activityUid: activityDoc.id,
+          );
+
+          final eventModel = EventModel(
+            eventName: activity.title,
+            eventDateTime: activity.scheduledAt,
+            eventEndDateTime: activity.scheduledAt.add(
+              const Duration(hours: 1),
+            ),
+            eventDescription: activity.description.isNotEmpty
+                ? activity.description
+                : 'Lead activity scheduled',
+            eventRepeatType: EventRepeatType.none,
+            eventAttendes: const [],
+            createdBy: user,
+            completed: activity.completed,
+          );
+
+          await CommonService.add(
+            '${Collections.users.name}/$cid/${Collections.events.name}',
+            eventModel.toMap(),
+            docId: calendarDocId,
+          );
+        }
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint('Error backfilling lead activities to calendar: $e\n$st');
     }
   }
 

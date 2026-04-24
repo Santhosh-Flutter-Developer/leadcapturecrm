@@ -584,7 +584,9 @@ class _CompanyCreateState extends State<CompanyCreate> {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      Navigator.pop(context, true);
+     Navigator.pop(context, {
+        "status":true,
+        "company":company});
       FlushBar.show(context, "Company created", isSuccess: true);
     } catch (e, st) {
       debugPrint("$e, $st");

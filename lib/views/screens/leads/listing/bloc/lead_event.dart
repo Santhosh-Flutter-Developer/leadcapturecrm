@@ -50,3 +50,17 @@ class AddLeadActivity extends LeadEvent {
 
   AddLeadActivity({required this.leadUid, required this.activity});
 }
+
+class EditLeadActivity extends LeadEvent {
+  final String leadUid;
+  final LeadActivityModel activity;
+
+  EditLeadActivity({required this.leadUid, required this.activity});
+}
+
+class DeleteLeadActivity extends LeadEvent {
+  final String leadUid;
+  final String activityUid;
+
+  DeleteLeadActivity({required this.leadUid, required this.activityUid});
+}

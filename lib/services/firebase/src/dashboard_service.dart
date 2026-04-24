@@ -73,14 +73,13 @@ class DashboardService {
       final allLeads = await LeadService.getAllLeads();
       final allDeals = await DealService.getAllDeals();
       final allTasks = await TaskService.getAllTasks();
-        List<HolidayModel> holidays = [];
-
+      List<HolidayModel> holidays = [];
 
       final attendanceStats = await AttendanceService.getAttendanceStats(
         userUid: userId,
         fromDate: dateRange.start,
         toDate: dateRange.end,
-        holidays: holidays,        
+        holidays: holidays,
       );
 
       final salary = await SalaryLedgerService.getSalarySummary(
@@ -298,34 +297,84 @@ class DashboardService {
           .doc(cid)
           .collection(Collections.notifications.name)
           .where("toUids", arrayContains: userId)
-          .orderBy("createdAt", descending: true)
-          .limit(5)
           .get();
 
-      return snap.docs
+      final notifications = snap.docs
           .map((d) => NotificationModel.fromMap(d.id, d.data()))
           .toList();
+
+      notifications.sort((a, b) {
+        final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+        final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+        return bTime.compareTo(aTime);
+      });
+
+      return notifications.take(5).toList();
     } catch (e, st) {
       debugPrint("Error fetching notifications: $e\n$st");
       throw 'Error fetching notifications: $e';
     }
   }
 
-  Future<List<TaskModel>> _fetchUpcomingTasks(String cid) async {
+  Future<List<UpcomingDeadlineItemModel>> _fetchUpcomingTasks(
+    String cid,
+  ) async {
     try {
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime.now();
+      final start = now.millisecondsSinceEpoch;
+      final end = now.add(const Duration(days: 1)).millisecondsSinceEpoch;
 
-      final snap = await FirebaseFirestore.instance
+      final tasksSnap = await FirebaseFirestore.instance
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.tasks.name)
-          .where("deadline", isGreaterThan: now)
+          .where("deadline", isGreaterThan: start)
+          .where("deadline", isLessThanOrEqualTo: end)
           .get();
 
-      return snap.docs.map((d) => TaskModel.fromMap(d.id, d.data())).toList();
+      final eventsSnap = await FirebaseFirestore.instance
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.events.name)
+          .where("eventDateTime", isGreaterThan: start)
+          .where("eventDateTime", isLessThanOrEqualTo: end)
+          .get();
+
+      final upcoming = <UpcomingDeadlineItemModel>[];
+
+      for (final d in tasksSnap.docs) {
+        final task = TaskModel.fromMap(d.id, d.data());
+        if (task.deadline == null || task.completed) continue;
+
+        upcoming.add(
+          UpcomingDeadlineItemModel(
+            id: d.id,
+            title: task.taskName,
+            scheduledAt: task.deadline!,
+            source: 'task',
+          ),
+        );
+      }
+
+      for (final d in eventsSnap.docs) {
+        final event = EventModel.fromMap(d.id, d.data());
+        if (event.completed) continue;
+        upcoming.add(
+          UpcomingDeadlineItemModel(
+            id: d.id,
+            title: event.eventName,
+            scheduledAt: event.eventDateTime,
+            source: 'event',
+          ),
+        );
+      }
+
+      upcoming.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+      return upcoming.take(5).toList();
     } catch (e, st) {
       debugPrint("Error fetching upcoming tasks: $e\n$st");
-      throw 'Error fetching upcoming tasks: $e';
+      return [];
     }
   }
 }

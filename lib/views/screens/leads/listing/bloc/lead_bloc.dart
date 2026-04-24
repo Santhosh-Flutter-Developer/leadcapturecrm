@@ -25,6 +25,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     on<StreamLeadHistory>(_streamLeadHistory);
     on<StreamLeadActivities>(_streamLeadActivities);
     on<AddLeadActivity>(_addLeadActivity);
+    on<EditLeadActivity>(_editLeadActivity);
+    on<DeleteLeadActivity>(_deleteLeadActivity);
   }
 
   Future<void> _streamLeads(StreamLead event, Emitter<LeadState> emit) async {
@@ -231,6 +233,61 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   ) async {
     try {
       final cid = await Spdb.getCid();
+      final user = await Spdb.getUser();
+
+      final activityRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(event.leadUid)
+          .collection('activities')
+          .doc();
+
+      await activityRef.set(event.activity.toMap());
+
+      final calendarEventId = LeadService.leadActivityCalendarDocId(
+        leadUid: event.leadUid,
+        activityUid: activityRef.id,
+      );
+
+      final calendarEvent = EventModel(
+        eventName: event.activity.title,
+        eventDateTime: event.activity.scheduledAt,
+        eventEndDateTime: event.activity.scheduledAt.add(
+          const Duration(hours: 1),
+        ),
+        eventDescription: event.activity.description.isNotEmpty
+            ? event.activity.description
+            : 'Lead activity scheduled',
+        eventRepeatType: EventRepeatType.none,
+        eventAttendes: [user.uid],
+        createdBy: user,
+      );
+
+      try {
+        await EventService.createEvent(
+          event: calendarEvent,
+          docId: calendarEventId,
+        );
+      } catch (e, st) {
+        debugPrint('Failed to mirror lead activity to calendar: $e\n$st');
+      }
+
+      await LeadService.addLeadHistory(
+        leadUid: event.leadUid,
+        action: "New activity scheduled",
+      );
+    } catch (e) {
+      emit(LeadError(e.toString()));
+    }
+  }
+
+  Future<void> _editLeadActivity(
+    EditLeadActivity event,
+    Emitter<LeadState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
 
       await firestore
           .collection(Collections.users.name)
@@ -238,11 +295,70 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           .collection(Collections.leads.name)
           .doc(event.leadUid)
           .collection('activities')
-          .add(event.activity.toMap());
+          .doc(event.activity.uid)
+          .update(event.activity.toMap());
+
+      final calendarEventId = LeadService.leadActivityCalendarDocId(
+        leadUid: event.leadUid,
+        activityUid: event.activity.uid!,
+      );
+
+      await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.events.name)
+          .doc(calendarEventId)
+          .update({
+            'eventName': event.activity.title,
+            'eventDateTime': event.activity.scheduledAt.millisecondsSinceEpoch,
+            'eventEndDateTime': event.activity.scheduledAt
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch,
+            'eventDescription': event.activity.description.isNotEmpty
+                ? event.activity.description
+                : 'Lead activity scheduled',
+          });
 
       await LeadService.addLeadHistory(
         leadUid: event.leadUid,
-        action: "New activity scheduled",
+        action: "Activity updated: ${event.activity.title}",
+      );
+    } catch (e) {
+      emit(LeadError(e.toString()));
+    }
+  }
+
+  Future<void> _deleteLeadActivity(
+    DeleteLeadActivity event,
+    Emitter<LeadState> emit,
+  ) async {
+    try {
+      final cid = await Spdb.getCid();
+
+      await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(event.leadUid)
+          .collection('activities')
+          .doc(event.activityUid)
+          .delete();
+
+      final calendarEventId = LeadService.leadActivityCalendarDocId(
+        leadUid: event.leadUid,
+        activityUid: event.activityUid,
+      );
+
+      await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.events.name)
+          .doc(calendarEventId)
+          .delete();
+
+      await LeadService.addLeadHistory(
+        leadUid: event.leadUid,
+        action: "Activity deleted",
       );
     } catch (e) {
       emit(LeadError(e.toString()));

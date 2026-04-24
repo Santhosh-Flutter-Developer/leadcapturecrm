@@ -1049,17 +1049,34 @@ Widget _buildRightPanel(
             _emptyText(context, "No upcoming tasks.")
           else
             ...upcomingTasks.map(
-              (task) => TaskReminderTile(
-                title: task.taskName,
-                date: task.deadline != null
-                    ? DateFormat('dd MMM yyyy').format(task.deadline!)
-                    : '',
+              (item) => TaskReminderTile(
+                title: item.title,
+                date: DateFormat(
+                  'dd MMM yyyy, hh:mm a',
+                ).format(item.scheduledAt),
+                isOverdue: item.scheduledAt.isBefore(DateTime.now()),
+                onTap: () => _openUpcomingItem(context, item),
               ),
             ),
         ],
       );
     },
   );
+}
+
+Future<void> _openUpcomingItem(
+  BuildContext context,
+  UpcomingDeadlineItemModel item,
+) async {
+  final widget = item.source == 'event'
+      ? EventEdit(uid: item.id)
+      : TaskView(uid: item.id);
+
+  if (kIsMobile) {
+    await Sheet.showSheet(context, widget: widget);
+  } else {
+    await GeneralDialog.showRTLSheet(context, widget);
+  }
 }
 
 Widget _sectionTitle(BuildContext context, String text) {

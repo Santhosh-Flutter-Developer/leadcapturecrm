@@ -350,6 +350,7 @@ class _HeaderState extends State<Header> {
   Future<void> _manualSync() async {
     setState(() => _isRefreshing = true);
 
+    await CacheService().init();
     await CacheService.syncAllCollections();
     var result = await AuthService.refreshLogin();
 

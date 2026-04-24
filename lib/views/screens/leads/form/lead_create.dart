@@ -44,6 +44,7 @@ class _LeadCreateState extends State<LeadCreate> {
   // bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
+  bool _companyrefresh = false;
   late Future _future;
 
   List<LeadCategoryModel> _leadCategories = [];
@@ -54,6 +55,8 @@ class _LeadCreateState extends State<LeadCreate> {
   LeadStatusModel? _leadStatusModel;
   List<LeadSourceModel> _leadSource = [];
   LeadSourceModel? _selectedLeadSource;
+  List<ClientModel> _clients = [];
+  ClientModel? _selectedclient;
   RegionModel? _regionModel;
   StateModel? _stateModel;
   CityModel? _cityModel;
@@ -73,10 +76,14 @@ class _LeadCreateState extends State<LeadCreate> {
       _leadPriorities.clear();
       _leadStatus.clear();
       _leadSource.clear();
+      _clients.clear();
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
+      _clients = (await ClientService.getAllClients())
+          .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+          .toList();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -437,12 +444,93 @@ class _LeadCreateState extends State<LeadCreate> {
       spacing: horizontalSpacing,
       runSpacing: verticalSpacing,
       children: [
+        // SizedBox(
+        //   width: itemWidth,
+        //   child: FormFields(
+        //     label: 'Company Name',
+        //     controller: _companyNameController,
+        //     hintText: 'Enter Company Name',
+        //   ),
+        // ),
+        _companyrefresh == true
+            ? SizedBox()
+            :
         SizedBox(
           width: itemWidth,
-          child: FormFields(
-            label: 'Company Name',
-            controller: _companyNameController,
-            hintText: 'Enter Company Name',
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: FormDropdownSearch(
+                  label: 'Company Name',
+                  initialItem: _selectedclient?.companyName??"",
+                  items: _clients.map((e) => e.companyName).toList(),
+                  onChanged: (value) {
+                    _selectedclient = _clients.cast<ClientModel?>().firstWhere(
+                      (cat) => cat?.companyName == value,
+                      orElse: () => null,
+                    );
+                    _companyWebsiteController.text =
+                        _selectedclient?.officialWebsite ?? '';
+                    _companyMobileController.text =
+                        _selectedclient?.officePhoneNo ?? "";
+                    _regionModel = _selectedclient?.country;
+                    _stateModel = _selectedclient?.state;
+                    _cityModel = _selectedclient?.city;
+                    _companyZipController.text =
+                        _selectedclient?.postalCode ?? "";
+                    _companyAddressController.text =
+                        _selectedclient?.companyAddress ?? "";
+                  },
+                  validator: (value) => value == null ? "* Required" : null,
+                ),
+              ),
+              SizedBox(width: 8.0),
+              InkWell(
+                onTap: () async {
+                  final form = CompanyCreate();
+                        dynamic val;
+                        if (kIsMobile) {
+                          val = await Sheet.showSheet(context, widget: form);
+                        } else {
+                          val = await GeneralDialog.showRTLSheet(context, form);
+                        }
+                       if (val is Map && val["status"] == true) {
+                          setState(() {
+                            _companyrefresh = true;
+                          });
+                          _clients = await ClientService.getAllClients();
+                          if (val["company"] != null) {
+                            _selectedclient = val["company"];
+                            _companyWebsiteController.text =
+                                _selectedclient?.officialWebsite ?? '';
+                            _companyMobileController.text =
+                                _selectedclient?.officePhoneNo ?? "";
+                            _regionModel = _selectedclient?.country;
+                            _stateModel = _selectedclient?.state;
+                            _cityModel = _selectedclient?.city;
+                            _companyZipController.text =
+                                _selectedclient?.postalCode ?? "";
+                            _companyAddressController.text =
+                                _selectedclient?.companyAddress ?? "";
+                          }
+                          setState(() {
+                            _companyrefresh = false;
+                          });
+                        }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Icon(Icons.add, color: AppColors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -466,6 +554,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<RegionModel>(
             label: 'Country',
+            initialValue: _regionModel,
             asyncItems: () async {
               var countries = await RegionService.getCountries();
               return countries;
@@ -481,6 +570,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<StateModel>(
             label: 'State',
+            initialValue: _stateModel,
             asyncItems: () async {
               if (_regionModel == null) return [];
               var states = await RegionService.getStates(
@@ -499,6 +589,7 @@ class _LeadCreateState extends State<LeadCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<CityModel>(
             label: 'City',
+            initialValue: _cityModel,
             asyncItems: () async {
               if (_regionModel == null || _stateModel == null) return [];
               var cities = await RegionService.getCities(
@@ -567,26 +658,27 @@ class _LeadCreateState extends State<LeadCreate> {
 
         final workflow = await EmployeeService.getUserWorkflow();
 
-        ClientModel clientModel = ClientModel(
-          clientName: '',
-          email: '',
-          password: '',
-          mobileNumber: '',
-          loginAllowed: false,
-          receiveEmailNotifications: false,
-          companyName: _companyNameController.text.trim(),
-          officePhoneNo: _companyMobileController.text,
-          officialWebsite: _companyWebsiteController.text.trim(),
-          postalCode: _companyZipController.text.trim(),
-          companyAddress: _companyAddressController.text.trim(),
-          country: _regionModel,
-          state: _stateModel,
-          city: _cityModel,
-          createdBy: await Spdb.getUser(),
-          isCompany: true,
-        );
+        // ClientModel clientModel = ClientModel(
+        //   clientName: '',
+        //   email: '',
+        //   password: '',
+        //   mobileNumber: '',
+        //   loginAllowed: false,
+        //   receiveEmailNotifications: false,
+        //   // companyName: _companyNameController.text.trim(),
+        //   companyName: _selectedclient?.companyName ?? '',
+        //   officePhoneNo: _companyMobileController.text,
+        //   officialWebsite: _companyWebsiteController.text.trim(),
+        //   postalCode: _companyZipController.text.trim(),
+        //   companyAddress: _companyAddressController.text.trim(),
+        //   country: _regionModel,
+        //   state: _stateModel,
+        //   city: _cityModel,
+        //   createdBy: await Spdb.getUser(),
+        //   isCompany: true,
+        // );
 
-        var clientId = await ClientService.createClient(client: clientModel);
+        // var clientId = await ClientService.createClient(client: clientModel);
 
         final leadModel = LeadModel(
           // salutation: _salutation,
@@ -600,7 +692,7 @@ class _LeadCreateState extends State<LeadCreate> {
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text.trim(),
           attachments: attachments,
-          companyName: _companyNameController.text.trim(),
+          companyName: _selectedclient?.companyName ?? _companyNameController.text.trim(),
           companyWebsite: _companyWebsiteController.text.trim(),
           companyMobile: _companyMobileController.text.trim(),
           companyZipCode: _companyZipController.text.trim(),
@@ -610,7 +702,8 @@ class _LeadCreateState extends State<LeadCreate> {
           companyCity: _cityModel,
           createdBy: await Spdb.getUser(),
           workflow: workflow,
-          clientId: clientId,
+          clientId: _selectedclient?.uid,
+          // clientId: clientId,
         );
 
         await LeadService.createLead(lead: leadModel);
