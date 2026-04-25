@@ -316,6 +316,7 @@ class _DealCreateState extends State<DealCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<RegionModel>(
             label: 'Country',
+            initialValue: _regionModel,
             asyncItems: () async {
               var countries = await RegionService.getCountries();
               return countries;
@@ -331,6 +332,7 @@ class _DealCreateState extends State<DealCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<StateModel>(
             label: 'State',
+            initialValue: _stateModel,
             asyncItems: () async {
               if (_regionModel == null) return [];
               var states = await RegionService.getStates(
@@ -349,6 +351,7 @@ class _DealCreateState extends State<DealCreate> {
           width: itemWidth,
           child: CustomFutureSearchableDropdown<CityModel>(
             label: 'City',
+            initialValue: _cityModel,
             asyncItems: () async {
               if (_regionModel == null || _stateModel == null) return [];
               var cities = await RegionService.getCities(

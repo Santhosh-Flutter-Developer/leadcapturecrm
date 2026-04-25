@@ -21,17 +21,17 @@ class _ContactCreateState extends State<ContactCreate> {
 
   final _clientName = TextEditingController();
   final _email = TextEditingController();
-  final _password = TextEditingController();
+  // final _password = TextEditingController();
   final _mobile = TextEditingController();
 
   File? _profileImage;
   String? _salutation;
   String? _gender;
-  String? _language;
+  // String? _language;
 
   final bool _loginAllowed = true;
   final bool _emailNotify = true;
-  bool _passwordVisible = false;
+  // bool _passwordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -97,20 +97,21 @@ class _ContactCreateState extends State<ContactCreate> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(
-                    label: "Password",
-                    controller: _password,
-                    obsecureText: !_passwordVisible,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _passwordVisible ? Iconsax.eye : Iconsax.eye_slash,
-                      ),
-                      onPressed: () =>
-                          setState(() => _passwordVisible = !_passwordVisible),
-                    ),
-                  ),
-                ),
+                Expanded(child: Container()),
+                // Expanded(
+                //   child: FormFields(
+                //     label: "Password",
+                //     controller: _password,
+                //     obsecureText: !_passwordVisible,
+                //     suffixIcon: IconButton(
+                //       icon: Icon(
+                //         _passwordVisible ? Iconsax.eye : Iconsax.eye_slash,
+                //       ),
+                //       onPressed: () =>
+                //           setState(() => _passwordVisible = !_passwordVisible),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -131,13 +132,14 @@ class _ContactCreateState extends State<ContactCreate> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: FormDropdownSearch(
-                    label: "Language",
-                    items: AppStrings.spokenLanguages,
-                    onChanged: (v) => _language = v,
-                  ),
-                ),
+                // Expanded(
+                //   child: FormDropdownSearch(
+                //     label: "Language",
+                //     items: AppStrings.spokenLanguages,
+                //     onChanged: (v) => _language = v,
+                //   ),
+                // ),
+                Expanded(child: Container()),
                 const SizedBox(width: 16),
                 Expanded(child: Container()),
               ],
@@ -286,10 +288,10 @@ class _ContactCreateState extends State<ContactCreate> {
         salutation: _salutation,
         clientName: _clientName.text.trim(),
         email: _email.text.trim(),
-        password: _password.text,
+        // password: _password.text,
         mobileNumber: _mobile.text,
         gender: _gender,
-        changeLanguage: _language,
+        // changeLanguage: _language,
         loginAllowed: _loginAllowed,
         receiveEmailNotifications: _emailNotify,
         profilePictureUrl: imageUrl,
@@ -301,7 +303,9 @@ class _ContactCreateState extends State<ContactCreate> {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      Navigator.pop(context, true);
+      Navigator.pop(context, {
+        "status":true,
+        "contact":client});
       FlushBar.show(context, "Contact created", isSuccess: true);
     } catch (e, st) {
       debugPrint("$e, $st");
