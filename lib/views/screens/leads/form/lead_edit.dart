@@ -139,9 +139,21 @@ class _LeadEditState extends State<LeadEdit> {
             (c) => c.isCompany == false && (c.clientName?.isNotEmpty ?? false),
           )
           .toList();
-      _selectedclient= await ClientService.getClient(uid: _leadModel.clientId ?? '');
-       _selectedContact = await ClientService.getClient(
-        uid: _leadModel.clientId ?? '',
+      if (_leadModel.clientId?.isNotEmpty == true) {
+        final resolvedClient = await ClientService.getClient(uid: _leadModel.clientId!);
+        if (resolvedClient.isCompany) {
+          _selectedclient = resolvedClient;
+        } else {
+          _selectedContact = resolvedClient;
+        }
+      }
+      _selectedclient ??= _clients.cast<ClientModel?>().firstWhere(
+        (c) => c?.companyName == _leadModel.companyName,
+        orElse: () => null,
+      );
+      _selectedContact ??= _contacts.cast<ClientModel?>().firstWhere(
+        (c) => c?.clientName == _leadModel.clientName,
+        orElse: () => null,
       );
     } catch (e, st) {
       await ErrorService.recordError(e, st);

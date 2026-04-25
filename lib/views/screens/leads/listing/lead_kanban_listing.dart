@@ -505,7 +505,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                                 child: Center(child: LinearProgressIndicator()),
                               )
                             : FormDropdownSearch(
-                                label: '',
                                 initialItem: selectedCompany?.companyName ?? '',
                                 items: companies.map((e) => e.companyName).toList(),
                                 onChanged: (value) {
@@ -533,7 +532,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                                 child: Center(child: LinearProgressIndicator()),
                               )
                             : FormDropdownSearch(
-                                label: '',
                                 initialItem: selectedContact?.clientName ?? '',
                                 items: contacts.map((e) => e.clientName).toList(),
                                 onChanged: (value) {
@@ -565,8 +563,22 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                                     leadStatus: status.uid!,
                                     createdBy: await Spdb.getUser(),
                                     workflow: await EmployeeService.getUserWorkflow(),
+                                    // company fields
                                     companyName: selectedCompany?.companyName,
+                                    companyWebsite: selectedCompany?.officialWebsite,
+                                    companyMobile: selectedCompany?.officePhoneNo,
+                                    companyCountry: selectedCompany?.country,
+                                    companyState: selectedCompany?.state,
+                                    companyCity: selectedCompany?.city,
+                                    companyAddress: selectedCompany?.companyAddress,
+                                    companyZipCode: selectedCompany?.postalCode,
+                                    // contact fields
                                     clientId: selectedContact?.uid ?? selectedCompany?.uid,
+                                    clientName: selectedContact?.clientName,
+                                    clientEmail: selectedContact?.email,
+                                    clientMobile: selectedContact?.mobileNumber,
+                                    clientGender: selectedContact?.gender,
+                                    salutation: selectedContact?.salutation,
                                   );
 
                                   await LeadService.createLead(lead: lead);
