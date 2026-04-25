@@ -16,6 +16,10 @@ class DealModel {
   final String? companyName;
   final String? companyWebsite;
   final String? companyMobile;
+  final String? clientName;
+  final String? clientEmail;
+  final String? clientMobile;
+  final String? clientGender;
   final RegionModel? companyCountry;
   final StateModel? companyState;
   final CityModel? companyCity;
@@ -46,6 +50,10 @@ class DealModel {
     this.companyCity,
     this.companyAddress,
     this.companyZipCode,
+     this.clientName,
+    this.clientEmail,
+    this.clientMobile,
+    this.clientGender,
     required this.createdBy,
     this.workFlow = const [],
     this.clientId,
@@ -73,6 +81,10 @@ class DealModel {
     CityModel? companyCity,
     String? companyAddress,
     String? companyZipCode,
+    String? clientName,
+    String? clientEmail,
+    String? clientMobile,
+    String? clientGender,
     UserDataModel? createdBy,
     String? clientId,
     List<String>? workFlow,
@@ -98,6 +110,10 @@ class DealModel {
       companyCity: companyCity ?? this.companyCity,
       companyAddress: companyAddress ?? this.companyAddress,
       companyZipCode: companyZipCode ?? this.companyZipCode,
+      clientName: clientName ?? this.clientName,
+      clientEmail: clientEmail ?? this.clientEmail,
+      clientMobile: clientMobile ?? this.clientMobile,
+      clientGender: clientGender ?? this.clientGender,
       createdBy: createdBy ?? this.createdBy,
       workFlow: workFlow ?? this.workFlow,
       clientId: clientId ?? this.clientId,
@@ -124,6 +140,10 @@ class DealModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
+       'clientName': clientName,
+      'clientEmail':clientEmail,
+      'clientMobile':clientMobile,
+      'clientGender':clientGender,
       'createdBy': createdBy.toMap(),
       'workFlow': workFlow,
       'clientId': clientId,
@@ -150,6 +170,10 @@ class DealModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
+       'clientName': clientName,
+      'clientEmail': clientEmail,
+      'clientMobile': clientMobile,
+      'clientGender': clientGender,
       'workFlow': workFlow,
       'clientId': clientId,
       'createdBy': createdBy.toMap(),
@@ -221,6 +245,18 @@ class DealModel {
           map['companyZipCode'] != null && map['companyZipCode'] is String
           ? map['companyZipCode'] as String
           : null,
+          clientName: map['clientName'] != null && map['clientName'] is String
+          ? map['clientName'] as String
+          : null,   
+      clientEmail: map['clientEmail'] != null && map['clientEmail'] is String
+          ? map['clientEmail'] as String
+          : null,
+      clientMobile: map['clientMobile'] != null && map['clientMobile'] is String
+          ? map['clientMobile'] as String
+          : null,
+      clientGender: map['clientGender'] != null && map['clientGender'] is String
+          ? map['clientGender'] as String
+          : null, 
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
@@ -247,7 +283,7 @@ class DealModel {
 
   @override
   String toString() {
-    return 'DealModel(uid: $uid, dealNumber: $dealNumber, salutation: $salutation, dealName: $dealName, dealEmail: $dealEmail, dealValue: $dealValue, allowFollowUp: $allowFollowUp, dealStatus: $dealStatus, attachments: $attachments, notes: $notes, companyName: $companyName, companyWebsite: $companyWebsite, companyMobile: $companyMobile, companyCountry: $companyCountry, companyState: $companyState, companyCity: $companyCity, companyAddress: $companyAddress, companyZipCode: $companyZipCode, createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'DealModel(uid: $uid, dealNumber: $dealNumber, salutation: $salutation, dealName: $dealName, dealEmail: $dealEmail, dealValue: $dealValue, allowFollowUp: $allowFollowUp, dealStatus: $dealStatus, attachments: $attachments, notes: $notes, companyName: $companyName, companyWebsite: $companyWebsite, companyMobile: $companyMobile, companyCountry: $companyCountry, companyState: $companyState, companyCity: $companyCity, companyAddress: $companyAddress, companyZipCode: $companyZipCode,clientName: $clientName, clientEmail: $clientEmail, clientMobile: $clientMobile, clientGender: $clientGender,  createdBy: $createdBy, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -272,6 +308,10 @@ class DealModel {
         other.companyCity == companyCity &&
         other.companyAddress == companyAddress &&
         other.companyZipCode == companyZipCode &&
+        other.clientName == clientName &&
+        other.clientEmail == clientEmail &&
+        other.clientMobile == clientMobile &&
+        other.clientGender == clientGender &&
         other.createdBy == createdBy &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -297,6 +337,10 @@ class DealModel {
         companyCity.hashCode ^
         companyAddress.hashCode ^
         companyZipCode.hashCode ^
+        clientName.hashCode ^
+        clientEmail.hashCode ^
+        clientMobile.hashCode ^
+        clientGender.hashCode ^
         createdBy.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;

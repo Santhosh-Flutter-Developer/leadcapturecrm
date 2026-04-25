@@ -274,6 +274,11 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         'companyZipCode': leadDetails.companyZipCode,
         'companyMobile': leadDetails.companyMobile,
         'companyAddress': leadDetails.companyAddress,
+                'clientName': leadDetails.clientName,
+        'salutation': leadDetails.salutation,
+        'clientEmail': leadDetails.clientEmail,
+        'clientMobile': leadDetails.clientMobile,
+        'clientGender': leadDetails.clientGender,
         'dealValue': leadDetails.leadValue,
         'notes': leadDetails.notes,
       };

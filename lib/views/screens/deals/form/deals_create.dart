@@ -41,6 +41,11 @@ class _DealCreateState extends State<DealCreate> {
   final TextEditingController _companyAddressController =
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
+    final TextEditingController _clientName = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  final TextEditingController _salutation = TextEditingController();
+  final TextEditingController _gender = TextEditingController();
 
   bool _showCompanyDetails = false;
   late Future _future;
@@ -73,6 +78,11 @@ class _DealCreateState extends State<DealCreate> {
       _companyMobileController.text = deal.companyMobile ?? '';
       _companyAddressController.text = deal.companyAddress ?? '';
       _companyZipController.text = deal.companyZipCode ?? '';
+       _clientName.text = deal.clientName ?? '';
+      _email.text = deal.clientEmail ?? '';
+      _mobile.text = deal.clientMobile ?? '';
+      _gender.text = deal.clientGender ?? '';
+      _salutation.text = deal.salutation ?? '';
 
       _allowFollowUp = deal.allowFollowUp;
       _regionModel = deal.companyCountry;
@@ -113,6 +123,11 @@ class _DealCreateState extends State<DealCreate> {
     _companyCityController.dispose();
     _companyAddressController.dispose();
     _companyZipController.dispose();
+     _clientName.dispose();
+    _email.dispose();
+    _mobile.dispose();
+    _gender.dispose();
+    _salutation.dispose();
     super.dispose();
   }
 
@@ -161,6 +176,14 @@ class _DealCreateState extends State<DealCreate> {
                                     _buildCompanyDetails(constraints, 3),
                               ),
                               expandable: true,
+                            ),
+                             const SizedBox(height: 16),
+                            _buildSectionCard(
+                              "Contact Details",
+                              LayoutBuilder(
+                                builder: (context, constraints) =>
+                                    _buildContactDetails(constraints, 3),
+                              ),
                             ),
                             const SizedBox(height: 15),
                             _buildSectionCard(
@@ -269,6 +292,64 @@ class _DealCreateState extends State<DealCreate> {
             maxLines: 3,
           ),
         ),
+      ],
+    );
+  }
+
+
+  Widget _buildContactDetails(BoxConstraints constraints, int gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double spacing = 16.0;
+    const double minWidth = 220.0;
+    final bool canGrid =
+        currentWidth >= (minWidth * gridCounts + spacing * (gridCounts - 1));
+    final double itemWidth = canGrid
+        ? (currentWidth - spacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+    return Wrap(
+      spacing: spacing,
+      runSpacing: 10,
+      children: [
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            key: ValueKey(_salutation.text),
+            label: "Salutation",
+            initialItem: _salutation.text,
+            items: const ["Mr.", "Mrs.", "Ms.", "Dr."],
+            onChanged: (v) => _salutation.text = v,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+                    label: "Name",
+                    controller: _clientName,
+                    isRequired: true,
+                  ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+                    label: "Email",
+                    controller: _email,
+                    isRequired: true,
+                  ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(label: "Mobile", controller: _mobile),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+                    label: "Gender",
+                    key: ValueKey(_gender.text),
+                    initialItem: _gender.text,
+                    items: const ["Male", "Female", "Other"],
+                    onChanged: (v) => _gender.text = v,
+                  ),
+        )
       ],
     );
   }
@@ -519,10 +600,12 @@ class _DealCreateState extends State<DealCreate> {
 
         final workflow = await EmployeeService.getUserWorkflow();
         ClientModel clientModel = ClientModel(
-          clientName: '',
-          email: '',
-          password: '',
-          mobileNumber: '',
+          clientName: _clientName.text.trim(),
+          email: _email.text.trim(),
+          // password: '',
+          mobileNumber: _mobile.text.trim(),
+          salutation: _salutation.text.trim(),
+          gender: _gender.text.trim(),
           loginAllowed: false,
           receiveEmailNotifications: false,
           companyName: _companyNameController.text.trim(),
@@ -552,6 +635,11 @@ class _DealCreateState extends State<DealCreate> {
           companyMobile: _companyMobileController.text.trim(),
           companyZipCode: _companyZipController.text.trim(),
           companyAddress: _companyAddressController.text.trim(),
+          clientName: _clientName.text.trim(),
+          clientEmail: _email.text.trim(),
+          clientGender: _gender.text.trim(),
+          clientMobile: _mobile.text.trim(),
+          salutation: _salutation.text.trim(), 
           companyCountry: _regionModel,
           companyState: _stateModel,
           companyCity: _cityModel,
