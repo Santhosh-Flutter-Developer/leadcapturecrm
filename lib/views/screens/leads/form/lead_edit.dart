@@ -33,19 +33,27 @@ class _LeadEditState extends State<LeadEdit> {
   final TextEditingController _companyAddressController =
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
+  final TextEditingController _clientName = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  final TextEditingController _salutation = TextEditingController();
+  final TextEditingController _gender = TextEditingController();
 
   // String? _salutation;
   // final bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
   bool _companyrefresh = false;
+  bool _contactrefresh = false;
   late Future _future;
 
   List<LeadCategoryModel> _leadCategories = [];
   List<LeadPriorityModel> _leadPriorities = [];
   List<LeadStatusModel> _leadStatus = [];
   List<ClientModel> _clients = [];
+  List<ClientModel> _contacts = [];
   ClientModel? _selectedclient;
+  ClientModel? _selectedContact;
   LeadCategoryModel? _leadCategory;
   LeadPriorityModel? _leadPriority;
   LeadStatusModel? _leadStatusModel;
@@ -81,6 +89,11 @@ class _LeadEditState extends State<LeadEdit> {
       _companyAddressController.text = _leadModel.companyAddress ?? '';
       _companyZipController.text = _leadModel.companyZipCode ?? '';
       // _salutation = _leadModel.salutation;
+          _clientName.text = _leadModel.clientName ?? '';
+      _email.text = _leadModel.clientEmail ?? '';
+      _mobile.text = _leadModel.clientMobile ?? '';
+      _gender.text = _leadModel.clientGender ?? '';
+      _salutation.text = _leadModel.salutation ?? '';
       _selectedLeadSource = _leadModel.leadSource;
       _regionModel = _leadModel.companyCountry;
       _stateModel = _leadModel.companyState;
@@ -110,15 +123,37 @@ class _LeadEditState extends State<LeadEdit> {
       _leadCategories.clear();
       _leadPriorities.clear();
       _leadStatus.clear();
+      _leadSource.clear();
       _clients.clear();
 
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
+      _leadSource.addAll(await LeadSourceService.getAllLeadSource());
       _clients = (await ClientService.getAllClients())
           .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
           .toList();
-      _selectedclient= await ClientService.getClient(uid: _leadModel.clientId ?? '');
+      _contacts = (await ClientService.getAllClients())
+          .where(
+            (c) => c.isCompany == false && (c.clientName?.isNotEmpty ?? false),
+          )
+          .toList();
+      if (_leadModel.clientId?.isNotEmpty == true) {
+        final resolvedClient = await ClientService.getClient(uid: _leadModel.clientId!);
+        if (resolvedClient.isCompany) {
+          _selectedclient = resolvedClient;
+        } else {
+          _selectedContact = resolvedClient;
+        }
+      }
+      _selectedclient ??= _clients.cast<ClientModel?>().firstWhere(
+        (c) => c?.companyName == _leadModel.companyName,
+        orElse: () => null,
+      );
+      _selectedContact ??= _contacts.cast<ClientModel?>().firstWhere(
+        (c) => c?.clientName == _leadModel.clientName,
+        orElse: () => null,
+      );
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -136,6 +171,11 @@ class _LeadEditState extends State<LeadEdit> {
     _companyMobileController.dispose();
     _companyAddressController.dispose();
     _companyZipController.dispose();
+     _clientName.dispose();
+    _email.dispose();
+    _mobile.dispose();
+    _salutation.dispose();
+    _gender.dispose();
     super.dispose();
   }
 
@@ -184,6 +224,14 @@ class _LeadEditState extends State<LeadEdit> {
                                     _buildCompanyDetails(constraints, 3),
                               ),
                               expandable: true,
+                            ),
+                             const SizedBox(height: 15),
+                            _buildSectionCard(
+                              "Contact Details",
+                              LayoutBuilder(
+                                builder: (context, constraints) =>
+                                    _buildContactDetails(constraints, 3),
+                              ),
                             ),
                             const SizedBox(height: 15),
                             _buildSectionCard(
@@ -490,6 +538,137 @@ class _LeadEditState extends State<LeadEdit> {
     );
   }
 
+  Widget _buildContactDetails(constraints, gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >=
+        (minColumnWidth * gridCounts + horizontalSpacing * (gridCounts - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+
+    return Wrap(
+      spacing: horizontalSpacing,
+      runSpacing: verticalSpacing,
+      children: [
+        _contactrefresh == true
+            ? SizedBox()
+            : SizedBox(
+                width: itemWidth,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: FormDropdownSearch(
+                        label: 'Name',
+                        isRequired: true,
+                        initialItem: _clientName.text,
+                        items: _contacts.map((e) => e.clientName).toList(),
+                        onChanged: (value) {
+                          _selectedContact = _contacts
+                              .cast<ClientModel?>()
+                              .firstWhere(
+                                (cat) => cat?.clientName == value,
+                                orElse: () => null,
+                              );
+                          _clientName.text = _selectedContact?.clientName ?? '';
+                          _email.text = _selectedContact?.email ?? "";
+                          _mobile.text = _selectedContact?.mobileNumber ?? "";
+                          _salutation.text = _selectedContact?.salutation ?? '';
+                          _gender.text = _selectedContact?.gender ?? '';
+                        },
+                        validator: (value) =>
+                            value == null ? "* Required" : null,
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    InkWell(
+                      onTap: () async {
+                        final form = ContactCreate();
+                        dynamic val;
+                        if (kIsMobile) {
+                          val = await Sheet.showSheet(context, widget: form);
+                        } else {
+                          val = await GeneralDialog.showRTLSheet(context, form);
+                        }
+                        if (val is Map && val["status"] == true) {
+                          setState(() {
+                            _contactrefresh = true;
+                          });
+                          _contacts = (await ClientService.getAllClients())
+                              .where(
+                                (c) =>
+                                    c.isCompany == false &&
+                                    (c.clientName?.isNotEmpty ?? false),
+                              )
+                              .toList();
+                          if (val["contact"] != null) {
+                            _selectedContact = val["contact"];
+                            _clientName.text =
+                                _selectedContact?.clientName ?? '';
+                            _email.text = _selectedContact?.email ?? "";
+                            _mobile.text = _selectedContact?.mobileNumber ?? "";
+                            _salutation.text = _selectedContact?.salutation ?? '';
+                            _gender.text = _selectedContact?.gender ?? '';
+                          }
+                          setState(() {
+                            _contactrefresh = false;
+                          });
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: Icon(Icons.add, color: AppColors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            label: "Salutation",
+            initialItem: _salutation.text,
+            items: const ["Mr.", "Mrs.", "Ms.", "Dr."],
+            onChanged: (v) => _salutation.text = v,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Email",
+            controller: _email,
+            isRequired: true,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(label: "Mobile", controller: _mobile),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            label: "Gender",
+            initialItem: _gender.text,
+            items: const ["Male", "Female", "Other"],
+            onChanged: (v) => _gender.text = v,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCompanyDetails(constraints, gridCounts) {
     final double currentWidth = constraints.maxWidth;
     const double horizontalSpacing = 16.0;
@@ -765,6 +944,11 @@ class _LeadEditState extends State<LeadEdit> {
           companyMobile: _companyMobileController.text,
           companyZipCode: _companyZipController.text,
           companyAddress: _companyAddressController.text,
+           clientName: _clientName.text,
+          clientEmail: _email.text,
+          clientMobile: _mobile.text,
+          clientGender: _gender.text,
+          salutation: _salutation.text,
           companyCountry: _regionModel,
           companyState: _stateModel,
           companyCity: _cityModel,

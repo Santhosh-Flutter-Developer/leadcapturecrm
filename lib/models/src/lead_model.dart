@@ -27,6 +27,10 @@ class LeadModel {
   final CityModel? companyCity;
   final String? companyAddress;
   final String? companyZipCode;
+  final String? clientName;
+  final String? clientEmail;
+  final String? clientMobile;
+  final String? clientGender;
   final UserDataModel createdBy;
   final List<String> workflow;
   final String? clientId;
@@ -57,6 +61,10 @@ class LeadModel {
     this.companyCity,
     this.companyAddress,
     this.companyZipCode,
+    this.clientName,
+    this.clientEmail,
+    this.clientGender,
+    this.clientMobile,
     required this.createdBy,
     this.workflow = const [],
     this.clientId,
@@ -89,6 +97,10 @@ class LeadModel {
     CityModel? companyCity,
     String? companyAddress,
     String? companyZipCode,
+    String? clientName,
+    String? clientEmail,
+    String? clientMobile,
+    String? clientGender,
     List<String>? workflow,
     String? clientId,
     UserDataModel? createdBy,
@@ -119,6 +131,10 @@ class LeadModel {
       companyCity: companyCity ?? this.companyCity,
       companyAddress: companyAddress ?? this.companyAddress,
       companyZipCode: companyZipCode ?? this.companyZipCode,
+      clientName: clientName ?? this.clientName,
+      clientEmail: clientEmail ?? this.clientEmail,
+      clientMobile: clientMobile ?? this.clientMobile,
+      clientGender: clientGender ?? this.clientGender,
       workflow: workflow ?? this.workflow,
       clientId: clientId ?? this.clientId,
       createdBy: createdBy ?? this.createdBy,
@@ -150,6 +166,10 @@ class LeadModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
+      'clientName':clientName,
+      'clientEmail':clientEmail,
+      'clientMobile': clientMobile,
+      'clientGender': clientGender,
       'workflow': workflow,
       'clientId': clientId,
       'createdBy': createdBy.toMap(),
@@ -181,6 +201,10 @@ class LeadModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
+      'clientName':clientName,
+      'clientEmail':clientEmail,
+      'clientMobile': clientMobile,
+      'clientGender': clientGender,
       'workflow': workflow,
       'clientId': clientId,
       'createdBy': createdBy.toMap(),
@@ -266,6 +290,18 @@ class LeadModel {
           map['companyZipCode'] != null && map['companyZipCode'] is String
           ? map['companyZipCode'] as String
           : null,
+          clientName: map['clientName'] != null && map['clientName'] is String
+          ? map['clientName'] as String
+          : null,
+      clientEmail: map['clientEmail'] != null && map['clientEmail'] is String
+          ? map['clientEmail'] as String
+          : null,
+      clientMobile: map['clientMobile'] != null && map['clientMobile'] is String
+          ? map['clientMobile'] as String
+          : null,
+      clientGender: map['clientGender'] != null && map['clientGender'] is String
+          ? map['clientGender'] as String
+          : null, 
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
@@ -296,11 +332,25 @@ class LeadModel {
     required UserDataModel createdBy,
     List<String> workflow = const [],
     LeadSourceModel? leadSource,
+    String? companyName,
+    String? companyWebsite,
+    String? companyMobile,
+    RegionModel? companyCountry,
+    StateModel? companyState,
+    CityModel? companyCity,
+    String? companyAddress,
+    String? companyZipCode,
+    String? clientId,
+    String? clientName,
+    String? clientEmail,
+    String? clientMobile,
+    String? clientGender,
+    String? salutation,
   }) {
     return LeadModel(
       uid: null,
       leadNumber: null,
-      salutation: null,
+      salutation: salutation,
       leadName: leadName,
       leadValue: leadValue,
       leadStatus: leadStatus,
@@ -311,17 +361,21 @@ class LeadModel {
       // allowFollowUp: true,
       attachments: const [],
       notes: '',
-      companyName: null,
-      companyWebsite: null,
-      companyMobile: null,
-      companyCountry: null,
-      companyState: null,
-      companyCity: null,
-      companyAddress: null,
-      companyZipCode: null,
+      companyName: companyName,
+      companyWebsite: companyWebsite,
+      companyMobile: companyMobile,
+      companyCountry: companyCountry,
+      companyState: companyState,
+      companyCity: companyCity,
+      companyAddress: companyAddress,
+      companyZipCode: companyZipCode,
+      clientEmail: clientEmail,
+      clientGender: clientGender,
+      clientMobile: clientMobile,
+      clientName: clientName,
       createdBy: createdBy,
       workflow: workflow,
-      clientId: null,
+      clientId: clientId,
       dealId: null,
       leadsConverted: false,
       createdAt: DateTime.now(),

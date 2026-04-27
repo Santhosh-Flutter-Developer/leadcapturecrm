@@ -12,7 +12,7 @@ final AudioPlayer _player = AudioPlayer();
 
 class FirestoreNotificationListener {
   static final FirebaseConfig firebase = FirebaseConfig();
-  static String? lastNotificationId;
+  static final Set<String> _shownIds = {};
 
   static void listenForNotifications() async {
     var cid = await Spdb.getCid();
@@ -35,59 +35,41 @@ class FirestoreNotificationListener {
                 );
 
                 if (DateTime.now().difference(createdAt).inSeconds < 60) {
-                  String docId = change.doc.id; // Unique ID of the document
-                  // Skip past notifications
+                  String docId = change.doc.id;
 
-                  if (lastNotificationId != null &&
-                      docId == lastNotificationId) {
-                    continue;
-                  }
-
-                  lastNotificationId = docId; // Update last seen notification
+                  if (_shownIds.contains(docId)) continue;
+                  _shownIds.add(docId);
 
                   String title = data?['title'] ?? 'New Notification';
-                  String message = data?['message'] ?? 'You have a new message';
-                  String senderId = data?['senderId'] ?? '';
+                  String message =
+                      data?['body'] ?? data?['message'] ?? 'You have a new message';
 
                   Map<String, dynamic> payload = data?['payload'] != null
                       ? data!['payload']
                       : {};
 
-                  if (senderId != uid) {
-                    LocalNotification notification = LocalNotification(
-                      title: title,
-                      body: message,
+                  LocalNotification notification = LocalNotification(
+                    title: title,
+                    body: message,
+                  );
+
+                  notification.onClick = () async {
+                    await windowManager.focus();
+                    await windowManager.show();
+
+                    var navigator = navigatorKey.currentState;
+                    if (navigator == null) return;
+                    bool isAdmin = await Spdb.isAdminLoggedIn();
+
+                    navigator.pushAndRemoveUntil(
+                      CupertinoPageRoute(
+                        builder: (_) => MainScreen(isAdmin: isAdmin),
+                      ),
+                      (route) => false,
                     );
-
-                    notification.onClick = () async {
-                      await windowManager.focus();
-                      await windowManager.show();
-
-                      var navigator = navigatorKey.currentState;
-                      if (navigator == null) return;
-                      bool isAdmin = await Spdb.isAdminLoggedIn();
-
-                      navigator.pushAndRemoveUntil(
-                        CupertinoPageRoute(
-                          builder: (_) => MainScreen(isAdmin: isAdmin),
-                        ),
-                        (route) => false,
-                      );
-                      if (payload.containsKey('type')) {
-                        // payload['type'] = payload['type'].toString().trim();
-                        // if (payload['type'] == 'task') {
-                        //   navigator.push(
-                        //     CupertinoPageRoute(
-                        //       builder: (context) =>
-                        //           TaskView(uid: payload['taskId']),
-                        //     ),
-                        //   );
-                        // }
-                      }
-                    };
-                    notification.show();
-                    _playSound();
-                  }
+                  };
+                  notification.show();
+                  _playSound();
                 }
               }
             }
