@@ -152,38 +152,61 @@ class ChatService {
     try {
       final cid = await Spdb.getCid();
 
-      final doc = await firebase.users
+      final msgRef = firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
-          .doc(messageId)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .doc(messageId);
+
+      final doc = await msgRef.get(
+        const GetOptions(source: Source.serverAndCache),
+      );
 
       if (!doc.exists) return null;
 
-      final data = doc.data()!;
+      final message = MessagesModel.fromMap(doc.id, doc.data()!);
 
-      // Convert first
-      final message = MessagesModel.fromMap(doc.id, data);
-
-      // Delete attachments
       for (final file in message.attachments) {
         await StorageService.deleteImage(file.url);
       }
 
-      // Delete Firestore document
-      await firebase.users
+      // await msgRef.update({
+      //   "deletedFor": FieldValue.arrayUnion([cid]),
+      //   "updatedAt": FieldValue.serverTimestamp(),
+      // });
+
+      await msgRef.delete();
+      final latestQuery = await firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
-          .doc(messageId)
-          .delete();
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      MessagesModel? latestMessage;
+
+      if (latestQuery.docs.isNotEmpty) {
+        latestMessage = MessagesModel.fromMap(
+          latestQuery.docs.first.id,
+          latestQuery.docs.first.data(),
+        );
+      }
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .doc(chatId)
+          .update({
+            "lastMessage": latestMessage?.toMap(),
+            "updatedAt": FieldValue.serverTimestamp(),
+          });
 
       return message;
     } catch (e, st) {
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint("$e, $st");
       await ErrorService.recordError(e, st);
       rethrow;
     }

@@ -413,7 +413,6 @@ class _ProfileState extends State<Profile> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          /// ❌ CLOSE
                                           IconButton(
                                             icon: const Icon(
                                               Icons.close,

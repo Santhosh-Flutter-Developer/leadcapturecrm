@@ -622,31 +622,43 @@ class _ChatBubbleMessageBox extends StatelessWidget {
     final spans = <InlineSpan>[];
     int currentIndex = 0;
 
-    // Sort mentions by start position
     final sortedMentions = [...mentions]
       ..sort((a, b) => (a.start ?? 0).compareTo(b.start ?? 0));
 
     for (final mention in sortedMentions) {
-      if (mention.start == null || mention.end == null) continue;
+      final start = mention.start;
+      final end = mention.end;
 
-      // Add normal text before mention
-      if (currentIndex < mention.start!) {
+      if (start == null || end == null) continue;
+
+      if (start < 0 ||
+          end < 0 ||
+          start > text.length ||
+          end > text.length ||
+          start >= end) {
+        continue;
+      }
+
+      // Normal text before mention
+      if (currentIndex < start) {
         spans.add(
           TextSpan(
-            text: text.substring(currentIndex, mention.start),
+            text: text.substring(currentIndex, start),
             style: const TextStyle(color: Colors.black),
           ),
         );
       }
 
-      // Add mention text
+      // Mention text (SAFE)
+      final mentionText = text.substring(start, end);
+
       spans.add(
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: GestureDetector(
             onTap: () => _openUserProfile(context, mention),
             child: Text(
-              text.substring(mention.start!, mention.end!),
+              mentionText,
               style: const TextStyle(
                 color: Colors.blue,
                 fontWeight: FontWeight.bold,
@@ -656,9 +668,10 @@ class _ChatBubbleMessageBox extends StatelessWidget {
         ),
       );
 
-      currentIndex = mention.end!;
+      currentIndex = end;
     }
 
+    // Remaining text
     if (currentIndex < text.length) {
       spans.add(
         TextSpan(
