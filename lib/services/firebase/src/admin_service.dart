@@ -89,7 +89,7 @@ class AdminService {
     }
   }
 
-  static Future<void> _deleteAdminProfileImage({required String uid}) async {
+  static Future<void> deleteAdminProfileImage({required String uid}) async {
     try {
       var cid = await Spdb.getCid();
       var doc = await firebase.users
@@ -98,7 +98,7 @@ class AdminService {
           .doc(uid)
           .get();
 
-      var url = doc.data()?["profilePictureUrl"];
+      var url = doc.data()?["profileImageUrl"];
 
       if (url != null) await StorageService.deleteImage(url);
 
@@ -106,7 +106,7 @@ class AdminService {
           .doc(cid)
           .collection(Collections.admins.name)
           .doc(uid)
-          .update({"profilePictureUrl": null});
+          .update({"profileImageUrl": null});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("$e, $st");
@@ -172,7 +172,7 @@ class AdminService {
   static Future<void> deleteAdmin({required String uid}) async {
     try {
       var cid = await Spdb.getCid();
-      await _deleteAdminProfileImage(uid: uid);
+      await deleteAdminProfileImage(uid: uid);
       var docRef = await firebase.users
           .doc(cid)
           .collection(Collections.admins.name)

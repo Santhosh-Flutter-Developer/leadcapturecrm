@@ -12,7 +12,7 @@ class LeadService {
     required String leadUid,
     required String activityUid,
   }) {
-    return 'lead_${leadUid}_activity_${activityUid}';
+    return 'lead_${leadUid}_activity_$activityUid';
   }
 
   static Future<void> createLead({required LeadModel lead}) async {
@@ -67,8 +67,9 @@ class LeadService {
         collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
         body: 'New lead created by ${user.name}',
+        createdAt: DateTime.now(),
         toFcms: fcmIds,
-        toUids: users,
+        toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.lead,
         payload: {'leadId': leadDoc.id},
@@ -122,8 +123,9 @@ class LeadService {
         collectionId: await Spdb.getCid() ?? '',
         title: 'Lead : ${lead.leadName}',
         body: 'Lead has been updated by ${user.name}',
+        createdAt: DateTime.now(),
         toFcms: fcmIds,
-        toUids: users,
+        toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.lead,
         payload: {},

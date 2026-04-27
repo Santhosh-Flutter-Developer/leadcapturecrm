@@ -257,7 +257,7 @@ class EmployeeModel {
       devices: parseDevices(map['devices']),
       isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
       createdBy: map['createdBy'] != null
-          ? UserDataModel.fromMap(map['createdBy'])
+          ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),
       createdAt: map['createdAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])

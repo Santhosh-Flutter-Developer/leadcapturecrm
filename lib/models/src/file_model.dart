@@ -4,12 +4,15 @@ class FileModel {
   final int size;
   final String extension;
   final String mimeType;
+  final DateTime? createdAt;
+
   FileModel({
     required this.name,
     required this.url,
     required this.size,
     required this.extension,
     required this.mimeType,
+    this.createdAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +22,7 @@ class FileModel {
       'size': size,
       'extension': extension,
       'mimeType': mimeType,
+      "createdAt": createdAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -35,6 +39,9 @@ class FileModel {
       mimeType: map['mimeType'] != null && map['mimeType'] is String
           ? map['mimeType']
           : '',
+      createdAt: map['createdAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
+          : null,
     );
   }
 }

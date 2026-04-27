@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/utils/src/download.dart';
+import 'package:path/path.dart' as path;
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
@@ -25,24 +27,58 @@ class ChatAttachment extends StatefulWidget {
 }
 
 class _ChatAttachmentState extends State<ChatAttachment> {
-  List<MessagesModel> messages = [];
+  List<MessagesModel> _messages = [];
   List<FileModel> media = [];
   List<String> links = [];
   List<FileModel> docs = [];
-  late Future _future;
+
+  bool _loading = true;
 
   @override
   void initState() {
-    _future = _init();
     super.initState();
+    _init();
   }
 
-  Future _init() async {
-    var messages = await ChatService.getChatMessages(uid: widget.chatId);
-    media = messages.media();
-    links = messages.links();
-    docs = messages.documents();
-    setState(() {});
+  Future<void> _init() async {
+    setState(() => _loading = true);
+
+    final result = await ChatService.getChatMessages(uid: widget.chatId);
+
+    final mediaList = <FileModel>[];
+    final linkList = <String>{}; // prevent duplicates
+    final docList = <FileModel>[];
+
+    final regex = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+
+    for (final msg in result) {
+      // 🔥 1. MEDIA + DOCS FROM ATTACHMENTS
+      for (final file in msg.attachments) {
+        final mime = file.mimeType.toLowerCase();
+
+        if (mime.startsWith('image/') || mime.startsWith('video/')) {
+          mediaList.add(file);
+        } else if (mime != 'link') {
+          docList.add(file);
+        }
+      }
+
+      // 🔥 2. LINKS FROM MESSAGE TEXT
+      final matches = regex.allMatches(msg.message);
+
+      for (final m in matches) {
+        final url = m.group(0);
+        if (url != null) linkList.add(url);
+      }
+    }
+
+    setState(() {
+      _messages = result;
+      media = mediaList;
+      links = linkList.toList();
+      docs = docList;
+      _loading = false;
+    });
   }
 
   @override
@@ -88,20 +124,11 @@ class _ChatAttachmentState extends State<ChatAttachment> {
             ],
           ),
         ),
-        body: FutureBuilder(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const WaitingLoading();
-            } else if (snapshot.hasError) {
-              return ErrorDisplay(error: snapshot.error.toString());
-            } else {
-              return TabBarView(
+        body: _loading
+            ? const WaitingLoading()
+            : TabBarView(
                 children: [_MediaTab(media), _LinksTab(links), _DocsTab(docs)],
-              );
-            }
-          },
-        ),
+              ),
       ),
     );
   }
@@ -272,7 +299,7 @@ class _DocsTab extends StatelessWidget {
               ),
             ),
             title: Text(
-              file.name,
+              path.basename(file.name),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -297,8 +324,12 @@ class _DocsTab extends StatelessWidget {
               size: 22,
               color: AttachmentColors.primary,
             ),
-            onTap: () {
-              // Trigger file download/viewing
+            onTap: () async {
+              if (file.url.isEmpty) {
+                FlushBar.show(context, "Invalid file URL", isSuccess: false);
+                return;
+              }
+              await Download.downloadFromUrl(context, file.url, file.name);
             },
           ),
         );

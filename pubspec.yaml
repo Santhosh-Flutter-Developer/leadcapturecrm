@@ -89,6 +89,7 @@ dependencies:
   syncfusion_flutter_calendar: ^31.2.18
   table_calendar: ^3.2.0
   flutter_face_api: ^8.1.765
+  image_cropper: ^12.2.1
 
 dev_dependencies:
   flutter_test:

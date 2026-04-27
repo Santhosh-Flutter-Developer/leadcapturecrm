@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:leadcapture/models/src/download_model.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
@@ -25,10 +26,10 @@ class Download {
       directory = (await getDownloadsDirectory())!;
     }
 
-    final String fileName = name ?? url.split('/').last;
-    final String savePath = '${directory.path}/$fileName';
-
-    // Create an OverlayEntry to show live progress
+    final String fileName = name != null && name.isNotEmpty
+        ? path.basename(name)
+        : path.basename(url);
+    final String savePath = path.join(directory.path, fileName);
     OverlayState overlayState = Overlay.of(context);
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -52,8 +53,6 @@ class Download {
         onReceiveProgress: (received, total) {
           if (total > 0) {
             progress = (received / total * 100).toInt();
-
-            // Rebuild overlay to reflect progress updates
             overlayEntry.markNeedsBuild();
           }
         },

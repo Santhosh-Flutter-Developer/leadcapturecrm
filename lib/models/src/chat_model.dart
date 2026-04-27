@@ -12,7 +12,10 @@ class ChatModel {
   final bool isGroupChat;
   final LastMessageModel? lastMessage;
   final bool isPinned;
+  final Map<String, dynamic>? isPinnedBy;
   final bool isFavorite;
+  final Map<String, dynamic>? isFavoriteBy;
+  final List<String>? deletedFor;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -26,7 +29,10 @@ class ChatModel {
     this.isGroupChat = false,
     this.lastMessage,
     required this.isPinned,
+    this.isPinnedBy,
     required this.isFavorite,
+    this.isFavoriteBy,
+    this.deletedFor,
     this.createdAt,
     this.updatedAt,
   });
@@ -42,7 +48,10 @@ class ChatModel {
     LastMessageModel? lastMessage,
     Map<String, List<String>>? reactions,
     bool? isPinned,
+    Map<String, dynamic>? isPinnedBy,
     bool? isFavorite,
+    Map<String, dynamic>? isFavoriteBy,
+    List<String>? deletedFor,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -56,7 +65,10 @@ class ChatModel {
       isGroupChat: isGroupChat ?? this.isGroupChat,
       lastMessage: lastMessage ?? this.lastMessage,
       isPinned: isPinned ?? this.isPinned,
+      isPinnedBy: isPinnedBy ?? this.isPinnedBy,
       isFavorite: isFavorite ?? this.isFavorite,
+      isFavoriteBy: isFavoriteBy ?? this.isFavoriteBy,
+      deletedFor: deletedFor ?? this.deletedFor,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -72,7 +84,10 @@ class ChatModel {
       'isGroupChat': isGroupChat,
       'lastMessage': lastMessage?.toMap(),
       'isPinned': isPinned,
+      'isPinnedBy': isPinnedBy,
       'isFavorite': isFavorite,
+      'isFavoriteBy': isFavoriteBy,
+      'deletedFor': deletedFor,
       'createdAt': createdAt?.millisecondsSinceEpoch,
       'updatedAt': updatedAt?.millisecondsSinceEpoch,
     };
@@ -106,7 +121,16 @@ class ChatModel {
           ? LastMessageModel.fromMap(map['lastMessage'] as Map<String, dynamic>)
           : null,
       isPinned: map['isPinned'] != null ? map['isPinned'] as bool : false,
+      isPinnedBy: map['isPinnedBy'] != null
+          ? Map<String, dynamic>.from(map['isPinnedBy'])
+          : {},
       isFavorite: map['isFavorite'] != null ? map['isFavorite'] as bool : false,
+      isFavoriteBy: map['isFavoriteBy'] != null
+          ? Map<String, dynamic>.from(map['isFavoriteBy'])
+          : {},
+      deletedFor: map['deletedFor'] != null
+          ? List<String>.from(map['deletedFor'])
+          : [],
       createdAt: map['createdAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
           : null,
@@ -121,6 +145,18 @@ class ChatModel {
   factory ChatModel.fromJson(String uid, String source) =>
       ChatModel.fromMap(uid, json.decode(source) as Map<String, dynamic>);
 
+  bool isFavoriteForUser(String uid) {
+    return isFavoriteBy?[uid] ?? isFavorite;
+  }
+
+  bool isPinnedForUser(String uid) {
+    return isPinnedBy?[uid] == true;
+  }
+
+  bool isDeletedForUser(String uid) {
+    return deletedFor?.contains(uid) ?? false;
+  }
+
   @override
   String toString() {
     return 'ChatModel(uid: $uid, createdBy: $createdBy, participants: $participants, title: $title, description: $description, isGroupChat: $isGroupChat, lastMessage: $lastMessage, createdAt: $createdAt, updatedAt: $updatedAt)';
@@ -132,34 +168,23 @@ class MessagesModel {
   final String chatId;
   final String senderId;
   final String? senderName;
-
   String message;
-
   final List<String> receiverId;
-
   final List<FileModel> attachments;
-
   final bool edited;
   final List<MessagesEditHistory> editHistory;
-
   final String? replyFor;
   final String? replyForMessageId;
-
   final String? forwardFrom;
   final String? forwardFromMessageId;
   final String? forwardFromChatId;
-
   final List<String> seenBy;
-
   final Map<String, List<String>> reactions;
-
   final bool deleted;
-
   final bool isPinned;
   final DateTime? pinnedTimeStamp;
-
+  final List<MentionModel>? mentions;
   final DateTime timestamp;
-
   final List<String> searchKeywords;
 
   MessagesModel({
@@ -182,11 +207,10 @@ class MessagesModel {
     this.deleted = false,
     this.isPinned = false,
     this.pinnedTimeStamp,
+    this.mentions,
     DateTime? timestamp,
     this.searchKeywords = const [],
   }) : timestamp = timestamp ?? DateTime.now();
-
-  // ---------------- MAP ----------------
 
   Map<String, dynamic> toMap() {
     return {
@@ -208,6 +232,7 @@ class MessagesModel {
       'deleted': deleted,
       'isPinned': isPinned,
       'pinnedTimeStamp': pinnedTimeStamp?.millisecondsSinceEpoch,
+      'mentions': mentions?.map((e) => e.toMap()).toList(),
       'timestamp': timestamp.millisecondsSinceEpoch,
       'searchKeywords': [
         ...buildSearchKeywords(message),
@@ -215,8 +240,6 @@ class MessagesModel {
       ],
     };
   }
-
-  // ---------------- FROM MAP ----------------
 
   factory MessagesModel.fromMap(String id, Map<String, dynamic> map) {
     return MessagesModel(
@@ -245,14 +268,15 @@ class MessagesModel {
           : {},
       deleted: map['deleted'] ?? false,
       isPinned: map['isPinned'] ?? false,
+      mentions: (map['mentions'] as List?)
+          ?.map((e) => MentionModel.fromMap(e))
+          .toList(),
       pinnedTimeStamp: map['pinnedTimeStamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['pinnedTimeStamp'])
           : null,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
     );
   }
-
-  // ---------------- EDIT ----------------
 
   Map<String, dynamic> toEditMap() {
     return {
@@ -271,10 +295,12 @@ class MessagesModel {
 class LastMessageModel {
   final String senderId;
   final String message;
+  final String? type;
   final DateTime? timestamp;
   LastMessageModel({
     required this.senderId,
     required this.message,
+    this.type,
     this.timestamp,
   });
 
@@ -282,6 +308,7 @@ class LastMessageModel {
     return <String, dynamic>{
       'senderId': senderId,
       'message': message,
+      'type': type,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
   }
@@ -290,6 +317,7 @@ class LastMessageModel {
     return LastMessageModel(
       senderId: map['senderId'] as String,
       message: map['message'] as String,
+      type: map['type'] as String?,
       timestamp: map['timestamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
           : null,
@@ -329,4 +357,40 @@ List<String> buildSearchKeywords(String text) {
       .where((word) => word.isNotEmpty)
       .toSet() // avoid duplicates
       .toList();
+}
+
+class MentionModel {
+  final String uid;
+  final String name;
+  final String? image;
+  final int? start;
+  final int? end;
+
+  MentionModel({
+    required this.uid,
+    required this.name,
+    this.image,
+    this.start,
+    this.end,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'name': name,
+      'image': image,
+      'start': start,
+      'end': end,
+    };
+  }
+
+  factory MentionModel.fromMap(Map<String, dynamic> map) {
+    return MentionModel(
+      uid: map['uid'] ?? '',
+      name: map['name'] ?? '',
+      image: map['image'],
+      start: map['start'],
+      end: map['end'],
+    );
+  }
 }

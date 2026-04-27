@@ -1,8 +1,14 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+// import 'package:googleapis_auth/auth_io.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
@@ -124,7 +130,6 @@ class _ProfileState extends State<Profile> {
 
     if (pickedImage == null) return;
     File imageFile = File(pickedImage.path);
-
     FlushBar.show(context, "Uploading profile picture...");
 
     try {
@@ -200,6 +205,54 @@ class _ProfileState extends State<Profile> {
       FlushBar.show(context, "Information updated", isSuccess: true);
     } catch (e) {
       FlushBar.show(context, "Update failed: $e", isSuccess: false);
+    }
+  }
+
+  Future<void> _removeProfileImage() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Remove Profile Photo"),
+        content: const Text("Are you sure you want to remove this photo?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    FlushBar.show(context, "Removing profile picture...");
+
+    try {
+      if (!isAdmin) {
+        await EmployeeService.deleteEmployeeImage(uid: employee!.uid!);
+
+        final updated = employee!.copyWith(profileImageUrl: '');
+
+        await Spdb.setEmployeeLogin(
+          model: updated,
+          cid: await Spdb.getCid() ?? '',
+        );
+
+        setState(() => employee = updated);
+      } else {
+        await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
+
+        final updated = admin!.copyWith(profileImageUrl: '');
+        setState(() => admin = updated);
+      }
+
+      FlushBar.show(context, "Profile removed", isSuccess: true);
+    } catch (e) {
+      FlushBar.show(context, "Remove failed: $e", isSuccess: false);
     }
   }
 
@@ -324,48 +377,152 @@ class _ProfileState extends State<Profile> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: ProfileColors.primary.withValues(alpha: 0.1),
-                    width: 4,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundColor: ProfileColors.background,
-                  backgroundImage: image != null ? NetworkImage(image) : null,
-                  child: image == null
-                      ? Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : "?",
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: ProfileColors.primary,
+              GestureDetector(
+                onTap: (image != null && image.isNotEmpty)
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: EdgeInsets.zero,
+                            child: SafeArea(
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: InteractiveViewer(
+                                      child: CachedNetworkImage(
+                                        imageUrl: image,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                          ),
+
+                                          Row(
+                                            children: [
+                                              if (image.isNotEmpty)
+                                                // IconButton(
+                                                //   icon: const Icon(
+                                                //     Icons.crop,
+                                                //     color: Colors.white,
+                                                //   ),
+                                                //   onPressed: () async {
+                                                //     if (image.isEmpty) return;
+                                                //     Navigator.pop(context);
+                                                //     await _cropExistingImage(
+                                                //       image,
+                                                //     );
+                                                //   },
+                                                // ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Iconsax.trash,
+                                                    color: Colors.red,
+                                                  ),
+                                                  onPressed: () async {
+                                                    Navigator.pop(context);
+                                                    await _removeProfileImage();
+                                                  },
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    bottom: 20,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Text(
+                                        "Profile Photo",
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        )
-                      : null,
-                ),
-              ),
-              if (!isAdmin)
-                Material(
-                  color: ProfileColors.primary,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: _changeProfileImage,
-                    customBorder: const CircleBorder(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(10.0),
-                      child: Icon(
-                        Iconsax.camera,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                        );
+                      }
+                    : null,
+
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ProfileColors.primary.withValues(alpha: 0.1),
+                      width: 4,
                     ),
                   ),
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundColor: ProfileColors.background,
+                    backgroundImage: (image != null && image.isNotEmpty)
+                        ? NetworkImage(image)
+                        : null,
+                    child: (image == null || image.isEmpty)
+                        ? Text(
+                            name.trim().isNotEmpty
+                                ? name.trim()[0].toUpperCase()
+                                : "?",
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              color: ProfileColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
+              ),
+
+              // if (!isAdmin)
+              Material(
+                color: ProfileColors.primary,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: _changeProfileImage,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: Icon(Iconsax.camera, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -404,6 +561,97 @@ class _ProfileState extends State<Profile> {
         ],
       ),
     );
+  }
+
+  Future<void> _cropExistingImage(String imageUrl) async {
+    try {
+      setState(() => isLoading = true);
+      final response = await dio.Dio().get(
+        imageUrl,
+        options: dio.Options(responseType: dio.ResponseType.bytes),
+      );
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/temp_profile.jpg');
+      await file.writeAsBytes(response.data);
+
+      final croppedFile = await _cropImage(file);
+
+      if (croppedFile != null) {
+        await _uploadProfileImage(croppedFile);
+      }
+    } catch (e) {
+      FlushBar.show(context, "Crop failed: $e", isSuccess: false);
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (employee == null) return;
+
+    FlushBar.show(context, "Uploading profile picture...");
+
+    try {
+      String uid = employee!.uid!;
+      String fileName = "profile_$uid.jpg";
+
+      final storageRef = FirebaseStorage.instance.ref().child(
+        "profile_images/$fileName",
+      );
+
+      await storageRef.putFile(imageFile);
+
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      final updatedEmployee = employee!.copyWith(
+        profileImageUrl: downloadUrl,
+        updatedAt: DateTime.now(),
+      );
+
+      await EmployeeService.editEmployee(
+        uid: updatedEmployee.uid!,
+        employee: updatedEmployee,
+      );
+
+      String? cid = await Spdb.getCid();
+
+      await Spdb.setEmployeeLogin(
+        model: updatedEmployee,
+        cid: cid ?? '',
+        logoUrl: downloadUrl,
+      );
+
+      setState(() => employee = updatedEmployee);
+
+      FlushBar.show(context, "Profile updated", isSuccess: true);
+    } catch (e) {
+      FlushBar.show(context, "Upload failed: $e", isSuccess: false);
+    }
+  }
+
+  Future<File?> _cropImage(File file) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: file.path,
+      compressQuality: 90,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      // cropStyle: CropStyle.circle, // ✅ IMPORTANT
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: "Adjust Profile Photo",
+          toolbarColor: Colors.black,
+          toolbarWidgetColor: Colors.white,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: "Adjust Profile Photo",
+          aspectRatioLockEnabled: true,
+        ),
+      ],
+    );
+
+    if (croppedFile == null) return null;
+    return File(croppedFile.path);
   }
 
   Widget _buildStatsCard() {

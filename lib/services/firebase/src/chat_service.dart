@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
+// import 'package:mime/mime.dart';
+// import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -38,21 +37,19 @@ class ChatService {
   }) async {
     var cid = await Spdb.getCid();
 
-    return await firebase.users
+    final snapshot = await firebase.users
         .doc(cid)
         .collection(Collections.chats.name)
         .doc(uid)
         .collection(Collections.messages.name)
         .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            var data = doc.data();
-            data['uid'] = doc.id;
-            return MessagesModel.fromMap(doc.id, data);
-          }).toList();
-        })
-        .first;
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['uid'] = doc.id;
+      return MessagesModel.fromMap(doc.id, data);
+    }).toList();
   }
 
   static Future<List<MessagesModel>> searchMessages({
@@ -155,38 +152,61 @@ class ChatService {
     try {
       final cid = await Spdb.getCid();
 
-      final doc = await firebase.users
+      final msgRef = firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
-          .doc(messageId)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .doc(messageId);
+
+      final doc = await msgRef.get(
+        const GetOptions(source: Source.serverAndCache),
+      );
 
       if (!doc.exists) return null;
 
-      final data = doc.data()!;
+      final message = MessagesModel.fromMap(doc.id, doc.data()!);
 
-      // Convert first
-      final message = MessagesModel.fromMap(doc.id, data);
-
-      // Delete attachments
       for (final file in message.attachments) {
         await StorageService.deleteImage(file.url);
       }
 
-      // Delete Firestore document
-      await firebase.users
+      // await msgRef.update({
+      //   "deletedFor": FieldValue.arrayUnion([cid]),
+      //   "updatedAt": FieldValue.serverTimestamp(),
+      // });
+
+      await msgRef.delete();
+      final latestQuery = await firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
-          .doc(messageId)
-          .delete();
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      MessagesModel? latestMessage;
+
+      if (latestQuery.docs.isNotEmpty) {
+        latestMessage = MessagesModel.fromMap(
+          latestQuery.docs.first.id,
+          latestQuery.docs.first.data(),
+        );
+      }
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .doc(chatId)
+          .update({
+            "lastMessage": latestMessage?.toMap(),
+            "updatedAt": FieldValue.serverTimestamp(),
+          });
 
       return message;
     } catch (e, st) {
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint("$e, $st");
       await ErrorService.recordError(e, st);
       rethrow;
     }
@@ -196,7 +216,7 @@ class ChatService {
     required String uid,
     required String message,
     required String chatId,
-    List<File>? attachments,
+    List<FileModel>? attachments,
   }) async {
     try {
       var cid = await Spdb.getCid();
@@ -217,35 +237,12 @@ class ChatService {
         }
       }
 
-      List<FileModel> attachmentList = [];
-
-      if (attachments != null) {
-        for (var i in attachments) {
-          var url = await StorageService.uploadFile(
-            file: i,
-            folder: StorageFolder.chats,
-          );
-          attachmentList.add(
-            FileModel(
-              name: path.basename(i.path),
-              url: url,
-              size: i.lengthSync(),
-              extension: path.basename(i.path).split('.').last,
-              mimeType: lookupMimeType(i.path) ?? '',
-            ),
-          );
-        }
-      }
-
       MessagesModel chat = MessagesModel(
         chatId: chatId,
         senderId: userId ?? '',
-        // senderName: user.name,
         receiverId: receivers,
         message: message,
-        attachments: attachmentList,
-
-        // Edit related
+        attachments: attachments ?? [],
         edited: true,
         editHistory: [MessagesEditHistory(message: message)],
       );
@@ -265,8 +262,9 @@ class ChatService {
   static Future<void> sendChatMessage({
     required String chatId,
     required String message,
-    List<File>? attachments,
+    List<FileModel>? attachments,
     String? replyFor,
+    List<MentionModel>? mentions,
   }) async {
     try {
       var cid = await Spdb.getCid();
@@ -284,33 +282,32 @@ class ChatService {
         receivers.remove(senderId);
       }
 
-      List<FileModel> attachmentList = [];
-      if (attachments != null) {
-        for (var file in attachments) {
-          var url = await StorageService.uploadFile(
-            file: file,
-            folder: StorageFolder.chats,
-          );
-          attachmentList.add(
-            FileModel(
-              name: path.basename(file.path),
-              url: url,
-              size: file.lengthSync(),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              mimeType: lookupMimeType(file.path) ?? "",
-            ),
-          );
+      final files = attachments ?? [];
+
+      String lastMsg = message;
+
+      if (files.isNotEmpty && message.trim().isEmpty) {
+        final mime = files.first.mimeType;
+
+        if (mime.startsWith('image')) {
+          lastMsg = "📷 Photo";
+        } else if (mime.startsWith('video')) {
+          lastMsg = "🎥 Video";
+        } else if (mime.startsWith('audio')) {
+          lastMsg = "🎵 Audio";
+        } else {
+          lastMsg = "📄 Document";
         }
       }
 
       MessagesModel chat = MessagesModel(
         chatId: chatId,
         senderId: senderId!,
-        // senderName: senderName,
         receiverId: receivers,
         message: message,
         replyFor: replyFor,
-        attachments: attachmentList,
+        attachments: attachments ?? [],
+        mentions: mentions ?? [],
       );
 
       await CommonService.add(
@@ -323,10 +320,12 @@ class ChatService {
         chatId,
         {
           "lastMessage": LastMessageModel(
-            message: message,
+            message: lastMsg,
             senderId: senderId,
             timestamp: DateTime.now(),
           ).toMap(),
+          "deletedFor": [],
+          "updatedAt": DateTime.now().millisecondsSinceEpoch,
         },
       );
     } catch (e, st) {
@@ -359,7 +358,6 @@ class ChatService {
               }
             }
           }
-
           _unviewedCount.value = totalUnviewed;
         });
   }
@@ -553,7 +551,6 @@ class ChatService {
               }
             }
           }
-
           return totalUnviewed;
         });
   }
@@ -565,7 +562,6 @@ class ChatService {
     required String userId,
   }) async {
     var cid = await Spdb.getCid();
-
     final ref = FirebaseFirestore.instance
         .collection(Collections.users.name)
         .doc(cid)
@@ -573,30 +569,21 @@ class ChatService {
         .doc(chatId)
         .collection(Collections.messages.name)
         .doc(messageId);
-
-    /// Get current data once
     final snap = await ref.get();
-
     if (!snap.exists) return;
-
     final data = snap.data() as Map<String, dynamic>;
-
-    /// Existing reactions: { "😂": ["u1"], "❤️": ["u3"] }
     final reactions = Map<String, dynamic>.from(data["reactions"] ?? {});
-
-    /// Get list for this emoji
     final List<dynamic> users = List.from(reactions[emoji] ?? []);
-
-    /// Toggle logic
     if (users.contains(userId)) {
       users.remove(userId);
     } else {
       users.add(userId);
     }
-
-    reactions[emoji] = users;
-
-    /// Update normally (no transaction)
+    if (users.isEmpty) {
+      reactions.remove(emoji);
+    } else {
+      reactions[emoji] = users;
+    }
     await ref.update({"reactions": reactions});
   }
 
@@ -623,13 +610,14 @@ class ChatService {
   }) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       await FirebaseFirestore.instance
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
-          .update({'isPinned': value, 'updatedAt': DateTime.now()});
+          .update({'isPinnedBy.$uid': value, 'updatedAt': DateTime.now()});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;
@@ -639,6 +627,7 @@ class ChatService {
   static Future<void> deleteChat({required String chatId}) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       final chatRef = FirebaseFirestore.instance
           .collection(Collections.users.name)
@@ -646,20 +635,40 @@ class ChatService {
           .collection(Collections.chats.name)
           .doc(chatId);
 
-      final messagesRef = chatRef.collection(Collections.messages.name);
+      final chatSnap = await chatRef.get();
 
-      // 🔥 1. Delete all messages in the chat
-      final messagesSnapshot = await messagesRef.get();
-      final batch = FirebaseFirestore.instance.batch();
+      if (!chatSnap.exists) return;
 
-      for (final doc in messagesSnapshot.docs) {
-        batch.delete(doc.reference);
+      final data = chatSnap.data() as Map<String, dynamic>;
+
+      final createdBy = data['createdBy'];
+      final isGroupChat = data['isGroupChat'] ?? false;
+      if (isGroupChat && createdBy != uid) {
+        throw "Only group creator can delete this chat";
       }
 
-      // 🔥 2. Delete the chat document itself
-      batch.delete(chatRef);
+      await chatRef.update({
+        'deletedFor': FieldValue.arrayUnion([uid]),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
 
-      await batch.commit();
+      await TrashService.moveToTrash(
+        docRef: chatRef,
+        docData: data,
+        reason: 'chat_deleted',
+      );
+      // final messagesRef = chatRef.collection(Collections.messages.name);
+
+      // final messagesSnapshot = await messagesRef.get();
+      // final batch = FirebaseFirestore.instance.batch();
+
+      // for (final doc in messagesSnapshot.docs) {
+      //   batch.delete(doc.reference);
+      // }
+
+      // batch.delete(chatRef);
+
+      // await batch.commit();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;
@@ -672,13 +681,14 @@ class ChatService {
   }) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       await FirebaseFirestore.instance
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
-          .update({'isFavorite': value, 'updatedAt': DateTime.now()});
+          .update({'isFavoriteBy.$uid': value, 'updatedAt': DateTime.now()});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;

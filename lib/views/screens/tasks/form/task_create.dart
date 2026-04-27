@@ -53,16 +53,13 @@ class _TaskCreateState extends State<TaskCreate> {
     super.initState();
     _future = _init();
 
-    _selectedAssignees.addAll(widget.employees!.map((e) => e.uid!).toList());
-
     if (widget.employees != null && widget.employees!.isNotEmpty) {
-      debugPrint("the emp user is available");
-      for (final emp in widget.employees!) {
-        if (emp.uid != null) {
-          debugPrint("the emp user is not null available ${emp.employeeId}");
-          _selectedAssignees.add(emp.uid!);
-        }
-      }
+      _selectedAssignees.addAll(
+        widget.employees!
+            .where((e) => e.uid != null)
+            .map((e) => e.uid!)
+            .toList(),
+      );
     }
   }
 
@@ -394,7 +391,7 @@ class _TaskCreateState extends State<TaskCreate> {
       children: [
         UsersListDropdown(
           label: 'Assign To',
-          initialValues: widget.employees!,
+          initialValues: widget.employees ?? [],
           onChangedList: (list) {
             _selectedAssignees.clear();
             _selectedAssignees.addAll(list.map((e) => e.uid!));

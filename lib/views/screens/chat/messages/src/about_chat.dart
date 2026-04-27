@@ -37,16 +37,22 @@ class AboutChat extends StatefulWidget {
 
 class _AboutChatState extends State<AboutChat> {
   bool canEditGroup = false;
+  String currentUserUid = '';
   @override
   void initState() {
     super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    currentUserUid = await Spdb.getUid() ?? '';
     _canEditGroup();
+    setState(() {});
   }
 
   Future<void> _canEditGroup() async {
     if (!widget.chat.isGroupChat) return;
 
-    final currentUserUid = await Spdb.getUid();
     final currentUser = await Spdb.getUser();
     final isAdmin = currentUser.userType == UserType.admin;
     final isCreator = widget.chat.createdBy == currentUserUid;
@@ -68,6 +74,18 @@ class _AboutChatState extends State<AboutChat> {
     final title = widget.chat.isGroupChat
         ? widget.chat.title ?? 'Group Chat'
         : CacheService.getUserByUid(widget.userUid)?.name ?? 'User Details';
+    String opponentUid = widget.chat.participants.firstWhere(
+      (id) => id != currentUserUid,
+      orElse: () => '',
+    );
+
+    var user = CacheService.getUserByUid(opponentUid);
+
+    final String imageUrl = user is EmployeeModel
+        ? (user.profileImageUrl ?? '')
+        : user is AdminModel
+        ? (user.profileImageUrl ?? '')
+        : '';
 
     return Container(
       decoration: const BoxDecoration(
@@ -97,7 +115,7 @@ class _AboutChatState extends State<AboutChat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(context, title),
+                    _buildHeader(context, title, imageUrl),
                     const SizedBox(height: 32),
 
                     if (widget.chat.isGroupChat) ...[
@@ -120,7 +138,8 @@ class _AboutChatState extends State<AboutChat> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String title) {
+  Widget _buildHeader(BuildContext context, String title, String imageUrl) {
+    final bool avatarValid = imageUrl.isNotEmpty;
     return Center(
       child: Column(
         children: [
@@ -133,26 +152,84 @@ class _AboutChatState extends State<AboutChat> {
                 width: 2,
               ),
             ),
-            child: CircleAvatar(
-              radius: 48,
-              backgroundColor: AboutChatColors.primary.withValues(alpha: 0.08),
-              child: widget.chat.isGroupChat
-                  ? const Icon(
-                      Iconsax.people,
-                      size: 40,
-                      color: AboutChatColors.primary,
-                    )
-                  : Text(
-                      title.isNotEmpty ? title[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
+            child: GestureDetector(
+              onTap: avatarValid
+                  ? () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.black,
+                          insetPadding: EdgeInsets.zero,
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: InteractiveViewer(
+                                  child: CachedNetworkImage(
+                                    imageUrl: imageUrl,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+
+                              /// ❌ CLOSE BUTTON
+                              Positioned(
+                                top: 40,
+                                right: 20,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  : null,
+              child: CircleAvatar(
+                radius: 48,
+                backgroundColor: AboutChatColors.primary.withValues(
+                  alpha: 0.08,
+                ),
+                child: widget.chat.isGroupChat
+                    ? const Icon(
+                        Iconsax.people,
+                        size: 40,
                         color: AboutChatColors.primary,
+                      )
+                    : avatarValid
+                    ? ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: AboutChatColors.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
+                        ),
+                      )
+                    : Text(
+                        title.isNotEmpty ? title[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: AboutChatColors.primary,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
+
           const SizedBox(height: 16),
+
           Text(
             title,
             textAlign: TextAlign.center,
@@ -162,6 +239,7 @@ class _AboutChatState extends State<AboutChat> {
               color: AboutChatColors.textPrimary,
             ),
           ),
+
           if (widget.chat.isGroupChat)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -224,7 +302,7 @@ class _AboutChatState extends State<AboutChat> {
           itemBuilder: (context, index) {
             final uid = widget.chat.participants[index];
             final user = CacheService.getUserByUid(uid);
-            String name = 'Workspace User';
+            String name = '';
             String? image;
 
             if (user is AdminModel) {
@@ -344,17 +422,17 @@ class _AboutChatState extends State<AboutChat> {
 
           _buildActionTile(
             context,
-            icon: widget.chat.isPinned == true
+            icon: widget.chat.isPinnedForUser(widget.userUid) == true
                 ? Icons.push_pin
                 : Iconsax.percentage_circle,
             iconColor: Colors.orangeAccent,
-            title: widget.chat.isPinned == true
+            title: widget.chat.isPinnedForUser(widget.userUid) == true
                 ? 'Unpin this conversation'
                 : 'Pin to top',
             onTap: () async {
               await ChatService.toggleChatPin(
                 chatId: widget.chat.uid!,
-                value: !widget.chat.isPinned,
+                value: !widget.chat.isPinnedForUser(widget.userUid),
               );
               if (context.mounted) Navigator.pop(context);
             },
@@ -362,17 +440,17 @@ class _AboutChatState extends State<AboutChat> {
           _buildDivider(),
           _buildActionTile(
             context,
-            icon: widget.chat.isFavorite == true
+            icon: widget.chat.isFavoriteForUser(widget.userUid) == true
                 ? Iconsax.heart5
                 : Iconsax.heart,
             iconColor: Colors.redAccent,
-            title: widget.chat.isFavorite == true
+            title: widget.chat.isFavoriteForUser(widget.userUid) == true
                 ? 'Remove from favorites'
                 : 'Add to favorites',
             onTap: () async {
               await ChatService.toggleChatFavorite(
                 chatId: widget.chat.uid!,
-                value: !widget.chat.isFavorite,
+                value: !widget.chat.isFavoriteForUser(widget.userUid),
               );
               if (context.mounted) Navigator.pop(context);
             },

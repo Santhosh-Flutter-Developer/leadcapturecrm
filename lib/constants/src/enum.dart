@@ -129,4 +129,5 @@ enum NotificationType {
   success,
   warning,
   error,
+  feed,
 }
