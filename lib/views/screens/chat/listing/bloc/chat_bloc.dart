@@ -20,7 +20,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoading());
     var cid = await Spdb.getCid();
     var user = await Spdb.getUser();
-
+    final uid = user.uid;
     await emit.forEach(
       firestore
           .collection(Collections.users.name)
@@ -33,12 +33,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
             allChats = snapshot.docs
                 .map((doc) => ChatModel.fromMap(doc.id, doc.data()))
                 .where((chat) {
+                  if (chat.isDeletedForUser(uid)) return false;
                   final last = chat.lastMessage;
                   if (last == null) return false;
 
                   return (last.message.isNotEmpty) ||
-                      (last.type != null &&
-                          last.type!.isNotEmpty);
+                      (last.type != null && last.type!.isNotEmpty);
                 })
                 .toList();
             // Optional: sort safely

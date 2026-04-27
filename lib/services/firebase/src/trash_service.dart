@@ -10,6 +10,7 @@ class TrashService {
     String? reason,
   }) async {
     var cid = await Spdb.getCid();
+    var uid = await Spdb.getUid();
 
     final firestore = FirebaseFirestore.instance;
 
@@ -30,7 +31,7 @@ class TrashService {
       parentPath: parentPath,
       data: docData,
       deletedAt: DateTime.now(),
-      deletedBy: await Spdb.getUser(),
+      deletedBy: uid,
       reason: reason,
       canRestoreTo: originalPath,
     );

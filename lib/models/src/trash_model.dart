@@ -8,7 +8,7 @@ class TrashModel {
   final String parentPath;
   final Map<String, dynamic> data;
   final DateTime deletedAt;
-  final UserDataModel? deletedBy;
+  final String? deletedBy;
   final String? reason;
   final String canRestoreTo;
 
@@ -32,7 +32,7 @@ class TrashModel {
       'parentPath': parentPath,
       'data': data,
       'deletedAt': deletedAt,
-      'deletedBy': deletedBy?.toMap(),
+      'deletedBy': deletedBy,
       'reason': reason,
       'canRestoreTo': canRestoreTo,
     };
@@ -46,10 +46,7 @@ class TrashModel {
       parentPath: map['parentPath'] as String,
       data: Map<String, dynamic>.from(map['data'] as Map),
       deletedAt: (map['deletedAt'] as Timestamp).toDate(),
-      deletedBy:
-          map['deletedBy'] != null && map['deletedBy'] is Map<String, dynamic>
-          ? UserDataModel.fromMap(map['deletedBy'] as Map<String, dynamic>)
-          : UserDataModel.fromEmptyMap(),
+      deletedBy: map['deletedBy'] as String?,
       reason: map['reason'] as String?,
       canRestoreTo: map['canRestoreTo'] as String,
     );

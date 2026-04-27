@@ -18,3 +18,9 @@ class DeleteNotifications extends NotificationsEvent {
   @override
   List<Object> get props => [notificationId];
 }
+
+class RestoreNotification extends NotificationsEvent {
+  final NotificationModel notification;
+
+  RestoreNotification({required this.notification});
+}

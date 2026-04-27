@@ -130,7 +130,6 @@ class _ProfileState extends State<Profile> {
 
     if (pickedImage == null) return;
     File imageFile = File(pickedImage.path);
-
     FlushBar.show(context, "Uploading profile picture...");
 
     try {
@@ -426,33 +425,30 @@ class _ProfileState extends State<Profile> {
 
                                           Row(
                                             children: [
-                                              /// ✂️ CROP
                                               if (image.isNotEmpty)
+                                                // IconButton(
+                                                //   icon: const Icon(
+                                                //     Icons.crop,
+                                                //     color: Colors.white,
+                                                //   ),
+                                                //   onPressed: () async {
+                                                //     if (image.isEmpty) return;
+                                                //     Navigator.pop(context);
+                                                //     await _cropExistingImage(
+                                                //       image,
+                                                //     );
+                                                //   },
+                                                // ),
                                                 IconButton(
                                                   icon: const Icon(
-                                                    Icons.crop,
-                                                    color: Colors.white,
+                                                    Iconsax.trash,
+                                                    color: Colors.red,
                                                   ),
                                                   onPressed: () async {
-                                                    if (image.isEmpty) return;
                                                     Navigator.pop(context);
-                                                    await _cropExistingImage(
-                                                      image,
-                                                    );
+                                                    await _removeProfileImage();
                                                   },
                                                 ),
-
-                                              /// 🗑 DELETE
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Iconsax.trash,
-                                                  color: Colors.red,
-                                                ),
-                                                onPressed: () async {
-                                                  Navigator.pop(context);
-                                                  await _removeProfileImage();
-                                                },
-                                              ),
                                             ],
                                           ),
                                         ],
@@ -515,23 +511,19 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
 
-              if (!isAdmin)
-                Material(
-                  color: ProfileColors.primary,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: _changeProfileImage,
-                    customBorder: const CircleBorder(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(10.0),
-                      child: Icon(
-                        Iconsax.camera,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
+              // if (!isAdmin)
+              Material(
+                color: ProfileColors.primary,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: _changeProfileImage,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: Icon(Iconsax.camera, color: Colors.white, size: 20),
                   ),
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 24),

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/constants/src/enum.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
@@ -138,8 +139,75 @@ class _NotificationsListingState extends State<NotificationsListing> {
       }
       return;
     }
-
     FlushBar.show(context, 'User profile not found', isSuccess: false);
+  }
+
+  Future<void> _handleNotificationTap(
+    NotificationModel item,
+    bool isDesktop,
+  ) async {
+    switch (item.type) {
+      case NotificationType.chat:
+        if (item.chat != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatListing(
+                currentUserUid: item.uid!,
+                selectedChatUid: item.collectionId,
+              ),
+            ),
+          );
+        }
+        break;
+
+      case NotificationType.task:
+        final taskId = item.payload['taskId'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TasksListing()),
+        );
+        break;
+
+      case NotificationType.lead:
+        final leadId = item.payload['leadId'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LeadsListing(showAppBar: true)),
+        );
+        break;
+
+      case NotificationType.deal:
+        final dealId = item.payload['dealId'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DealsListing(showAppBar: true)),
+        );
+        break;
+
+      case NotificationType.eventReminder:
+        final eventId = item.payload['eventId'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => CalendarEventScreen()),
+        );
+        break;
+
+      case NotificationType.feed:
+        final postId = item.payload['postId'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => FeedListing()),
+        );
+        break;
+
+      default:
+        if (isDesktop) {
+          setState(() => _selectedNotification = item);
+        } else {
+          _openDetailSheet(item);
+        }
+    }
   }
 
   @override
@@ -358,9 +426,53 @@ class _NotificationsListingState extends State<NotificationsListing> {
       child: Dismissible(
         key: ValueKey(item.uid ?? item.hashCode),
         direction: DismissDirection.endToStart,
+        confirmDismiss: (_) async {
+          return await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: const Text('Delete Notification'),
+                  content: const Text(
+                    'Are you sure you want to delete this notification?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: NotifyColors.danger,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
+        },
         onDismissed: (_) async {
+          final deletedItem = item;
+
           await deleteNotification(item.uid ?? '');
-          if (mounted) FlushBar.show(context, 'Notification deleted');
+
+          if (!mounted) return;
+
+          FlushBar.show(
+            context,
+            'Notification deleted',
+            actionLabel: 'UNDO',
+            onActionPressed: () async {
+              await restoreNotification(deletedItem);
+              setState(() {});
+            },
+          );
         },
         background: Container(
           decoration: BoxDecoration(
@@ -406,13 +518,14 @@ class _NotificationsListingState extends State<NotificationsListing> {
                         ),
                       )
                     : _smallAvatar(item.title, item.type?.name ?? 'info'),
+
                 const SizedBox(width: 16),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: hasSender
@@ -440,6 +553,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                                     ),
                                   ),
                           ),
+
                           Text(
                             item.createdAt != null
                                 ? _timeAgo(item.createdAt!)
@@ -449,9 +563,28 @@ class _NotificationsListingState extends State<NotificationsListing> {
                               color: NotifyColors.textSecondary,
                             ),
                           ),
+
+                          const SizedBox(width: 6),
+
+                          /// INFO / MORE ICON
+                          InkWell(
+                            onTap: () =>
+                                _handleNotificationTap(item, isDesktop),
+                            borderRadius: BorderRadius.circular(20),
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(
+                                Iconsax.info_circle,
+                                size: 18,
+                                color: NotifyColors.textSecondary,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         item.body,
                         maxLines: 1,
@@ -492,7 +625,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Widget _buildDetailContent(NotificationModel item) {
-    final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
+    // final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
     return Container(
       color: NotifyColors.white,
       padding: const EdgeInsets.all(40),

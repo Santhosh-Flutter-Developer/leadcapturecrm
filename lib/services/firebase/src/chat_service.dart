@@ -301,6 +301,8 @@ class ChatService {
             senderId: senderId,
             timestamp: DateTime.now(),
           ).toMap(),
+          "deletedFor": [],
+          "updatedAt": DateTime.now().millisecondsSinceEpoch,
         },
       );
     } catch (e, st) {
@@ -333,7 +335,6 @@ class ChatService {
               }
             }
           }
-
           _unviewedCount.value = totalUnviewed;
         });
   }
@@ -603,6 +604,7 @@ class ChatService {
   static Future<void> deleteChat({required String chatId}) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
       final chatRef = FirebaseFirestore.instance
           .collection(Collections.users.name)
@@ -618,24 +620,32 @@ class ChatService {
 
       final createdBy = data['createdBy'];
       final isGroupChat = data['isGroupChat'] ?? false;
-
-      final currentUser = await Spdb.getUid();
-      if (isGroupChat && createdBy != currentUser) {
+      if (isGroupChat && createdBy != uid) {
         throw "Only group creator can delete this chat";
       }
 
-      final messagesRef = chatRef.collection(Collections.messages.name);
+      await chatRef.update({
+        'deletedFor': FieldValue.arrayUnion([uid]),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
 
-      final messagesSnapshot = await messagesRef.get();
-      final batch = FirebaseFirestore.instance.batch();
+      await TrashService.moveToTrash(
+        docRef: chatRef,
+        docData: data,
+        reason: 'chat_deleted',
+      );
+      // final messagesRef = chatRef.collection(Collections.messages.name);
 
-      for (final doc in messagesSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
+      // final messagesSnapshot = await messagesRef.get();
+      // final batch = FirebaseFirestore.instance.batch();
 
-      batch.delete(chatRef);
+      // for (final doc in messagesSnapshot.docs) {
+      //   batch.delete(doc.reference);
+      // }
 
-      await batch.commit();
+      // batch.delete(chatRef);
+
+      // await batch.commit();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       rethrow;

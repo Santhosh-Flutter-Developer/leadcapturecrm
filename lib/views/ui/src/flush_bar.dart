@@ -11,6 +11,10 @@ class FlushBar {
     bool isSuccess = true,
     Object? error,
     StackTrace? stackTrace,
+
+    /// ADD THESE
+    String? actionLabel,
+    VoidCallback? onActionPressed,
   }) {
     Flushbar(
       message: message,
@@ -23,7 +27,22 @@ class FlushBar {
       margin: const EdgeInsets.all(12),
       borderRadius: BorderRadius.circular(10),
       flushbarPosition: FlushbarPosition.BOTTOM,
-      mainButton: error != null
+
+      mainButton: actionLabel != null
+          ? TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // close flushbar
+                onActionPressed?.call();
+              },
+              child: Text(
+                actionLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : error != null
           ? TextButton(
               onPressed: () {
                 Navigate.route(

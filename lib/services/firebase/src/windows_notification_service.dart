@@ -34,7 +34,7 @@ class FirestoreNotificationListener {
                   data?['createdAt'],
                 );
 
-                if (DateTime.now().difference(createdAt).inSeconds < 60) {
+                if (DateTime.now().difference(createdAt).inSeconds < 300) {
                   String docId = change.doc.id; // Unique ID of the document
                   // Skip past notifications
 
@@ -46,7 +46,7 @@ class FirestoreNotificationListener {
                   lastNotificationId = docId; // Update last seen notification
 
                   String title = data?['title'] ?? 'New Notification';
-                  String message = data?['message'] ?? 'You have a new message';
+                  String message = data?['body'] ?? 'You have a new message';
                   String senderId = data?['senderId'] ?? '';
 
                   Map<String, dynamic> payload = data?['payload'] != null

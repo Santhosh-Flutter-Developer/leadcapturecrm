@@ -258,6 +258,9 @@ class _ChatListPanelState extends State<ChatListPanel> {
 
     setState(() {
       _filteredChats = widget.chats.where((chat) {
+        if (chat.isDeletedForUser(widget.currentUserUid)) {
+          return false;
+        }
         String chatName = '';
 
         if (chat.isGroupChat) {

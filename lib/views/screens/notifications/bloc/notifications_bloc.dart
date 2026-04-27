@@ -14,6 +14,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   NotificationsBloc() : super(NotificationsLoading()) {
     on<StreamNotifications>(_streamNotifications);
     on<DeleteNotifications>(_deleteNotifications);
+    on<RestoreNotification>(_restoreNotification);
   }
 
   Future<void> _streamNotifications(
@@ -57,11 +58,29 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
           .collection(Collections.users.name)
           .doc(cid)
           .collection(Collections.notifications.name)
-          .doc(event.notificationId) // <-- use document id
+          .doc(event.notificationId)
           .delete();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       emit(NotificationsError("Failed to delete notification: $e"));
+    }
+  }
+
+  Future<void> _restoreNotification(
+    RestoreNotification event,
+    Emitter<NotificationsState> emit,
+  ) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      await firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.notifications.name)
+          .doc(event.notification.uid)
+          .set(event.notification.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
     }
   }
 }
