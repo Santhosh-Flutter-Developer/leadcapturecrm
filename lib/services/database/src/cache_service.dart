@@ -42,17 +42,27 @@ class CacheService {
   static final Set<String> _pendingFetches = {};
 
   static dynamic _normalizeCacheValue(dynamic value) {
+    return normalizeFromCache(value);
+  }
+
+  /// Recursively converts all Map keys to String and nested Maps/Lists too.
+  /// Use this whenever reading raw data from a Hive box before passing to fromMap.
+  static Map<String, dynamic> normalizeFromCache(dynamic value) {
     if (value is Map) {
       return value.map((key, entry) {
-        return MapEntry(key.toString(), _normalizeCacheValue(entry));
+        final normalized = entry is Map
+            ? normalizeFromCache(entry)
+            : entry is List
+            ? _normalizeList(entry)
+            : entry;
+        return MapEntry(key.toString(), normalized);
       });
     }
+    return {};
+  }
 
-    if (value is List) {
-      return value.map(_normalizeCacheValue).toList();
-    }
-
-    return value;
+  static List<dynamic> _normalizeList(List list) {
+    return list.map((e) => e is Map ? normalizeFromCache(e) : e).toList();
   }
 
   // ---------------- INITIALIZATION ----------------
@@ -68,20 +78,22 @@ class CacheService {
   }
 
   Future<void> _openBoxes() async {
-    try {
-      final futures = <Future>[];
-
-      // Open all entity boxes defined in config
-      for (var conf in _config.values) {
-        futures.add(Hive.openBox<Map<dynamic, dynamic>>(conf.boxName));
+    for (var conf in _config.values) {
+      if (Hive.isBoxOpen(conf.boxName)) continue;
+      try {
+        await Hive.openBox<Map<dynamic, dynamic>>(conf.boxName);
+      } catch (e, st) {
+        debugPrint("Failed to open box ${conf.boxName}: $e");
+        await ErrorService.recordError(e, st);
       }
-      // Open meta box
-      futures.add(Hive.openBox(_metaBox));
-
-      await Future.wait(futures);
-    } catch (e, st) {
-      debugPrint("Hive box open failed: $e");
-      await ErrorService.recordError(e, st);
+    }
+    if (!Hive.isBoxOpen(_metaBox)) {
+      try {
+        await Hive.openBox(_metaBox);
+      } catch (e, st) {
+        debugPrint("Failed to open meta box: $e");
+        await ErrorService.recordError(e, st);
+      }
     }
   }
 
@@ -261,11 +273,14 @@ class CacheService {
 
   ValueListenable<List<EmployeeModel>> getAllListenableEmployees() {
     final conf = _config['employee']!;
+    if (!Hive.isBoxOpen(conf.boxName)) {
+      return ValueNotifier(<EmployeeModel>[]);
+    }
     return Hive.box<Map<dynamic, dynamic>>(conf.boxName).listenable().map((
       box,
     ) {
       return box.keys.map((key) {
-        final value = Map<String, dynamic>.from(box.get(key) ?? {});
+        final value = normalizeFromCache(box.get(key) ?? {});
         return EmployeeModel.fromMap(key.toString(), value);
       }).toList();
     });

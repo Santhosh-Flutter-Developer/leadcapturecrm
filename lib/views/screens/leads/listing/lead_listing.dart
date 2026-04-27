@@ -103,22 +103,16 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   List<String> statusItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
-      final data = box.get(key) ?? {};
-      final model = LeadStatusModel.fromMap(
-        key,
-        Map<String, dynamic>.from(data),
-      );
+      final data = CacheService.normalizeFromCache(box.get(key) ?? {});
+      final model = LeadStatusModel.fromMap(key, data);
       return model.name;
     }).toList();
   }
 
   List<String> categoryItems(Box<Map<dynamic, dynamic>> box) {
     return box.keys.map((key) {
-      final data = box.get(key) ?? {};
-      final model = LeadCategoryModel.fromMap(
-        key,
-        Map<String, dynamic>.from(data),
-      );
+      final data = CacheService.normalizeFromCache(box.get(key) ?? {});
+      final model = LeadCategoryModel.fromMap(key, data);
       return model.name;
     }).toList();
   }
@@ -168,9 +162,15 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       _buildActionRow(context),
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
-                        LeadKanbanListing(leadList: _filteredLeads),
+                        LeadKanbanListing(
+  leadList: _filteredLeads,
+  onLeadDeleted: () => context.read<LeadBloc>().add(StreamLead()),
+),
                       ] else if (_selectedView == 'Calendar') ...[
-                        LeadCalendarListing(leadList: _filteredLeads),
+                        LeadCalendarListing(
+  leadList: _filteredLeads,
+  onLeadCreated: () => context.read<LeadBloc>().add(StreamLead()),
+),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -411,6 +411,30 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   }
 
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+    if (!Hive.isBoxOpen('leadStatus') ||
+        !Hive.isBoxOpen('leadCategory') ||
+        !Hive.isBoxOpen('employees')) {
+      return SizedBox(
+        width: 250,
+        child: TextField(
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search',
+            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: BorderSide(color: AppColors.grey, width: 1),
+            ),
+          ),
+        ),
+      );
+    }
     final statusBox = Hive.box<Map<dynamic, dynamic>>('leadStatus');
     final categoryBox = Hive.box<Map<dynamic, dynamic>>('leadCategory');
     final cache = CacheService();
@@ -788,11 +812,18 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         if (permissions?.canCreate ?? false) {
           actionButtons.add(
             ElevatedButton.icon(
-              onPressed: () {
-                if (kIsMobile) {
-                  Sheet.showSheet(context, widget: const LeadCreate());
-                } else {
-                  GeneralDialog.showRTLSheet(context, const LeadCreate());
+              onPressed: () async {
+                final result = kIsMobile
+                    ? await Sheet.showSheet(
+                        context,
+                        widget: const LeadCreate(),
+                      )
+                    : await GeneralDialog.showRTLSheet(
+                        context,
+                        const LeadCreate(),
+                      );
+                if (result == true && context.mounted) {
+                  context.read<LeadBloc>().add(StreamLead());
                 }
               },
               icon: const Icon(Icons.add, size: 18),
@@ -1030,11 +1061,16 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     var leadCategory = CacheService.leadCategoryByUid(lead.leadCategory);
 
     /// Open Lead View
-    void openLead(BuildContext context, LeadModel lead) {
-      if (kIsMobile) {
-        Sheet.showSheet(context, widget: LeadsViewPage(lead: lead));
-      } else {
-        GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: lead));
+    void openLead(BuildContext context, LeadModel lead) async {
+      final result = kIsMobile
+          ? await Sheet.showSheet(context, widget: LeadsViewPage(lead: lead))
+          : await GeneralDialog.showRTLSheet(
+              context,
+              LeadsViewPage(lead: lead),
+            );
+
+      if (result == 'deleted' && context.mounted) {
+        context.read<LeadBloc>().add(StreamLead());
       }
     }
 

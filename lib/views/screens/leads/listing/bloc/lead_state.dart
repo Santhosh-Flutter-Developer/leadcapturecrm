@@ -17,6 +17,9 @@ class LeadLoaded extends LeadState {
   final List<LeadStatusModel> allStatuses;
 
   LeadLoaded(this.leads, this.allStatuses);
+
+  @override
+  List<Object> get props => [leads, allStatuses];
 }
 
 class LeadError extends LeadState {

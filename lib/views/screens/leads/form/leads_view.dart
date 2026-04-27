@@ -128,12 +128,15 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             if (result == true) {
               try {
                 await LeadService.deleteLead(uid: widget.lead.uid ?? '');
-                FlushBar.show(context, 'Lead deleted successfully');
-
-                context.read<LeadBloc>().add(StreamLead());
+                if (context.mounted) {
+                  Navigator.of(context).pop('deleted');
+                  FlushBar.show(context, 'Lead deleted successfully');
+                }
               } catch (e, st) {
                 await ErrorService.recordError(e, st);
-                FlushBar.show(context, e.toString(), isSuccess: false);
+                if (context.mounted) {
+                  FlushBar.show(context, e.toString(), isSuccess: false);
+                }
               }
             }
           }, isDanger: true),
@@ -1189,14 +1192,28 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             ),
           ),
 
-          /// Optional: Add a "More" or "Delete" action per item
-          IconButton(
-            onPressed: () {},
+          PopupMenuButton<String>(
             icon: const Icon(
               Icons.more_vert,
               size: 18,
               color: LeadsViewAppColors.textSecondary,
             ),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _scheduleActivity(activity);
+              } else if (value == 'delete') {
+                context.read<LeadBloc>().add(
+                  DeleteLeadActivity(
+                    leadUid: widget.lead.uid!,
+                    activityUid: activity.uid!,
+                  ),
+                );
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
           ),
         ],
       ),
@@ -1537,12 +1554,15 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     }
   }
 
-  void _scheduleActivity() {
+  void _scheduleActivity([LeadActivityModel? existing]) {
     showDialog(
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<LeadBloc>(),
-        child: ScheduleLeadActivityDialog(leadUid: widget.lead.uid!),
+        child: ScheduleLeadActivityDialog(
+          leadUid: widget.lead.uid!,
+          existing: existing,
+        ),
       ),
     );
   }
@@ -1550,8 +1570,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
 class ScheduleLeadActivityDialog extends StatefulWidget {
   final String leadUid;
+  final LeadActivityModel? existing;
 
-  const ScheduleLeadActivityDialog({super.key, required this.leadUid});
+  const ScheduleLeadActivityDialog({
+    super.key,
+    required this.leadUid,
+    this.existing,
+  });
 
   @override
   State<ScheduleLeadActivityDialog> createState() =>
@@ -1567,6 +1592,21 @@ class _ScheduleLeadActivityDialogState
 
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      titleController.text = e.title;
+      descController.text = e.description;
+      selectedType = e.type;
+      selectedDate = e.scheduledAt;
+      selectedTime = TimeOfDay.fromDateTime(e.scheduledAt);
+    }
+  }
 
   DateTime? get scheduledDateTime {
     if (selectedDate == null || selectedTime == null) return null;
@@ -1614,18 +1654,33 @@ class _ScheduleLeadActivityDialogState
       return;
     }
 
-    final activity = LeadActivityModel(
-      title: titleController.text.trim(),
-      description: descController.text.trim(),
-      type: selectedType,
-      scheduledAt: scheduled,
-      createdBy: "user",
-      createdAt: DateTime.now(),
-    );
-
-    context.read<LeadBloc>().add(
-      AddLeadActivity(leadUid: widget.leadUid, activity: activity),
-    );
+    if (_isEditing) {
+      final updated = LeadActivityModel(
+        uid: widget.existing!.uid,
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        type: selectedType,
+        scheduledAt: scheduled,
+        createdBy: widget.existing!.createdBy,
+        createdAt: widget.existing!.createdAt,
+        completed: widget.existing!.completed,
+      );
+      context.read<LeadBloc>().add(
+        EditLeadActivity(leadUid: widget.leadUid, activity: updated),
+      );
+    } else {
+      final activity = LeadActivityModel(
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        type: selectedType,
+        scheduledAt: scheduled,
+        createdBy: "user",
+        createdAt: DateTime.now(),
+      );
+      context.read<LeadBloc>().add(
+        AddLeadActivity(leadUid: widget.leadUid, activity: activity),
+      );
+    }
 
     Navigator.of(context).pop();
   }
@@ -1633,7 +1688,7 @@ class _ScheduleLeadActivityDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Schedule Activity"),
+      title: Text(_isEditing ? "Edit Activity" : "Schedule Activity"),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

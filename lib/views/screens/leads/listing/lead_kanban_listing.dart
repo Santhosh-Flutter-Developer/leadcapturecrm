@@ -11,7 +11,8 @@ import '/utils/utils.dart';
 
 class LeadKanbanListing extends StatefulWidget {
   final List<LeadModel> leadList;
-  const LeadKanbanListing({super.key, required this.leadList});
+  final VoidCallback? onLeadDeleted;
+  const LeadKanbanListing({super.key, required this.leadList, this.onLeadDeleted});
 
   @override
   State<LeadKanbanListing> createState() => _LeadKanbanListingState();
@@ -266,8 +267,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         'dealName': leadDetails.leadName,
         'dealEmail': leadDetails.leadEmail,
         'companyName': leadDetails.companyName,
+        'companyWebsite': leadDetails.companyWebsite,
+        'companyCountry': leadDetails.companyCountry?.toMap(),
+        'companyState': leadDetails.companyState?.toMap(),
+        'companyCity': leadDetails.companyCity?.toMap(),
+        'companyZipCode': leadDetails.companyZipCode,
         'companyMobile': leadDetails.companyMobile,
         'companyAddress': leadDetails.companyAddress,
+                'clientName': leadDetails.clientName,
+        'salutation': leadDetails.salutation,
+        'clientEmail': leadDetails.clientEmail,
+        'clientMobile': leadDetails.clientMobile,
+        'clientGender': leadDetails.clientGender,
         'dealValue': leadDetails.leadValue,
         'notes': leadDetails.notes,
       };
@@ -380,148 +391,241 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
     final TextEditingController leadNameCtrl = TextEditingController();
     final TextEditingController leadValueCtrl = TextEditingController();
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(30),
-        topRight: Radius.circular(30),
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.white,
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: quickFormKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Color(
-                        status.color,
-                      ).withValues(alpha: 0.15),
-                      child: Icon(
-                        Iconsax.flash_1,
-                        color: Color(status.color),
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Quick Lead',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            status.name,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey600),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+    final future = ClientService.getAllClients();
+    ClientModel? selectedCompany;
+    ClientModel? selectedContact;
 
-                const Divider(height: 32),
+    return StatefulBuilder(
+      builder: (context, setSheetState) {
+        return FutureBuilder<List<ClientModel>>(
+          future: future,
+          builder: (context, snapshot) {
+            final allClients = snapshot.data ?? [];
+            final companies = allClients
+                .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+                .toList();
+            final contacts = allClients
+                .where((c) => !c.isCompany && (c.clientName?.isNotEmpty ?? false))
+                .toList();
+            final isLoading = snapshot.connectionState == ConnectionState.waiting;
 
-                /// Lead Name
-                Text(
-                  'Lead Name',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                FormFields(
-                  controller: leadNameCtrl,
-                  hintText: 'Enter lead name',
-                  isRequired: true,
-                  valid: (v) =>
-                      v == null || v.isEmpty ? 'Lead name is required' : null,
-                ),
-
-                const SizedBox(height: 20),
-
-                /// Lead Value
-                Text(
-                  'Lead Value',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                FormFields(
-                  controller: leadValueCtrl,
-                  hintText: 'Enter amount',
-                  keyboardType: TextInputType.number,
-                ),
-
-                const SizedBox(height: 28),
-
-                /// Create Button (minimized width)
-                Center(
-                  child: SizedBox(
-                    width: 200,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        if (!quickFormKey.currentState!.validate()) return;
-
-                        try {
-                          futureLoading(context);
-
-                          final lead = LeadModel.quick(
-                            leadName: leadNameCtrl.text.trim(),
-                            leadValue: double.tryParse(leadValueCtrl.text) ?? 0,
-                            leadStatus: status.uid!,
-                            createdBy: await Spdb.getUser(),
-                            workflow: await EmployeeService.getUserWorkflow(),
-                          );
-
-                          await LeadService.createLead(lead: lead);
-
-                          if (Navigator.canPop(context)) Navigator.pop(context);
-                          FlushBar.show(context, 'Lead created successfully');
-                        } catch (e) {
-                          if (Navigator.canPop(context)) Navigator.pop(context);
-                          FlushBar.show(
-                            context,
-                            e.toString(),
-                            isSuccess: false,
-                          );
-                        }
-                      },
-                      icon: const Icon(Iconsax.add_circle, size: 18),
-                      label: const Text(
-                        'Create Lead',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 2,
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+            return ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+              child: Scaffold(
+                backgroundColor: AppColors.white,
+                body: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: quickFormKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Color(
+                                status.color,
+                              ).withValues(alpha: 0.15),
+                              child: Icon(
+                                Iconsax.flash_1,
+                                color: Color(status.color),
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Quick Lead',
+                                    style: Theme.of(context).textTheme.bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    status.name,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppColors.grey600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+
+                        const Divider(height: 32),
+
+                        /// Lead Name
+                        Text(
+                          'Lead Name',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        FormFields(
+                          controller: leadNameCtrl,
+                          hintText: 'Enter lead name',
+                          isRequired: true,
+                          valid: (v) =>
+                              v == null || v.isEmpty ? 'Lead name is required' : null,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        /// Lead Value
+                        Text(
+                          'Lead Value',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        FormFields(
+                          controller: leadValueCtrl,
+                          hintText: 'Enter amount',
+                          keyboardType: TextInputType.number,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        /// Company Name Dropdown
+                        Text(
+                          'Company Name',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        isLoading
+                            ? const SizedBox(
+                                height: 48,
+                                child: Center(child: LinearProgressIndicator()),
+                              )
+                            : FormDropdownSearch(
+                                initialItem: selectedCompany?.companyName ?? '',
+                                items: companies.map((e) => e.companyName).toList(),
+                                onChanged: (value) {
+                                  setSheetState(() {
+                                    selectedCompany = companies.cast<ClientModel?>().firstWhere(
+                                      (c) => c?.companyName == value,
+                                      orElse: () => null,
+                                    );
+                                  });
+                                },
+                              ),
+
+                        const SizedBox(height: 20),
+
+                        /// Contact Name Dropdown
+                        Text(
+                          'Contact Name',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        isLoading
+                            ? const SizedBox(
+                                height: 48,
+                                child: Center(child: LinearProgressIndicator()),
+                              )
+                            : FormDropdownSearch(
+                                initialItem: selectedContact?.clientName ?? '',
+                                items: contacts.map((e) => e.clientName).toList(),
+                                onChanged: (value) {
+                                  setSheetState(() {
+                                    selectedContact = contacts.cast<ClientModel?>().firstWhere(
+                                      (c) => c?.clientName == value,
+                                      orElse: () => null,
+                                    );
+                                  });
+                                },
+                              ),
+
+                        const SizedBox(height: 28),
+
+                        /// Create Button
+                        Center(
+                          child: SizedBox(
+                            width: 200,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                if (!quickFormKey.currentState!.validate()) return;
+
+                                try {
+                                  futureLoading(context);
+
+                                  final lead = LeadModel.quick(
+                                    leadName: leadNameCtrl.text.trim(),
+                                    leadValue: double.tryParse(leadValueCtrl.text) ?? 0,
+                                    leadStatus: status.uid!,
+                                    createdBy: await Spdb.getUser(),
+                                    workflow: await EmployeeService.getUserWorkflow(),
+                                    // company fields
+                                    companyName: selectedCompany?.companyName,
+                                    companyWebsite: selectedCompany?.officialWebsite,
+                                    companyMobile: selectedCompany?.officePhoneNo,
+                                    companyCountry: selectedCompany?.country,
+                                    companyState: selectedCompany?.state,
+                                    companyCity: selectedCompany?.city,
+                                    companyAddress: selectedCompany?.companyAddress,
+                                    companyZipCode: selectedCompany?.postalCode,
+                                    // contact fields
+                                    clientId: selectedContact?.uid ?? selectedCompany?.uid,
+                                    clientName: selectedContact?.clientName,
+                                    clientEmail: selectedContact?.email,
+                                    clientMobile: selectedContact?.mobileNumber,
+                                    clientGender: selectedContact?.gender,
+                                    salutation: selectedContact?.salutation,
+                                  );
+
+                                  await LeadService.createLead(lead: lead);
+
+                                  // pop loading dialog
+                                  if (Navigator.canPop(context)) Navigator.pop(context);
+                                  // pop quick lead sheet
+                                  if (Navigator.canPop(context)) Navigator.pop(context);
+                                  FlushBar.show(context, 'Lead created successfully');
+                                } catch (e) {
+                                  if (Navigator.canPop(context)) Navigator.pop(context);
+                                  FlushBar.show(
+                                    context,
+                                    e.toString(),
+                                    isSuccess: false,
+                                  );
+                                }
+                              },
+                              icon: const Icon(Iconsax.add_circle, size: 18),
+                              label: const Text(
+                                'Create Lead',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                elevation: 2,
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -531,11 +635,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
         child: InkWell(
-          onTap: () {
-            if (kIsDesktop) {
-              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
-            } else {
-              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+          onTap: () async {
+            final result = kIsDesktop
+                ? await GeneralDialog.showRTLSheet(
+                    context,
+                    LeadsViewPage(lead: task),
+                  )
+                : await Sheet.showSheet(
+                    context,
+                    widget: LeadsViewPage(lead: task),
+                  );
+            if (result == 'deleted' && context.mounted) {
+              widget.onLeadDeleted?.call();
             }
           },
           child: Container(
@@ -623,11 +734,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           ),
         ),
         child: InkWell(
-          onTap: () {
-            if (kIsDesktop) {
-              GeneralDialog.showRTLSheet(context, LeadsViewPage(lead: task));
-            } else {
-              Sheet.showSheet(context, widget: LeadsViewPage(lead: task));
+          onTap: () async {
+            final result = kIsDesktop
+                ? await GeneralDialog.showRTLSheet(
+                    context,
+                    LeadsViewPage(lead: task),
+                  )
+                : await Sheet.showSheet(
+                    context,
+                    widget: LeadsViewPage(lead: task),
+                  );
+            if (result == 'deleted' && context.mounted) {
+              widget.onLeadDeleted?.call();
             }
           },
           borderRadius: BorderRadius.circular(12),
@@ -714,6 +832,27 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                         fontSize: 10,
                         color: AppColors.grey600,
                       ),
+                    ),
+                  ],
+
+                  if (lead.clientName?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 10, color: AppColors.grey600),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            lead.clientName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.grey600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

@@ -10,7 +10,8 @@ import '/services/services.dart';
 
 class LeadCalendarListing extends StatefulWidget {
   final List<LeadModel> leadList;
-  const LeadCalendarListing({super.key, required this.leadList});
+  final VoidCallback? onLeadCreated;
+  const LeadCalendarListing({super.key, required this.leadList, this.onLeadCreated});
 
   @override
   State<LeadCalendarListing> createState() => _LeadCalendarListingState();
@@ -227,10 +228,11 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
           child: InkWell(
             onTap: () async {
               if (count == 0) {
-                if (kIsDesktop) {
-                  GeneralDialog.showRTLSheet(context, LeadCreate());
-                } else {
-                  Sheet.showSheet(context, widget: LeadCreate());
+                final result = kIsDesktop
+                    ? await GeneralDialog.showRTLSheet(context, LeadCreate())
+                    : await Sheet.showSheet(context, widget: LeadCreate());
+                if (result == true && context.mounted) {
+                  widget.onLeadCreated?.call();
                 }
               } else {
                 showInfoGeneralDialog(
@@ -344,10 +346,17 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                           .toList(),
                     );
                   } else {
-                    if (kIsDesktop) {
-                      GeneralDialog.showRTLSheet(context, LeadCreate());
-                    } else {
-                      Sheet.showSheet(context, widget: LeadCreate());
+                    final result = kIsDesktop
+                        ? await GeneralDialog.showRTLSheet(
+                            context,
+                            LeadCreate(),
+                          )
+                        : await Sheet.showSheet(
+                            context,
+                            widget: LeadCreate(),
+                          );
+                    if (result == true && context.mounted) {
+                      widget.onLeadCreated?.call();
                     }
                   }
                 },
@@ -502,7 +511,8 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                         separatorBuilder: (_, _) => const Divider(),
                         itemBuilder: (context, index) {
                           var item = items[index];
-                          return ListTile(
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
                             onTap: () {
                               Navigator.pop(context);
                               if (kIsDesktop) {
@@ -517,16 +527,110 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                 );
                               }
                             },
-                            title: Text(item.leadName),
-                            subtitle: Text(
-                              item.leadSource.name.isNotEmpty
-                                  ? item.leadSource.name
-                                  : "No description",
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            trailing: Text(
-                              item.createdAt.formatTime,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: AppColors.grey200,
+                                    backgroundImage: NetworkImage(
+                                      item.createdBy.profilePic ??
+                                          AppStrings.emptyProfilePhotoUrl,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.leadName,
+                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (item.leadValue > 0)
+                                              Text(
+                                                item.leadValue.toString(),
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: AppColors.success,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        if (item.companyName != null && item.companyName!.isNotEmpty)
+                                          Row(
+                                            children: [
+                                              const Icon(Iconsax.building, size: 12, color: Colors.grey),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  item.companyName!,
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        if (item.clientName != null && item.clientName!.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 2),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Iconsax.user, size: 12, color: Colors.grey),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    item.clientName!,
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Iconsax.user_edit, size: 12, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              item.createdBy.name,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Text(
+                                              item.createdAt.formatTime,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Colors.grey[400],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },

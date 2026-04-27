@@ -426,6 +426,27 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                       ),
                     ),
                   ],
+
+                  if (deal.clientName?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 10, color: AppColors.grey600),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            deal.clientName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.grey600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

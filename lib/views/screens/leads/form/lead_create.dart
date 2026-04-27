@@ -38,12 +38,19 @@ class _LeadCreateState extends State<LeadCreate> {
   final TextEditingController _companyAddressController =
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
+  final TextEditingController _clientName = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _mobile = TextEditingController();
+  final TextEditingController _salutation = TextEditingController();
+  final TextEditingController _gender = TextEditingController();
 
   // String? _salutation;
 
   // bool _allowFollowUp = true;
 
   bool _showCompanyDetails = false;
+  bool _companyrefresh = false;
+  bool _contactrefresh = false;
   late Future _future;
 
   List<LeadCategoryModel> _leadCategories = [];
@@ -55,7 +62,9 @@ class _LeadCreateState extends State<LeadCreate> {
   List<LeadSourceModel> _leadSource = [];
   LeadSourceModel? _selectedLeadSource;
   List<ClientModel> _clients = [];
+  List<ClientModel> _contacts = [];
   ClientModel? _selectedclient;
+  ClientModel? _selectedContact;
   RegionModel? _regionModel;
   StateModel? _stateModel;
   CityModel? _cityModel;
@@ -76,11 +85,19 @@ class _LeadCreateState extends State<LeadCreate> {
       _leadStatus.clear();
       _leadSource.clear();
       _clients.clear();
+      _contacts.clear();
       _leadCategories = await LeadCategoryService.getAllLeadCategories();
       _leadPriorities = await LeadPriorityService.getAllLeadPriority();
       _leadStatus = await LeadStatusService.getAllLeadStatus();
       _leadSource = await LeadSourceService.getAllLeadSource();
-      _clients = await ClientService.getAllClients();
+      _clients = (await ClientService.getAllClients())
+          .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+          .toList();
+      _contacts = (await ClientService.getAllClients())
+          .where(
+            (c) => c.isCompany == false && (c.clientName?.isNotEmpty ?? false),
+          )
+          .toList();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       FlushBar.show(context, e.toString(), isSuccess: false);
@@ -101,6 +118,11 @@ class _LeadCreateState extends State<LeadCreate> {
     _companyCityController.dispose();
     _companyAddressController.dispose();
     _companyZipController.dispose();
+     _clientName.dispose();
+    _salutation.dispose();
+    _email.dispose();
+    _mobile.dispose();
+    _gender.dispose();
     super.dispose();
   }
 
@@ -149,6 +171,14 @@ class _LeadCreateState extends State<LeadCreate> {
                                     _buildCompanyDetails(constraints, 3),
                               ),
                               expandable: true,
+                            ),
+                             const SizedBox(height: 16),
+                            _buildSectionCard(
+                              "Contact Details",
+                              LayoutBuilder(
+                                builder: (context, constraints) =>
+                                    _buildContactDetails(constraints, 3),
+                              ),
                             ),
                             const SizedBox(height: 15),
                             _buildSectionCard(
@@ -422,6 +452,145 @@ class _LeadCreateState extends State<LeadCreate> {
     );
   }
 
+  Widget _buildContactDetails(constraints, gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >=
+        (minColumnWidth * gridCounts + horizontalSpacing * (gridCounts - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+
+    return Wrap(
+      spacing: horizontalSpacing,
+      runSpacing: verticalSpacing,
+      children: [
+        _contactrefresh == true
+            ? SizedBox()
+            : SizedBox(
+                width: itemWidth,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: FormDropdownSearch(
+                        label: 'Name',
+                        isRequired: true,
+                        initialItem: _clientName.text,
+                        items: _contacts.map((e) => e.clientName).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedContact = _contacts
+                                .cast<ClientModel?>()
+                                .firstWhere(
+                                  (cat) => cat?.clientName == value,
+                                  orElse: () => null,
+                                );
+                            _clientName.text =
+                                _selectedContact?.clientName ?? '';
+                            _email.text = _selectedContact?.email ?? "";
+                            _mobile.text = _selectedContact?.mobileNumber ?? "";
+                            _salutation.text =
+                                _selectedContact?.salutation ?? '';
+                            _gender.text = _selectedContact?.gender ?? '';
+                          });
+                        },
+                        validator: (value) =>
+                            value == null ? "* Required" : null,
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    InkWell(
+                      onTap: () async {
+                        final form = ContactCreate();
+                        dynamic val;
+                        if (kIsMobile) {
+                          val = await Sheet.showSheet(context, widget: form);
+                        } else {
+                          val = await GeneralDialog.showRTLSheet(context, form);
+                        }
+                        if (val is Map && val["status"] == true) {
+                          setState(() {
+                            _contactrefresh = true;
+                          });
+                          _clients = (await ClientService.getAllClients())
+                              .where(
+                                (c) =>
+                                    c.isCompany == false &&
+                                    (c.clientName?.isNotEmpty ?? false),
+                              )
+                              .toList();
+                          if (val["contact"] != null) {
+                            _selectedContact = val["contact"];
+                            _clientName.text =
+                                _selectedContact?.clientName ?? '';
+                            _email.text = _selectedContact?.email ?? "";
+                            _mobile.text = _selectedContact?.mobileNumber ?? "";
+                            _salutation.text =
+                                _selectedContact?.salutation ?? '';
+                            _gender.text = _selectedContact?.gender ?? '';
+                          }
+                          setState(() {
+                            _contactrefresh = false;
+                          });
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: Icon(Icons.add, color: AppColors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            key: ValueKey(_salutation.text),
+            label: "Salutation",
+            initialItem: _salutation.text,
+            items: const ["Mr.", "Mrs.", "Ms.", "Dr."],
+            onChanged: (v) => _salutation.text = v,
+          ),
+        ),
+
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Email",
+            controller: _email,
+            isRequired: true,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(label: "Mobile", controller: _mobile),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            key: ValueKey(_gender.text),
+            label: "Gender",
+            initialItem: _gender.text,
+            items: const ["Male", "Female", "Other"],
+            onChanged: (v) => _gender.text = v,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCompanyDetails(constraints, gridCounts) {
     final double currentWidth = constraints.maxWidth;
     const double horizontalSpacing = 16.0;
@@ -449,6 +618,9 @@ class _LeadCreateState extends State<LeadCreate> {
         //     hintText: 'Enter Company Name',
         //   ),
         // ),
+        _companyrefresh == true
+            ? SizedBox()
+            :
         SizedBox(
           width: itemWidth,
           child: Row(
@@ -457,11 +629,12 @@ class _LeadCreateState extends State<LeadCreate> {
               Expanded(
                 child: FormDropdownSearch(
                   label: 'Company Name',
+                  initialItem: _selectedclient?.companyName??"",
                   items: _clients.map((e) => e.companyName).toList(),
                   onChanged: (value) {
-                    _selectedclient = _clients.firstWhere(
-                      (cat) => cat.companyName == value,
-                      orElse: () => _clients.first,
+                    _selectedclient = _clients.cast<ClientModel?>().firstWhere(
+                      (cat) => cat?.companyName == value,
+                      orElse: () => null,
                     );
                     _companyWebsiteController.text =
                         _selectedclient?.officialWebsite ?? '';
@@ -481,23 +654,36 @@ class _LeadCreateState extends State<LeadCreate> {
               SizedBox(width: 8.0),
               InkWell(
                 onTap: () async {
-                  if (kIsMobile) {
-                    Navigate.route(
-                      context,
-                      const ClientCompanyListing(
-                        section: ClientSection.company,
-                      ),
-                    );
-                  } else {
-                    var isAdmin = await Spdb.isAdminLoggedIn();
-                    Navigate.route(
-                      context,
-                      DesktopMainScreen(
-                        isAdmin: isAdmin,
-                        selectedMenu: "Company",
-                      ),
-                    );
-                  }
+                  final form = CompanyCreate();
+                        dynamic val;
+                        if (kIsMobile) {
+                          val = await Sheet.showSheet(context, widget: form);
+                        } else {
+                          val = await GeneralDialog.showRTLSheet(context, form);
+                        }
+                       if (val is Map && val["status"] == true) {
+                          setState(() {
+                            _companyrefresh = true;
+                          });
+                          _clients = await ClientService.getAllClients();
+                          if (val["company"] != null) {
+                            _selectedclient = val["company"];
+                            _companyWebsiteController.text =
+                                _selectedclient?.officialWebsite ?? '';
+                            _companyMobileController.text =
+                                _selectedclient?.officePhoneNo ?? "";
+                            _regionModel = _selectedclient?.country;
+                            _stateModel = _selectedclient?.state;
+                            _cityModel = _selectedclient?.city;
+                            _companyZipController.text =
+                                _selectedclient?.postalCode ?? "";
+                            _companyAddressController.text =
+                                _selectedclient?.companyAddress ?? "";
+                          }
+                          setState(() {
+                            _companyrefresh = false;
+                          });
+                        }
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -661,7 +847,7 @@ class _LeadCreateState extends State<LeadCreate> {
         // var clientId = await ClientService.createClient(client: clientModel);
 
         final leadModel = LeadModel(
-          // salutation: _salutation,
+          salutation: _salutation.text,
           leadName: _leadNameController.text.trim(),
           leadEmail: _leadEmailController.text.trim(),
           leadSource: _selectedLeadSource!,
@@ -672,11 +858,15 @@ class _LeadCreateState extends State<LeadCreate> {
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text.trim(),
           attachments: attachments,
-          companyName: _companyNameController.text.trim(),
+          companyName: _selectedclient?.companyName ?? _companyNameController.text.trim(),
           companyWebsite: _companyWebsiteController.text.trim(),
           companyMobile: _companyMobileController.text.trim(),
           companyZipCode: _companyZipController.text.trim(),
           companyAddress: _companyAddressController.text.trim(),
+          clientName: _clientName.text.trim(),
+          clientEmail: _email.text.trim(),
+          clientMobile: _mobile.text.trim(),
+          clientGender: _gender.text.trim(),
           companyCountry: _regionModel,
           companyState: _stateModel,
           companyCity: _cityModel,
