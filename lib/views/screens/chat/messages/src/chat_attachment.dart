@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/utils/src/download.dart';
+import 'package:leadcapture/utils/src/route.dart' as Navigate;
 import 'package:path/path.dart' as path;
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -154,27 +155,74 @@ class _MediaTab extends StatelessWidget {
       itemCount: media.length,
       itemBuilder: (_, index) {
         final file = media[index];
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AttachmentColors.border),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(11),
-            child: CachedNetworkImage(
-              imageUrl: file.url,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(color: Colors.white),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AttachmentColors.border,
-                child: const Icon(
-                  Iconsax.gallery_slash,
-                  color: AttachmentColors.textSecondary,
-                ),
+
+        final mime = (file.mimeType).toLowerCase();
+        final ext = file.extension.toLowerCase();
+
+        final videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+        final isVideo =
+            mime.startsWith('video/') || videoExtensions.contains(ext);
+
+        return GestureDetector(
+          onTap: () {
+            if (isVideo) {
+              Navigate.route(context, VideoPlay(file: file));
+            } else {
+              Navigate.route(
+                context,
+                GalleryScreen(images: media, initialIndex: index),
+              );
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AttachmentColors.border),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  /// IMAGE
+                  if (!isVideo)
+                    CachedNetworkImage(
+                      imageUrl: file.url,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AttachmentColors.border,
+                        child: const Icon(Iconsax.gallery_slash),
+                      ),
+                    ),
+
+                  /// VIDEO THUMBNAIL (Fallback UI)
+                  if (isVideo)
+                    Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+
+                  /// PLAY ICON OVERLAY (for video)
+                  if (isVideo)
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

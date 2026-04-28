@@ -488,7 +488,7 @@ class _ChatBubbleCore extends StatelessWidget {
   }
 }
 
-class _ChatBubbleMessageBox extends StatelessWidget {
+class _ChatBubbleMessageBox extends StatefulWidget {
   final bool isSender;
   final MessagesModel message;
   final MessagesModel? replyChat;
@@ -499,58 +499,145 @@ class _ChatBubbleMessageBox extends StatelessWidget {
     required this.replyChat,
   });
 
-  void _openUserProfile(BuildContext context, MentionModel mention) {
+  @override
+  State<_ChatBubbleMessageBox> createState() => _ChatBubbleMessageBoxState();
+}
+
+class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
+  Timer? hoverTimer;
+
+  @override
+  void dispose() {
+    hoverTimer?.cancel();
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  Future<void> _openChat(BuildContext context, MentionModel mention) async {
     if (mention.uid.isEmpty) return;
 
-    final user = CacheService.getUserByUid(mention.uid);
+    try {
+      // ✅ Step 1: Get or create chatId
+      final chatId = await ChatService.getChatUid(mention.uid);
+      if (chatId == null) return;
 
-    if (user == null) return;
+      // ✅ Step 2: Fetch ChatModel
+      final cid = await Spdb.getCid();
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: CreatedByWidget(userData: user),
-          ),
-        );
-      },
-    );
+      final doc = await FirebaseFirestore.instance
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.chats.name)
+          .doc(chatId)
+          .get();
+
+      if (!doc.exists) return;
+
+      final chat = ChatModel.fromMap(doc.id, doc.data()!);
+
+      if (!context.mounted) return;
+
+      // ✅ Step 3: Navigate (same as your app)
+      Navigate.route(
+        context,
+        ChatMessages(
+          chat: chat,
+          currentUser: await Spdb.getUid() ?? '',
+          opponentUid: mention.uid,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Mention click error: $e");
+    }
+  }
+
+  OverlayEntry? _overlayEntry;
+
+  // void _showProfileOverlay(
+  //   BuildContext context,
+  //   Offset globalPosition,
+  //   MentionModel mention,
+  // ) {
+  //   _hideProfileOverlay(); // prevent stacking
+
+  //   final user = CacheService.getUserByUid(mention.uid);
+  //   if (user == null) return;
+
+  //   final overlay = Overlay.of(context);
+  //   final renderBox = overlay.context.findRenderObject() as RenderBox;
+
+  //   final localOffset = renderBox.globalToLocal(globalPosition);
+
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final left = (localOffset.dx.clamp(10, screenWidth - 220)).toDouble();
+  //   _overlayEntry = OverlayEntry(
+  //     builder: (context) => Positioned(
+  //       left: left,
+  //       top: localOffset.dy + 20,
+  //       child: Material(
+  //         color: Colors.transparent,
+  //         child: Container(
+  //           constraints: const BoxConstraints(maxWidth: 200),
+  //           padding: const EdgeInsets.all(8),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.circular(10),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withValues(alpha: 0.15),
+  //                 blurRadius: 10,
+  //               ),
+  //             ],
+  //           ),
+  //           child: CreatedByWidget(userData: user),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  //   overlay.insert(_overlayEntry!);
+  // }
+
+  void _hideProfileOverlay() {
+    hoverTimer?.cancel();
+    hoverTimer = Timer(const Duration(milliseconds: 150), () {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final urlRegex = RegExp(r'(https?:\/\/[^\s\)\]\}]+)');
-    final match = urlRegex.firstMatch(message.message);
+    final match = urlRegex.firstMatch(widget.message.message);
     final url = match?.group(0);
+
     return Column(
-      crossAxisAlignment: isSender
+      crossAxisAlignment: widget.isSender
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        if (message.message.isNotEmpty)
+        if (widget.message.message.isNotEmpty)
           Container(
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSender
+              color: widget.isSender
                   ? AppColors.primary.withValues(alpha: 0.15)
                   : AppColors.white,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: isSender
+                bottomLeft: widget.isSender
                     ? const Radius.circular(16)
                     : const Radius.circular(4),
-                bottomRight: isSender
+                bottomRight: widget.isSender
                     ? const Radius.circular(4)
                     : const Radius.circular(16),
               ),
               boxShadow: [
-                if (!isSender)
+                if (!widget.isSender)
                   BoxShadow(
                     color: AppColors.black.withValues(alpha: 0.05),
                     blurRadius: 2,
@@ -561,7 +648,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (replyChat != null)
+                if (widget.replyChat != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(8),
@@ -577,7 +664,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       children: [
                         Text(
                           CacheService.getUserByUid(
-                                replyChat!.senderId,
+                                widget.replyChat!.senderId,
                               )?.name ??
                               'User',
                           style: Theme.of(context).textTheme.bodySmall
@@ -588,7 +675,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          replyChat!.message,
+                          widget.replyChat!.message,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall
@@ -597,24 +684,23 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       ],
                     ),
                   ),
-                _buildMessageWithMentions(context, message.message),
+                _buildMessageWithMentions(context, widget.message.message),
               ],
             ),
           ),
 
         // --- Attachment / URL Preview ---
-        if (url != null && message.attachments.isEmpty) ...[
-          UrlPreview(url: url, isSender: isSender),
-        ] else if (message.attachments.isNotEmpty) ...[
-          AttachmentPreview(attachments: message.attachments),
+        if (url != null && widget.message.attachments.isEmpty) ...[
+          UrlPreview(url: url, isSender: widget.isSender),
+        ] else if (widget.message.attachments.isNotEmpty) ...[
+          AttachmentPreview(attachments: widget.message.attachments),
         ],
       ],
     );
   }
 
   Widget _buildMessageWithMentions(BuildContext context, String text) {
-    final mentions = message.mentions ?? [];
-
+    final mentions = widget.message.mentions ?? [];
     if (mentions.isEmpty) {
       return Text(text);
     }
@@ -655,15 +741,36 @@ class _ChatBubbleMessageBox extends StatelessWidget {
       spans.add(
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: GestureDetector(
-            onTap: () => _openUserProfile(context, mention),
-            child: Text(
-              mentionText,
-              style: const TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          child: Builder(
+            builder: (context) {
+              return MouseRegion(
+                onEnter: (event) {
+                  hoverTimer?.cancel();
+                  // _showProfileOverlay(context, event.position, mention);
+                },
+                onExit: (event) {
+                  _hideProfileOverlay();
+                },
+                child: GestureDetector(
+                  onTap: () => _openChat(context, mention),
+
+                  // ✅ Mobile support
+                  onLongPress: () {
+                    final box = context.findRenderObject() as RenderBox;
+                    final position = box.localToGlobal(Offset.zero);
+                    // _showProfileOverlay(context, position, mention);
+                  },
+
+                  child: Text(
+                    mentionText,
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );

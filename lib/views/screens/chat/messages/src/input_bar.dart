@@ -158,7 +158,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     if (cursorPos < 0) return;
 
     final subText = text.substring(0, cursorPos);
-    final match = RegExp(r'@([\w\s]*)$').firstMatch(subText);
+    final match = RegExp(r'(?:^|\s)@([a-zA-Z0-9_]*)$').firstMatch(subText);
 
     _mentions.removeWhere((m) => !text.contains('@${m.name}'));
 
@@ -182,24 +182,30 @@ class _ChatInputBarState extends State<ChatInputBar> {
     final text = _controller.text;
     final cursorPos = _controller.selection.baseOffset;
     final subText = text.substring(0, cursorPos);
-    final match = RegExp(r'@([\w\s]*)$').firstMatch(subText);
+
+    final match = RegExp(r'(?:^|\s)@([a-zA-Z0-9_]*)$').firstMatch(subText);
 
     if (match != null) {
-      final start = match.start;
-      final mentionText = '@${user.name} ';
-      final end = start + mentionText.length;
+      final mentionStart = match.start + (subText[match.start] == ' ' ? 1 : 0);
 
-      final newText = text.replaceRange(start, cursorPos, mentionText);
+      final mentionText = '@${user.name} ';
+      final end = mentionStart + mentionText.length;
+
+      final newText = text.replaceRange(mentionStart, cursorPos, mentionText);
 
       _controller.text = newText;
-      _controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: end),
-      );
+      _controller.selection = TextSelection.collapsed(offset: end);
 
+      // Remove duplicate mention
       _mentions.removeWhere((m) => m.uid == user.uid);
 
       _mentions.add(
-        MentionModel(uid: user.uid, name: user.name, start: start, end: end),
+        MentionModel(
+          uid: user.uid,
+          name: user.name,
+          start: mentionStart,
+          end: end,
+        ),
       );
 
       setState(() {
@@ -449,14 +455,33 @@ class _ChatInputBarState extends State<ChatInputBar> {
     );
   }
 
+  List<MentionModel> _recalculateMentions(String text) {
+    List<MentionModel> updated = [];
+
+    for (final m in _mentions) {
+      final index = text.indexOf('@${m.name}');
+      if (index != -1) {
+        updated.add(
+          MentionModel(
+            uid: m.uid,
+            name: m.name,
+            start: index,
+            end: index + m.name.length + 1,
+          ),
+        );
+      }
+    }
+
+    return updated;
+  }
+
   Future<void> _sendMessage() async {
     if (!mounted) return;
 
     final chatData = ChatData.of(context);
     final uid = chatData.uid;
-
-    List<FileModel> attachments = [];
     var message = _controller.text.trim();
+    List<FileModel> attachments = [];
 
     if (_pickedFiles.isEmpty && message.isEmpty) return;
 
@@ -480,12 +505,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
         attachments: attachments,
       );
     } else {
+      final updatedMentions = _recalculateMentions(message);
       await ChatService.sendChatMessage(
         chatId: uid,
         message: message,
         attachments: attachments,
         replyFor: _isReply ? _chat?.uid : null,
-        mentions: _mentions,
+        mentions: updatedMentions,
       );
     }
 
