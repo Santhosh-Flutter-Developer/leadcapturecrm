@@ -332,6 +332,7 @@ class NotificationService {
             chat: chatModel,
             currentUser: uid ?? '',
             opponentUid: '',
+            onOpenChat: null,
           ),
         ),
       );

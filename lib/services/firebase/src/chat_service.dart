@@ -691,11 +691,11 @@ class ChatService {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      await TrashService.moveToTrash(
-        docRef: chatRef,
-        docData: data,
-        reason: 'chat_deleted',
-      );
+      // await TrashService.moveToTrash(
+      //   docRef: chatRef,
+      //   docData: data,
+      //   reason: 'chat_deleted',
+      // );
       // final messagesRef = chatRef.collection(Collections.messages.name);
 
       // final messagesSnapshot = await messagesRef.get();

@@ -6,6 +6,7 @@ class ChatBubble extends StatefulWidget {
   final bool isSender;
   final bool isLast;
   final bool isPinned;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const ChatBubble({
     super.key,
@@ -14,6 +15,7 @@ class ChatBubble extends StatefulWidget {
     required this.isSender,
     this.isLast = false,
     this.isPinned = false,
+    this.onOpenChat,
   });
 
   @override
@@ -333,6 +335,7 @@ class _ChatBubbleState extends State<ChatBubble>
                 onHorizontalDragEnd: _onHorizontalDragEnd,
                 onLongPress: _showMobileChatOptions,
                 onReactionTap: _onReactionTap,
+                onOpenChat: widget.onOpenChat,
               ),
             ),
           ),
@@ -354,6 +357,7 @@ class _ChatBubbleCore extends StatelessWidget {
   final ValueChanged<DragEndDetails> onHorizontalDragEnd;
   final VoidCallback onLongPress;
   final Function(String)? onReactionTap;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleCore({
     required this.slideOffset,
@@ -367,6 +371,7 @@ class _ChatBubbleCore extends StatelessWidget {
     required this.onHorizontalDragEnd,
     required this.onLongPress,
     this.onReactionTap,
+    this.onOpenChat,
   });
 
   @override
@@ -441,6 +446,7 @@ class _ChatBubbleCore extends StatelessWidget {
                           isSender: isSender,
                           message: message,
                           replyChat: replyChat,
+                          onOpenChat: onOpenChat,
                         ),
                         if (message.reactions.isNotEmpty)
                           Padding(
@@ -492,11 +498,13 @@ class _ChatBubbleMessageBox extends StatefulWidget {
   final bool isSender;
   final MessagesModel message;
   final MessagesModel? replyChat;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleMessageBox({
     required this.isSender,
     required this.message,
     required this.replyChat,
+    this.onOpenChat,
   });
 
   @override
@@ -514,41 +522,37 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
   }
 
   Future<void> _openChat(BuildContext context, MentionModel mention) async {
-    if (mention.uid.isEmpty) return;
+    final cid = await Spdb.getCid();
+    final uid = await Spdb.getUid();
+    final opponentUid = mention.uid;
 
-    try {
-      // ✅ Step 1: Get or create chatId
-      final chatId = await ChatService.getChatUid(mention.uid);
-      if (chatId == null) return;
+    if (uid == null) return;
 
-      // ✅ Step 2: Fetch ChatModel
-      final cid = await Spdb.getCid();
+    String? chatId = await ChatService.getChatUid(opponentUid);
 
-      final doc = await FirebaseFirestore.instance
-          .collection(Collections.users.name)
-          .doc(cid)
-          .collection(Collections.chats.name)
-          .doc(chatId)
-          .get();
+    chatId ??= await ChatService.createIndividualChat(userId: opponentUid);
 
-      if (!doc.exists) return;
+    final doc = await FirebaseFirestore.instance
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(chatId)
+        .get();
 
-      final chat = ChatModel.fromMap(doc.id, doc.data()!);
+    if (!doc.exists) return;
 
-      if (!context.mounted) return;
+    final chat = ChatModel.fromMap(doc.id, doc.data()!);
 
-      // ✅ Step 3: Navigate (same as your app)
-      Navigate.route(
-        context,
-        ChatMessages(
-          chat: chat,
-          currentUser: await Spdb.getUid() ?? '',
-          opponentUid: mention.uid,
-        ),
-      );
-    } catch (e) {
-      debugPrint("Mention click error: $e");
+    // 🔹 Step 4: Navigate
+    if (!kIsMobile && widget.onOpenChat != null) {
+      widget.onOpenChat!(chat, opponentUid);
+      return;
     }
+
+    Navigate.route(
+      context,
+      ChatMessages(chat: chat, currentUser: uid, opponentUid: opponentUid),
+    );
   }
 
   OverlayEntry? _overlayEntry;
@@ -735,18 +739,24 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
         );
       }
 
-      // Mention text (SAFE)
-      final mentionText = text.substring(start, end);
-
+      String mentionText = text.substring(start, end);
+      if (mentionText.startsWith('@')) {
+        mentionText = mentionText.substring(1);
+      }
       spans.add(
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
           child: Builder(
             builder: (context) {
+              String mentionText = text.substring(start, end);
+
+              if (mentionText.startsWith('@')) {
+                mentionText = mentionText.substring(1);
+              }
+
               return MouseRegion(
                 onEnter: (event) {
                   hoverTimer?.cancel();
-                  // _showProfileOverlay(context, event.position, mention);
                 },
                 onExit: (event) {
                   _hideProfileOverlay();
@@ -754,18 +764,21 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
                 child: GestureDetector(
                   onTap: () => _openChat(context, mention),
 
-                  // ✅ Mobile support
-                  onLongPress: () {
-                    final box = context.findRenderObject() as RenderBox;
-                    final position = box.localToGlobal(Offset.zero);
-                    // _showProfileOverlay(context, position, mention);
-                  },
-
-                  child: Text(
-                    mentionText,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      mentionText,
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -774,7 +787,6 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
           ),
         ),
       );
-
       currentIndex = end;
     }
 

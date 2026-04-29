@@ -92,6 +92,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Future<void> _loadUsers() async {
+    if (!widget.chat.isGroupChat) return;
     final participants = widget.chat.participants;
     final currentUid = await Spdb.getUid();
 
@@ -152,6 +153,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   void _onTextChanged() {
+    if (!widget.chat.isGroupChat) return;
     final text = _controller.text;
     final cursorPos = _controller.selection.baseOffset;
 
@@ -340,8 +342,8 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_showMentionList) _mentionList(),
-
+                    if (_showMentionList && widget.chat.isGroupChat)
+                      _mentionList(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -505,7 +507,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
         attachments: attachments,
       );
     } else {
-      final updatedMentions = _recalculateMentions(message);
+      final updatedMentions = widget.chat.isGroupChat
+          ? _recalculateMentions(message)
+          : <MentionModel>[];
       await ChatService.sendChatMessage(
         chatId: uid,
         message: message,
@@ -799,27 +803,170 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
 
   Widget _mentionList() {
+    if (_filteredUsers.isEmpty) {
+      return Container(
+        height: 120,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Text(
+          "No users found",
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+        ),
+      );
+    }
+
     return Container(
-      height: 200,
+      constraints: const BoxConstraints(maxHeight: 250),
       margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListView.builder(
+        shrinkWrap: true,
         itemCount: _filteredUsers.length,
         itemBuilder: (context, index) {
           final user = _filteredUsers[index];
 
-          return ListTile(
-            leading: CircleAvatar(child: Text(user.name[0])),
-            title: Text(user.name),
+          return InkWell(
             onTap: () => _selectMention(user),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  /// Avatar
+                  _buildMentionAvatar(user),
+
+                  const SizedBox(width: 10),
+
+                  /// Name + subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _highlightName(user.name),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Tap to mention",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  /// Optional icon
+                  Icon(
+                    Icons.alternate_email_rounded,
+                    size: 18,
+                    color: Colors.grey.shade400,
+                  ),
+                ],
+              ),
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildMentionAvatar(MentionModel user) {
+    if (user.image != null && user.image!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(100),
+        child: CachedNetworkImage(
+          imageUrl: user.image!,
+          height: 36,
+          width: 36,
+          fit: BoxFit.cover,
+          placeholder: (_, __) =>
+              CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade200),
+          errorWidget: (_, __, ___) => _initialAvatar(user.name),
+        ),
+      );
+    }
+
+    return _initialAvatar(user.name);
+  }
+
+  Widget _initialAvatar(String name) {
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: Colors.blue.shade100,
+      child: Text(
+        name[0].toUpperCase(),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _highlightName(String name) {
+    final text = _controller.text;
+    final cursorPos = _controller.selection.baseOffset;
+
+    if (cursorPos < 0) return Text(name);
+
+    final subText = text.substring(0, cursorPos);
+    final match = RegExp(r'(?:^|\s)@([a-zA-Z0-9_]*)$').firstMatch(subText);
+
+    if (match == null) return Text(name);
+
+    final query = match.group(1)?.toLowerCase() ?? '';
+
+    if (query.isEmpty) {
+      return Text(name, style: const TextStyle(fontWeight: FontWeight.w500));
+    }
+
+    final startIndex = name.toLowerCase().indexOf(query);
+
+    if (startIndex == -1) {
+      return Text(name);
+    }
+
+    final endIndex = startIndex + query.length;
+
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: name.substring(0, startIndex),
+            style: const TextStyle(color: Colors.black),
+          ),
+          TextSpan(
+            text: name.substring(startIndex, endIndex),
+            style: const TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          TextSpan(
+            text: name.substring(endIndex),
+            style: const TextStyle(color: Colors.black),
+          ),
+        ],
       ),
     );
   }
