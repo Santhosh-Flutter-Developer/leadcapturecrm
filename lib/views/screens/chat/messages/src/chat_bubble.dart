@@ -6,6 +6,7 @@ class ChatBubble extends StatefulWidget {
   final bool isSender;
   final bool isLast;
   final bool isPinned;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const ChatBubble({
     super.key,
@@ -14,6 +15,7 @@ class ChatBubble extends StatefulWidget {
     required this.isSender,
     this.isLast = false,
     this.isPinned = false,
+    this.onOpenChat,
   });
 
   @override
@@ -333,6 +335,7 @@ class _ChatBubbleState extends State<ChatBubble>
                 onHorizontalDragEnd: _onHorizontalDragEnd,
                 onLongPress: _showMobileChatOptions,
                 onReactionTap: _onReactionTap,
+                onOpenChat: widget.onOpenChat,
               ),
             ),
           ),
@@ -354,6 +357,7 @@ class _ChatBubbleCore extends StatelessWidget {
   final ValueChanged<DragEndDetails> onHorizontalDragEnd;
   final VoidCallback onLongPress;
   final Function(String)? onReactionTap;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleCore({
     required this.slideOffset,
@@ -367,6 +371,7 @@ class _ChatBubbleCore extends StatelessWidget {
     required this.onHorizontalDragEnd,
     required this.onLongPress,
     this.onReactionTap,
+    this.onOpenChat,
   });
 
   @override
@@ -441,6 +446,7 @@ class _ChatBubbleCore extends StatelessWidget {
                           isSender: isSender,
                           message: message,
                           replyChat: replyChat,
+                          onOpenChat: onOpenChat,
                         ),
                         if (message.reactions.isNotEmpty)
                           Padding(
@@ -488,69 +494,154 @@ class _ChatBubbleCore extends StatelessWidget {
   }
 }
 
-class _ChatBubbleMessageBox extends StatelessWidget {
+class _ChatBubbleMessageBox extends StatefulWidget {
   final bool isSender;
   final MessagesModel message;
   final MessagesModel? replyChat;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleMessageBox({
     required this.isSender,
     required this.message,
     required this.replyChat,
+    this.onOpenChat,
   });
 
-  void _openUserProfile(BuildContext context, MentionModel mention) {
-    if (mention.uid.isEmpty) return;
+  @override
+  State<_ChatBubbleMessageBox> createState() => _ChatBubbleMessageBoxState();
+}
 
-    final user = CacheService.getUserByUid(mention.uid);
+class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
+  Timer? hoverTimer;
 
-    if (user == null) return;
+  @override
+  void dispose() {
+    hoverTimer?.cancel();
+    _overlayEntry?.remove();
+    super.dispose();
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: CreatedByWidget(userData: user),
-          ),
-        );
-      },
+  Future<void> _openChat(BuildContext context, MentionModel mention) async {
+    final cid = await Spdb.getCid();
+    final uid = await Spdb.getUid();
+    final opponentUid = mention.uid;
+
+    if (uid == null) return;
+
+    String? chatId = await ChatService.getChatUid(opponentUid);
+
+    chatId ??= await ChatService.createIndividualChat(userId: opponentUid);
+
+    final doc = await FirebaseFirestore.instance
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(chatId)
+        .get();
+
+    if (!doc.exists) return;
+
+    final chat = ChatModel.fromMap(doc.id, doc.data()!);
+
+    // 🔹 Step 4: Navigate
+    if (!kIsMobile && widget.onOpenChat != null) {
+      widget.onOpenChat!(chat, opponentUid);
+      return;
+    }
+
+    Navigate.route(
+      context,
+      ChatMessages(chat: chat, currentUser: uid, opponentUid: opponentUid),
     );
+  }
+
+  OverlayEntry? _overlayEntry;
+
+  // void _showProfileOverlay(
+  //   BuildContext context,
+  //   Offset globalPosition,
+  //   MentionModel mention,
+  // ) {
+  //   _hideProfileOverlay(); // prevent stacking
+
+  //   final user = CacheService.getUserByUid(mention.uid);
+  //   if (user == null) return;
+
+  //   final overlay = Overlay.of(context);
+  //   final renderBox = overlay.context.findRenderObject() as RenderBox;
+
+  //   final localOffset = renderBox.globalToLocal(globalPosition);
+
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final left = (localOffset.dx.clamp(10, screenWidth - 220)).toDouble();
+  //   _overlayEntry = OverlayEntry(
+  //     builder: (context) => Positioned(
+  //       left: left,
+  //       top: localOffset.dy + 20,
+  //       child: Material(
+  //         color: Colors.transparent,
+  //         child: Container(
+  //           constraints: const BoxConstraints(maxWidth: 200),
+  //           padding: const EdgeInsets.all(8),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.circular(10),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withValues(alpha: 0.15),
+  //                 blurRadius: 10,
+  //               ),
+  //             ],
+  //           ),
+  //           child: CreatedByWidget(userData: user),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  //   overlay.insert(_overlayEntry!);
+  // }
+
+  void _hideProfileOverlay() {
+    hoverTimer?.cancel();
+    hoverTimer = Timer(const Duration(milliseconds: 150), () {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final urlRegex = RegExp(r'(https?:\/\/[^\s\)\]\}]+)');
-    final match = urlRegex.firstMatch(message.message);
+    final match = urlRegex.firstMatch(widget.message.message);
     final url = match?.group(0);
+
     return Column(
-      crossAxisAlignment: isSender
+      crossAxisAlignment: widget.isSender
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        if (message.message.isNotEmpty)
+        if (widget.message.message.isNotEmpty)
           Container(
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSender
+              color: widget.isSender
                   ? AppColors.primary.withValues(alpha: 0.15)
                   : AppColors.white,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: isSender
+                bottomLeft: widget.isSender
                     ? const Radius.circular(16)
                     : const Radius.circular(4),
-                bottomRight: isSender
+                bottomRight: widget.isSender
                     ? const Radius.circular(4)
                     : const Radius.circular(16),
               ),
               boxShadow: [
-                if (!isSender)
+                if (!widget.isSender)
                   BoxShadow(
                     color: AppColors.black.withValues(alpha: 0.05),
                     blurRadius: 2,
@@ -561,7 +652,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (replyChat != null)
+                if (widget.replyChat != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(8),
@@ -577,7 +668,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       children: [
                         Text(
                           CacheService.getUserByUid(
-                                replyChat!.senderId,
+                                widget.replyChat!.senderId,
                               )?.name ??
                               'User',
                           style: Theme.of(context).textTheme.bodySmall
@@ -588,7 +679,7 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          replyChat!.message,
+                          widget.replyChat!.message,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall
@@ -597,24 +688,23 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       ],
                     ),
                   ),
-                _buildMessageWithMentions(context, message.message),
+                _buildMessageWithMentions(context, widget.message.message),
               ],
             ),
           ),
 
         // --- Attachment / URL Preview ---
-        if (url != null && message.attachments.isEmpty) ...[
-          UrlPreview(url: url, isSender: isSender),
-        ] else if (message.attachments.isNotEmpty) ...[
-          AttachmentPreview(attachments: message.attachments),
+        if (url != null && widget.message.attachments.isEmpty) ...[
+          UrlPreview(url: url, isSender: widget.isSender),
+        ] else if (widget.message.attachments.isNotEmpty) ...[
+          AttachmentPreview(attachments: widget.message.attachments),
         ],
       ],
     );
   }
 
   Widget _buildMessageWithMentions(BuildContext context, String text) {
-    final mentions = message.mentions ?? [];
-
+    final mentions = widget.message.mentions ?? [];
     if (mentions.isEmpty) {
       return Text(text);
     }
@@ -649,25 +739,54 @@ class _ChatBubbleMessageBox extends StatelessWidget {
         );
       }
 
-      // Mention text (SAFE)
-      final mentionText = text.substring(start, end);
-
+      String mentionText = text.substring(start, end);
+      if (mentionText.startsWith('@')) {
+        mentionText = mentionText.substring(1);
+      }
       spans.add(
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: GestureDetector(
-            onTap: () => _openUserProfile(context, mention),
-            child: Text(
-              mentionText,
-              style: const TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          child: Builder(
+            builder: (context) {
+              String mentionText = text.substring(start, end);
+
+              if (mentionText.startsWith('@')) {
+                mentionText = mentionText.substring(1);
+              }
+
+              return MouseRegion(
+                onEnter: (event) {
+                  hoverTimer?.cancel();
+                },
+                onExit: (event) {
+                  _hideProfileOverlay();
+                },
+                child: GestureDetector(
+                  onTap: () => _openChat(context, mention),
+
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      mentionText,
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
-
       currentIndex = end;
     }
 

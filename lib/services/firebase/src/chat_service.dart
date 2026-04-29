@@ -15,7 +15,7 @@ class ChatService {
     required String uid,
   }) async* {
     var cid = await Spdb.getCid();
-
+    var userid = await Spdb.getUid();
     yield* firebase.users
         .doc(cid)
         .collection(Collections.chats.name)
@@ -24,11 +24,21 @@ class ChatService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            var data = doc.data();
-            data['uid'] = doc.id;
-            return MessagesModel.fromMap(doc.id, data);
-          }).toList();
+          return snapshot.docs
+              .map((doc) {
+                var data = doc.data();
+                data['uid'] = doc.id;
+
+                final message = MessagesModel.fromMap(doc.id, data);
+
+                if (userid != null && message.deletedFor.contains(userid)) {
+                  return null;
+                }
+
+                return message;
+              })
+              .whereType<MessagesModel>()
+              .toList();
         });
   }
 
@@ -36,6 +46,7 @@ class ChatService {
     required String uid,
   }) async {
     var cid = await Spdb.getCid();
+    var userid = await Spdb.getUid();
 
     final snapshot = await firebase.users
         .doc(cid)
@@ -45,11 +56,21 @@ class ChatService {
         .orderBy('timestamp', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['uid'] = doc.id;
-      return MessagesModel.fromMap(doc.id, data);
-    }).toList();
+    return snapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          data['uid'] = doc.id;
+
+          final message = MessagesModel.fromMap(doc.id, data);
+
+          if (userid != null && message.deletedFor.contains(userid)) {
+            return null;
+          }
+
+          return message;
+        })
+        .whereType<MessagesModel>()
+        .toList();
   }
 
   static Future<List<MessagesModel>> searchMessages({
@@ -151,62 +172,79 @@ class ChatService {
   }) async {
     try {
       final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
 
-      final msgRef = firebase.users
+      final messageRef = firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
           .doc(chatId)
           .collection(Collections.messages.name)
           .doc(messageId);
 
-      final doc = await msgRef.get(
+      final doc = await messageRef.get(
         const GetOptions(source: Source.serverAndCache),
       );
 
       if (!doc.exists) return null;
 
-      final message = MessagesModel.fromMap(doc.id, doc.data()!);
+      final data = doc.data()!;
+      final message = MessagesModel.fromMap(doc.id, data);
 
-      for (final file in message.attachments) {
-        await StorageService.deleteImage(file.url);
-      }
+      // ✅ STEP 1: mark message as deleted for user
+      await messageRef.update({
+        "deletedFor": FieldValue.arrayUnion([uid]),
+      });
 
-      // await msgRef.update({
-      //   "deletedFor": FieldValue.arrayUnion([cid]),
-      //   "updatedAt": FieldValue.serverTimestamp(),
-      // });
-
-      await msgRef.delete();
-      final latestQuery = await firebase.users
+      // ✅ STEP 2: check if this is LAST MESSAGE
+      final chatRef = firebase.users
           .doc(cid)
           .collection(Collections.chats.name)
-          .doc(chatId)
-          .collection(Collections.messages.name)
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
+          .doc(chatId);
 
-      MessagesModel? latestMessage;
+      final chatDoc = await chatRef.get();
+      final chatData = chatDoc.data();
 
-      if (latestQuery.docs.isNotEmpty) {
-        latestMessage = MessagesModel.fromMap(
-          latestQuery.docs.first.id,
-          latestQuery.docs.first.data(),
-        );
+      final lastMessage = chatData?['lastMessage'];
+
+      if (lastMessage != null && lastMessage['messageId'] == messageId) {
+        // ✅ STEP 3: find next valid message
+        final messagesSnapshot = await firebase.users
+            .doc(cid)
+            .collection(Collections.chats.name)
+            .doc(chatId)
+            .collection(Collections.messages.name)
+            .orderBy('timestamp', descending: true)
+            .limit(20)
+            .get();
+
+        MessagesModel? newLast;
+
+        for (var doc in messagesSnapshot.docs) {
+          final data = doc.data();
+          final msg = MessagesModel.fromMap(doc.id, data);
+
+          if (!msg.deletedFor.contains(uid)) {
+            newLast = msg;
+            break;
+          }
+        }
+
+        // ✅ STEP 4: update lastMessage
+        await chatRef.update({
+          "lastMessage": newLast != null
+              ? LastMessageModel(
+                  messageId: newLast.uid,
+                  message: newLast.message,
+                  senderId: newLast.senderId,
+                  timestamp: newLast.timestamp,
+                ).toMap()
+              : null,
+        });
       }
-
-      await firebase.users
-          .doc(cid)
-          .collection(Collections.chats.name)
-          .doc(chatId)
-          .update({
-            "lastMessage": latestMessage?.toMap(),
-            "updatedAt": FieldValue.serverTimestamp(),
-          });
 
       return message;
     } catch (e, st) {
-      debugPrint("$e, $st");
+      debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
       rethrow;
     }
@@ -310,7 +348,7 @@ class ChatService {
         mentions: mentions ?? [],
       );
 
-      await CommonService.add(
+      final docRef = await CommonService.add(
         '${Collections.users.name}/$cid/${Collections.chats.name}/$chatId/${Collections.messages.name}',
         chat.toMap(),
       );
@@ -320,6 +358,7 @@ class ChatService {
         chatId,
         {
           "lastMessage": LastMessageModel(
+            messageId: docRef.id,
             message: lastMsg,
             senderId: senderId,
             timestamp: DateTime.now(),
@@ -652,11 +691,11 @@ class ChatService {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      await TrashService.moveToTrash(
-        docRef: chatRef,
-        docData: data,
-        reason: 'chat_deleted',
-      );
+      // await TrashService.moveToTrash(
+      //   docRef: chatRef,
+      //   docData: data,
+      //   reason: 'chat_deleted',
+      // );
       // final messagesRef = chatRef.collection(Collections.messages.name);
 
       // final messagesSnapshot = await messagesRef.get();

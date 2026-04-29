@@ -224,7 +224,11 @@ class AttachmentPreview extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(e.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              path.basename(e.name),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           IconButton(
             icon: const Icon(Iconsax.document_download, size: 18),
