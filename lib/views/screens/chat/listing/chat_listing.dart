@@ -12,6 +12,8 @@ import '/theme/theme.dart';
 import '/utils/utils.dart';
 import 'bloc/chat_bloc.dart';
 
+const String _pageTitle = "Chat";
+
 class ChatListing extends StatelessWidget {
   final String currentUserUid;
   final String? selectedChatUid;
@@ -57,23 +59,18 @@ class _ChatListingViewState extends State<ChatListingView> {
     super.initState();
   }
 
+  void _openChatFromMention(ChatModel chat, String opponentUid) {
+    setState(() {
+      _selectedChatUid = chat.uid;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: kIsMobile ? Back(color: FeedAppColors.textPrimary) : null,
-        backgroundColor: FeedAppColors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Chats",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: FeedAppColors.textPrimary,
-            fontSize: 18,
-          ),
-        ),
-      ),
+      appBar: kIsMobile
+          ? AppBar(leading: Back(), title: Text(_pageTitle))
+          : null,
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
           if (state is ChatLoading) {
@@ -102,6 +99,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                                   (id) => id != widget.currentUserUid,
                                   orElse: () => '',
                                 ),
+                            onOpenChat: _openChatFromMention,
                           ),
                         );
                       },
@@ -135,6 +133,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                                       (id) => id != widget.currentUserUid,
                                       orElse: () => '',
                                     ),
+                                onOpenChat: _openChatFromMention,
                               )
                             : _buildNoChatSelected(),
                       ),

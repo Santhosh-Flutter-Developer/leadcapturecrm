@@ -247,7 +247,6 @@ class _HeaderState extends State<Header> {
   //   );
   // }
 
-  // --- Notification Button with Badge ---
   Widget _buildNotificationButton(bool isDark) {
     return Stack(
       children: [
@@ -262,27 +261,32 @@ class _HeaderState extends State<Header> {
           stream: getNotificationCount(),
           builder: (context, snapshot) {
             int notificationCount = snapshot.data ?? 0;
+
             if (notificationCount != 0) {
               return Positioned(
-                right: 2,
-                top: 2,
+                right: -2,
+                top: -2,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.danger,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.white, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.white, width: 1),
                   ),
                   constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
+                    minWidth: 12, // 🔽 reduced
+                    minHeight: 12,
                   ),
                   child: Center(
                     child: Text(
-                      '${snapshot.data ?? 0}',
+                      notificationCount > 99 ? '99+' : '$notificationCount',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 9, // 🔽 smaller font
                         color: AppColors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                     ),

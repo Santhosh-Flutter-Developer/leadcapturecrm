@@ -91,6 +91,7 @@ dependencies:
   flutter_face_api: ^8.1.765
   image_cropper: ^12.2.1
   geolocator: ^13.0.1
+  video_thumbnail: ^0.5.6
 
 dev_dependencies:
   flutter_test:

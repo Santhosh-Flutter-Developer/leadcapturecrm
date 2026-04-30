@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:any_link_preview/any_link_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:line_icons/line_icon.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,11 +39,13 @@ class ChatMessages extends StatefulWidget {
   final ChatModel chat;
   final String currentUser;
   final String opponentUid;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
   const ChatMessages({
     super.key,
     required this.chat,
     required this.currentUser,
     required this.opponentUid,
+    this.onOpenChat,
   });
 
   @override
@@ -131,7 +135,10 @@ class _ChatMessagesState extends State<ChatMessages> {
                   children: [
                     Expanded(
                       // Pass the raw list to BuildSliverChat
-                      child: BuildSliverChat(chats: chats),
+                      child: BuildSliverChat(
+                        chats: chats,
+                        onOpenChat: widget.onOpenChat,
+                      ),
                     ),
                     ChatInputBar(chat: widget.chat),
                   ],
@@ -149,7 +156,8 @@ class _ChatMessagesState extends State<ChatMessages> {
 /// and builds the reversible chat list with date separators.
 class BuildSliverChat extends StatefulWidget {
   final List<MessagesModel> chats;
-  const BuildSliverChat({super.key, required this.chats});
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
+  const BuildSliverChat({super.key, required this.chats, this.onOpenChat});
 
   @override
   State<BuildSliverChat> createState() => _BuildSliverChatState();
@@ -257,6 +265,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                   isPinned: true,
                   isSender: msg.senderId == currentUser,
                   chatUid: uid,
+                  onOpenChat: widget.onOpenChat,
                 );
               }),
             ],
@@ -312,6 +321,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
               // If they are sorted oldest-to-newest, this should be `index == chats.length - 1`.
               // Based on `reverse: true` in CustomScrollView, assuming 0 is the *newest*.
               isLast: message.senderId == currentUser && index == 0,
+              onOpenChat: widget.onOpenChat,
             );
           }, childCount: chats.length),
         ),

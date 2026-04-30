@@ -180,7 +180,7 @@ class MessagesModel {
   final String? forwardFromChatId;
   final List<String> seenBy;
   final Map<String, List<String>> reactions;
-  final bool deleted;
+  final List<String> deletedFor;
   final bool isPinned;
   final DateTime? pinnedTimeStamp;
   final List<MentionModel>? mentions;
@@ -204,7 +204,7 @@ class MessagesModel {
     this.forwardFromChatId,
     this.seenBy = const [],
     this.reactions = const {},
-    this.deleted = false,
+    this.deletedFor = const [],
     this.isPinned = false,
     this.pinnedTimeStamp,
     this.mentions,
@@ -229,7 +229,7 @@ class MessagesModel {
       'forwardFromChatId': forwardFromChatId,
       'seenBy': seenBy,
       'reactions': reactions,
-      'deleted': deleted,
+      'deletedFor': deletedFor,
       'isPinned': isPinned,
       'pinnedTimeStamp': pinnedTimeStamp?.millisecondsSinceEpoch,
       'mentions': mentions?.map((e) => e.toMap()).toList(),
@@ -266,7 +266,7 @@ class MessagesModel {
               ),
             )
           : {},
-      deleted: map['deleted'] ?? false,
+      deletedFor: List<String>.from(map['deletedFor'] ?? []),
       isPinned: map['isPinned'] ?? false,
       mentions: (map['mentions'] as List?)
           ?.map((e) => MentionModel.fromMap(e))
@@ -274,7 +274,9 @@ class MessagesModel {
       pinnedTimeStamp: map['pinnedTimeStamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['pinnedTimeStamp'])
           : null,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        map['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
+      ),
     );
   }
 
@@ -294,11 +296,13 @@ class MessagesModel {
 
 class LastMessageModel {
   final String senderId;
+  final String? messageId;
   final String message;
   final String? type;
   final DateTime? timestamp;
   LastMessageModel({
     required this.senderId,
+    this.messageId,
     required this.message,
     this.type,
     this.timestamp,
@@ -307,6 +311,7 @@ class LastMessageModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'senderId': senderId,
+      'messageId': messageId,
       'message': message,
       'type': type,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
@@ -316,6 +321,7 @@ class LastMessageModel {
   factory LastMessageModel.fromMap(Map<String, dynamic> map) {
     return LastMessageModel(
       senderId: map['senderId'] as String,
+      messageId: map['messageId'] as String?,
       message: map['message'] as String,
       type: map['type'] as String?,
       timestamp: map['timestamp'] != null
