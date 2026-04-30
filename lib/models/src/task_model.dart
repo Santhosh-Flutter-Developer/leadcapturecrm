@@ -125,6 +125,7 @@ class TaskModel {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'taskNumber': taskNumber,
       'taskName': taskName,
       'description': description,
       'deadline': deadline?.millisecondsSinceEpoch,
