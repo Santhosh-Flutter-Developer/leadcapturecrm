@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,13 +14,18 @@ final AudioPlayer _player = AudioPlayer();
 class FirestoreNotificationListener {
   static final FirebaseConfig firebase = FirebaseConfig();
   static final Set<String> _shownIds = {};
+  static StreamSubscription? _subscription;
 
-  static void listenForNotifications() async {
+  static Future<void> listenForNotifications() async {
+    // Cancel any existing listener before starting a new one
+    await _subscription?.cancel();
+    _subscription = null;
+
     var cid = await Spdb.getCid();
     var uid = await Spdb.getUid();
 
     if (uid != null && cid != null) {
-      firebase.users
+      _subscription = firebase.users
           .doc(cid)
           .collection(Collections.notifications.name)
           .where('toUids', arrayContains: uid.trim())

@@ -102,6 +102,9 @@ class AuthService {
     required String adminName,
     required String password,
     File? logo,
+    double? companyLat,
+    double? companyLng,
+    double? companyRadius,
   }) async {
     try {
       // 1. Create company
@@ -123,6 +126,9 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
         'logo': logoUrl,
         'status': 'active',
+        if (companyLat != null) 'companyLat': companyLat,
+        if (companyLng != null) 'companyLng': companyLng,
+        if (companyRadius != null) 'companyRadius': companyRadius,
       });
 
       DocumentReference roleRef = companyRef

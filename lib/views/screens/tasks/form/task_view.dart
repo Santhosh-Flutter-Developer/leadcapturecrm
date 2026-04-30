@@ -37,6 +37,9 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
 
   String? currentUid;
+  String _cid = '';
+  Stream<List<TaskCommentModel>>? _commentsStream;
+  Stream<List<TaskHistoryModel>>? _historyStream;
   bool _isSending = false;
   bool isParticipant = false;
   bool _isActionLoading = false;
@@ -76,7 +79,25 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     super.initState();
     _future = TaskService.getTask(uid: widget.uid);
     _tabController = TabController(length: 3, vsync: this);
-    Spdb.getUid().then((uid) => setState(() => currentUid = uid));
+    _tabController.addListener(_onTabChanged);
+    Spdb.getUid().then((uid) {
+      if (mounted) setState(() => currentUid = uid);
+    });
+    Spdb.getCid().then((cid) {
+      if (mounted) {
+        setState(() {
+          _cid = cid ?? '';
+          _commentsStream = TaskService.streamComments(
+            cid: _cid,
+            taskId: widget.uid,
+          );
+          _historyStream = TaskService.streamTaskHistory(
+            cid: _cid,
+            taskId: widget.uid,
+          );
+        });
+      }
+    });
     // _liveTimer = Timer.periodic(const Duration(seconds: 1), (_) {
     //   if (!mounted) return;
     //   if (!(_taskModel.hasStarted && !_taskModel.completed)) return;
@@ -84,9 +105,16 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     // });
   }
 
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _liveTimer?.cancel();
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _commentController.dispose();
     super.dispose();
@@ -159,80 +187,70 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: Spdb.getCid(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    if (_cid.isEmpty) return const WaitingLoading();
+
+    return FutureBuilder<TaskModel>(
+      future: _future,
+      builder: (context, taskSnap) {
+        if (taskSnap.connectionState == ConnectionState.waiting) {
           return const WaitingLoading();
         }
-        final String cid = snapshot.data ?? '';
+        if (!taskSnap.hasData) return ErrorDisplay(error: "Task not found");
 
-        return FutureBuilder<TaskModel>(
-          future: _future,
-          builder: (context, taskSnap) {
-            if (taskSnap.connectionState == ConnectionState.waiting) {
-              return const WaitingLoading();
-            }
-            if (!taskSnap.hasData) return ErrorDisplay(error: "Task not found");
+        _taskModel = taskSnap.data!;
+        isParticipant =
+            currentUid != null &&
+            (_taskModel.assignees.contains(currentUid!) ||
+                _taskModel.createdBy.contains(currentUid!));
 
-            _taskModel = taskSnap.data!;
-            isParticipant =
-                currentUid != null &&
-                (_taskModel.assignees.contains(currentUid!) ||
-                    _taskModel.createdBy.contains(currentUid!));
-
-            return Scaffold(
-              backgroundColor: TaskViewColors.background,
-              appBar: FormWidgets.buildHeader(
-                context: context,
-                title: "Task Details",
-              ),
-              body: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1400),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth > 1000;
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: isWide ? 7 : 1,
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [_buildMainContent(cid)],
-                              ),
-                            ),
+        return Scaffold(
+          backgroundColor: TaskViewColors.background,
+          appBar: FormWidgets.buildHeader(
+            context: context,
+            title: "Task Details",
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 1000;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: isWide ? 7 : 1,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [_buildMainContent()],
                           ),
-                          if (isWide)
-                            Container(
-                              width: 380,
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  left: BorderSide(
-                                    color: TaskViewColors.border,
-                                  ),
-                                ),
-                                color: TaskViewColors.white,
-                              ),
-                              child: _buildSidePanel(),
+                        ),
+                      ),
+                      if (isWide)
+                        Container(
+                          width: 380,
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              left: BorderSide(color: TaskViewColors.border),
                             ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
+                            color: TaskViewColors.white,
+                          ),
+                          child: _buildSidePanel(),
+                        ),
+                    ],
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildMainContent(String cid) {
+  Widget _buildMainContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -269,7 +287,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
           _buildAttachmentsGrid(),
           const SizedBox(height: 32),
         ],
-        _buildModernTabs(cid),
+        _buildModernTabs(),
       ],
     );
   }
@@ -546,12 +564,15 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildModernTabs(String cid) {
+  Widget _buildModernTabs() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: TaskViewColors.border)),
+            border: Border(
+              bottom: BorderSide(color: TaskViewColors.border),
+            ),
           ),
           child: TabBar(
             controller: _tabController,
@@ -571,44 +592,46 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 20),
-        SizedBox(
-          height: 500,
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildCommentsTab(cid),
-              _buildHistoryTab(cid),
-              _buildTimeTrackingTab(),
-            ],
-          ),
+        IndexedStack(
+          index: _tabController.index,
+          children: [
+            _buildCommentsTab(),
+            _buildHistoryTab(),
+            _buildTimeTrackingTab(),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildCommentsTab(String cid) {
+  Widget _buildCommentsTab() {
     return StreamBuilder<List<TaskCommentModel>>(
-      stream: TaskService.streamComments(cid: cid, taskId: _taskModel.uid!),
+      stream: _commentsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return WaitingLoading();
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: WaitingLoading(),
+          );
         }
         final comments = snapshot.data ?? [];
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCommentInput(),
             const SizedBox(height: 20),
-            Expanded(
-              child: comments.isEmpty
-                  ? _buildEmptyState(Iconsax.slash, "No comments yet.")
-                  : ListView.separated(
-                      itemCount: comments.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) =>
-                          _buildCommentItem(comments[index]),
-                    ),
-            ),
+            if (comments.isEmpty)
+              _buildEmptyState(Iconsax.slash, "No comments yet.")
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: comments.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, index) =>
+                    _buildCommentItem(comments[index]),
+              ),
           ],
         );
       },
@@ -720,18 +743,23 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHistoryTab(String cid) {
+  Widget _buildHistoryTab() {
     return StreamBuilder<List<TaskHistoryModel>>(
-      stream: TaskService.streamTaskHistory(cid: cid, taskId: _taskModel.uid!),
+      stream: _historyStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return WaitingLoading();
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: WaitingLoading(),
+          );
         }
         final history = snapshot.data ?? [];
         if (history.isEmpty) {
           return _buildEmptyState(Iconsax.activity, "No activity recorded.");
         }
         return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: history.length,
           itemBuilder: (context, index) =>
               _buildHistoryItem(history[index], index == history.length - 1),
@@ -885,7 +913,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
         const SizedBox(height: 24),
 
         /// CHART
-        Expanded(child: _buildTimeChart(spots, totalMinutes)),
+        SizedBox(height: 300, child: _buildTimeChart(spots, totalMinutes)),
       ],
     );
   }

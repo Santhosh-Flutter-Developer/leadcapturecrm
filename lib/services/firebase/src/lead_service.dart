@@ -49,16 +49,11 @@ class LeadService {
 
       // Collect workflow users for notifications
       List<String> users = lead.workflow.toSet().toList();
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
@@ -105,16 +100,11 @@ class LeadService {
 
       users = users.toSet().toList();
 
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
