@@ -118,7 +118,7 @@ class LeadService {
         toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.lead,
-        payload: {},
+        payload: {'leadId': uid},
       );
       await PostNotificationService.sendNotification(model: notif);
     } catch (e, st) {

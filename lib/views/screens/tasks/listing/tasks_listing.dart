@@ -575,10 +575,12 @@ class _TaskListingViewState extends State<TaskListingView> {
         dataCell(
           context,
           Text(
-            task.createdBy
-                .map((e) => CacheService.getUserByUid(e)?.name ?? '')
-                .toList()
-                .join(',\n'),
+            task.taskCreatedBy.name.isNotEmpty
+                ? task.taskCreatedBy.name
+                : task.createdBy
+                      .map((e) => CacheService.getUserByUid(e)?.name ?? '')
+                      .where((n) => n.isNotEmpty)
+                      .join(',\n'),
             softWrap: true,
             maxLines: null,
             style: Theme.of(context).textTheme.bodySmall,
