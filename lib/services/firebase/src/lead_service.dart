@@ -253,6 +253,21 @@ class LeadService {
     }
   }
 
+  static Future<void> restoreLead(LeadModel lead) async {
+    try {
+      final firebase = FirebaseConfig();
+      final cid = await Spdb.getCid();
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(lead.uid)
+          .set(lead.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+    }
+  }
+
   static Future<void> convertLeadToDeal({required LeadModel lead}) async {
     try {
       final cid = await Spdb.getCid();

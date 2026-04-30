@@ -353,7 +353,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                   ),
                   icon: const Icon(Iconsax.trash),
                   onPressed: () async {
-                    var result = await showDialog(
+                    final result = await showDialog(
                       context: context,
                       builder: (context) => ConfirmDialog(
                         title: 'Delete',
@@ -362,27 +362,47 @@ class _TaskListingViewState extends State<TaskListingView> {
                       ),
                       barrierDismissible: false,
                     );
-                    if (result != null && result) {
-                      try {
-                        futureLoading(context);
-                        for (var i in _selectedTasks) {
-                          await TaskService.deleteTask(uid: i.uid ?? '');
-                        }
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        _selectedTasks.clear();
-                        setState(() {});
-                      } catch (e) {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(context, e.toString(), isSuccess: false);
+
+                    if (result != true) return;
+
+                    try {
+                      // ✅ STEP 1: backup
+                      final deletedTasks = List<TaskModel>.from(_selectedTasks);
+
+                      futureLoading(context);
+
+                      // ✅ STEP 2: delete
+                      for (var task in deletedTasks) {
+                        await TaskService.deleteTask(uid: task.uid ?? '');
                       }
+
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+
+                      // ✅ STEP 3: clear selection
+                      _selectedTasks.clear();
+                      setState(() {});
+
+                      // ✅ STEP 4: UNDO
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          for (var task in deletedTasks) {
+                            await TaskService.restoreTask(task);
+                          }
+
+                          // 🔥 refresh list
+                          context.read<TaskBloc>().add(StreamTasks());
+                        },
+                      );
+                    } catch (e) {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -646,25 +666,39 @@ class _TaskListingViewState extends State<TaskListingView> {
                   onPressed: () async {
                     final result = await showDialog<bool>(
                       context: context,
-                      builder: (context) => const ConfirmDialog(
+                      builder: (context) => ConfirmDialog(
                         title: 'Delete $_pageTitle',
                         content: 'Are you sure you want to delete this task?',
                       ),
                     );
 
-                    if (result == true) {
-                      try {
-                        await TaskService.deleteTask(uid: task.uid ?? '');
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
+                    if (result != true) return;
 
-                        context.read<TaskBloc>().add(StreamTasks());
-                      } catch (e, st) {
-                        await ErrorService.recordError(e, st);
-                        FlushBar.show(context, e.toString(), isSuccess: false);
-                      }
+                    try {
+                      final deletedTask = task;
+
+                      await TaskService.deleteTask(uid: task.uid ?? '');
+
+                      if (!mounted) return;
+
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          await TaskService.restoreTask(deletedTask);
+
+                          // ✅ refresh AFTER undo
+                          context.read<TaskBloc>().add(StreamTasks());
+                        },
+                        // onDismissed: () {
+                        //   // ✅ refresh AFTER snackbar disappears (no undo)
+                        //   context.read<TaskBloc>().add(StreamTasks());
+                        // },
+                      );
+                    } catch (e, st) {
+                      await ErrorService.recordError(e, st);
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                 ),
