@@ -80,6 +80,9 @@ class _LoginState extends State<Login> {
           RoleModel role = await RoleService.getRole(uid: emp.role);
           await PermissionService.savePermissions(role.permissions);
           await CacheService.syncAllCollections();
+          if (kIsDesktop) {
+            FirestoreNotificationListener.listenForNotifications();
+          }
           Navigate.routeReplace(context, MainScreen(isAdmin: false));
           return;
         }
@@ -104,6 +107,9 @@ class _LoginState extends State<Login> {
             user: await Spdb.getUser(),
           ),
         );
+        if (kIsDesktop) {
+          FirestoreNotificationListener.listenForNotifications();
+        }
         Navigate.routeReplace(context, MainScreen(isAdmin: true));
       } catch (e, st) {
         // if (Navigator.canPop(context)) {

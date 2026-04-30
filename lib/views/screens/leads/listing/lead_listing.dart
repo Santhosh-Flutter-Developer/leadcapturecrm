@@ -81,6 +81,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   final List<LeadModel> _leadsList = [];
   List<LeadModel> _filteredLeads = [];
   PermissionModel? permissions;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -98,6 +100,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    _currentUid = await Spdb.getUid();
+    _isAdmin = await Spdb.isAdminLoggedIn();
     setState(() {});
   }
 
@@ -1173,7 +1177,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false)) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin ||
+                      lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   color: AppColors.info,
@@ -1220,7 +1226,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 },
               ),
 
-              if ((permissions?.canDelete ?? false)) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin ||
+                      lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,

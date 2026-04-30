@@ -17,7 +17,6 @@ import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/constants/src/svg.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/db.dart';
-import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/workpermission_service.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
@@ -33,6 +32,7 @@ import 'package:leadcapture/views/ui/src/snackbar.dart';
 
 // Project imports:
 import '/constants/constants.dart';
+import '/services/services.dart';
 import '/theme/theme.dart';
 
 class WorktimeCreate extends StatefulWidget {
@@ -162,41 +162,54 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   void _clockIn() async {
-    // const LatLng buildingCenter = LatLng(9.44133, 77.79675); // Core data
-    // const LatLng buildingCenter = LatLng(9.441321, 77.796719); // DB data
-    // const double allowedRadiusMeters = 20;
-    // const double maxAllowedAccuracy = 20; // meters
-
     try {
       futureLoading(context);
-      // if (await LocationService.initalize()) {
-      //   LocationData currentLocation = await LocationService.getCurrentLocation();
 
-      // bool isInside = LocationService.isWithinRadius(
-      //   LatLng(currentLocation.latitude!, currentLocation.longitude!),
-      //   buildingCenter,allowedRadiusMeters,
-      // );
+      // --- Geofence check (mobile only) ---
+      final geofence = await CompanyLocationService.getGeofence();
+      if (geofence != null) {
+        final position = await LocationService.getCurrentPosition();
+        if (position == null) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "Location permission is required to clock in. Please enable it in your device settings.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockIn,
+          );
+          return;
+        }
 
-      // if (currentLocation.accuracy == null || currentLocation.accuracy! > maxAllowedAccuracy) {
-      //   Navigator.pop(context);
-      //   Snackbar.showSnackBarOption( context,
-      //     content: "Location signal is weak. Please move near a window.", isSuccess: false,
-      //     actionText: "Try Again",
-      //     action: () {
-      //       _clockIn();
-      //     },
-      //   );
-      //   return;
-      // }
+        final isInside = LocationService.isWithinRadius(
+          currentLat: position.latitude,
+          currentLng: position.longitude,
+          centerLat: geofence.latitude,
+          centerLng: geofence.longitude,
+          radiusMeters: geofence.radiusMeters,
+        );
+
+        if (!isInside) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "You are outside the company premises. Move closer and try again.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockIn,
+          );
+          return;
+        }
+      }
+      // ------------------------------------
 
       var uid = await Spdb.getUid();
       var user = await Spdb.getUser();
       var name = user.name;
 
-      // Navigator.pop(context);
-
       var existing = await WorktimeService.checkTodayClockIn();
-
       if (existing) {
         Navigator.pop(context);
         Snackbar.showSnackBar(
@@ -207,7 +220,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
         return;
       }
 
-      // if (isInside) {
       var id = await WorktimeService.createWorkTime(
         model: WorktimeModel(
           breaks: {},
@@ -223,40 +235,13 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       _alreadyClockIned = true;
       _elapsedWorkTime = Duration.zero;
       _startTimer();
-      // } else {
-      //   await WorktimeFunctions.createWrongLoginAttempt(
-      //     points: LatLng(
-      //       currentLocation.latitude!,
-      //       currentLocation.longitude!,
-      //     ),
-      //   );
 
-      // Snackbar.showSnackBarOption(
-      //   context,
-      //   content: "You are outside building",
-      //   isSuccess: false,
-      //   actionText: "Try Again",
-      //   action: () {
-      //     _clockIn();
-      //   },
-      // );
-      // }
-      // }
-      // else {
-      //   Snackbar.showSnackBar(
-      //     context,
-      //     content: "Location services are disabled",
-      //     isSuccess: false,
-      //   );
-      // }
       Navigator.pop(context);
       setState(() {});
     } catch (e, stackTrace) {
       Navigator.pop(context);
-
       debugPrint("❌ ClockIn Error: $e");
       debugPrint("📍 StackTrace: $stackTrace");
-
       Snackbar.showSnackBar(context, content: e.toString(), isSuccess: false);
     }
   }

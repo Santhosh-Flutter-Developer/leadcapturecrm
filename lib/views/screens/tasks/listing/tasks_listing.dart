@@ -72,6 +72,8 @@ class _TaskListingViewState extends State<TaskListingView> {
   final List<TaskModel> _selectedTasks = [];
   PermissionModel? permissions;
   String _selectedView = 'Grid';
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -81,6 +83,8 @@ class _TaskListingViewState extends State<TaskListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    _currentUid = await Spdb.getUid();
+    _isAdmin = await Spdb.isAdminLoggedIn();
     setState(() {});
   }
 
@@ -240,12 +244,6 @@ class _TaskListingViewState extends State<TaskListingView> {
                           ),
                         ),
 
-                        DataColumn(
-                          label: Text(
-                            "Created By",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
                         DataColumn(
                           label: Text(
                             "Action",
@@ -623,15 +621,13 @@ class _TaskListingViewState extends State<TaskListingView> {
           task.uid ?? '',
         ),
 
-        dataCell(
-          context,
-          CreatedByWidget(userData: task.taskCreatedBy),
-          task.uid ?? '',
-        ),
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false)) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin ||
+                      task.taskCreatedBy.uid == _currentUid ||
+                      task.observers.contains(_currentUid))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   onPressed: () {
@@ -656,7 +652,9 @@ class _TaskListingViewState extends State<TaskListingView> {
                   onPressed: null,
                 ),
               ],
-              if ((permissions?.canDelete ?? false)) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin ||
+                      task.taskCreatedBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,

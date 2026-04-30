@@ -59,6 +59,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   late LeadCategoryModel widgetLeadCategory;
   late TabController _tabController;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -66,6 +68,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     var leadCategory = CacheService.leadCategoryByUid(widget.lead.leadCategory);
     widgetLeadCategory = leadCategory ?? LeadCategoryModel.fromEmptyMap();
     _tabController = TabController(length: 5, vsync: this);
+    _loadOwnership();
+  }
+
+  Future<void> _loadOwnership() async {
+    final uid = await Spdb.getUid();
+    final isAdmin = await Spdb.isAdminLoggedIn();
+    setState(() {
+      _currentUid = uid;
+      _isAdmin = isAdmin;
+    });
   }
 
   @override
@@ -102,44 +114,46 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          _appBarButton(Iconsax.edit, "Edit", () {
-            if (kIsMobile) {
-              Sheet.showSheet(
-                context,
-                widget: LeadEdit(uid: widget.lead.uid ?? ''),
+          if (_isAdmin || widget.lead.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () {
+              if (kIsMobile) {
+                Sheet.showSheet(
+                  context,
+                  widget: LeadEdit(uid: widget.lead.uid ?? ''),
+                );
+              } else {
+                GeneralDialog.showRTLSheet(
+                  context,
+                  LeadEdit(uid: widget.lead.uid ?? ''),
+                );
+              }
+            }),
+            const SizedBox(width: 8),
+            _appBarButton(Iconsax.trash, "Delete", () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const ConfirmDialog(
+                  title: 'Delete Lead',
+                  content: 'Are you sure you want to delete this lead?',
+                ),
               );
-            } else {
-              GeneralDialog.showRTLSheet(
-                context,
-                LeadEdit(uid: widget.lead.uid ?? ''),
-              );
-            }
-          }),
-          const SizedBox(width: 8),
-          _appBarButton(Iconsax.trash, "Delete", () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (context) => const ConfirmDialog(
-                title: 'Delete Lead',
-                content: 'Are you sure you want to delete this lead?',
-              ),
-            );
 
-            if (result == true) {
-              try {
-                await LeadService.deleteLead(uid: widget.lead.uid ?? '');
-                if (context.mounted) {
-                  Navigator.of(context).pop('deleted');
-                  FlushBar.show(context, 'Lead deleted successfully');
-                }
-              } catch (e, st) {
-                await ErrorService.recordError(e, st);
-                if (context.mounted) {
-                  FlushBar.show(context, e.toString(), isSuccess: false);
+              if (result == true) {
+                try {
+                  await LeadService.deleteLead(uid: widget.lead.uid ?? '');
+                  if (context.mounted) {
+                    Navigator.of(context).pop('deleted');
+                    FlushBar.show(context, 'Lead deleted successfully');
+                  }
+                } catch (e, st) {
+                  await ErrorService.recordError(e, st);
+                  if (context.mounted) {
+                    FlushBar.show(context, e.toString(), isSuccess: false);
+                  }
                 }
               }
-            }
-          }, isDanger: true),
+            }, isDanger: true),
+          ],
           const SizedBox(width: 16),
         ],
         bottom: PreferredSize(

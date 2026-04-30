@@ -87,6 +87,8 @@ class _DealsListingViewState extends State<DealsListingView> {
   double? _value;
 
   PermissionModel? permissions;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -96,6 +98,8 @@ class _DealsListingViewState extends State<DealsListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    _currentUid = await Spdb.getUid();
+    _isAdmin = await Spdb.isAdminLoggedIn();
     setState(() {});
   }
 
@@ -940,7 +944,9 @@ class _DealsListingViewState extends State<DealsListingView> {
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false)) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin ||
+                      deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   color: AppColors.info,
@@ -966,7 +972,9 @@ class _DealsListingViewState extends State<DealsListingView> {
                 ),
               ],
 
-              if ((permissions?.canDelete ?? false)) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin ||
+                      deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,

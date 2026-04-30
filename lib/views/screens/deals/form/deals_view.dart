@@ -54,11 +54,23 @@ class DealsView extends StatefulWidget {
 class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   late TabController _tabController;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadOwnership();
+  }
+
+  Future<void> _loadOwnership() async {
+    final uid = await Spdb.getUid();
+    final isAdmin = await Spdb.isAdminLoggedIn();
+    setState(() {
+      _currentUid = uid;
+      _isAdmin = isAdmin;
+    });
   }
 
   @override
@@ -95,39 +107,41 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          _appBarButton(Iconsax.edit, "Edit", () {
-            if (kIsMobile) {
-              Sheet.showSheet(
-                context,
-                widget: DealEdit(uid: widget.deal.uid ?? ''),
-              );
-            } else {
-              GeneralDialog.showRTLSheet(
-                context,
-                DealEdit(uid: widget.deal.uid ?? ''),
-              );
-            }
-          }),
-          const SizedBox(width: 8),
-          _appBarButton(Iconsax.trash, "Delete", () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (context) => const ConfirmDialog(
-                title: 'Delete Deal',
-                content: 'Are you sure you want to delete this deal?',
-              ),
-            );
-
-            if (result == true) {
-              try {
-                await DealService.deleteDeal(uid: widget.deal.uid ?? '');
-                FlushBar.show(context, 'Deal deleted successfully');
-              } catch (e, st) {
-                await ErrorService.recordError(e, st);
-                FlushBar.show(context, e.toString(), isSuccess: false);
+          if (_isAdmin || widget.deal.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () {
+              if (kIsMobile) {
+                Sheet.showSheet(
+                  context,
+                  widget: DealEdit(uid: widget.deal.uid ?? ''),
+                );
+              } else {
+                GeneralDialog.showRTLSheet(
+                  context,
+                  DealEdit(uid: widget.deal.uid ?? ''),
+                );
               }
-            }
-          }, isDanger: true),
+            }),
+            const SizedBox(width: 8),
+            _appBarButton(Iconsax.trash, "Delete", () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const ConfirmDialog(
+                  title: 'Delete Deal',
+                  content: 'Are you sure you want to delete this deal?',
+                ),
+              );
+
+              if (result == true) {
+                try {
+                  await DealService.deleteDeal(uid: widget.deal.uid ?? '');
+                  FlushBar.show(context, 'Deal deleted successfully');
+                } catch (e, st) {
+                  await ErrorService.recordError(e, st);
+                  FlushBar.show(context, e.toString(), isSuccess: false);
+                }
+              }
+            }, isDanger: true),
+          ],
           const SizedBox(width: 16),
         ],
         bottom: PreferredSize(
