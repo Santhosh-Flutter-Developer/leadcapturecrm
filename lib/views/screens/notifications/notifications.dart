@@ -219,7 +219,17 @@ class _NotificationsListingState extends State<NotificationsListing> {
 
       /// 📊 LEAD → SHEET
       case NotificationType.lead:
-        await _openPlatformSheet(LeadsListing(showAppBar: true));
+        final leadId = item.payload['leadId'] as String?;
+        if (leadId != null && leadId.isNotEmpty) {
+          try {
+            final lead = await LeadService.getLead(uid: leadId);
+            await _openPlatformSheet(LeadsView(lead: lead));
+          } catch (_) {
+            await _openPlatformSheet(LeadsListing(showAppBar: true));
+          }
+        } else {
+          await _openPlatformSheet(LeadsListing(showAppBar: true));
+        }
         break;
 
       /// 💼 DEAL → SHEET

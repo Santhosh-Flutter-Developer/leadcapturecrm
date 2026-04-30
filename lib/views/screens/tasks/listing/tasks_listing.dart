@@ -74,7 +74,6 @@ class _TaskListingViewState extends State<TaskListingView> {
   String _selectedView = 'Grid';
   String? _currentUid;
   bool _isAdmin = false;
-
   @override
   void initState() {
     super.initState();
@@ -322,44 +321,27 @@ class _TaskListingViewState extends State<TaskListingView> {
         final addDeleteButtons = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (permissions?.canCreate ?? false) ...[
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (kIsMobile) {
-                    Sheet.showSheet(context, widget: const TaskCreate());
-                  } else {
-                    GeneralDialog.showRTLSheet(context, const TaskCreate());
-                  }
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(
-                  "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: AppColors.white,
-                ),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (kIsMobile) {
+                  Sheet.showSheet(context, widget: const TaskCreate());
+                } else {
+                  GeneralDialog.showRTLSheet(context, const TaskCreate());
+                }
+              },
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(
+                "Add $_pageTitle",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
               ),
-              const SizedBox(width: 10),
-            ] else ...[
-              ElevatedButton.icon(
-                onPressed: null,
-                icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
-                label: Text(
-                  "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey300,
-                  foregroundColor: AppColors.grey600,
-                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: AppColors.white,
               ),
-            ],
+            ),
+            const SizedBox(width: 10),
             if (permissions?.canDelete ?? false) ...[
               if (_selectedTasks.isNotEmpty)
                 ElevatedButton.icon(
@@ -624,10 +606,10 @@ class _TaskListingViewState extends State<TaskListingView> {
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false) &&
-                  (_isAdmin ||
-                      task.taskCreatedBy.uid == _currentUid ||
-                      task.observers.contains(_currentUid))) ...[
+              if (_isAdmin ||
+                  task.taskCreatedBy.uid == _currentUid ||
+                  (task.taskCreatedBy.uid.isEmpty &&
+                      task.createdBy.contains(_currentUid ?? ''))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   onPressed: () {
@@ -652,9 +634,10 @@ class _TaskListingViewState extends State<TaskListingView> {
                   onPressed: null,
                 ),
               ],
-              if ((permissions?.canDelete ?? false) &&
-                  (_isAdmin ||
-                      task.taskCreatedBy.uid == _currentUid)) ...[
+              if (_isAdmin ||
+                  task.taskCreatedBy.uid == _currentUid ||
+                  (task.taskCreatedBy.uid.isEmpty &&
+                      task.createdBy.contains(_currentUid ?? ''))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,
