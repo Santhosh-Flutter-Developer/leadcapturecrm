@@ -163,14 +163,16 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       const SizedBox(height: 20),
                       if (_selectedView == 'Grid') ...[
                         LeadKanbanListing(
-  leadList: _filteredLeads,
-  onLeadDeleted: () => context.read<LeadBloc>().add(StreamLead()),
-),
+                          leadList: _filteredLeads,
+                          onLeadDeleted: () =>
+                              context.read<LeadBloc>().add(StreamLead()),
+                        ),
                       ] else if (_selectedView == 'Calendar') ...[
                         LeadCalendarListing(
-  leadList: _filteredLeads,
-  onLeadCreated: () => context.read<LeadBloc>().add(StreamLead()),
-),
+                          leadList: _filteredLeads,
+                          onLeadCreated: () =>
+                              context.read<LeadBloc>().add(StreamLead()),
+                        ),
                       ] else ...[
                         _buildListView(controllerWatch, controllerRead),
                       ],
@@ -814,10 +816,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             ElevatedButton.icon(
               onPressed: () async {
                 final result = kIsMobile
-                    ? await Sheet.showSheet(
-                        context,
-                        widget: const LeadCreate(),
-                      )
+                    ? await Sheet.showSheet(context, widget: const LeadCreate())
                     : await GeneralDialog.showRTLSheet(
                         context,
                         const LeadCreate(),
@@ -897,8 +896,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             label: const Text("Export"),
             icon: const Icon(Iconsax.export_3, size: 18),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors
-                  .grey600, 
+              backgroundColor: AppColors.grey600,
               foregroundColor: AppColors.white,
             ),
             onPressed: () async {
@@ -972,20 +970,49 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                         'Are you sure you want to delete the selected leads?',
                   ),
                 );
-                if (result == true) {
-                  try {
-                    futureLoading(context);
-                    for (var i in _selectedLeads) {
-                      await LeadService.deleteLead(uid: i.uid ?? '');
-                    }
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    FlushBar.show(context, 'Leads deleted successfully');
-                    _selectedLeads.clear();
-                    setState(() {});
-                  } catch (e) {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    FlushBar.show(context, e.toString(), isSuccess: false);
+
+                if (result != true) return;
+
+                try {
+                  // ✅ STEP 1: backup
+                  final deletedLeads = List<LeadModel>.from(_selectedLeads);
+
+                  futureLoading(context);
+
+                  // ✅ STEP 2: delete
+                  for (var lead in deletedLeads) {
+                    await LeadService.deleteLead(uid: lead.uid ?? '');
                   }
+
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+
+                  // ✅ STEP 3: clear selection
+                  _selectedLeads.clear();
+                  setState(() {});
+
+                  // ✅ STEP 4: UNDO
+                  FlushBar.show(
+                    context,
+                    'Leads deleted successfully',
+                    actionLabel: 'UNDO',
+                    onActionPressed: () async {
+                      for (var lead in deletedLeads) {
+                        await LeadService.restoreLead(
+                          lead,
+                        ); // 👈 implement this
+                      }
+
+                      // 🔥 refresh list
+                      context.read<LeadBloc>().add(StreamLead());
+                    },
+                    // onDismissed: () {
+                    //   // 🔥 refresh if user does nothing
+                    //   context.read<LeadBloc>().add(StreamLeads());
+                    // },
+                  );
+                } catch (e) {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                  FlushBar.show(context, e.toString(), isSuccess: false);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -1229,24 +1256,39 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   onPressed: () async {
                     final result = await showDialog<bool>(
                       context: context,
-                      builder: (_) => const ConfirmDialog(
+                      builder: (_) => ConfirmDialog(
                         title: 'Delete $_pageTitle',
                         content: 'Are you sure you want to delete this lead?',
                       ),
                     );
 
-                    if (result == true) {
-                      try {
-                        await LeadService.deleteLead(uid: lead.uid ?? '');
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        context.read<LeadBloc>().add(StreamLead());
-                      } catch (e, st) {
-                        await ErrorService.recordError(e, st);
-                        FlushBar.show(context, e.toString(), isSuccess: false);
-                      }
+                    if (result != true) return;
+
+                    try {
+                      final deletedLead = lead;
+
+                      await LeadService.deleteLead(uid: lead.uid ?? '');
+
+                      if (!mounted) return;
+
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          await LeadService.restoreLead(deletedLead);
+
+                          // ✅ refresh after undo
+                          context.read<LeadBloc>().add(StreamLead());
+                        },
+                        // onDismissed: () {
+                        //   // ✅ refresh if no undo
+                        //   context.read<LeadBloc>().add(StreamLead());
+                        // },
+                      );
+                    } catch (e, st) {
+                      await ErrorService.recordError(e, st);
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                 ),

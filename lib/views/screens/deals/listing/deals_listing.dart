@@ -718,27 +718,53 @@ class _DealsListingViewState extends State<DealsListingView> {
                       ),
                       barrierDismissible: false,
                     );
-                    if (result != null && result) {
-                      try {
-                        futureLoading(context);
-                        for (var i in _selectedDeals) {
-                          await DealService.deleteDeal(uid: i.uid ?? '');
-                        }
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        _selectedDeals.clear();
-                        setState(() {});
-                      } catch (e) {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(context, e.toString(), isSuccess: false);
+
+                    if (result != true) return;
+
+                    try {
+                      // ✅ STEP 1: backup
+                      final deletedDeals = List<DealModel>.from(_selectedDeals);
+
+                      futureLoading(context);
+
+                      // ✅ STEP 2: delete
+                      for (var deal in deletedDeals) {
+                        await DealService.deleteDeal(uid: deal.uid ?? '');
                       }
+
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+
+                      // ✅ STEP 3: clear selection
+                      _selectedDeals.clear();
+                      setState(() {});
+
+                      // ✅ STEP 4: UNDO
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          for (var deal in deletedDeals) {
+                            await DealService.restoreDeal(
+                              deal,
+                            ); // 👈 implement this
+                          }
+
+                          // 🔥 refresh after undo
+                          context.read<DealBloc>().add(StreamDeals());
+                        },
+                        // onDismissed: () {
+                        //   // 🔥 refresh if no undo
+                        //   context.read<DealBloc>().add(StreamDeals());
+                        // },
+                      );
+                    } catch (e) {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -982,13 +1008,19 @@ class _DealsListingViewState extends State<DealsListingView> {
                     );
 
                     if (result == true) {
-                      try {
+                      try { 
                         await DealService.deleteDeal(uid: deal.uid ?? '');
 
                         if (context.mounted) {
                           FlushBar.show(
                             context,
                             '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              await DealService.restoreDeal(deal);
+
+                              context.read<DealBloc>().add(StreamDeals());
+                            },
                           );
                         }
                       } catch (e, st) {
