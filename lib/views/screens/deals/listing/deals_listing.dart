@@ -115,6 +115,10 @@ class _DealsListingViewState extends State<DealsListingView> {
     return cache.getAllListenableEmployees().value.map((e) => e.name).toList();
   }
 
+  Future<void> _refreshDeals(BuildContext context) async {
+    context.read<DealBloc>().add(StreamDeals());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<DealModel>>();
@@ -144,27 +148,23 @@ class _DealsListingViewState extends State<DealsListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshDeals(context),
+                child: ListView(
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
-                      ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      if (_selectedView == 'Grid') ...[
-                        DealKanbanListing(dealList: _filteredDeals),
-                      ] else if (_selectedView == 'Calendar') ...[
-                        DealsCalendarListing(dealList: _filteredDeals),
-                      ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
-                      ],
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    if (_selectedView == 'Grid') ...[
+                      DealKanbanListing(dealList: _filteredDeals),
+                    ] else if (_selectedView == 'Calendar') ...[
+                      DealsCalendarListing(dealList: _filteredDeals),
+                    ] else ...[
+                      _buildListView(controllerWatch, controllerRead),
                     ],
-                  ),
+                  ],
                 ),
               );
             }
@@ -971,8 +971,7 @@ class _DealsListingViewState extends State<DealsListingView> {
           Row(
             children: [
               if ((permissions?.canEdit ?? false) &&
-                  (_isAdmin ||
-                      deal.createdBy.uid == _currentUid)) ...[
+                  (_isAdmin || deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   color: AppColors.info,
@@ -999,8 +998,7 @@ class _DealsListingViewState extends State<DealsListingView> {
               ],
 
               if ((permissions?.canDelete ?? false) &&
-                  (_isAdmin ||
-                      deal.createdBy.uid == _currentUid)) ...[
+                  (_isAdmin || deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,
@@ -1016,7 +1014,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                     );
 
                     if (result == true) {
-                      try { 
+                      try {
                         await DealService.deleteDeal(uid: deal.uid ?? '');
 
                         if (context.mounted) {

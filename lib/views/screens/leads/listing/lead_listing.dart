@@ -125,6 +125,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     return cache.getAllListenableEmployees().value.map((e) => e.name).toList();
   }
 
+  Future<void> _refreshLeads(BuildContext context) async {
+    context.read<LeadBloc>().add(StreamLead());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<LeadModel>>();
@@ -153,35 +157,32 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshLeads(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    if (_selectedView == 'Grid') ...[
+                      LeadKanbanListing(
+                        leadList: _filteredLeads,
+                        onLeadDeleted: () =>
+                            context.read<LeadBloc>().add(StreamLead()),
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      if (_selectedView == 'Grid') ...[
-                        LeadKanbanListing(
-                          leadList: _filteredLeads,
-                          onLeadDeleted: () =>
-                              context.read<LeadBloc>().add(StreamLead()),
-                        ),
-                      ] else if (_selectedView == 'Calendar') ...[
-                        LeadCalendarListing(
-                          leadList: _filteredLeads,
-                          onLeadCreated: () =>
-                              context.read<LeadBloc>().add(StreamLead()),
-                        ),
-                      ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
-                      ],
+                    ] else if (_selectedView == 'Calendar') ...[
+                      LeadCalendarListing(
+                        leadList: _filteredLeads,
+                        onLeadCreated: () =>
+                            context.read<LeadBloc>().add(StreamLead()),
+                      ),
+                    ] else ...[
+                      _buildListView(controllerWatch, controllerRead),
                     ],
-                  ),
+                  ],
                 ),
               );
             }
@@ -1205,8 +1206,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           Row(
             children: [
               if ((permissions?.canEdit ?? false) &&
-                  (_isAdmin ||
-                      lead.createdBy.uid == _currentUid)) ...[
+                  (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   color: AppColors.info,
@@ -1254,8 +1254,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               ),
 
               if ((permissions?.canDelete ?? false) &&
-                  (_isAdmin ||
-                      lead.createdBy.uid == _currentUid)) ...[
+                  (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,

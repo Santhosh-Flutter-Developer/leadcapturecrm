@@ -714,6 +714,20 @@ class ChatService {
     }
   }
 
+  static Future<void> restoreChat(ChatModel chat) async {
+    var cid = await Spdb.getCid();
+
+    if (chat.uid == null || chat.uid!.isEmpty) {
+      throw Exception("Chat UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(chat.uid) 
+        .set(chat.toMap());
+  }
+
   static Future<void> toggleChatFavorite({
     required String chatId,
     required bool value,

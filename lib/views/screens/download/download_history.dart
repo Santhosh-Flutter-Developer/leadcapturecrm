@@ -49,7 +49,6 @@ class _DownloadHistoryState extends State<DownloadHistory> {
 
   Future<void> _refresh(BuildContext context) async {
     context.read<DownloadHistoryBloc>().add(StreamDownloadHistory());
-    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Map<String, List<DownloadHistoryModel>> _groupByDay(

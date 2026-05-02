@@ -142,6 +142,21 @@ class DesignationService {
     }
   }
 
+  static Future<void> restoreDesignation(DesignationModel designation) async {
+    var cid = await Spdb.getCid();
+
+    final uid = designation.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.designations.name)
+        .doc(uid)
+        .set(designation.toMap());
+  }
+
   static Future<String> getDesignationByNameOrCreateDesignation({
     required String name,
   }) async {

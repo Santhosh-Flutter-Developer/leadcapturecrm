@@ -127,6 +127,7 @@ class ClientModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'salutation': salutation,
       'clientName': clientName,
       'email': email,
@@ -159,6 +160,7 @@ class ClientModel {
 
   Map<String, dynamic> toUpdateMap() {
     return <String, dynamic>{
+      'uid': uid,
       'salutation': salutation,
       'clientName': clientName,
       'email': email,

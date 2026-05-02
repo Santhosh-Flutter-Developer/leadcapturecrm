@@ -87,6 +87,10 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshUsers(BuildContext context) async {
+    context.read<UsersBloc>().add(StreamUsers());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -116,277 +120,274 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshUsers(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+
+                    _buildActionRow(),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.grey.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-
-                      _buildActionRow(),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      columnSpacing: 12,
+                                      horizontalMargin: 8,
+                                      // dataRowMinHeight: 40,
+                                      // dataRowMaxHeight: 40,
+                                      // headingRowHeight: 40,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        columnSpacing: 12,
-                                        horizontalMargin: 8,
-                                        // dataRowMinHeight: 40,
-                                        // dataRowMaxHeight: 40,
-                                        // headingRowHeight: 40,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-
-                                        columns: [
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "Employee ID",
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_upward,
-                                                    size: 14,
-                                                    color: Colors.grey.shade400,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
                                           ),
 
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "Name",
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_upward,
-                                                    size: 14,
-                                                    color: AppColors.grey400,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "Department",
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_upward,
-                                                    size: 14,
-                                                    color: AppColors.grey400,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "Email",
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_upward,
-                                                    size: 14,
-                                                    color: AppColors.grey400,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Text(
-                                                "Mobile app",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
+                                      columns: [
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Employee ID",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: Colors.grey.shade400,
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                          onSort: controllerRead.setSort,
+                                        ),
 
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Text(
-                                                "Desktop app",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Name",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                          onSort: controllerRead.setSort,
+                                        ),
 
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Text(
-                                                "Role",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Department",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                          onSort: controllerRead.setSort,
+                                        ),
 
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "Status",
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Icon(
-                                                    Icons.arrow_upward,
-                                                    size: 14,
-                                                    color: AppColors.grey400,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Text(
-                                                "Created By",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Email",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
                                             ),
                                           ),
+                                          onSort: controllerRead.setSort,
+                                        ),
 
-                                          DataColumn(
-                                            label: IntrinsicWidth(
-                                              child: Text(
-                                                "Action",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-
-                                        rows: controllerWatch.paginatedItems
-                                            .asMap()
-                                            .entries
-                                            .map(
-                                              (entry) => _buildDataRow(
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Mobile app",
+                                              style: Theme.of(
                                                 context,
-                                                entry.value, // user
-                                                entry.key, // 👈 index
-                                                controllerWatch,
-                                                controllerRead,
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Desktop app",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Role",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "Status",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Created By",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
+                                            child: Text(
+                                              "Action",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+
+                                      rows: controllerWatch.paginatedItems
+                                          .asMap()
+                                          .entries
+                                          .map(
+                                            (entry) => _buildDataRow(
+                                              context,
+                                              entry.value, // user
+                                              entry.key, // 👈 index
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<UserRowModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<UserRowModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }

@@ -353,6 +353,121 @@ class UserRowModel {
     this.adminPassword,
   });
 
+  UserRowModel copyWith({
+    UserType? userType,
+    String? uid,
+    String? name,
+    String? email,
+    String? mobileNumber,
+    String? profileImageUrl,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    UserDataModel? createdBy,
+    List<Map<String, dynamic>>? devices,
+
+    // employee
+    String? employeeId,
+    String? designation,
+    List<String>? department,
+    String? subDepartment,
+    String? gender,
+    DateTime? dateOfJoining,
+    DateTime? dateOfBirth,
+    String? role,
+    String? address,
+    String? about,
+    bool? loginAllowed,
+    bool? receiveEmailNotifications,
+    String? skills,
+    String? employeeType,
+    List<String>? reportingTo,
+    String? maritalStatus,
+    DateTime? lastActive,
+    bool? isInitialPasswordChanged,
+
+    // admin
+    String? adminPassword,
+  }) {
+    return UserRowModel(
+      userType: userType ?? this.userType,
+      uid: uid ?? this.uid,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      createdBy: createdBy ?? this.createdBy,
+      devices: devices ?? this.devices,
+
+      // employee
+      employeeId: employeeId ?? this.employeeId,
+      designation: designation ?? this.designation,
+      department: department ?? this.department,
+      subDepartment: subDepartment ?? this.subDepartment,
+      gender: gender ?? this.gender,
+      dateOfJoining: dateOfJoining ?? this.dateOfJoining,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      role: role ?? this.role,
+      address: address ?? this.address,
+      about: about ?? this.about,
+      loginAllowed: loginAllowed ?? this.loginAllowed,
+      receiveEmailNotifications:
+          receiveEmailNotifications ?? this.receiveEmailNotifications,
+      skills: skills ?? this.skills,
+      employeeType: employeeType ?? this.employeeType,
+      reportingTo: reportingTo ?? this.reportingTo,
+      maritalStatus: maritalStatus ?? this.maritalStatus,
+      lastActive: lastActive ?? this.lastActive,
+      isInitialPasswordChanged:
+          isInitialPasswordChanged ?? this.isInitialPasswordChanged,
+
+      // admin
+      adminPassword: adminPassword ?? this.adminPassword,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      "userType": userType.name,
+      "uid": uid,
+      "name": name,
+      "email": email,
+      "mobileNumber": mobileNumber,
+      "profileImageUrl": profileImageUrl,
+      "isActive": isActive,
+      "createdAt": createdAt,
+      "updatedAt": updatedAt,
+      "createdBy": createdBy.toMap(),
+      "devices": devices,
+
+      // Employee fields
+      "employeeId": employeeId,
+      "designation": designation,
+      "department": department,
+      "subDepartment": subDepartment,
+      "gender": gender,
+      "dateOfJoining": dateOfJoining,
+      "dateOfBirth": dateOfBirth,
+      "role": role,
+      "address": address,
+      "about": about,
+      "loginAllowed": loginAllowed,
+      "receiveEmailNotifications": receiveEmailNotifications,
+      "skills": skills,
+      "employeeType": employeeType,
+      "reportingTo": reportingTo,
+      "maritalStatus": maritalStatus,
+      "lastActive": lastActive,
+      "isInitialPasswordChanged": isInitialPasswordChanged,
+
+      // Admin
+      "adminPassword": adminPassword,
+    };
+  }
+
   // ---------------- SAFE GETTERS ----------------
 
   bool get isEmployee => userType == UserType.employee;

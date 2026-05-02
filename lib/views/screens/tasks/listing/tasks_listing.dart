@@ -87,6 +87,10 @@ class _TaskListingViewState extends State<TaskListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshTasks(BuildContext context) async {
+    context.read<TaskBloc>().add(StreamTasks());
+  }
+
   final ScrollController _hScrollController = ScrollController();
 
   @override
@@ -115,24 +119,23 @@ class _TaskListingViewState extends State<TaskListingView> {
               }
               // final tasks = state.tasks;
 
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshTasks(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
-                      ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      if (_selectedView == 'Calendar') ...[
-                        TaskCalendarListing(tasks: state.tasks),
-                      ] else ...[
-                        _buildMainBody(controllerWatch, controllerRead),
-                      ],
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+
+                    if (_selectedView == 'Calendar') ...[
+                      TaskCalendarListing(tasks: state.tasks),
+                    ] else ...[
+                      _buildMainBody(controllerWatch, controllerRead),
                     ],
-                  ),
+                  ],
                 ),
               );
             }

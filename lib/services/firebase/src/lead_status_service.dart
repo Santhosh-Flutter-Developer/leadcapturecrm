@@ -189,6 +189,21 @@ class LeadStatusService {
     }
   }
 
+  static Future<void> restoreLeadStatus(LeadStatusModel status) async {
+    var cid = await Spdb.getCid();
+
+    final uid = status.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.leadStatus.name)
+        .doc(uid)
+        .set(status.toMap());
+  }
+
   static Future<bool> hasFinalStatus({String? excludeUid}) async {
     List<LeadStatusModel> statuses = await getAllLeadStatus();
 

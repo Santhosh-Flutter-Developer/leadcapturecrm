@@ -209,4 +209,19 @@ class ClientService {
       throw 'Error deleting client: $e';
     }
   }
+
+  static Future<void> restoreClient(ClientModel client) async {
+    var cid = await Spdb.getCid();
+
+    final uid = client.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.clients.name)
+        .doc(uid)
+        .set(client.toMap());
+  }
 }

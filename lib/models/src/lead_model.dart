@@ -147,6 +147,8 @@ class LeadModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
+      'leadNumber': leadNumber,
       'salutation': salutation,
       'leadName': leadName,
       'leadEmail': leadEmail,
@@ -166,8 +168,8 @@ class LeadModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
-      'clientName':clientName,
-      'clientEmail':clientEmail,
+      'clientName': clientName,
+      'clientEmail': clientEmail,
       'clientMobile': clientMobile,
       'clientGender': clientGender,
       'workflow': workflow,
@@ -182,6 +184,8 @@ class LeadModel {
 
   Map<String, dynamic> toUpdateMap() {
     return {
+      'uid': uid,
+      'leadNumber': leadNumber,
       'salutation': salutation,
       'leadName': leadName,
       'leadEmail': leadEmail,
@@ -201,8 +205,8 @@ class LeadModel {
       'companyCity': companyCity?.toMap(),
       'companyAddress': companyAddress,
       'companyZipCode': companyZipCode,
-      'clientName':clientName,
-      'clientEmail':clientEmail,
+      'clientName': clientName,
+      'clientEmail': clientEmail,
       'clientMobile': clientMobile,
       'clientGender': clientGender,
       'workflow': workflow,
@@ -210,6 +214,7 @@ class LeadModel {
       'createdBy': createdBy.toMap(),
       'updatedAt': updatedAt.millisecondsSinceEpoch,
       'leadsConverted': leadsConverted,
+      'dealId': dealId,
     };
   }
 
@@ -290,7 +295,7 @@ class LeadModel {
           map['companyZipCode'] != null && map['companyZipCode'] is String
           ? map['companyZipCode'] as String
           : null,
-          clientName: map['clientName'] != null && map['clientName'] is String
+      clientName: map['clientName'] != null && map['clientName'] is String
           ? map['clientName'] as String
           : null,
       clientEmail: map['clientEmail'] != null && map['clientEmail'] is String
@@ -301,7 +306,7 @@ class LeadModel {
           : null,
       clientGender: map['clientGender'] != null && map['clientGender'] is String
           ? map['clientGender'] as String
-          : null, 
+          : null,
       createdBy:
           map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)

@@ -152,6 +152,21 @@ class LeadPriorityService {
     }
   }
 
+  static Future<void> restoreLeadPriority(LeadPriorityModel priority) async {
+    var cid = await Spdb.getCid();
+
+    final uid = priority.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.leadPriority.name)
+        .doc(uid)
+        .set(priority.toMap());
+  }
+
   static Future<LeadPriorityModel> getByNameOrCreate({
     required String name,
   }) async {

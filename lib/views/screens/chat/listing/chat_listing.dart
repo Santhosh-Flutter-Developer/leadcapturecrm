@@ -386,7 +386,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                           builder: (context) => AlertDialog(
                             title: const Text('Delete chat'),
                             content: const Text(
-                              'This chat will be permanently deleted. Continue?',
+                              'This chat will be deleted. You can undo this action.',
                             ),
                             actions: [
                               TextButton(
@@ -394,7 +394,6 @@ class _ChatListPanelState extends State<ChatListPanel> {
                                 child: const Text('Cancel'),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(),
                                 onPressed: () => Navigator.pop(context, true),
                                 child: const Text('Delete'),
                               ),
@@ -403,7 +402,25 @@ class _ChatListPanelState extends State<ChatListPanel> {
                         );
 
                         if (confirm == true) {
-                          await ChatService.deleteChat(chatId: chat.uid!);
+                          final chatId = chat.uid!;
+                          final deletedChat = chat; // ✅ backup
+
+                          // ✅ DELETE
+                          await ChatService.deleteChat(chatId: chatId);
+
+                          if (!context.mounted) return;
+
+                          // ✅ SHOW UNDO
+                          FlushBar.show(
+                            context,
+                            'Chat deleted',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              await ChatService.restoreChat(deletedChat);
+                              if (!context.mounted) return;
+                              context.read<ChatBloc>().add(StreamChat());
+                            },
+                          );
                         }
                         break;
                     }

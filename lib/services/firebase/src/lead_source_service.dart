@@ -153,6 +153,21 @@ class LeadSourceService {
     }
   }
 
+  static Future<void> restoreLeadSource(LeadSourceModel source) async {
+    var cid = await Spdb.getCid();
+
+    final uid = source.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.leadSource.name)
+        .doc(uid)
+        .set(source.toMap());
+  }
+
   static Future<LeadSourceModel> getByNameOrCreate({
     required String name,
   }) async {

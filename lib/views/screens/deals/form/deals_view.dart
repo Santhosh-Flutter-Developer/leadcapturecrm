@@ -131,12 +131,40 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 ),
               );
 
-              if (result == true) {
-                try {
-                  await DealService.deleteDeal(uid: widget.deal.uid ?? '');
-                  FlushBar.show(context, 'Deal deleted successfully');
-                } catch (e, st) {
-                  await ErrorService.recordError(e, st);
+              if (result != true) return;
+
+              try {
+                final deletedDeal = widget.deal;
+                bool isUndoPressed = false;
+
+                await DealService.deleteDeal(uid: widget.deal.uid ?? '');
+
+                if (!mounted) return;
+
+                FlushBar.show(
+                  context,
+                  'Deal deleted successfully',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    isUndoPressed = true;
+
+                    await DealService.restoreDeal(deletedDeal);
+
+                    // refresh your deals list (update event name if needed)
+                    context.read<DealBloc>().add(StreamDeals());
+
+                    Navigator.of(context).pop('restored');
+                  },
+                );
+
+                Future.delayed(const Duration(seconds: 4), () {
+                  if (!isUndoPressed && mounted) {
+                    Navigator.of(context).pop('deleted');
+                  }
+                });
+              } catch (e, st) {
+                await ErrorService.recordError(e, st);
+                if (mounted) {
                   FlushBar.show(context, e.toString(), isSuccess: false);
                 }
               }
