@@ -114,7 +114,7 @@ class DealService {
         toUids: users,
         senderId: await Spdb.getUid(),
         type: NotificationType.deal,
-        payload: {},
+        payload: {'dealId': uid},
       );
 
       PostNotificationService.sendNotification(model: notif);

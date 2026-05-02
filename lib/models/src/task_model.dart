@@ -125,6 +125,7 @@ class TaskModel {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'taskNumber': taskNumber,
       'taskName': taskName,
       'taskNumber': taskNumber,
       'description': description,
