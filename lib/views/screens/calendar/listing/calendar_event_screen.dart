@@ -62,23 +62,6 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
     () => _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1),
   );
 
-  Future<void> _openDatePicker() async {
-    DateTime now = DateTime.now();
-
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _focusedMonth,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (pickedDate != null) {
-      setState(() {
-        _focusedMonth = DateTime(pickedDate.year, pickedDate.month);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,6 +104,13 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
             return SafeArea(
               child: Column(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    color: Colors.grey[600],
+                    onPressed: () {
+                      context.read<CalendarBloc>().add(StreamCalendar());
+                    },
+                  ),
                   _buildViewSwitcher(),
                   if (_currentView != Calendar.month)
                     _buildHorizontalDatePicker(),
@@ -452,10 +442,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                   ),
                 ],
               ),
-              IconButton(
-                icon: const Icon(Iconsax.calendar_1, color: Colors.grey),
-                onPressed: _openDatePicker,
-              ),
+              const Icon(Iconsax.calendar_1, color: Colors.grey),
             ],
           ),
           const SizedBox(height: 20),
