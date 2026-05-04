@@ -62,6 +62,27 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
     () => _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1),
   );
 
+  Future<void> _refresh() async {
+    context.read<CalendarBloc>().add(StreamCalendar());
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  Future<void> _openDatePicker() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _focusedMonth,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _focusedMonth = DateTime(pickedDate.year, pickedDate.month);
+        _selectedDate = pickedDate;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,13 +123,43 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
 
           if (state is CalendarLoaded) {
             return SafeArea(
-              child: Column(
-                children: [
-                  _buildViewSwitcher(),
-                  if (_currentView != Calendar.month)
-                    _buildHorizontalDatePicker(),
-                  Expanded(child: _buildBody(state.events, state.tasks)),
-                ],
+              child: RefreshIndicator(
+                onRefresh: _refresh,
+                child: SingleChildScrollView(
+                  physics:
+                      const AlwaysScrollableScrollPhysics(), // 👈 important
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: Column(
+                      children: [
+                        if (kIsDesktop)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              // vertical: 10,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Iconsax.refresh),
+                                  iconSize: 20,
+                                  onPressed: _refresh,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        _buildViewSwitcher(),
+
+                        if (_currentView != Calendar.month)
+                          _buildHorizontalDatePicker(),
+
+                        Expanded(child: _buildBody(state.events, state.tasks)),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             );
           }
@@ -435,7 +486,10 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                   ),
                 ],
               ),
-              const Icon(Iconsax.calendar_1, color: Colors.grey),
+              IconButton(
+                icon: const Icon(Iconsax.calendar_1, color: Colors.grey),
+                onPressed: _openDatePicker,
+              ),
             ],
           ),
           const SizedBox(height: 20),
