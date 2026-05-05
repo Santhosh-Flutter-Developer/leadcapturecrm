@@ -115,7 +115,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                       const SizedBox(height: 20),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(

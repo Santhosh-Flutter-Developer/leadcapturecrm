@@ -68,20 +68,15 @@ class _AppState extends State<App> {
             );
           }
 
-          return AnimatedTheme(
-            data: themeProvider.themeMode == ThemeMode.dark
-                ? darkTheme
-                : lightTheme,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: MaterialApp(
-              navigatorKey: navigatorKey,
-              scaffoldMessengerKey: messengerKey,
-              debugShowCheckedModeBanner: false,
-              title: "Lead Capture",
-              theme: lightTheme,
-              home: authProvider.isLoggedIn ? home : const Splash(),
-            ),
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            scaffoldMessengerKey: messengerKey,
+            debugShowCheckedModeBanner: false,
+            title: "Lead Capture",
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: authProvider.isLoggedIn ? home : const Splash(),
           );
         },
       ),

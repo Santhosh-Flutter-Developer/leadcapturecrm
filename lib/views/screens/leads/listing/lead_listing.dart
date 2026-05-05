@@ -176,7 +176,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   onLeadCreated: () => context.read<LeadBloc>().add(StreamLead()),
 ),
                       ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
+                        _buildListView(context, controllerWatch, controllerRead),
                       ],
                     ],
                   ),
@@ -200,12 +200,13 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   }
 
   Container _buildListView(
+    BuildContext context,
     PaginatedDataController<LeadModel> controllerWatch,
     PaginatedDataController<LeadModel> controllerRead,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -1004,7 +1005,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: Colors.grey.shade300),
           ),

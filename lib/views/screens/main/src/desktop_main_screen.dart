@@ -316,7 +316,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return Container(
           width: 50, // Comfortable modern width
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             border: Border(
               left: BorderSide(
                 color: Colors.grey.withValues(alpha: 0.1),

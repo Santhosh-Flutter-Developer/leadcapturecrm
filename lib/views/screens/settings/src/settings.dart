@@ -59,7 +59,7 @@ class _SettingsListingState extends State<SettingsListing> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: SettingsColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.showAppbar
           ? AppBar(
               backgroundColor: SettingsColors.white,
@@ -160,7 +160,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           );
                         },
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("App Appearance", Iconsax.brush),
                     const SizedBox(height: 12),
@@ -172,7 +172,7 @@ class _SettingsListingState extends State<SettingsListing> {
                         subtitle: "Reduce eye strain in low light",
                         value: isDark,
                         onChanged: (value) => themeProvider.setDarkMode(value),
-                        isInDevelop: true,
+                        isInDevelop: false,
                       ),
                       _buildInteractiveTile(
                         icon: Iconsax.global,
@@ -198,7 +198,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           ),
                         ),
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("System & Data", Iconsax.status),
                     const SizedBox(height: 12),
@@ -283,7 +283,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           color: SettingsColors.border,
                         ),
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 40),
                     _buildFooter(),
                   ],
@@ -316,12 +316,18 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(List<Widget> children, [BuildContext? ctx]) {
+    final cardColor = ctx != null
+        ? Theme.of(ctx).colorScheme.surface
+        : SettingsColors.white;
+    final borderColor = ctx != null
+        ? Theme.of(ctx).dividerColor
+        : SettingsColors.border;
     return Container(
       decoration: BoxDecoration(
-        color: SettingsColors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SettingsColors.border),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: children.asMap().entries.map((entry) {

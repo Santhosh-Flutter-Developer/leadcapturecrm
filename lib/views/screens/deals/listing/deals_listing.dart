@@ -161,7 +161,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                       ] else if (_selectedView == 'Calendar') ...[
                         DealsCalendarListing(dealList: _filteredDeals),
                       ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
+                        _buildListView(context, controllerWatch, controllerRead),
                       ],
                     ],
                   ),
@@ -185,12 +185,13 @@ class _DealsListingViewState extends State<DealsListingView> {
   }
 
   Container _buildListView(
+    BuildContext context,
     PaginatedDataController<DealModel> controllerWatch,
     PaginatedDataController<DealModel> controllerRead,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -770,7 +771,7 @@ class _DealsListingViewState extends State<DealsListingView> {
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: AppColors.grey300),
           ),
