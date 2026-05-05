@@ -74,7 +74,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
     setState(() {});
   }
 
-  Future<void> _refreshDesignations(BuildContext context) async {
+  Future<void> _refreshDesignations() async {
     context.read<DesignationBloc>().add(StreamDesignation());
   }
 
@@ -107,7 +107,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                 return buildNoPermissionView(context);
               }
               return RefreshIndicator(
-                onRefresh: () => _refreshDesignations(context),
+                onRefresh: () => _refreshDesignations(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
@@ -444,6 +444,13 @@ class _DesignationListingViewState extends State<DesignationListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshDesignations,
+            iconSize: 18,
+          ),
       ],
     );
   }

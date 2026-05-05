@@ -476,6 +476,13 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadPriority(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

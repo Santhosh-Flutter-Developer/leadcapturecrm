@@ -524,6 +524,13 @@ class _LeadStatusListingViewState extends State<LeadStatusListingView> {
             ),
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadStatus(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

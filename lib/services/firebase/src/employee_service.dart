@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:leadcapture/models/src/user_model.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -405,17 +404,17 @@ class EmployeeService {
     }
   }
 
-  static Future<void> restoreEmployee(UserRowModel employee) async {
+  static Future<void> restoreEmployee(EmployeeModel employee) async {
     var cid = await Spdb.getCid();
 
     final uid = employee.uid;
-    if (uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       throw Exception("UID missing");
     }
 
     await firebase.users
         .doc(cid)
-        .collection(Collections.users.name)
+        .collection(Collections.employees.name)
         .doc(uid)
         .set(employee.toMap());
   }

@@ -446,6 +446,13 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshProjects(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

@@ -541,6 +541,13 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
             ),
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshDealStatus(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

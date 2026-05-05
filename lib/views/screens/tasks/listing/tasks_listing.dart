@@ -442,6 +442,15 @@ class _TaskListingViewState extends State<TaskListingView> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (kIsDesktop)
+                IconButton(
+                  tooltip: "Refresh",
+                  icon: const Icon(Iconsax.refresh),
+                  iconSize: 18,
+                  onPressed: () => _refreshTasks(context),
+                ),
+
+              const SizedBox(width: 10),
               IconButton(
                 onPressed: () {
                   _selectedView = 'List';

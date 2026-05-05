@@ -6,6 +6,26 @@ import 'package:leadcapture/models/src/admin_model.dart';
 import '/utils/utils.dart';
 import 'user_data_model.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+DateTime? parseDate(dynamic value) {
+  if (value == null) return null;
+
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value);
+  }
+
+  if (value is Timestamp) {
+    return value.toDate();
+  }
+
+  if (value is String) {
+    return DateTime.tryParse(value);
+  }
+
+  return null;
+}
+
 class EmployeeModel {
   final String? uid;
   final String employeeId;
@@ -235,12 +255,8 @@ class EmployeeModel {
       mobileNumber: (map['mobileNumber'] ?? '').toString().decrypt,
       profileImageUrl: map['profileImageUrl'],
       gender: map['gender'] ?? '',
-      dateOfJoining: map['dateOfJoining'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfJoining'])
-          : DateTime.now(),
-      dateOfBirth: map['dateOfBirth'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['dateOfBirth'])
-          : null,
+      dateOfJoining: parseDate(map['dateOfJoining']) ?? DateTime.now(),
+      dateOfBirth: parseDate(map['dateOfBirth']),
       role: map['role'] ?? '',
       address: (map['address'] ?? '').toString().decrypt,
       about: (map['about'] ?? '').toString().decrypt,
@@ -251,20 +267,14 @@ class EmployeeModel {
       reportingTo: parseList(map['reportingTo']),
       maritalStatus: map['maritalStatus'] ?? '',
       isActive: map['isActive'] ?? true,
-      lastActive: map['lastActive'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['lastActive'])
-          : null,
+      lastActive: parseDate(map['lastActive']),
       devices: parseDevices(map['devices']),
       isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
       createdBy: map['createdBy'] != null
           ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),
-      createdAt: map['createdAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
-          : DateTime.now(),
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'])
-          : DateTime.now(),
+      createdAt: parseDate(map['createdAt']) ?? DateTime.now(),
+      updatedAt: parseDate(map['updatedAt']) ?? DateTime.now(),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/constants/src/svg.dart';
 import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
@@ -74,7 +75,7 @@ class _RolesListingViewState extends State<RolesListingView> {
     setState(() {});
   }
 
-  Future<void> _refreshRoles(BuildContext context) async {
+  Future<void> _refreshRoles() async {
     context.read<RolesBloc>().add(StreamRoles());
   }
 
@@ -105,7 +106,7 @@ class _RolesListingViewState extends State<RolesListingView> {
                 return buildNoPermissionView(context);
               }
               return RefreshIndicator(
-                onRefresh: () => _refreshRoles(context),
+                onRefresh: () => _refreshRoles(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
@@ -290,10 +291,11 @@ class _RolesListingViewState extends State<RolesListingView> {
     );
   }
 
-  Widget _buildActionRow(context) {
+  Widget _buildActionRow(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        /// LEFT SIDE (Add + Delete)
         Row(
           children: [
             (permissions?.canCreate ?? false)
@@ -331,7 +333,9 @@ class _RolesListingViewState extends State<RolesListingView> {
                       foregroundColor: AppColors.grey600,
                     ),
                   ),
+
             const SizedBox(width: 10),
+
             if (_selectedRoles.isNotEmpty) ...[
               (permissions?.canDelete ?? false)
                   ? ElevatedButton.icon(
@@ -430,6 +434,14 @@ class _RolesListingViewState extends State<RolesListingView> {
             ],
           ],
         ),
+
+       if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshRoles,
+            iconSize: 18,
+          ), 
       ],
     );
   }

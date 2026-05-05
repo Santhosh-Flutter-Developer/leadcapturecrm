@@ -435,6 +435,13 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadCategory(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

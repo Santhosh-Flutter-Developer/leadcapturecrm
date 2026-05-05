@@ -71,7 +71,7 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
     setState(() {});
   }
 
-  Future<void> _refreshSubDepartments(BuildContext context) async {
+  Future<void> _refreshSubDepartments() async {
     context.read<SubDepartmentBloc>().add(StreamSubDepartment());
   }
 
@@ -104,7 +104,7 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
                 return buildNoPermissionView(context);
               }
               return RefreshIndicator(
-                onRefresh: () => _refreshSubDepartments(context),
+                onRefresh: () => _refreshSubDepartments(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
@@ -460,6 +460,13 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshSubDepartments,
+            iconSize: 18,
+          ),
       ],
     );
   }

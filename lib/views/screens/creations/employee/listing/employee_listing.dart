@@ -87,7 +87,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     setState(() {});
   }
 
-  Future<void> _refreshUsers(BuildContext context) async {
+  Future<void> _refreshUsers() async {
     context.read<UsersBloc>().add(StreamUsers());
   }
 
@@ -121,7 +121,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 return buildNoPermissionView(context);
               }
               return RefreshIndicator(
-                onRefresh: () => _refreshUsers(context),
+                onRefresh: () => _refreshUsers(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
@@ -408,19 +408,84 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
   }
 
   Future<void> handleDelete(BuildContext context, UserRowModel user) async {
+    // ❌ prevent admin delete
+    if (!user.isEmployee) {
+      FlushBar.show(context, 'Admin cannot be deleted', isSuccess: false);
+      return;
+    }
+
+    // ✅ STEP 1: CHECK ASSIGNED
+    final isAssigned = await EmployeeService.isEmployeeAssigned(
+      user.employeeId ?? '',
+    );
+
+    if (isAssigned) {
+      if (!context.mounted) return;
+
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Cannot Delete'),
+          content: const Text(
+            'This employee is associated with chats/projects/tasks.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // ✅ STEP 2: CONFIRM
     final confirm = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => ConfirmDialog2(
-        title: 'Delete',
+      builder: (_) => ConfirmDialog(
+        title: 'Delete Employee',
         content: 'Are you sure you want to delete ${user.name}?',
       ),
     );
 
     if (confirm != true) return;
-    if (!context.mounted) return;
-    debugPrint('Confirmed delete for ${user.uid}');
-    context.read<UsersBloc>().add(DeleteUser(user));
+
+    try {
+      // ✅ STEP 3: BACKUP
+      final deletedEmployee = user.toEmployeeModel();
+
+      // ✅ STEP 4: DELETE
+      await EmployeeService.deleteEmployee(uid: user.uid);
+
+      if (!context.mounted) return;
+
+      // ✅ STEP 5: UNDO
+      FlushBar.show(
+        context,
+        'Employee deleted successfully',
+        actionLabel: 'UNDO',
+        onActionPressed: () async {
+          await EmployeeService.restoreEmployee(deletedEmployee);
+
+          if (!context.mounted) return;
+
+          // 🔥 refresh list
+          context.read<UsersBloc>().add(StreamUsers());
+        },
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+
+      FlushBar.show(
+        context,
+        e.toString(),
+        isSuccess: false,
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
@@ -695,6 +760,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     onPressed: () async {
                       if (_selectedEmployees.isEmpty) return;
 
+                      // ✅ STEP 1: check assigned
                       for (final employee in _selectedEmployees) {
                         final isAssigned =
                             await EmployeeService.isEmployeeAssigned(
@@ -707,23 +773,14 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                           await showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: Text(
-                                'Cannot Delete',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
+                              title: Text('Cannot Delete'),
                               content: Text(
-                                'One or more selected employees are associated with chats, projects, tasks, leads, or deals and cannot be deleted.',
-                                style: Theme.of(context).textTheme.bodySmall,
+                                'One or more selected employees are associated and cannot be deleted.',
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: Text(
-                                    'OK',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
+                                  child: Text('OK'),
                                 ),
                               ],
                             ),
@@ -732,37 +789,65 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         }
                       }
 
+                      // ✅ STEP 2: confirm
                       final confirm = await showDialog<bool>(
                         context: context,
                         barrierDismissible: false,
                         builder: (_) => ConfirmDialog(
                           title: 'Delete',
                           content:
-                              'Are you sure you want to delete the selected $_pageTitle?',
+                              'Are you sure you want to delete $_pageTitle?',
                         ),
                       );
 
                       if (confirm != true) return;
-                      if (!context.mounted) return;
 
-                      for (final employee in _selectedEmployees) {
-                        if (employee.uid.isNotEmpty && employee.isEmployee) {
-                          context.read<UsersBloc>().add(DeleteUser(employee));
+                      try {
+                        // ✅ STEP 3: BACKUP
+                        final deletedEmployees = _selectedEmployees
+                            .where((e) => e.isEmployee)
+                            .map((e) => e.toEmployeeModel())
+                            .toList();
 
-                          _selectedEmployees.clear();
+                        // ✅ STEP 4: LOADER
+                        futureLoading(context);
 
-                          FlushBar.show(
-                            context,
-                            'Employee deleted successfully',
-                            isSuccess: true,
-                          );
-                        } else {
-                          FlushBar.show(
-                            context,
-                            'Admin cannot be deleted',
-                            isSuccess: false,
-                          );
+                        // ✅ STEP 5: DELETE
+                        for (final emp in _selectedEmployees) {
+                          if (emp.uid.isNotEmpty && emp.isEmployee) {
+                            await EmployeeService.deleteEmployee(uid: emp.uid);
+                          }
                         }
+
+                        // ✅ STEP 6: CLOSE LOADER
+                        if (Navigator.canPop(context)) Navigator.pop(context);
+
+                        // ✅ STEP 7: CLEAR SELECTION
+                        _selectedEmployees.clear();
+                        setState(() {});
+
+                        // ✅ STEP 8: SHOW UNDO
+                        FlushBar.show(
+                          context,
+                          'Employee deleted successfully',
+                          actionLabel: 'UNDO',
+                          onActionPressed: () async {
+                            for (final emp in deletedEmployees) {
+                              await EmployeeService.restoreEmployee(emp);
+                            }
+
+                            if (!context.mounted) return;
+
+                            // 🔥 refresh users
+                            context.read<UsersBloc>().add(StreamUsers());
+                          },
+                        );
+                      } catch (e, st) {
+                        if (Navigator.canPop(context)) Navigator.pop(context);
+
+                        await ErrorService.recordError(e, st);
+
+                        FlushBar.show(context, e.toString(), isSuccess: false);
                       }
                     },
 
@@ -787,7 +872,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   ),
           );
         }
-
         if (_selectedEmployees.isNotEmpty) {
           // Chat Button
           buttons.add(
@@ -1038,29 +1122,31 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           );
         }
 
-        if (kIsMobile) {
-          return Wrap(spacing: 10, runSpacing: 10, children: buttons);
-        } else {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.of(context).size.width,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: buttons
-                    .map(
-                      (button) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: button,
-                      ),
-                    )
-                    .toList(),
-              ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: kIsMobile
+                      ? Wrap(spacing: 10, runSpacing: 10, children: buttons)
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(children: buttons),
+                        ),
+                ),
+
+                IconButton(
+                  tooltip: "Refresh",
+                  icon: const Icon(Iconsax.refresh),
+                  onPressed: _refreshUsers,
+                  iconSize: 18,
+                ),
+              ],
             ),
-          );
-        }
+          ],
+        );
       },
     );
   }

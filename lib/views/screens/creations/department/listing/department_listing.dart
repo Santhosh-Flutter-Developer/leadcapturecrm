@@ -74,7 +74,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
     setState(() {});
   }
 
-  Future<void> _refreshDepartments(BuildContext context) async {
+  Future<void> _refreshDepartments() async {
     context.read<DepartmentBloc>().add(StreamDepartment());
   }
 
@@ -107,7 +107,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
                 return buildNoPermissionView(context);
               }
               return RefreshIndicator(
-                onRefresh: () => _refreshDepartments(context),
+                onRefresh: () => _refreshDepartments(),
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
@@ -410,6 +410,13 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshDepartments,
+            iconSize: 18,
+          ),
       ],
     );
   }

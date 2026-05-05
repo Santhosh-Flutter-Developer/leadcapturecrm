@@ -483,6 +483,13 @@ class _LeadSourceListingViewState extends State<LeadSourceListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadSource(context),
+            iconSize: 18,
+          ),
       ],
     );
   }

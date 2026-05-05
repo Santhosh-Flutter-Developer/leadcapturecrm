@@ -959,7 +959,6 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           ),
         );
 
-        // DELETE BUTTON (Only shows if items selected)
         if ((permissions?.canDelete ?? false) && _selectedLeads.isNotEmpty) {
           actionButtons.add(const SizedBox(width: 10));
           actionButtons.add(
@@ -1039,6 +1038,14 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (kIsDesktop)
+                IconButton(
+                  tooltip: "Refresh",
+                  icon: const Icon(Iconsax.refresh),
+                  iconSize: 18,
+                  onPressed: () => _refreshLeads(context),
+                ),
+              const SizedBox(width: 10),
               _buildToggleIcon(Iconsax.grid_3, 'Grid'),
               Container(width: 1, color: Colors.grey.shade300),
               _buildToggleIcon(Icons.list, 'List'),

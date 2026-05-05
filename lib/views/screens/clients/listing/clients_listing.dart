@@ -565,6 +565,13 @@ class _ClientListingViewState extends State<ClientListingView> {
             // ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshClients(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
