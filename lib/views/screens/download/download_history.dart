@@ -92,10 +92,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
     return BlocProvider(
       create: (_) => DownloadHistoryBloc()..add(StreamDownloadHistory()),
       child: Scaffold(
-        backgroundColor: DownloadHistoryColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: DownloadHistoryColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 title: const Text(
                   "Download History",

@@ -103,7 +103,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,

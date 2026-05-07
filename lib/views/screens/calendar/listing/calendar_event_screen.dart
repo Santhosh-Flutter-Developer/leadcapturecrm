@@ -67,7 +67,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
     return Scaffold(
       appBar: widget.showAppbar
           ? AppBar(
-              backgroundColor: LogColors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 8.0),
@@ -84,7 +84,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
               ),
             )
           : null,
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<CalendarBloc, CalendarState>(
         builder: (context, state) {
           if (state is CalendarLoading) {

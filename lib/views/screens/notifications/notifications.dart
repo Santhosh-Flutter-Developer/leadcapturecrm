@@ -285,9 +285,9 @@ class _NotificationsListingState extends State<NotificationsListing> {
     return BlocProvider(
       create: (context) => NotificationsBloc()..add(StreamNotifications()),
       child: Scaffold(
-        backgroundColor: NotifyColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: NotifyColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: const Back(color: AppColors.black),
           centerTitle: false,

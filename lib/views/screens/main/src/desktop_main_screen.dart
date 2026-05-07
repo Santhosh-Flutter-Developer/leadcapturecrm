@@ -209,7 +209,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FutureBuilder(
         future: _future,
         builder: (context, snapshot) {
