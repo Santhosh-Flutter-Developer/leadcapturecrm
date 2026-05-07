@@ -316,57 +316,55 @@ class EmployeeService {
     }
   }
 
-//   static Future<void> deleteEmployee({required String uid}) async {
-//   try {
-//     final firestore = FirebaseFirestore.instance;
-//     final cid = await Spdb.getCid();
+  //   static Future<void> deleteEmployee({required String uid}) async {
+  //   try {
+  //     final firestore = FirebaseFirestore.instance;
+  //     final cid = await Spdb.getCid();
 
-//     final ref = firestore
-//         .collection(Collections.users.name)
-//         .doc(cid)
-//         .collection(Collections.employees.name)
-//         .doc(uid);
+  //     final ref = firestore
+  //         .collection(Collections.users.name)
+  //         .doc(cid)
+  //         .collection(Collections.employees.name)
+  //         .doc(uid);
 
-//     final snap = await ref.get();
-//     if (!snap.exists) return;
+  //     final snap = await ref.get();
+  //     if (!snap.exists) return;
 
-//     final data = snap.data()!;
+  //     final data = snap.data()!;
 
-//     try {
-//       await TrashService.moveToTrash(
-//         docRef: ref,
-//         docData: data,
-//         reason: 'user_deleted',
-//       );
-//     } catch (_) {}
+  //     try {
+  //       await TrashService.moveToTrash(
+  //         docRef: ref,
+  //         docData: data,
+  //         reason: 'user_deleted',
+  //       );
+  //     } catch (_) {}
 
-//     await ref.delete(); // ✅ must succeed
+  //     await ref.delete(); // ✅ must succeed
 
-//     try {
-//       final user = await Spdb.getUser();
-//       final log = ActivityLogModel(
-//         userData: user,
-//         activity: '${data['name']?.toString().decrypt ?? 'User'} deleted',
-//         description:
-//             'User deleted from ${Collections.employees.name}',
-//         collection:
-//             '${Collections.users.name}/$cid/${Collections.employees.name}',
-//         docId: uid,
-//       );
+  //     try {
+  //       final user = await Spdb.getUser();
+  //       final log = ActivityLogModel(
+  //         userData: user,
+  //         activity: '${data['name']?.toString().decrypt ?? 'User'} deleted',
+  //         description:
+  //             'User deleted from ${Collections.employees.name}',
+  //         collection:
+  //             '${Collections.users.name}/$cid/${Collections.employees.name}',
+  //         docId: uid,
+  //       );
 
-//       await CommonService.add(
-//         '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
-//         log.toMap(),
-//       );
-//     } catch (_) {}
-//   } catch (e, st) {
-//     await ErrorService.recordError(e, st);
-//     debugPrint('Delete employee failed: $e');
-//     // ❌ DO NOT rethrow
-//   }
-// }
-
-
+  //       await CommonService.add(
+  //         '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+  //         log.toMap(),
+  //       );
+  //     } catch (_) {}
+  //   } catch (e, st) {
+  //     await ErrorService.recordError(e, st);
+  //     debugPrint('Delete employee failed: $e');
+  //     // ❌ DO NOT rethrow
+  //   }
+  // }
 
   static Future<void> deleteEmployee({required String uid}) async {
     try {
@@ -404,6 +402,21 @@ class EmployeeService {
       debugPrint("${e.toString()}, ${st.toString()}");
       throw e.toString();
     }
+  }
+
+  static Future<void> restoreEmployee(EmployeeModel employee) async {
+    var cid = await Spdb.getCid();
+
+    final uid = employee.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.employees.name)
+        .doc(uid)
+        .set(employee.toMap());
   }
 
   static Future<List<EmployeeModel>> getEmployeesByDepartment({

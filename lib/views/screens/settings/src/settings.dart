@@ -6,7 +6,7 @@ import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
-import 'company_location_settings.dart';
+// import 'company_location_settings.dart';
 
 class SettingsColors {
   static const Color primary = Color(0xFF2563EB);
@@ -211,13 +211,13 @@ class _SettingsListingState extends State<SettingsListing> {
                             icon: Iconsax.location,
                             iconColor: Colors.teal,
                             title: "Company Location",
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const CompanyLocationSettings(),
-                              ),
-                            ),
+                            // onTap: () => Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) =>
+                            //         const CompanyLocationSettings(),
+                            //   ),
+                            // ),
                             trailing: const Icon(
                               Iconsax.arrow_right_3,
                               size: 16,

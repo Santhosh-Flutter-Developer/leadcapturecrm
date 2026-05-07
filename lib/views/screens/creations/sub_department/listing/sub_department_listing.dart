@@ -71,6 +71,10 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshSubDepartments() async {
+    context.read<SubDepartmentBloc>().add(StreamSubDepartment());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -99,169 +103,167 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshSubDepartments(),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.grey.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
+
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Department",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Created",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (subDepartment) => _buildDataRow(
-                                                context,
-                                                subDepartment,
-                                                controllerWatch,
-                                                controllerRead,
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Name",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Department",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Created",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (subDepartment) => _buildDataRow(
+                                              context,
+                                              subDepartment,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<SubDepartmentModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<SubDepartmentModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -364,9 +366,11 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
                           context,
                         ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                       ),
-                      icon: Icon(Iconsax.trash),
+                      icon: const Icon(Iconsax.trash),
                       onPressed: () async {
-                        var result = await showDialog(
+                        if (_selectedSubDepartments.isEmpty) return;
+
+                        final result = await showDialog<bool>(
                           context: context,
                           builder: (context) => ConfirmDialog(
                             title: 'Delete',
@@ -375,33 +379,64 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
                           ),
                           barrierDismissible: false,
                         );
-                        if (result != null && result) {
-                          try {
-                            futureLoading(context);
-                            for (var i in _selectedSubDepartments) {
-                              await SubDepartmentService.deleteSubDepartment(
-                                uid: i.uid ?? '',
-                              );
-                            }
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                            _selectedSubDepartments.clear();
-                            setState(() {});
-                          } catch (e) {
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                            FlushBar.show(
-                              context,
-                              e.toString(),
-                              isSuccess: false,
+
+                        if (result != true) return;
+
+                        try {
+                          // ✅ STEP 1: BACKUP
+                          final deletedSubDepartments = _selectedSubDepartments
+                              .map((e) => e.copyWith())
+                              .toList();
+
+                          // ✅ STEP 2: loader
+                          futureLoading(context);
+
+                          // ✅ STEP 3: DELETE
+                          for (var subDept in deletedSubDepartments) {
+                            await SubDepartmentService.deleteSubDepartment(
+                              uid: subDept.uid ?? '',
                             );
                           }
+
+                          // ✅ STEP 4: close loader
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          // ✅ STEP 5: clear selection
+                          _selectedSubDepartments.clear();
+                          setState(() {});
+
+                          // ✅ STEP 6: UNDO
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              for (var subDept in deletedSubDepartments) {
+                                if (subDept.uid == null) continue;
+
+                                await SubDepartmentService.restoreSubDepartment(
+                                  subDept,
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh UI
+                              context.read<SubDepartmentBloc>().add(
+                                StreamSubDepartment(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -426,6 +461,13 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshSubDepartments,
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -501,41 +543,65 @@ class _SubDepartmentListingViewState extends State<SubDepartmentListingView> {
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
-                      onPressed: () async {
-                        var result = await showDialog(
-                          context: context,
-                          builder: (context) {
-                            return const ConfirmDialog(
-                              title: 'Delete $_pageTitle',
-                              content:
-                                  'Are you sure want to delete this $_pageTitle',
-                            );
-                          },
-                        );
-                        if (result != null && result) {
-                          try {
-                            await SubDepartmentService.deleteSubDepartment(
-                              uid: subDepartment.uid ?? '',
-                            );
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                          } catch (e, st) {
-                            await ErrorService.recordError(e, st);
-                            debugPrint("${e.toString()}, ${st.toString()}");
-                            FlushBar.show(
-                              context,
-                              e.toString(),
-                              isSuccess: false,
-                              error: e,
-                              stackTrace: st,
-                            );
-                          }
-                        }
-                      },
                       color: AppColors.danger,
                       splashRadius: 20,
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => ConfirmDialog(
+                            title: 'Delete $_pageTitle',
+                            content:
+                                'Are you sure want to delete this $_pageTitle',
+                          ),
+                        );
+
+                        if (result != true) return;
+
+                        try {
+                          // ✅ STEP 1: BACKUP
+                          final deletedSubDepartment = subDepartment.copyWith();
+
+                          // ✅ STEP 2: DELETE
+                          await SubDepartmentService.deleteSubDepartment(
+                            uid: subDepartment.uid ?? '',
+                          );
+
+                          if (!context.mounted) return;
+
+                          // ✅ STEP 3: UNDO
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              if (deletedSubDepartment.uid == null) return;
+
+                              // ✅ STEP 4: RESTORE
+                              await SubDepartmentService.restoreSubDepartment(
+                                deletedSubDepartment,
+                              );
+
+                              if (!context.mounted) return;
+
+                              // ✅ STEP 5: REFRESH UI
+                              context.read<SubDepartmentBloc>().add(
+                                StreamSubDepartment(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          await ErrorService.recordError(e, st);
+                          debugPrint("${e.toString()}, ${st.toString()}");
+
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                            error: e,
+                            stackTrace: st,
+                          );
+                        }
+                      },
                     )
                   : IconButton(
                       icon: Icon(Iconsax.trash, color: AppColors.grey400),

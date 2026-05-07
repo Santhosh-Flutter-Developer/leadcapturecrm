@@ -108,6 +108,10 @@ class _ClientListingViewState extends State<ClientListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshClients(BuildContext context) async {
+    context.read<ClientBloc>().add(StreamClients());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<ClientModel>>();
@@ -137,95 +141,92 @@ class _ClientListingViewState extends State<ClientListingView> {
               //   return buildNoPermissionView(context);
               // }
 
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshClients(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.grey.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
+                                          ),
+                                      columns: _buildColumns(controllerRead),
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (client) => _buildDataRow(
+                                              context,
+                                              client,
+                                              controllerWatch,
+                                              controllerRead,
                                             ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: _buildColumns(controllerRead),
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (client) => _buildDataRow(
-                                                context,
-                                                client,
-                                                controllerWatch,
-                                                controllerRead,
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<ClientModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<ClientModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -449,6 +450,7 @@ class _ClientListingViewState extends State<ClientListingView> {
                 onPressed: () async {
                   if (_selectedClients.isEmpty) return;
 
+                  // ✅ STEP 0: check assignment
                   for (var client in _selectedClients) {
                     final isAssigned = await ClientService.isClientAssigned(
                       client.uid ?? '',
@@ -468,11 +470,7 @@ class _ClientListingViewState extends State<ClientListingView> {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () {
-                                if (Navigator.canPop(context)) {
-                                  Navigator.pop(context);
-                                }
-                              },
+                              onPressed: () => Navigator.pop(context),
                               child: Text(
                                 'OK',
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -484,6 +482,8 @@ class _ClientListingViewState extends State<ClientListingView> {
                       return;
                     }
                   }
+
+                  // ✅ STEP 1: confirm
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => ConfirmDialog(
@@ -493,12 +493,56 @@ class _ClientListingViewState extends State<ClientListingView> {
                     barrierDismissible: false,
                   );
 
-                  if (confirm == true) {
-                    context.read<ClientBloc>().add(DeleteClients(uid: 'uid'));
+                  if (confirm != true) return;
+
+                  try {
+                    // ✅ STEP 2: BACKUP (IMPORTANT)
+                    final deletedClients = _selectedClients
+                        .map((e) => e.copyWith())
+                        .toList();
+
+                    // ✅ STEP 3: loader
+                    futureLoading(context);
+
+                    // ✅ STEP 4: DELETE (use service)
+                    for (var client in deletedClients) {
+                      await ClientService.deleteClient(uid: client.uid ?? '');
+                    }
+
+                    // ✅ STEP 5: close loader
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+
+                    // ✅ STEP 6: clear selection
+                    _selectedClients.clear();
+                    setState(() {});
+
+                    // ✅ STEP 7: UNDO
                     FlushBar.show(
                       context,
-                      'Client deleted successfully',
-                      isSuccess: true,
+                      'Clients deleted successfully',
+                      actionLabel: 'UNDO',
+                      onActionPressed: () async {
+                        for (var client in deletedClients) {
+                          if (client.uid == null) continue;
+
+                          await ClientService.restoreClient(client);
+                        }
+
+                        if (!context.mounted) return;
+
+                        // 🔥 refresh UI
+                        context.read<ClientBloc>().add(StreamClients());
+                      },
+                    );
+                  } catch (e, st) {
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+
+                    await ErrorService.recordError(e, st);
+
+                    FlushBar.show(
+                      context,
+                      'Failed to delete clients: $e',
+                      isSuccess: false,
                     );
                   }
                 },
@@ -521,6 +565,13 @@ class _ClientListingViewState extends State<ClientListingView> {
             // ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshClients(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -570,7 +621,8 @@ class _ClientListingViewState extends State<ClientListingView> {
             context,
             client,
             client.clientName,
-            client.profilePictureUrl,false
+            client.profilePictureUrl,
+            false,
           ),
         ),
 
@@ -625,7 +677,8 @@ class _ClientListingViewState extends State<ClientListingView> {
             context,
             company,
             company.companyName,
-            company.companyLogoUrl, true
+            company.companyLogoUrl,
+            true,
           ),
         ),
 
@@ -659,11 +712,12 @@ class _ClientListingViewState extends State<ClientListingView> {
     BuildContext context,
     ClientModel company,
     String? title,
-    String? imageUrl,bool isCompany
+    String? imageUrl,
+    bool isCompany,
   ) {
     return InkWell(
       onTap: () {
-        final profile = ClientProfile(client: company, isCompany: isCompany,);
+        final profile = ClientProfile(client: company, isCompany: isCompany);
         kIsMobile
             ? Sheet.showSheet(context, widget: profile)
             : GeneralDialog.showRTLSheet(context, profile);
@@ -731,8 +785,9 @@ class _ClientListingViewState extends State<ClientListingView> {
           color: AppColors.danger,
           splashRadius: 20,
           onPressed: () async {
+            // ✅ STEP 0: check assignment
             final isAssigned = await ClientService.isClientAssigned(
-              client.uid!,
+              client.uid ?? '',
             );
 
             if (isAssigned) {
@@ -747,11 +802,21 @@ class _ClientListingViewState extends State<ClientListingView> {
                     'This client is associated with leads.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'OK',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
               );
               return;
             }
 
+            // ✅ STEP 1: confirm
             final confirm = await showDialog<bool>(
               context: context,
               builder: (_) => ConfirmDialog(
@@ -760,8 +825,41 @@ class _ClientListingViewState extends State<ClientListingView> {
               ),
             );
 
-            if (confirm == true) {
-              context.read<ClientBloc>().add(DeleteClients(uid: client.uid!));
+            if (confirm != true) return;
+
+            try {
+              // ✅ STEP 2: BACKUP (IMPORTANT)
+              final deletedClient = client.copyWith();
+
+              // ✅ STEP 3: DELETE (use service, NOT bloc)
+              await ClientService.deleteClient(uid: client.uid ?? '');
+
+              if (!context.mounted) return;
+
+              // ✅ STEP 4: UNDO
+              FlushBar.show(
+                context,
+                '$pageTitle deleted successfully',
+                actionLabel: 'UNDO',
+                onActionPressed: () async {
+                  if (deletedClient.uid == null) return;
+
+                  await ClientService.restoreClient(deletedClient);
+
+                  if (!context.mounted) return;
+
+                  // ✅ refresh UI
+                  context.read<ClientBloc>().add(StreamClients());
+                },
+              );
+            } catch (e, st) {
+              await ErrorService.recordError(e, st);
+
+              FlushBar.show(
+                context,
+                'Failed to delete $pageTitle: $e',
+                isSuccess: false,
+              );
             }
           },
         ),

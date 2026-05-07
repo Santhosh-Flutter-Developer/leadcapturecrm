@@ -234,6 +234,21 @@ class DealService {
     }
   }
 
+static Future<void> restoreDeal(DealModel deal) async {
+  try {
+    final firebase = FirebaseConfig();
+    final cid = await Spdb.getCid();
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.deals.name)
+        .doc(deal.uid)
+        .set(deal.toMap());
+  } catch (e, st) {
+    await ErrorService.recordError(e, st);
+  }
+}
+
   static Future isDealStatusAssigned(String s) async {}
 
   static Future<void> deleteDealComment({

@@ -138,18 +138,38 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 ),
               );
 
-              if (result == true) {
-                try {
-                  await LeadService.deleteLead(uid: widget.lead.uid ?? '');
-                  if (context.mounted) {
-                    Navigator.of(context).pop('deleted');
-                    FlushBar.show(context, 'Lead deleted successfully');
-                  }
-                } catch (e, st) {
-                  await ErrorService.recordError(e, st);
-                  if (context.mounted) {
-                    FlushBar.show(context, e.toString(), isSuccess: false);
-                  }
+              if (result != true) return;
+
+              try {
+                final deletedLead = widget.lead;
+                final isUndoPressed = ValueNotifier(false);
+                await LeadService.deleteLead(uid: widget.lead.uid ?? '');
+
+                if (!mounted) return;
+
+                FlushBar.show(
+                  context,
+                  'Lead deleted successfully',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    isUndoPressed.value = true;
+                    await LeadService.restoreLead(deletedLead);
+
+                    // refresh list
+                    context.read<LeadBloc>().add(StreamLead());
+
+                    Navigator.of(context).pop('restored');
+                  },
+                );
+                // Future.delayed(const Duration(seconds: 4), () {
+                // if (!isUndoPressed.value && mounted) {
+                //   Navigator.of(context).pop('deleted');
+                // }
+                // });
+              } catch (e, st) {
+                await ErrorService.recordError(e, st);
+                if (mounted) {
+                  FlushBar.show(context, e.toString(), isSuccess: false);
                 }
               }
             }, isDanger: true),

@@ -61,6 +61,7 @@ class LeadStatusModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
@@ -76,6 +77,7 @@ class LeadStatusModel {
 
   Map<String, dynamic> toUpdateMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,

@@ -208,6 +208,21 @@ class TaskService {
     }
   }
 
+  static Future<void> restoreTask(TaskModel task) async {
+    try {
+      final FirebaseConfig firebase = FirebaseConfig();
+      final cid = await Spdb.getCid();
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .doc(task.uid)
+          .set(task.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+    }
+  }
+
   // Get a single task
   static Future<TaskModel> getTask({required String uid}) async {
     try {

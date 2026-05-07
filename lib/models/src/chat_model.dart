@@ -76,6 +76,7 @@ class ChatModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'createdBy': createdBy,
       'participants': participants,
       'participantsKey': participantsKey,

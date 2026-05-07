@@ -179,6 +179,21 @@ class ProjectService {
     }
   }
 
+  static Future<void> restoreProject(ProjectModel project) async {
+    var cid = await Spdb.getCid();
+
+    final uid = project.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.projects.name)
+        .doc(uid)
+        .set(project.toMap());
+  }
+
   static Future<int> getUserProjectsCount({required String userId}) async {
     try {
       var cid = await Spdb.getCid();

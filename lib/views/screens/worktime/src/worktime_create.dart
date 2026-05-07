@@ -166,43 +166,43 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       futureLoading(context);
 
       // --- Geofence check (mobile only) ---
-      final geofence = await CompanyLocationService.getGeofence();
-      if (geofence != null) {
-        final position = await LocationService.getCurrentPosition();
-        if (position == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBarOption(
-            context,
-            content:
-                "Location permission is required to clock in. Please enable it in your device settings.",
-            isSuccess: false,
-            actionText: "Try Again",
-            action: _clockIn,
-          );
-          return;
-        }
+      // final geofence = await CompanyLocationService.getGeofence();
+      // if (geofence != null) {
+      //   final position = await LocationService.getCurrentPosition();
+      //   if (position == null) {
+      //     Navigator.pop(context);
+      //     Snackbar.showSnackBarOption(
+      //       context,
+      //       content:
+      //           "Location permission is required to clock in. Please enable it in your device settings.",
+      //       isSuccess: false,
+      //       actionText: "Try Again",
+      //       action: _clockIn,
+      //     );
+      //     return;
+      //   }
 
-        final isInside = LocationService.isWithinRadius(
-          currentLat: position.latitude,
-          currentLng: position.longitude,
-          centerLat: geofence.latitude,
-          centerLng: geofence.longitude,
-          radiusMeters: geofence.radiusMeters,
-        );
+      //   final isInside = LocationService.isWithinRadius(
+      //     currentLat: position.latitude,
+      //     currentLng: position.longitude,
+      //     centerLat: geofence.latitude,
+      //     centerLng: geofence.longitude,
+      //     radiusMeters: geofence.radiusMeters,
+      //   );
 
-        if (!isInside) {
-          Navigator.pop(context);
-          Snackbar.showSnackBarOption(
-            context,
-            content:
-                "You are outside the company premises. Move closer and try again.",
-            isSuccess: false,
-            actionText: "Try Again",
-            action: _clockIn,
-          );
-          return;
-        }
-      }
+      //   if (!isInside) {
+      //     Navigator.pop(context);
+      //     Snackbar.showSnackBarOption(
+      //       context,
+      //       content:
+      //           "You are outside the company premises. Move closer and try again.",
+      //       isSuccess: false,
+      //       actionText: "Try Again",
+      //       action: _clockIn,
+      //     );
+      //     return;
+      //   }
+      // }
       // ------------------------------------
 
       var uid = await Spdb.getUid();

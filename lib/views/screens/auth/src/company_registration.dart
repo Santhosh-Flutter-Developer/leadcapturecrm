@@ -35,7 +35,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
   File? _logo;
   bool _passwordVisible = false;
-  bool _detectingLocation = false;
+  final bool _detectingLocation = false;
 
   @override
   void dispose() {
@@ -57,31 +57,31 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     if (image != null) setState(() => _logo = File(image.path));
   }
 
-  Future<void> _detectLocation() async {
-    setState(() => _detectingLocation = true);
-    try {
-      final position = await LocationService.getCurrentPosition();
-      if (position == null) {
-        if (mounted) {
-          FlushBar.show(
-            context,
-            'Location permission denied or service unavailable.',
-            isSuccess: false,
-          );
-        }
-        return;
-      }
-      _latitude.text = position.latitude.toStringAsFixed(6);
-      _longitude.text = position.longitude.toStringAsFixed(6);
-      if (mounted) setState(() {});
-    } catch (e) {
-      if (mounted) {
-        FlushBar.show(context, 'Failed to detect location: $e', isSuccess: false);
-      }
-    } finally {
-      if (mounted) setState(() => _detectingLocation = false);
-    }
-  }
+  // Future<void> _detectLocation() async {
+  //   setState(() => _detectingLocation = true);
+  //   try {
+  //     final position = await LocationService.getCurrentPosition();
+  //     if (position == null) {
+  //       if (mounted) {
+  //         FlushBar.show(
+  //           context,
+  //           'Location permission denied or service unavailable.',
+  //           isSuccess: false,
+  //         );
+  //       }
+  //       return;
+  //     }
+  //     _latitude.text = position.latitude.toStringAsFixed(6);
+  //     _longitude.text = position.longitude.toStringAsFixed(6);
+  //     if (mounted) setState(() {});
+  //   } catch (e) {
+  //     if (mounted) {
+  //       FlushBar.show(context, 'Failed to detect location: $e', isSuccess: false);
+  //     }
+  //   } finally {
+  //     if (mounted) setState(() => _detectingLocation = false);
+  //   }
+  // }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
@@ -175,11 +175,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
                       // Company Details Section
                       _sectionTitle("Company Details"),
-                      _customField(
-                        "Company Name",
-                        _companyName,
-                        Iconsax.box,
-                      ),
+                      _customField("Company Name", _companyName, Iconsax.box),
                       _customField(
                         "Business Email",
                         _companyEmail,
@@ -190,7 +186,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
                       // Company Location Section
                       _sectionTitle("Company Location (for Attendance)"),
-                      _locationFields(),
+                      // _locationFields(),
 
                       const SizedBox(height: 10),
 
@@ -232,52 +228,52 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     );
   }
 
-  Widget _locationFields() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _numericField("Latitude", _latitude, Iconsax.location),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _numericField("Longitude", _longitude, Iconsax.location),
-            ),
-          ],
-        ),
-        _numericField("Radius (metres)", _radius, Iconsax.radar),
-        if (kIsMobile) ...[
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _detectingLocation ? null : _detectLocation,
-              icon: _detectingLocation
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Iconsax.gps, size: 18),
-              label: Text(
-                _detectingLocation
-                    ? "Detecting..."
-                    : "Use Current Location",
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
+  // Widget _locationFields() {
+  //   return Column(
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: _numericField("Latitude", _latitude, Iconsax.location),
+  //           ),
+  //           const SizedBox(width: 12),
+  //           Expanded(
+  //             child: _numericField("Longitude", _longitude, Iconsax.location),
+  //           ),
+  //         ],
+  //       ),
+  //       _numericField("Radius (metres)", _radius, Iconsax.radar),
+  //       if (kIsMobile) ...[
+  //         const SizedBox(height: 4),
+  //         SizedBox(
+  //           width: double.infinity,
+  //           child: OutlinedButton.icon(
+  //             onPressed: _detectingLocation ? null : _detectLocation,
+  //             icon: _detectingLocation
+  //                 ? const SizedBox(
+  //                     width: 16,
+  //                     height: 16,
+  //                     child: CircularProgressIndicator(strokeWidth: 2),
+  //                   )
+  //                 : const Icon(Iconsax.gps, size: 18),
+  //             label: Text(
+  //               _detectingLocation
+  //                   ? "Detecting..."
+  //                   : "Use Current Location",
+  //             ),
+  //             style: OutlinedButton.styleFrom(
+  //               padding: const EdgeInsets.symmetric(vertical: 12),
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(10),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 10),
+  //       ],
+  //     ],
+  //   );
+  // }
 
   Widget _numericField(
     String label,
