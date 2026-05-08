@@ -189,7 +189,7 @@ class LeadPriorityService {
         name: name,
         createdBy: await Spdb.getUser(),
         description: '',
-        color: Colors.blue.value,
+        color: Colors.blue.toARGB32(),
       );
 
       final docRef = await firebase.users

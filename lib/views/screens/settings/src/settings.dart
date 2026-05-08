@@ -174,30 +174,30 @@ class _SettingsListingState extends State<SettingsListing> {
                         onChanged: (value) => themeProvider.setDarkMode(value),
                         isInDevelop: false,
                       ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.global,
-                        iconColor: Colors.indigoAccent,
-                        title: "Language",
-                        trailing: _buildDropdown(
-                          value: settings.language,
-                          options: ["English", "Hindi", "Tamil", "Telugu"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("language", val),
-                          ),
-                        ),
-                      ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.music_dashboard,
-                        iconColor: Colors.deepOrangeAccent,
-                        title: "Dashboard Layout",
-                        trailing: _buildDropdown(
-                          value: settings.dashboardLayout,
-                          options: ["Default", "Compact", "Analytics"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("dashboardLayout", val),
-                          ),
-                        ),
-                      ),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.global,
+                      //   iconColor: Colors.indigoAccent,
+                      //   title: "Language",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.language,
+                      //     options: ["English", "Hindi", "Tamil", "Telugu"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("language", val),
+                      //     ),
+                      //   ),
+                      // ),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.music_dashboard,
+                      //   iconColor: Colors.deepOrangeAccent,
+                      //   title: "Dashboard Layout",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.dashboardLayout,
+                      //     options: ["Default", "Compact", "Analytics"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("dashboardLayout", val),
+                      //     ),
+                      //   ),
+                      // ),
                     ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("System & Data", Iconsax.status),
@@ -445,42 +445,31 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required List<String> options,
-    required ValueChanged<String?> onChanged,
-  }) {
-    final validValue = options.contains(value) ? value : options.first;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: SettingsColors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: SettingsColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: validValue,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: SettingsColors.textSecondary,
-          ),
-          isDense: true,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: SettingsColors.textPrimary,
-          ),
-          items: options
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
+  // Widget _buildDropdown({
+  //   required String value,
+  //   required List<String> options,
+  //   required ValueChanged<String?> onChanged,
+  // }) {
+  //   final validValue = options.contains(value) ? value : options.first;
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       color: SettingsColors.background,
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: SettingsColors.border),
+  //     ),
+  //     child: DropdownButtonHideUnderline(
+  //       child: DropdownButton<String>(
+  //         value: validValue,
+  //         icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: SettingsColors.textSecondary),
+  //         isDense: true,
+  //         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: SettingsColors.textPrimary),
+  //         items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+  //         onChanged: onChanged,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFooter() {
     return Center(

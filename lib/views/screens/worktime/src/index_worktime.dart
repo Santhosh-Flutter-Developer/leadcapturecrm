@@ -206,7 +206,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: _index == 1
-                              ? AppColors.greenColor.withOpacity(0.1)
+                              ? AppColors.greenColor.withValues(alpha: 0.1)
                               : Colors.transparent,
                           shape: BoxShape.circle,
                         ),
@@ -259,7 +259,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: _index == 2
-                              ? AppColors.redColor.withOpacity(0.1)
+                              ? AppColors.redColor.withValues(alpha: 0.1)
                               : Colors.transparent,
                           shape: BoxShape.circle,
                         ),
@@ -308,13 +308,13 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
 
         return Card(
           elevation: isExpanded ? 8 : 2,
-          shadowColor: AppColors.primaryColor.withOpacity(0.3),
+          shadowColor: AppColors.primaryColor.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           child: ExpansionTile(
             leading: CircleAvatar(
-              backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+              backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
               child: Text(
                 group.first.userName.isNotEmpty
                     ? group.first.userName[0].toUpperCase()
@@ -341,7 +341,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.greenColor.withOpacity(0.1),
+                    color: AppColors.greenColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

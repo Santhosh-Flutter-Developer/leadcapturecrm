@@ -206,7 +206,7 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
                   duration: Duration(milliseconds: 200),
                   height: 6,
                   width: 6,
-                  transform: Matrix4.identity()..scale(selected ? 1.0 : 0.4),
+                  transform: Matrix4.diagonal3Values(selected ? 1.0 : 0.4, selected ? 1.0 : 0.4, 1.0),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(20),

@@ -212,7 +212,7 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
                                 side: BorderSide(
                                   color: getStatusColor(
                                     permission.status.name,
-                                  ).withOpacity(0.2),
+                                  ).withValues(alpha: 0.2),
                                   width: 1.5,
                                 ),
                               ),
@@ -271,13 +271,13 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
                                               decoration: BoxDecoration(
                                                 color: getStatusColor(
                                                   permission.status.name,
-                                                ).withOpacity(0.12),
+                                                ).withValues(alpha: 0.12),
                                                 borderRadius:
                                                     BorderRadius.circular(20),
                                                 border: Border.all(
                                                   color: getStatusColor(
                                                     permission.status.name,
-                                                  ).withOpacity(0.4),
+                                                  ).withValues(alpha: 0.4),
                                                 ),
                                               ),
                                               child: Text(
@@ -410,7 +410,7 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
                                                         ),
                                                     border: Border.all(
                                                       color: Colors.blue
-                                                          .withOpacity(0.2),
+                                                          .withValues(alpha: 0.2),
                                                       width: 1,
                                                     ),
                                                   ),
@@ -563,7 +563,7 @@ class _PermissionRequestsListingState extends State<PermissionRequestsListing> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

@@ -770,7 +770,6 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
   }
 
   Widget _buildCardContent(LeadModel lead, LeadStatusModel list) {
-    print("the lead status chekcing ${lead.leadStatus}");
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

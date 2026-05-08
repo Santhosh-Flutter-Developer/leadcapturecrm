@@ -635,7 +635,7 @@ class FeedCardState extends State<FeedCard> {
                                             decoration: BoxDecoration(
                                               color: isSelected
                                                   ? FeedAppColors.primary
-                                                        .withOpacity(0.1)
+                                                        .withValues(alpha: 0.1)
                                                   : Colors.white,
                                               borderRadius:
                                                   BorderRadius.circular(10),
@@ -793,7 +793,7 @@ class FeedCardState extends State<FeedCard> {
                                     primary: false,
                                     padding: const EdgeInsets.all(10),
                                     itemCount: widget.feed.attachments.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const Divider(height: 14),
                                     itemBuilder: (context, index) {
                                       final file =
@@ -893,7 +893,7 @@ class FeedCardState extends State<FeedCard> {
                                             primary: false,
                                             padding: const EdgeInsets.all(10),
                                             itemCount: dialogComments.length,
-                                            separatorBuilder: (_, __) =>
+                                            separatorBuilder: (_, _) =>
                                                 const SizedBox(height: 10),
                                             itemBuilder: (context, index) {
                                               final comment =
@@ -1691,10 +1691,10 @@ class FeedCardState extends State<FeedCard> {
     final updatedAt = feed.updatedAt;
 
     if (updatedAt == null || updatedAt.isAtSameMomentAs(feed.createdAt)) {
-      return 'Posted ${createdLabel} ago';
+      return 'Posted $createdLabel ago';
     }
 
-    return 'Posted ${createdLabel} ago · Edited ${_formatShortTime(updatedAt)} ago';
+    return 'Posted $createdLabel ago · Edited ${_formatShortTime(updatedAt)} ago';
   }
 
   Future<void> _showCommentSheet() async {

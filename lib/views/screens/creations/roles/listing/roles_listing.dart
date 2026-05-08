@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:leadcapture/constants/src/svg.dart';
 import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';

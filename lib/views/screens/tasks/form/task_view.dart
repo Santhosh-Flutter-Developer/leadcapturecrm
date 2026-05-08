@@ -628,7 +628,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: comments.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, index) =>
                     _buildCommentItem(comments[index]),
               ),
@@ -923,16 +923,16 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: TaskViewColors.primary.withOpacity(0.05),
+        color: TaskViewColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TaskViewColors.primary.withOpacity(0.2)),
+        border: Border.all(color: TaskViewColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: TaskViewColors.primary.withOpacity(0.15),
+              color: TaskViewColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -991,7 +991,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
               drawVerticalLine: false,
               horizontalInterval: 30,
               getDrawingHorizontalLine: (value) =>
-                  FlLine(color: Colors.grey.withOpacity(0.12), strokeWidth: 1),
+                  FlLine(color: Colors.grey.withValues(alpha: 0.12), strokeWidth: 1),
             ),
 
             /// BORDER
@@ -1052,7 +1052,7 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
                 dotData: FlDotData(
                   show: true,
                   checkToShowDot: (spot, barData) => spot == spots.last,
-                  getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                  getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
                     radius: _taskModel.completed ? 5 : 6,
                     color: TaskViewColors.primary,
                     strokeWidth: 3,
@@ -1063,8 +1063,8 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
                   show: true,
                   gradient: LinearGradient(
                     colors: [
-                      TaskViewColors.primary.withOpacity(0.25),
-                      TaskViewColors.primary.withOpacity(0.0),
+                      TaskViewColors.primary.withValues(alpha: 0.25),
+                      TaskViewColors.primary.withValues(alpha: 0.0),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -1096,12 +1096,12 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
                 return spotIndexes.map((index) {
                   return TouchedSpotIndicatorData(
                     FlLine(
-                      color: TaskViewColors.primary.withOpacity(0.5),
+                      color: TaskViewColors.primary.withValues(alpha: 0.5),
                       strokeWidth: 2,
                     ),
                     FlDotData(
                       show: true,
-                      getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                      getDotPainter: (spot, _, _, _) => FlDotCirclePainter(
                         radius: 5,
                         color: TaskViewColors.primary,
                         strokeWidth: 2,

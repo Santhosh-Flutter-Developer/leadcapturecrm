@@ -50,10 +50,6 @@ class FirestoreNotificationListener {
                   String message =
                       data?['body'] ?? data?['message'] ?? 'You have a new message';
 
-                  Map<String, dynamic> payload = data?['payload'] != null
-                      ? data!['payload']
-                      : {};
-
                   LocalNotification notification = LocalNotification(
                     title: title,
                     body: message,

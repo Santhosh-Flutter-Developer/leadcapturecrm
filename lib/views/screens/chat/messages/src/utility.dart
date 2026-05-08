@@ -96,7 +96,7 @@ class AttachmentPreview extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: attachments.map((e) {
-            final mime = (e.mimeType ?? "").toLowerCase();
+            final mime = e.mimeType.toLowerCase();
             final ext = e.extension.toLowerCase();
 
             final imageExtensions = [

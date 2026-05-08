@@ -278,7 +278,7 @@ class _SearchChatState extends State<SearchChat> {
                   ),
                 ),
                 Text(
-                  message.timestamp?.formatDateMonthTime ?? '',
+                  message.timestamp.formatDateMonthTime,
                   style: const TextStyle(
                     fontSize: 10,
                     color: SearchChatColors.textSecondary,

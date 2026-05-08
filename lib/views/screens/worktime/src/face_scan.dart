@@ -22,8 +22,6 @@ import 'package:leadcapture/views/ui/src/button.dart';
 import 'package:leadcapture/views/ui/src/error_display.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 import 'package:leadcapture/views/ui/src/snackbar.dart';
-import 'package:image_picker/image_picker.dart';
-
 // Project imports:
 import '/constants/constants.dart';
 import '/theme/theme.dart';
@@ -167,7 +165,7 @@ class _FaceScanState extends State<FaceScan> {
                           color: AppColors.secondaryColor,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               spreadRadius: 5,
                               blurRadius: 7,
                             ),

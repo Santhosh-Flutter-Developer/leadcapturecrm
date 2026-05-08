@@ -1285,10 +1285,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     //       .join(', ');
     // }
 
-    for (final d in devices) {
-      print("DEVICE: ${d.toMap()}");
-      print("DETECTED: ${getPlatformFromDevice(d)}");
-    }
     void openUser(BuildContext context, UserRowModel user) {
       if (kIsMobile) {
         Sheet.showSheet(
