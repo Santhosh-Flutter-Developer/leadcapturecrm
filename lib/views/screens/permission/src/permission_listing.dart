@@ -5,7 +5,6 @@
 */
 
 // Flutter imports:
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -23,7 +22,6 @@ import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/count_display.dart';
 import 'package:leadcapture/views/ui/src/error_display.dart';
 import 'package:leadcapture/views/ui/src/filter.dart';
-import 'package:leadcapture/views/ui/src/general_dialog.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 
 // Project imports:
@@ -112,18 +110,6 @@ class _PermissionListingState extends State<PermissionListing> {
     int hours = duration.inHours;
     int minutes = duration.inMinutes % 60;
     return '${hours}h ${minutes}m';
-  }
-
-  void _openSheet(BuildContext context, Widget widget) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-
-      if (kIsMobile) {
-        Sheet.showSheet(context, widget: widget);
-      } else {
-        GeneralDialog.showRTLSheet(context, widget);
-      }
-    });
   }
 
   @override
@@ -225,7 +211,7 @@ class _PermissionListingState extends State<PermissionListing> {
                           side: BorderSide(
                             color: _statusBadgeColor(
                               p.status,
-                            ).withOpacity(0.25),
+                            ).withValues(alpha: 0.25),
                             width: 1.5,
                           ),
                         ),
@@ -306,14 +292,14 @@ class _PermissionListingState extends State<PermissionListing> {
                                         decoration: BoxDecoration(
                                           color: _statusBadgeColor(
                                             p.status,
-                                          ).withOpacity(0.12),
+                                          ).withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
                                           border: Border.all(
                                             color: _statusBadgeColor(
                                               p.status,
-                                            ).withOpacity(0.4),
+                                            ).withValues(alpha: 0.4),
                                           ),
                                         ),
                                         child: Text(
@@ -395,7 +381,7 @@ class _PermissionListingState extends State<PermissionListing> {
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                               border: Border.all(
-                                                color: Colors.blue.withOpacity(
+                                                color: Colors.blue.withValues(alpha: 
                                                   0.2,
                                                 ),
                                                 width: 1,
@@ -550,7 +536,7 @@ class _PermissionListingState extends State<PermissionListing> {
                       ),
                     );
                   },
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
                 ),
               ],
             );

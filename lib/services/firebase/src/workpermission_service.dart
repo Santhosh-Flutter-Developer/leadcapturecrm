@@ -75,7 +75,6 @@ class WorkPermissionService {
           .limit(filter.pageLimit)
           .get(const GetOptions(source: Source.serverAndCache));
 
-      print("Permissions found: ${querySnapshot.docs.length}");
 
       return querySnapshot.docs.map((doc) {
         var data = doc.data();
@@ -468,7 +467,6 @@ class WorkPermissionService {
         status: status,
       );
     } catch (e) {
-      print("Permission approval error: $e");
       throw Exception("Failed to process permission: ${e.toString()}");
     }
   }
@@ -531,11 +529,7 @@ class WorkPermissionService {
             'createdBy': await Spdb.getUid(),
           });
 
-      print(
-        "✅ Salary deducted: ₹${deductionAmount.toStringAsFixed(2)} for $totalHours hours",
-      );
     } catch (e) {
-      print("Salary deduction error: $e");
       // Don't fail the approval if salary deduction fails
     }
   }
@@ -559,7 +553,6 @@ class WorkPermissionService {
           .get();
 
       if (!permissionSnap.exists) {
-        print("Permission $permissionId not found");
         return;
       }
 
@@ -575,13 +568,11 @@ class WorkPermissionService {
           .get();
 
       if (!userDoc.exists) {
-        print("User document not found for $userId");
         return;
       }
 
       final fcmId = userDoc.data()?["fcmId"];
       if (fcmId == null || fcmId.isEmpty) {
-        print("No FCM token found for user $userId");
         return;
       }
 
@@ -616,9 +607,7 @@ class WorkPermissionService {
 
       // 6️⃣ Send notification
       await PostNotificationService.sendNotification(model: notificationModel);
-      print("✅ Notification sent to user $userId for permission $permissionId");
     } catch (e) {
-      print("❌ Notification error: $e");
       // Don't throw - approval should succeed even if notification fails
     }
   }

@@ -127,7 +127,7 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
 
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(

@@ -524,8 +524,8 @@ class AttendanceService {
               ),
             ],
             breakMinutes: 0,
-            present: status == AttendanceStatus.present ? "1" : "0",
-            absent: status == AttendanceStatus.absent ? "1" : "0",
+            present: status == AttendanceStatus.present.name ? "1" : "0",
+            absent: status == AttendanceStatus.absent.name ? "1" : "0",
             holiday: "0",
             workingHourMinutes: workingMinutes,
             lessHourMinutes: lessMinutes,
@@ -1006,9 +1006,7 @@ class AttendanceService {
         "modified": DateTime.now().millisecondsSinceEpoch,
       });
 
-      print("✅ Attendance updated based on permission");
-    } catch (e) {
-      print("❌ Attendance update failed: $e");
+    } catch (_) {
     }
   }
 }

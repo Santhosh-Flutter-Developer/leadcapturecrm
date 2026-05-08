@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/utils/src/download.dart';
-import 'package:leadcapture/utils/src/route.dart' as Navigate;
+import 'package:leadcapture/utils/src/route.dart' as navigate;
 import 'package:path/path.dart' as path;
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,7 +28,6 @@ class ChatAttachment extends StatefulWidget {
 }
 
 class _ChatAttachmentState extends State<ChatAttachment> {
-  List<MessagesModel> _messages = [];
   List<FileModel> media = [];
   List<String> links = [];
   List<FileModel> docs = [];
@@ -74,7 +73,6 @@ class _ChatAttachmentState extends State<ChatAttachment> {
     }
 
     setState(() {
-      _messages = result;
       media = mediaList;
       links = linkList.toList();
       docs = docList;
@@ -166,9 +164,9 @@ class _MediaTab extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             if (isVideo) {
-              Navigate.route(context, VideoPlay(file: file));
+              navigate.route(context, VideoPlay(file: file));
             } else {
-              Navigate.route(
+              navigate.route(
                 context,
                 GalleryScreen(images: media, initialIndex: index),
               );

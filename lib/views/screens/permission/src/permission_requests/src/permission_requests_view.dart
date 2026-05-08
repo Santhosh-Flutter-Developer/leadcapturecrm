@@ -156,7 +156,7 @@ class _PermissonViewState extends State<PermissonView> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primaryColor.withOpacity(0.1),
+                            AppColors.primaryColor.withValues(alpha: 0.1),
                             Colors.white,
                           ],
                           begin: Alignment.topLeft,
@@ -164,7 +164,7 @@ class _PermissonViewState extends State<PermissonView> {
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.primaryColor.withOpacity(0.2),
+                          color: AppColors.primaryColor.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Column(

@@ -253,7 +253,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -441,7 +441,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -498,7 +498,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -942,7 +942,7 @@ Widget _buildActivitySection(
   return Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: kCardColor,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(kBorderRadius),
       boxShadow: [
         BoxShadow(
@@ -1483,7 +1483,7 @@ class NotificationTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1565,7 +1565,7 @@ class TaskReminderTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: kCardColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(

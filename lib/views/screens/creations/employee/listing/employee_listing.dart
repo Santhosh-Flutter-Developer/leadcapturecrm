@@ -133,7 +133,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
@@ -157,6 +157,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                 scrollbarOrientation:
                                     ScrollbarOrientation.bottom,
                                 child: SingleChildScrollView(
+
                                   controller: _hScrollController,
                                   scrollDirection: Axis.horizontal,
                                   child: ConstrainedBox(
@@ -1284,10 +1285,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     //       .join(', ');
     // }
 
-    for (final d in devices) {
-      print("DEVICE: ${d.toMap()}");
-      print("DETECTED: ${getPlatformFromDevice(d)}");
-    }
     void openUser(BuildContext context, UserRowModel user) {
       if (kIsMobile) {
         Sheet.showSheet(

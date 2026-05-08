@@ -135,7 +135,7 @@ class _AdminListingViewState extends State<AdminListingView> {
                       const SizedBox(height: 20),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(

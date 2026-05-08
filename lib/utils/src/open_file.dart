@@ -15,8 +15,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
 
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart'
-    as path_provider_interface;
 
 class FileHelper {
   static Future launchFile({
@@ -41,8 +39,7 @@ class FileHelper {
           path = directory.path;
         }
       } else {
-        path = await path_provider_interface.PathProviderPlatform.instance
-            .getApplicationSupportPath();
+        path = (await path_provider.getApplicationSupportDirectory()).path;
       }
 
       final String fileLocation = Platform.isWindows
@@ -106,8 +103,7 @@ class FileHelper {
           path = directory.path;
         }
       } else {
-        path = await path_provider_interface.PathProviderPlatform.instance
-            .getApplicationSupportPath();
+        path = (await path_provider.getApplicationSupportDirectory()).path;
       }
 
       final String fileLocation = Platform.isWindows

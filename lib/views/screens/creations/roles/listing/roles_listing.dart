@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:leadcapture/constants/src/svg.dart';
 import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
@@ -117,7 +116,7 @@ class _RolesListingViewState extends State<RolesListingView> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
@@ -141,6 +140,7 @@ class _RolesListingViewState extends State<RolesListingView> {
                                 scrollbarOrientation:
                                     ScrollbarOrientation.bottom,
                                 child: SingleChildScrollView(
+
                                   controller: _hScrollController,
                                   scrollDirection: Axis.horizontal,
                                   child: ConstrainedBox(

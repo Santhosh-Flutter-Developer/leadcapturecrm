@@ -94,10 +94,10 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
     return BlocProvider(
       create: (context) => ActivityLogsBloc()..add(StreamActivityLogs()),
       child: Scaffold(
-        backgroundColor: LogColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: LogColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 leading: const Padding(
                   padding: EdgeInsets.only(left: 8.0),

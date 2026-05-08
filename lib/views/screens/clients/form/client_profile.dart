@@ -18,7 +18,6 @@ class ClientProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("the value of iscompany or not $isCompany");
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(16),
