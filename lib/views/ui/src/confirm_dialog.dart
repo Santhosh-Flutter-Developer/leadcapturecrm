@@ -137,7 +137,7 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
               return ChoiceChip(
                 label: Text(status.label),
                 selected: isSelected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 labelStyle: TextStyle(
                   color: isSelected ? AppColors.primary : AppColors.grey700,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

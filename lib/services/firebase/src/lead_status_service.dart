@@ -234,7 +234,7 @@ class LeadStatusService {
         name: name,
         createdBy: await Spdb.getUser(),
         description: '',
-        color: Colors.blue.value,
+        color: Colors.blue.toARGB32(),
         orderNumber: 0,
       );
 

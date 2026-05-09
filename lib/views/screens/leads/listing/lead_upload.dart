@@ -343,9 +343,9 @@ class _LeadUploadState extends State<LeadUpload> {
       child: Container(
         height: 200,
         decoration: BoxDecoration(
-          color: AppColors.primaryLight.withOpacity(0.1),
+          color: AppColors.primaryLight.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

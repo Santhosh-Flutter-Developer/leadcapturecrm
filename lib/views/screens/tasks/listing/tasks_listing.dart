@@ -133,7 +133,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                     if (_selectedView == 'Calendar') ...[
                       TaskCalendarListing(tasks: state.tasks),
                     ] else ...[
-                      _buildMainBody(controllerWatch, controllerRead),
+                      _buildMainBody(context, controllerWatch, controllerRead),
                     ],
                   ],
                 ),
@@ -156,12 +156,13 @@ class _TaskListingViewState extends State<TaskListingView> {
   }
 
   Container _buildMainBody(
+    BuildContext context,
     PaginatedDataController<TaskModel> controllerWatch,
     PaginatedDataController<TaskModel> controllerRead,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -435,7 +436,7 @@ class _TaskListingViewState extends State<TaskListingView> {
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: Colors.grey.shade300),
           ),

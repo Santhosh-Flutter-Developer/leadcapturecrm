@@ -89,10 +89,10 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
     return BlocProvider(
       create: (context) => LoginLogsBloc()..add(StreamLoginLogs()),
       child: Scaffold(
-        backgroundColor: LoginLogColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: LoginLogColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 leading: const Padding(
                   padding: EdgeInsets.only(left: 8.0),

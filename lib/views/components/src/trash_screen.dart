@@ -629,28 +629,6 @@ class _TrashScreenState extends State<TrashScreen> {
     );
   }
 
-  Widget _infoRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 12, color: TrashColors.textSecondary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 12,
-                color: TrashColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _timeBadge(String time) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -70,6 +70,13 @@ class _AttendanceState extends State<Attendance>
     });
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> init() async {
     user = await Spdb.getUser();
     isAdmin = await Spdb.isAdminLoggedIn();
@@ -449,7 +456,7 @@ class _AttendanceState extends State<Attendance>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor(status).withOpacity(.15),
+                  color: statusColor(status).withValues(alpha: .15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -469,7 +476,7 @@ class _AttendanceState extends State<Attendance>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.08),
+                    color: Colors.red.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -518,7 +525,7 @@ class _AttendanceState extends State<Attendance>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(.1),
+                      color: Colors.orange.withValues(alpha: .1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -855,7 +862,7 @@ class _AttendanceState extends State<Attendance>
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(.08),
+            color: Colors.blue.withValues(alpha: .08),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 20, color: Colors.blue),
@@ -952,9 +959,9 @@ class _AttendanceState extends State<Attendance>
                 duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(.06),
+                  color: Colors.orange.withValues(alpha: .06),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withOpacity(.2)),
+                  border: Border.all(color: Colors.orange.withValues(alpha: .2)),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -1118,7 +1125,7 @@ class _AttendanceState extends State<Attendance>
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final item = items[i];
 
@@ -1152,9 +1159,9 @@ class _AttendanceState extends State<Attendance>
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withOpacity(.25)
+              ? color.withValues(alpha: .25)
               : isPrimary
-              ? color.withOpacity(.12)
+              ? color.withValues(alpha: .12)
               : Colors.white,
 
           borderRadius: BorderRadius.circular(16),
@@ -1163,7 +1170,7 @@ class _AttendanceState extends State<Attendance>
             color: isSelected
                 ? color
                 : isPrimary
-                ? color.withOpacity(.4)
+                ? color.withValues(alpha: .4)
                 : Colors.grey.shade200,
             width: isSelected ? 2 : 1,
           ),
@@ -1171,8 +1178,8 @@ class _AttendanceState extends State<Attendance>
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? color.withOpacity(.4)
-                  : Colors.black.withOpacity(.05),
+                  ? color.withValues(alpha: .4)
+                  : Colors.black.withValues(alpha: .05),
               blurRadius: isSelected ? 12 : 6,
               offset: const Offset(0, 4),
             ),
@@ -1184,7 +1191,7 @@ class _AttendanceState extends State<Attendance>
               height: 40,
               width: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(.1),
+                color: color.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(getSummaryIcon(label), color: color, size: 25),
@@ -1403,7 +1410,7 @@ class _AttendanceState extends State<Attendance>
         return ChoiceChip(
           label: Text(f),
           selected: isSelected,
-          selectedColor: statusColor(f).withOpacity(0.2),
+          selectedColor: statusColor(f).withValues(alpha: 0.2),
           backgroundColor: Colors.grey.shade100,
           labelStyle: TextStyle(
             fontSize: 12,
@@ -1449,7 +1456,7 @@ class _AttendanceState extends State<Attendance>
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: filteredList.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final a = filteredList[index];
         final punch = a.punchList.isNotEmpty ? a.punchList.first : null;
@@ -1505,7 +1512,7 @@ class _AttendanceState extends State<Attendance>
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withOpacity(.25)),
+              border: Border.all(color: color.withValues(alpha: .25)),
               color: isTodayByDate ? Colors.blue.shade50 : Colors.white,
             ),
             child: Padding(
@@ -1519,7 +1526,7 @@ class _AttendanceState extends State<Attendance>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(.2),
+                          color: color.withValues(alpha: .2),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -1553,7 +1560,7 @@ class _AttendanceState extends State<Attendance>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: color.withOpacity(.2),
+                                color: color.withValues(alpha: .2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -1603,7 +1610,7 @@ class _AttendanceState extends State<Attendance>
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.08),
+                        color: Colors.red.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
@@ -1659,7 +1666,7 @@ class _AttendanceState extends State<Attendance>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 6),
+                BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 6),
               ],
             ),
             child: Column(
@@ -1760,7 +1767,7 @@ class _AttendanceState extends State<Attendance>
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(.05),
+                    color: Colors.black.withValues(alpha: .05),
                     blurRadius: 10,
                   ),
                 ],
@@ -1802,7 +1809,8 @@ class _AttendanceState extends State<Attendance>
       scrollDirection: Axis.vertical,
       child: DataTable(
         columnSpacing: 28,
-        dataRowHeight: 64,
+        dataRowMinHeight: 64,
+        dataRowMaxHeight: 64,
         headingRowHeight: 56,
         headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
 
@@ -1970,7 +1978,7 @@ class _AttendanceState extends State<Attendance>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(.15),
+                        color: color.withValues(alpha: .15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(status, style: TextStyle(color: color)),
@@ -2241,10 +2249,10 @@ class _AttendanceState extends State<Attendance>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(.15), color.withOpacity(.05)],
+          colors: [color.withValues(alpha: .15), color.withValues(alpha: .05)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(.4)),
+        border: Border.all(color: color.withValues(alpha: .4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2308,7 +2316,7 @@ class _AttendanceState extends State<Attendance>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(.3)),
+        border: Border.all(color: color.withValues(alpha: .3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -2319,7 +2327,7 @@ class _AttendanceState extends State<Attendance>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(.2),
+                    color: color.withValues(alpha: .2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(getSummaryIcon(status), color: color),
@@ -2358,7 +2366,7 @@ class _AttendanceState extends State<Attendance>
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(.2),
+                              color: color.withValues(alpha: .2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -2450,10 +2458,10 @@ class _AttendanceState extends State<Attendance>
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: punch.permissionStatus == PermissionsStatus.approved
-            ? Colors.green.withOpacity(.1)
+            ? Colors.green.withValues(alpha: .1)
             : punch.permissionStatus == PermissionsStatus.rejected
-            ? Colors.red.withOpacity(.1)
-            : Colors.orange.withOpacity(.1),
+            ? Colors.red.withValues(alpha: .1)
+            : Colors.orange.withValues(alpha: .1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -2741,7 +2749,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05),
+            color: Colors.black.withValues(alpha: .05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -2783,7 +2791,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                     },
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(.5),
+                        color: Colors.blue.withValues(alpha: .5),
                         shape: BoxShape.circle,
                       ),
                       weekendTextStyle: const TextStyle(
@@ -2862,30 +2870,27 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           margin: const EdgeInsets.all(6),
-                          transform: Matrix4.identity()
-                            ..scale(
-                              isSelected
-                                  ? 1.12
-                                  : isToday
-                                  ? 1.04
-                                  : 1.0,
-                            ),
+                          transform: Matrix4.diagonal3Values(
+                            isSelected ? 1.12 : isToday ? 1.04 : 1.0,
+                            isSelected ? 1.12 : isToday ? 1.04 : 1.0,
+                            1.0,
+                          ),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
 
                             color: isSelected
                                 ? Colors.deepPurple
                                 : isWeekendDay
-                                ? Colors.orange.withOpacity(0.05)
+                                ? Colors.orange.withValues(alpha: 0.05)
                                 : isToday
-                                ? Colors.blue.withOpacity(0.08)
+                                ? Colors.blue.withValues(alpha: 0.08)
                                 : Colors.transparent,
 
                             border: Border.all(
                               color: isSelected
                                   ? Colors.deepPurple
                                   : isWeekendDay
-                                  ? Colors.orange.withOpacity(0.4)
+                                  ? Colors.orange.withValues(alpha: 0.4)
                                   : isToday
                                   ? Colors.blue
                                   : Colors.transparent,
@@ -2899,19 +2904,19 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                             boxShadow: [
                               if (isSelected)
                                 BoxShadow(
-                                  color: Colors.deepPurple.withOpacity(0.45),
+                                  color: Colors.deepPurple.withValues(alpha: 0.45),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 )
                               else if (isToday)
                                 BoxShadow(
-                                  color: Colors.blue.withOpacity(0.15),
+                                  color: Colors.blue.withValues(alpha: 0.15),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 )
                               else
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
+                                  color: Colors.black.withValues(alpha: 0.04),
                                   blurRadius: 3,
                                   offset: const Offset(0, 2),
                                 ),
@@ -2944,7 +2949,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Colors.blue.withOpacity(0.3),
+                                          color: Colors.blue.withValues(alpha: 0.3),
                                           width: 2,
                                         ),
                                       ),
@@ -3159,7 +3164,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -3169,7 +3174,7 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: (color ?? Colors.blue).withOpacity(0.1),
+            backgroundColor: (color ?? Colors.blue).withValues(alpha: 0.1),
             child: Icon(icon, size: 18, color: color ?? Colors.blue),
           ),
           const SizedBox(width: 12),

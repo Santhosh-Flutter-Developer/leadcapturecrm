@@ -238,7 +238,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: months.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final isSelected = _selectedMonth == index + 1;
 
@@ -294,7 +294,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.04),
+            color: Colors.black.withValues(alpha: .04),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -312,7 +312,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(.1),
+                    color: Colors.blue.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -427,8 +427,8 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.blue.withOpacity(.15),
-                        Colors.blue.withOpacity(.05),
+                        Colors.blue.withValues(alpha: .15),
+                        Colors.blue.withValues(alpha: .05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -509,7 +509,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final item = items[i];
 
@@ -522,7 +522,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
               border: Border.all(color: Colors.grey.shade200),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.04),
+                  color: Colors.black.withValues(alpha: .04),
                   blurRadius: 6,
                   offset: const Offset(0, 3),
                 ),
@@ -535,7 +535,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
-                    color: item.$4.withOpacity(.1),
+                    color: item.$4.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(item.$3, color: item.$4, size: 20),
@@ -726,8 +726,8 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.green.withOpacity(.15),
-                    Colors.green.withOpacity(.05),
+                    Colors.green.withValues(alpha: .15),
+                    Colors.green.withValues(alpha: .05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),

@@ -1,12 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:leadcapture/theme/src/app_colors.dart';
 import 'package:leadcapture/utils/src/assets.dart';
-import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/utils/src/validation.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/form_fields.dart';
@@ -35,8 +33,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
   File? _logo;
   bool _passwordVisible = false;
-  final bool _detectingLocation = false;
-
   @override
   void dispose() {
     _companyName.dispose();
@@ -274,42 +270,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
   //     ],
   //   );
   // }
-
-  Widget _numericField(
-    String label,
-    TextEditingController controller,
-    IconData icon,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.grey700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FormFields(
-            controller: controller,
-            hintText: label,
-            prefixIcon: Icon(icon, size: 20),
-            keyboardType: const TextInputType.numberWithOptions(
-              signed: true,
-              decimal: true,
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]')),
-            ],
-            valid: (_) => null, // optional
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _sectionTitle(String title) {
     return Align(

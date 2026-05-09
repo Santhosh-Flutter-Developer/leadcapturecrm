@@ -116,7 +116,7 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
@@ -140,6 +140,7 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                                 scrollbarOrientation:
                                     ScrollbarOrientation.bottom,
                                 child: SingleChildScrollView(
+
                                   controller: _hScrollController,
                                   scrollDirection: Axis.horizontal,
                                   child: ConstrainedBox(

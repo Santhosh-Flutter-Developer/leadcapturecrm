@@ -93,10 +93,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
     return BlocProvider(
       create: (_) => DownloadHistoryBloc()..add(StreamDownloadHistory()),
       child: Scaffold(
-        backgroundColor: DownloadHistoryColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: DownloadHistoryColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 title: const Text(
                   "Download History",
@@ -142,7 +142,7 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                             Icon(
                               Icons.download_for_offline,
                               size: 80,
-                              color: DownloadHistoryColors.primary.withOpacity(
+                              color: DownloadHistoryColors.primary.withValues(alpha: 
                                 0.3,
                               ),
                             ),
@@ -313,8 +313,8 @@ class _DownloadHistoryState extends State<DownloadHistory> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: item.isSuccess
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.red.withOpacity(0.2),
+                    ? Colors.green.withValues(alpha: 0.2)
+                    : Colors.red.withValues(alpha: 0.2),
               ),
               child: Icon(
                 item.isSuccess ? Icons.check_circle : Icons.error,

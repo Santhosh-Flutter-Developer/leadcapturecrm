@@ -127,7 +127,6 @@ class TaskModel {
       'uid': uid,
       'taskNumber': taskNumber,
       'taskName': taskName,
-      'taskNumber': taskNumber,
       'description': description,
       'deadline': deadline?.millisecondsSinceEpoch,
       'deadlineRequired': deadlineRequired,

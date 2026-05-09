@@ -119,7 +119,7 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
@@ -143,6 +143,7 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                                 scrollbarOrientation:
                                     ScrollbarOrientation.bottom,
                                 child: SingleChildScrollView(
+
                                   controller: _hScrollController,
                                   scrollDirection: Axis.horizontal,
                                   child: ConstrainedBox(

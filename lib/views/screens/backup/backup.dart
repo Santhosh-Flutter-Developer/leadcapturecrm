@@ -164,9 +164,9 @@ class _BackupListingState extends State<BackupListing> {
     return BlocProvider(
       create: (context) => BackupBloc()..add(StreamBackup()),
       child: Scaffold(
-        backgroundColor: BackupColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: BackupColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: const Back(color: AppColors.black),
           centerTitle: false,
