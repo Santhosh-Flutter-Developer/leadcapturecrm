@@ -127,7 +127,7 @@ class _PermissionApprovalState extends State<PermissionApproval> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primaryColor.withOpacity(0.1),
+                            AppColors.primaryColor.withValues(alpha: 0.1),
                             Colors.white,
                           ],
                           begin: Alignment.topLeft,
@@ -135,12 +135,12 @@ class _PermissionApprovalState extends State<PermissionApproval> {
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.primaryColor.withOpacity(0.2),
+                          color: AppColors.primaryColor.withValues(alpha: 0.2),
                         ),
                         boxShadow: [
                           BoxShadow(
                             blurRadius: 20,
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -204,7 +204,7 @@ class _PermissionApprovalState extends State<PermissionApproval> {
                         boxShadow: [
                           BoxShadow(
                             blurRadius: 20,
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -238,7 +238,7 @@ class _PermissionApprovalState extends State<PermissionApproval> {
                         boxShadow: [
                           BoxShadow(
                             blurRadius: 20,
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -286,7 +286,7 @@ class _PermissionApprovalState extends State<PermissionApproval> {
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 20,
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     offset: const Offset(0, -4),
                   ),
                 ],

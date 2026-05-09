@@ -45,8 +45,8 @@ void futureLoading(context) {
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(10),
-          decoration: const BoxDecoration(
-            color: AppColors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             shape: BoxShape.circle,
           ),
           child: CircularProgressIndicator(

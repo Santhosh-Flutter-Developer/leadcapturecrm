@@ -70,6 +70,10 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshLeadPriority(BuildContext context) async {
+    context.read<LeadPriorityBloc>().add(StreamLeadPriority());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -98,168 +102,166 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshLeadPriority(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context, state.leadPriority),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.grey.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context, state.leadPriority),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
+
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Color",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Created",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (leadPriority) => _buildDataRow(
-                                                context,
-                                                leadPriority,
-                                                controllerWatch,
-                                                controllerRead,
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Name",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Color",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Created",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (leadPriority) => _buildDataRow(
+                                              context,
+                                              leadPriority,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<LeadPriorityModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<LeadPriorityModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -343,10 +345,11 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                           context,
                         ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                       ),
-                      icon: Icon(Iconsax.trash),
+                      icon: const Icon(Iconsax.trash),
                       onPressed: () async {
                         if (_selectedLeadPriority.isEmpty) return;
 
+                        // ✅ STEP 0: check assignment
                         for (var priority in _selectedLeadPriority) {
                           final isAssigned =
                               await LeadPriorityService.isLeadPriorityAssigned(
@@ -367,11 +370,7 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () {
-                                      if (Navigator.canPop(context)) {
-                                        Navigator.pop(context);
-                                      }
-                                    },
+                                    onPressed: () => Navigator.pop(context),
                                     child: Text(
                                       'OK',
                                       style: Theme.of(
@@ -386,24 +385,73 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                           }
                         }
 
+                        // ✅ STEP 1: confirm
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => ConfirmDialog(
                             title: 'Delete $_pageTitle',
                             content:
-                                'Are you sure want to delete this $_pageTitle?',
+                                'Are you sure want to delete selected $_pageTitle?',
                           ),
                           barrierDismissible: false,
                         );
 
-                        if (confirm == true) {
-                          context.read<LeadPriorityBloc>().add(
-                            DeleteLeadPriority(uid: 'uid'),
-                          );
+                        if (confirm != true) return;
+
+                        try {
+                          // ✅ STEP 2: BACKUP (IMPORTANT)
+                          final deletedPriorities = _selectedLeadPriority
+                              .map((e) => e.copyWith())
+                              .toList();
+
+                          // ✅ STEP 3: loader
+                          futureLoading(context);
+
+                          // ✅ STEP 4: delete
+                          for (var priority in deletedPriorities) {
+                            await LeadPriorityService.deleteLeadPriority(
+                              uid: priority.uid ?? '',
+                            );
+                          }
+
+                          // ✅ STEP 5: close loader
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          // ✅ STEP 6: clear selection
+                          _selectedLeadPriority.clear();
+                          setState(() {});
+
+                          // ✅ STEP 7: UNDO
                           FlushBar.show(
                             context,
-                            'Dealpriority deleted successfully',
-                            isSuccess: true,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              for (var priority in deletedPriorities) {
+                                if (priority.uid == null) continue;
+
+                                await LeadPriorityService.restoreLeadPriority(
+                                  priority,
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              // 🔥 refresh UI
+                              context.read<LeadPriorityBloc>().add(
+                                StreamLeadPriority(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            'Failed to delete $_pageTitle: $e',
+                            isSuccess: false,
                           );
                         }
                       },
@@ -429,6 +477,13 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadPriority(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -499,7 +554,10 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
+                      color: AppColors.danger,
+                      splashRadius: 20,
                       onPressed: () async {
+                        // ✅ STEP 0: check assignment
                         final isAssigned =
                             await LeadPriorityService.isLeadPriorityAssigned(
                               leadPriority.uid ?? '',
@@ -519,11 +577,7 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () {
-                                    if (Navigator.canPop(context)) {
-                                      Navigator.pop(context);
-                                    }
-                                  },
+                                  onPressed: () => Navigator.pop(context),
                                   child: Text(
                                     'OK',
                                     style: Theme.of(
@@ -534,26 +588,63 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                               ],
                             ),
                           );
-                        } else {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => ConfirmDialog(
-                              title: 'Delete $_pageTitle',
-                              content:
-                                  'Are you sure want to delete this $_pageTitle?',
-                            ),
-                            barrierDismissible: false,
+                          return;
+                        }
+
+                        // ✅ STEP 1: confirm
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => ConfirmDialog(
+                            title: 'Delete $_pageTitle',
+                            content:
+                                'Are you sure want to delete this $_pageTitle?',
+                          ),
+                          barrierDismissible: false,
+                        );
+
+                        if (confirm != true) return;
+
+                        try {
+                          // ✅ STEP 2: BACKUP (IMPORTANT)
+                          final deletedPriority = leadPriority.copyWith();
+
+                          // ✅ STEP 3: DELETE (use service, not bloc)
+                          await LeadPriorityService.deleteLeadPriority(
+                            uid: leadPriority.uid ?? '',
                           );
 
-                          if (confirm == true) {
-                            context.read<LeadPriorityBloc>().add(
-                              DeleteLeadPriority(uid: leadPriority.uid!),
-                            );
-                          }
+                          if (!context.mounted) return;
+
+                          // ✅ STEP 4: UNDO
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              if (deletedPriority.uid == null) return;
+
+                              await LeadPriorityService.restoreLeadPriority(
+                                deletedPriority,
+                              );
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh UI
+                              context.read<LeadPriorityBloc>().add(
+                                StreamLeadPriority(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                          );
                         }
                       },
-                      color: AppColors.danger,
-                      splashRadius: 20,
                     )
                   : IconButton(
                       icon: Icon(Iconsax.trash, color: AppColors.grey400),

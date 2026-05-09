@@ -74,6 +74,10 @@ class _DesignationListingViewState extends State<DesignationListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshDesignations() async {
+    context.read<DesignationBloc>().add(StreamDesignation());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -102,169 +106,167 @@ class _DesignationListingViewState extends State<DesignationListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshDesignations(),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.grey.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
+
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        AppColors.grey100,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.black,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Desc",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Created",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (designation) => _buildDataRow(
-                                                context,
-                                                designation,
-                                                controllerWatch,
-                                                controllerRead,
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Name",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Desc",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Created",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (designation) => _buildDataRow(
+                                              context,
+                                              designation,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<DesignationModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<DesignationModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -348,9 +350,11 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                           context,
                         ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                       ),
-                      icon: Icon(Iconsax.trash),
+                      icon: const Icon(Iconsax.trash),
                       onPressed: () async {
-                        var result = await showDialog(
+                        if (_selectedDesignations.isEmpty) return;
+
+                        final result = await showDialog<bool>(
                           context: context,
                           builder: (context) => ConfirmDialog(
                             title: 'Delete',
@@ -359,33 +363,64 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                           ),
                           barrierDismissible: false,
                         );
-                        if (result != null && result) {
-                          try {
-                            futureLoading(context);
-                            for (var i in _selectedDesignations) {
-                              await DesignationService.deleteDesignation(
-                                uid: i.uid ?? '',
-                              );
-                            }
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                            _selectedDesignations.clear();
-                            setState(() {});
-                          } catch (e) {
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            }
-                            FlushBar.show(
-                              context,
-                              e.toString(),
-                              isSuccess: false,
+
+                        if (result != true) return;
+
+                        try {
+                          // ✅ STEP 1: BACKUP
+                          final deletedDesignations = _selectedDesignations
+                              .map((e) => e.copyWith())
+                              .toList();
+
+                          // ✅ STEP 2: loader
+                          futureLoading(context);
+
+                          // ✅ STEP 3: DELETE
+                          for (var designation in deletedDesignations) {
+                            await DesignationService.deleteDesignation(
+                              uid: designation.uid ?? '',
                             );
                           }
+
+                          // ✅ STEP 4: close loader
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          // ✅ STEP 5: clear selection
+                          _selectedDesignations.clear();
+                          setState(() {});
+
+                          // ✅ STEP 6: UNDO
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              for (var designation in deletedDesignations) {
+                                if (designation.uid == null) continue;
+
+                                await DesignationService.restoreDesignation(
+                                  designation,
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh UI
+                              context.read<DesignationBloc>().add(
+                                StreamDesignation(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -410,6 +445,13 @@ class _DesignationListingViewState extends State<DesignationListingView> {
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: _refreshDesignations,
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -483,41 +525,64 @@ class _DesignationListingViewState extends State<DesignationListingView> {
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
-                      onPressed: () async {
-                        var result = await showDialog(
-                          context: context,
-                          builder: (context) {
-                            return const ConfirmDialog(
-                              title: 'Delete $_pageTitle',
-                              content:
-                                  'Are you sure want to delete this $_pageTitle',
-                            );
-                          },
-                        );
-                        if (result != null && result) {
-                          try {
-                            await DesignationService.deleteDesignation(
-                              uid: designation.uid ?? '',
-                            );
-                            FlushBar.show(
-                              context,
-                              '$_pageTitle deleted successfully',
-                            );
-                          } catch (e, st) {
-                            await ErrorService.recordError(e, st);
-                            debugPrint("${e.toString()}, ${st.toString()}");
-                            FlushBar.show(
-                              context,
-                              e.toString(),
-                              isSuccess: false,
-                              error: e,
-                              stackTrace: st,
-                            );
-                          }
-                        }
-                      },
                       color: AppColors.danger,
                       splashRadius: 20,
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => ConfirmDialog(
+                            title: 'Delete $_pageTitle',
+                            content:
+                                'Are you sure want to delete this $_pageTitle?',
+                          ),
+                        );
+
+                        if (result != true) return;
+
+                        try {
+                          // ✅ STEP 1: BACKUP (IMPORTANT)
+                          final deletedDesignation = designation.copyWith();
+
+                          // ✅ STEP 2: DELETE
+                          await DesignationService.deleteDesignation(
+                            uid: designation.uid ?? '',
+                          );
+
+                          if (!context.mounted) return;
+
+                          // ✅ STEP 3: UNDO
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              if (deletedDesignation.uid == null) return;
+
+                              await DesignationService.restoreDesignation(
+                                deletedDesignation,
+                              );
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh UI
+                              context.read<DesignationBloc>().add(
+                                StreamDesignation(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          await ErrorService.recordError(e, st);
+                          debugPrint("${e.toString()}, ${st.toString()}");
+
+                          FlushBar.show(
+                            context,
+                            e.toString(),
+                            isSuccess: false,
+                            error: e,
+                            stackTrace: st,
+                          );
+                        }
+                      },
                     )
                   : IconButton(
                       icon: Icon(Iconsax.trash, color: AppColors.grey400),

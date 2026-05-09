@@ -87,6 +87,8 @@ class _DealsListingViewState extends State<DealsListingView> {
   double? _value;
 
   PermissionModel? permissions;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -96,6 +98,8 @@ class _DealsListingViewState extends State<DealsListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    _currentUid = await Spdb.getUid();
+    _isAdmin = await Spdb.isAdminLoggedIn();
     setState(() {});
   }
 
@@ -109,6 +113,10 @@ class _DealsListingViewState extends State<DealsListingView> {
 
   List<String> employeeItems(CacheService cache) {
     return cache.getAllListenableEmployees().value.map((e) => e.name).toList();
+  }
+
+  Future<void> _refreshDeals(BuildContext context) async {
+    context.read<DealBloc>().add(StreamDeals());
   }
 
   @override
@@ -140,27 +148,23 @@ class _DealsListingViewState extends State<DealsListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshDeals(context),
+                child: ListView(
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
-                      ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      if (_selectedView == 'Grid') ...[
-                        DealKanbanListing(dealList: _filteredDeals),
-                      ] else if (_selectedView == 'Calendar') ...[
-                        DealsCalendarListing(dealList: _filteredDeals),
-                      ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
-                      ],
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    if (_selectedView == 'Grid') ...[
+                      DealKanbanListing(dealList: _filteredDeals),
+                    ] else if (_selectedView == 'Calendar') ...[
+                      DealsCalendarListing(dealList: _filteredDeals),
+                    ] else ...[
+                      _buildListView(context, controllerWatch, controllerRead),
                     ],
-                  ),
+                  ],
                 ),
               );
             }
@@ -181,12 +185,13 @@ class _DealsListingViewState extends State<DealsListingView> {
   }
 
   Container _buildListView(
+    BuildContext context,
     PaginatedDataController<DealModel> controllerWatch,
     PaginatedDataController<DealModel> controllerRead,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -718,27 +723,53 @@ class _DealsListingViewState extends State<DealsListingView> {
                       ),
                       barrierDismissible: false,
                     );
-                    if (result != null && result) {
-                      try {
-                        futureLoading(context);
-                        for (var i in _selectedDeals) {
-                          await DealService.deleteDeal(uid: i.uid ?? '');
-                        }
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        _selectedDeals.clear();
-                        setState(() {});
-                      } catch (e) {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                        FlushBar.show(context, e.toString(), isSuccess: false);
+
+                    if (result != true) return;
+
+                    try {
+                      // ✅ STEP 1: backup
+                      final deletedDeals = List<DealModel>.from(_selectedDeals);
+
+                      futureLoading(context);
+
+                      // ✅ STEP 2: delete
+                      for (var deal in deletedDeals) {
+                        await DealService.deleteDeal(uid: deal.uid ?? '');
                       }
+
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+
+                      // ✅ STEP 3: clear selection
+                      _selectedDeals.clear();
+                      setState(() {});
+
+                      // ✅ STEP 4: UNDO
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          for (var deal in deletedDeals) {
+                            await DealService.restoreDeal(
+                              deal,
+                            ); // 👈 implement this
+                          }
+
+                          // 🔥 refresh after undo
+                          context.read<DealBloc>().add(StreamDeals());
+                        },
+                        // onDismissed: () {
+                        //   // 🔥 refresh if no undo
+                        //   context.read<DealBloc>().add(StreamDeals());
+                        // },
+                      );
+                    } catch (e) {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -766,13 +797,22 @@ class _DealsListingViewState extends State<DealsListingView> {
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: AppColors.grey300),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (kIsDesktop)
+                IconButton(
+                  tooltip: "Refresh",
+                  icon: const Icon(Iconsax.refresh),
+                  iconSize: 18,
+                  onPressed: () => _refreshDeals(context),
+                ),
+
+              const SizedBox(width: 10),
               IconButton(
                 onPressed: () {
                   _selectedView = 'Grid';
@@ -940,7 +980,8 @@ class _DealsListingViewState extends State<DealsListingView> {
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false)) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin || deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   color: AppColors.info,
@@ -966,7 +1007,8 @@ class _DealsListingViewState extends State<DealsListingView> {
                 ),
               ],
 
-              if ((permissions?.canDelete ?? false)) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin || deal.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: AppColors.danger,
@@ -989,6 +1031,12 @@ class _DealsListingViewState extends State<DealsListingView> {
                           FlushBar.show(
                             context,
                             '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              await DealService.restoreDeal(deal);
+
+                              context.read<DealBloc>().add(StreamDeals());
+                            },
                           );
                         }
                       } catch (e, st) {

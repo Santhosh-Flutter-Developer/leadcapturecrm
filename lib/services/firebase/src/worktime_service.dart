@@ -28,7 +28,6 @@ class WorktimeService {
 
       return result;
     } catch (e) {
-      print("❌ Error creating worktime: $e");
       throw e.toString();
     }
   }
@@ -195,12 +194,9 @@ class WorktimeService {
         return true;
       }
 
-      print("Worktime docs: ${snapshot.docs.length}");
-      print(snapshot.docs.first.data());
 
       return false;
     } catch (e) {
-      print("checkDayEnd error: $e");
       return false;
     }
   }

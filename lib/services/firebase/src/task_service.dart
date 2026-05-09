@@ -54,15 +54,11 @@ class TaskService {
 
       users = users.toSet().toList();
 
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
@@ -72,10 +68,10 @@ class TaskService {
         title: 'Task : ${task.taskName}',
         body: 'New task created by ${user.name}',
         toFcms: fcmIds,
-        toUids: users,
+        toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.task,
-        payload: {},
+        payload: {'taskId': taskDoc.id},
       );
 
       PostNotificationService.sendNotification(model: notif);
@@ -136,16 +132,11 @@ class TaskService {
 
       users = users.toSet().toList();
 
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
@@ -155,10 +146,10 @@ class TaskService {
         title: 'Task : ${task.taskName}',
         body: 'Task has updated by ${user.name}',
         toFcms: fcmIds,
-        toUids: users,
+        toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.task,
-        payload: {},
+        payload: {'taskId': uid},
       );
 
       PostNotificationService.sendNotification(model: notif);
@@ -214,6 +205,21 @@ class TaskService {
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       throw 'Error deleting task: $e';
+    }
+  }
+
+  static Future<void> restoreTask(TaskModel task) async {
+    try {
+      final FirebaseConfig firebase = FirebaseConfig();
+      final cid = await Spdb.getCid();
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.tasks.name)
+          .doc(task.uid)
+          .set(task.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
     }
   }
 

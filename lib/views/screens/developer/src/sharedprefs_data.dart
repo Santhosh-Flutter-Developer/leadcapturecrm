@@ -42,15 +42,22 @@ class _SharedprefsDataState extends State<SharedprefsData> {
   }
 
   Future<void> _loadAll() async {
+    if (_loading) return; // prevent multiple taps
+
     setState(() => _loading = true);
+
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys();
+
     final Map<String, Object?> map = {};
     for (final k in keys) {
       map[k] = prefs.get(k);
     }
+
+    if (!mounted) return;
+
     setState(() {
-      _prefs = map;
+      _prefs = Map.from(map);
       _applyFilter();
       _loading = false;
     });
@@ -61,15 +68,12 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       _filteredPrefs = Map.from(_prefs);
     } else {
       final q = _query.toLowerCase();
-      _filteredPrefs = _prefs.entries
-          .where((e) {
-            return e.key.toLowerCase().contains(q) ||
-                (e.value?.toString().toLowerCase().contains(q) ?? false);
-          })
-          .fold<Map<String, Object?>>({}, (m, e) {
-            m[e.key] = e.value;
-            return m;
-          });
+      _filteredPrefs = Map.fromEntries(
+        _prefs.entries.where((e) {
+          return e.key.toLowerCase().contains(q) ||
+              (e.value?.toString().toLowerCase().contains(q) ?? false);
+        }),
+      );
     }
   }
 
@@ -185,12 +189,18 @@ class _SharedprefsDataState extends State<SharedprefsData> {
         ),
         actions: [
           IconButton(
-            onPressed: _loadAll,
-            icon: const Icon(
-              Iconsax.refresh,
-              color: SharedPrefsColors.primary,
-              size: 20,
-            ),
+            onPressed: _loading ? null : _loadAll,
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(
+                    Iconsax.refresh,
+                    color: SharedPrefsColors.primary,
+                    size: 20,
+                  ),
           ),
           IconButton(
             onPressed: _prefs.isEmpty ? null : _clearAll,
@@ -210,18 +220,20 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final bool isDesktop = constraints.maxWidth > 1000;
-
           return Column(
             children: [
               _buildHeaderSearch(items.length, isDesktop),
               Expanded(
-                child: _loading
-                    ? const Center(child: WaitingLoading())
-                    : items.isEmpty
-                    ? _buildEmptyState()
-                    : isDesktop
-                    ? _buildDesktopGrid(items)
-                    : _buildMobileList(items),
+                child: RefreshIndicator(
+                  onRefresh: _loadAll,
+                  child: _loading
+                      ? const Center(child: WaitingLoading())
+                      : items.isEmpty
+                      ? ListView(children: [_buildEmptyState()])
+                      : isDesktop
+                      ? _buildDesktopGrid(items)
+                      : _buildMobileList(items),
+                ),
               ),
             ],
           );

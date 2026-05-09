@@ -135,6 +135,21 @@ class RoleService {
     }
   }
 
+  static Future<void> restoreRole(RoleModel role) async {
+  var cid = await Spdb.getCid();
+
+  final uid = role.uid;
+  if (uid == null || uid.isEmpty) {
+    throw Exception("UID missing");
+  }
+
+  await firebase.users
+      .doc(cid)
+      .collection(Collections.roles.name)
+      .doc(uid)
+      .set(role.toMap());
+}
+
   static Future<String> getRoleByNameOrCreateRole({
     required String name,
   }) async {

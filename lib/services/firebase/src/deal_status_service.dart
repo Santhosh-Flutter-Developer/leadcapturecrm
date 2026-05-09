@@ -191,4 +191,19 @@ class DealStatusService {
       throw 'Error deleting deal status: $e';
     }
   }
+
+  static Future<void> restoreDealStatus(DealStatusModel status) async {
+    var cid = await Spdb.getCid();
+
+    final uid = status.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.dealStatus.name)
+        .doc(uid)
+        .set(status.toMap());
+  }
 }

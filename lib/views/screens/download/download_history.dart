@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:leadcapture/models/src/download_model.dart';
 import 'package:leadcapture/utils/src/open_file.dart';
+import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_bloc.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_event.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_state.dart';
@@ -49,7 +51,6 @@ class _DownloadHistoryState extends State<DownloadHistory> {
 
   Future<void> _refresh(BuildContext context) async {
     context.read<DownloadHistoryBloc>().add(StreamDownloadHistory());
-    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Map<String, List<DownloadHistoryModel>> _groupByDay(
@@ -92,10 +93,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
     return BlocProvider(
       create: (_) => DownloadHistoryBloc()..add(StreamDownloadHistory()),
       child: Scaffold(
-        backgroundColor: DownloadHistoryColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: DownloadHistoryColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 title: const Text(
                   "Download History",
@@ -141,7 +142,7 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                             Icon(
                               Icons.download_for_offline,
                               size: 80,
-                              color: DownloadHistoryColors.primary.withOpacity(
+                              color: DownloadHistoryColors.primary.withValues(alpha: 
                                 0.3,
                               ),
                             ),
@@ -197,21 +198,37 @@ class _DownloadHistoryState extends State<DownloadHistory> {
 
               return RefreshIndicator(
                 onRefresh: () => _refresh(context),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: grouped.length,
-                      itemBuilder: (context, index) {
-                        final entry = grouped.entries.elementAt(index);
-                        return _buildSection(entry.key, entry.value);
-                      },
-                    ),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
+                  children: [
+                    if (kIsDesktop)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            tooltip: "Refresh",
+                            icon: const Icon(Iconsax.refresh),
+                            iconSize: 18,
+                            onPressed: () => _refresh(context),
+                          ),
+                        ],
+                      ),
+
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Column(
+                          children: grouped.entries.map((entry) {
+                            return _buildSection(entry.key, entry.value);
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -296,8 +313,8 @@ class _DownloadHistoryState extends State<DownloadHistory> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: item.isSuccess
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.red.withOpacity(0.2),
+                    ? Colors.green.withValues(alpha: 0.2)
+                    : Colors.red.withValues(alpha: 0.2),
               ),
               child: Icon(
                 item.isSuccess ? Icons.check_circle : Icons.error,

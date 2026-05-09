@@ -26,10 +26,10 @@ class _DeveloperState extends State<Developer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DevAppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.showAppbar
           ? AppBar(
-              backgroundColor: DevAppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               centerTitle: false,
               leading: const Padding(

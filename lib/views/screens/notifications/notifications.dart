@@ -201,10 +201,12 @@ class _NotificationsListingState extends State<NotificationsListing> {
     NotificationModel item,
     bool isDesktop,
   ) async {
+    if (!mounted) return;
     final id = item.collectionId;
 
     switch (item.type) {
       case NotificationType.chat:
+        if (!mounted) return;
         await _openPlatformSheet(
           ChatListing(currentUserUid: item.senderId ?? '', selectedChatUid: id),
         );
@@ -212,19 +214,50 @@ class _NotificationsListingState extends State<NotificationsListing> {
 
       /// ✅ TASK → SHEET
       case NotificationType.task:
-        await _openPlatformSheet(
-          TasksListing(), // or TaskDetailsScreen(taskId: id)
-        );
+        final taskId = item.payload['taskId'] as String?;
+        if (taskId != null && taskId.isNotEmpty) {
+          if (!mounted) return;
+          await _openPlatformSheet(TaskView(uid: taskId));
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(TasksListing());
+        }
         break;
 
       /// 📊 LEAD → SHEET
       case NotificationType.lead:
-        await _openPlatformSheet(LeadsListing(showAppBar: true));
+        final leadId = item.payload['leadId'] as String?;
+        if (leadId != null && leadId.isNotEmpty) {
+          try {
+            final lead = await LeadService.getLead(uid: leadId);
+            if (!mounted) return;
+            await _openPlatformSheet(LeadsViewPage(lead: lead));
+          } catch (_) {
+            if (!mounted) return;
+            await _openPlatformSheet(LeadsListing(showAppBar: true));
+          }
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(LeadsListing(showAppBar: true));
+        }
         break;
 
       /// 💼 DEAL → SHEET
       case NotificationType.deal:
-        await _openPlatformSheet(DealsListing(showAppBar: true));
+        final dealId = item.payload['dealId'] as String?;
+        if (dealId != null && dealId.isNotEmpty) {
+          try {
+            final deal = await DealService.getDeal(uid: dealId);
+            if (!mounted) return;
+            await _openPlatformSheet(DealsViewPage(deal: deal));
+          } catch (_) {
+            if (!mounted) return;
+            await _openPlatformSheet(DealsListing(showAppBar: true));
+          }
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(DealsListing(showAppBar: true));
+        }
         break;
 
       /// 📅 EVENT → SHEET
@@ -252,9 +285,9 @@ class _NotificationsListingState extends State<NotificationsListing> {
     return BlocProvider(
       create: (context) => NotificationsBloc()..add(StreamNotifications()),
       child: Scaffold(
-        backgroundColor: NotifyColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: NotifyColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: const Back(color: AppColors.black),
           centerTitle: false,

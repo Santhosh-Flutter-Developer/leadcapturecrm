@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/utils/src/platform.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
@@ -93,10 +94,10 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
     return BlocProvider(
       create: (context) => ActivityLogsBloc()..add(StreamActivityLogs()),
       child: Scaffold(
-        backgroundColor: LogColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: widget.showAppbar
             ? AppBar(
-                backgroundColor: LogColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 leading: const Padding(
                   padding: EdgeInsets.only(left: 8.0),
@@ -151,21 +152,36 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
 
               return RefreshIndicator(
                 onRefresh: () => _refresh(context),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    if (kIsDesktop)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16, top: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              tooltip: "Refresh",
+                              icon: const Icon(Iconsax.refresh),
+                              iconSize: 18,
+                              onPressed: () => _refresh(context),
+                            ),
+                          ],
+                        ),
                       ),
-                      itemCount: grouped.length,
-                      itemBuilder: (context, index) {
-                        final entry = grouped.entries.elementAt(index);
-                        return _buildSection(entry.key, entry.value);
-                      },
+
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Column(
+                          children: grouped.entries.map((entry) {
+                            return _buildSection(entry.key, entry.value);
+                          }).toList(),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             }

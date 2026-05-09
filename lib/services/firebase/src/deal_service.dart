@@ -114,7 +114,7 @@ class DealService {
         toUids: users,
         senderId: await Spdb.getUid(),
         type: NotificationType.deal,
-        payload: {},
+        payload: {'dealId': uid},
       );
 
       PostNotificationService.sendNotification(model: notif);
@@ -233,6 +233,21 @@ class DealService {
       rethrow;
     }
   }
+
+static Future<void> restoreDeal(DealModel deal) async {
+  try {
+    final firebase = FirebaseConfig();
+    final cid = await Spdb.getCid();
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.deals.name)
+        .doc(deal.uid)
+        .set(deal.toMap());
+  } catch (e, st) {
+    await ErrorService.recordError(e, st);
+  }
+}
 
   static Future isDealStatusAssigned(String s) async {}
 

@@ -49,16 +49,11 @@ class LeadService {
 
       // Collect workflow users for notifications
       List<String> users = lead.workflow.toSet().toList();
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
@@ -105,16 +100,11 @@ class LeadService {
 
       users = users.toSet().toList();
 
+      List<String> toUids = List<String>.from(users);
       List<String> fcmIds = [];
-      List<String> toUids = [];
 
       for (var i in users) {
-        var userFcmIds = await AuthService.getUserFcmIds(uid: i);
-
-        if (userFcmIds.isNotEmpty) {
-          fcmIds.addAll(userFcmIds);
-          toUids.add(i);
-        }
+        fcmIds.addAll(await AuthService.getUserFcmIds(uid: i));
       }
 
       var user = await Spdb.getUser();
@@ -128,7 +118,7 @@ class LeadService {
         toUids: toUids,
         senderId: await Spdb.getUid(),
         type: NotificationType.lead,
-        payload: {},
+        payload: {'leadId': uid},
       );
       await PostNotificationService.sendNotification(model: notif);
     } catch (e, st) {
@@ -260,6 +250,21 @@ class LeadService {
       await ErrorService.recordError(e, st);
       debugPrint("Error deleting lead: $e\n$st");
       throw 'Error deleting lead: $e';
+    }
+  }
+
+  static Future<void> restoreLead(LeadModel lead) async {
+    try {
+      final firebase = FirebaseConfig();
+      final cid = await Spdb.getCid();
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.leads.name)
+          .doc(lead.uid)
+          .set(lead.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
     }
   }
 

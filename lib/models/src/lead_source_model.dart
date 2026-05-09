@@ -46,6 +46,7 @@ class LeadSourceModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
@@ -66,6 +67,7 @@ class LeadSourceModel {
 
   Map<String, dynamic> toUpdateMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
@@ -150,5 +152,3 @@ class LeadSourceModel {
         updatedAt.hashCode;
   }
 }
-
-

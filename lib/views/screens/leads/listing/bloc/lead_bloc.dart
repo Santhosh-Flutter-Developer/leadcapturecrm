@@ -277,6 +277,45 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         leadUid: event.leadUid,
         action: "New activity scheduled",
       );
+
+      // Send notification to lead workflow members
+      try {
+        final leadDoc = await firestore
+            .collection(Collections.users.name)
+            .doc(cid)
+            .collection(Collections.leads.name)
+            .doc(event.leadUid)
+            .get();
+        final leadData = leadDoc.data();
+        if (leadData != null) {
+          final lead = LeadModel.fromMap(leadDoc.id, leadData);
+          List<String> users = lead.workflow.toSet().toList();
+          users.add(lead.createdBy.uid);
+          users = users.toSet().toList();
+
+          List<String> toUids = List<String>.from(users);
+          List<String> fcmIds = [];
+          for (var uid in users) {
+            fcmIds.addAll(await AuthService.getUserFcmIds(uid: uid));
+          }
+
+          var notif = NotificationModel(
+            collectionId: cid ?? '',
+            title: 'Lead Activity: ${event.activity.title}',
+            body:
+                '${user.name} scheduled "${event.activity.title}" for ${lead.leadName}',
+            createdAt: DateTime.now(),
+            toFcms: fcmIds,
+            toUids: toUids,
+            senderId: user.uid,
+            type: NotificationType.lead,
+            payload: {'leadId': event.leadUid},
+          );
+          await PostNotificationService.sendNotification(model: notif);
+        }
+      } catch (e, st) {
+        debugPrint('Failed to send activity notification: $e\n$st');
+      }
     } catch (e) {
       emit(LeadError(e.toString()));
     }
@@ -323,6 +362,46 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         leadUid: event.leadUid,
         action: "Activity updated: ${event.activity.title}",
       );
+
+      // Send notification to lead workflow members
+      try {
+        final leadDoc = await firestore
+            .collection(Collections.users.name)
+            .doc(cid)
+            .collection(Collections.leads.name)
+            .doc(event.leadUid)
+            .get();
+        final leadData = leadDoc.data();
+        if (leadData != null) {
+          final lead = LeadModel.fromMap(leadDoc.id, leadData);
+          List<String> users = lead.workflow.toSet().toList();
+          users.add(lead.createdBy.uid);
+          users = users.toSet().toList();
+
+          List<String> toUids = List<String>.from(users);
+          List<String> fcmIds = [];
+          for (var uid in users) {
+            fcmIds.addAll(await AuthService.getUserFcmIds(uid: uid));
+          }
+
+          final user = await Spdb.getUser();
+          var notif = NotificationModel(
+            collectionId: cid ?? '',
+            title: 'Lead Activity Updated: ${event.activity.title}',
+            body:
+                '${user.name} updated activity "${event.activity.title}" for ${lead.leadName}',
+            createdAt: DateTime.now(),
+            toFcms: fcmIds,
+            toUids: toUids,
+            senderId: user.uid,
+            type: NotificationType.lead,
+            payload: {'leadId': event.leadUid},
+          );
+          await PostNotificationService.sendNotification(model: notif);
+        }
+      } catch (e, st) {
+        debugPrint('Failed to send activity update notification: $e\n$st');
+      }
     } catch (e) {
       emit(LeadError(e.toString()));
     }

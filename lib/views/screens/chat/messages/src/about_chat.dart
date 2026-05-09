@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/views/screens/chat/listing/bloc/chat_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -489,8 +491,7 @@ class _AboutChatState extends State<AboutChat> {
                 builder: (context) => AlertDialog(
                   title: const Text('Delete chat'),
                   content: const Text(
-                    'This chat will be permanently deleted. '
-                    'This action cannot be undone.',
+                    'This chat will be deleted. You can undo this action.',
                   ),
                   actions: [
                     TextButton(
@@ -498,7 +499,6 @@ class _AboutChatState extends State<AboutChat> {
                       child: const Text('Cancel'),
                     ),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(),
                       onPressed: () => Navigator.pop(context, true),
                       child: const Text('Delete'),
                     ),
@@ -507,11 +507,24 @@ class _AboutChatState extends State<AboutChat> {
               );
 
               if (confirm == true) {
-                await ChatService.deleteChat(chatId: widget.chat.uid!);
+                final deletedChat = widget.chat; // ✅ backup before delete
+                final chatId = widget.chat.uid!;
 
-                if (context.mounted) {
-                  Navigator.pop(context); // close actions sheet
-                }
+                // ✅ delete chat
+                await ChatService.deleteChat(chatId: chatId);
+                if (!context.mounted) return;
+
+                // ✅ show UNDO
+                FlushBar.show(
+                  context,
+                  'Chat deleted',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    await ChatService.restoreChat(deletedChat);
+                    if (!context.mounted) return;
+                    context.read<ChatBloc>().add(StreamChat());
+                  },
+                );
               }
             },
           ),

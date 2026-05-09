@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '/models/models.dart';
 
 class TrashModel {
   final String originalPath;
@@ -31,7 +30,7 @@ class TrashModel {
       'documentId': documentId,
       'parentPath': parentPath,
       'data': data,
-      'deletedAt': deletedAt,
+      'deletedAt': Timestamp.fromDate(deletedAt),
       'deletedBy': deletedBy,
       'reason': reason,
       'canRestoreTo': canRestoreTo,

@@ -54,11 +54,23 @@ class DealsView extends StatefulWidget {
 class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   late TabController _tabController;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadOwnership();
+  }
+
+  Future<void> _loadOwnership() async {
+    final uid = await Spdb.getUid();
+    final isAdmin = await Spdb.isAdminLoggedIn();
+    setState(() {
+      _currentUid = uid;
+      _isAdmin = isAdmin;
+    });
   }
 
   @override
@@ -80,10 +92,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DealsViewAppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: DealsViewAppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
         title: const Text(
@@ -95,39 +107,69 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          _appBarButton(Iconsax.edit, "Edit", () {
-            if (kIsMobile) {
-              Sheet.showSheet(
-                context,
-                widget: DealEdit(uid: widget.deal.uid ?? ''),
+          if (_isAdmin || widget.deal.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () {
+              if (kIsMobile) {
+                Sheet.showSheet(
+                  context,
+                  widget: DealEdit(uid: widget.deal.uid ?? ''),
+                );
+              } else {
+                GeneralDialog.showRTLSheet(
+                  context,
+                  DealEdit(uid: widget.deal.uid ?? ''),
+                );
+              }
+            }),
+            const SizedBox(width: 8),
+            _appBarButton(Iconsax.trash, "Delete", () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const ConfirmDialog(
+                  title: 'Delete Deal',
+                  content: 'Are you sure you want to delete this deal?',
+                ),
               );
-            } else {
-              GeneralDialog.showRTLSheet(
-                context,
-                DealEdit(uid: widget.deal.uid ?? ''),
-              );
-            }
-          }),
-          const SizedBox(width: 8),
-          _appBarButton(Iconsax.trash, "Delete", () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (context) => const ConfirmDialog(
-                title: 'Delete Deal',
-                content: 'Are you sure you want to delete this deal?',
-              ),
-            );
 
-            if (result == true) {
+              if (result != true) return;
+
               try {
+                final deletedDeal = widget.deal;
+                bool isUndoPressed = false;
+
                 await DealService.deleteDeal(uid: widget.deal.uid ?? '');
-                FlushBar.show(context, 'Deal deleted successfully');
+
+                if (!mounted) return;
+
+                FlushBar.show(
+                  context,
+                  'Deal deleted successfully',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    isUndoPressed = true;
+
+                    await DealService.restoreDeal(deletedDeal);
+
+                    // refresh your deals list (update event name if needed)
+                    context.read<DealBloc>().add(StreamDeals());
+
+                    Navigator.of(context).pop('restored');
+                  },
+                );
+
+                Future.delayed(const Duration(seconds: 4), () {
+                  if (!isUndoPressed && mounted) {
+                    Navigator.of(context).pop('deleted');
+                  }
+                });
               } catch (e, st) {
                 await ErrorService.recordError(e, st);
-                FlushBar.show(context, e.toString(), isSuccess: false);
+                if (mounted) {
+                  FlushBar.show(context, e.toString(), isSuccess: false);
+                }
               }
-            }
-          }, isDanger: true),
+            }, isDanger: true),
+          ],
           const SizedBox(width: 16),
         ],
         bottom: PreferredSize(

@@ -46,6 +46,7 @@ class _TaskEditState extends State<TaskEdit> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final List<File> _selectedAttachments = [];
+  List<FileModel> _existingAttachments = [];
   DateTime? _selectedDeadLine;
   DateTime? _selectedReminder;
   bool _deadlineRequired = false;
@@ -79,6 +80,7 @@ class _TaskEditState extends State<TaskEdit> {
       _selectedSubTaskOf = _taskModel!.subTaskOf;
       _selectedReminder = _taskModel!.reminder;
       _deadlineRequired = _taskModel?.deadlineRequired ?? false;
+      _existingAttachments = List<FileModel>.from(_taskModel!.attachments);
 
       _employeeList.clear();
       _employeeList = await EmployeeService.getAllEmployees();
@@ -246,6 +248,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Project",
                         _projectList.map((e) => e.projectName).toList(),
+                        initialItem: _selectedProject != null
+                            ? _projectList
+                                  .where((e) => e.uid == _selectedProject)
+                                  .map((e) => e.projectName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedProject = _projectList
                               .firstWhere((e) => e.projectName == val)
@@ -256,6 +264,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Subtask of",
                         _taskList.map((e) => e.taskName).toList(),
+                        initialItem: _selectedSubTaskOf != null
+                            ? _taskList
+                                  .where((e) => e.uid == _selectedSubTaskOf)
+                                  .map((e) => e.taskName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedSubTaskOf = _taskList
                               .firstWhere((e) => e.taskName == val)
@@ -266,6 +280,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Lead",
                         _leadList.map((e) => e.leadName).toList(),
+                        initialItem: _selectedLead != null
+                            ? _leadList
+                                  .where((e) => e.uid == _selectedLead)
+                                  .map((e) => e.leadName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedLead = _leadList
                               .firstWhere((e) => e.leadName == val)
@@ -566,8 +586,9 @@ class _TaskEditState extends State<TaskEdit> {
   Widget _buildDropdownField(
     String label,
     List<String> items,
-    Function(dynamic) onChanged,
-  ) {
+    Function(dynamic) onChanged, {
+    String? initialItem,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -578,7 +599,11 @@ class _TaskEditState extends State<TaskEdit> {
           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        FormDropdownSearch(items: items, onChanged: onChanged),
+        FormDropdownSearch(
+          items: items,
+          onChanged: onChanged,
+          initialItem: initialItem,
+        ),
       ],
     );
   }
@@ -596,6 +621,7 @@ class _TaskEditState extends State<TaskEdit> {
       title: "Attachments",
       icon: Iconsax.paperclip,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: () async {
@@ -608,10 +634,6 @@ class _TaskEditState extends State<TaskEdit> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  style: BorderStyle.none,
-                ),
                 color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -628,8 +650,44 @@ class _TaskEditState extends State<TaskEdit> {
               ),
             ),
           ),
+          if (_existingAttachments.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              "Existing Files",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.grey600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _existingAttachments
+                  .map(
+                    (file) => Chip(
+                      avatar: const Icon(Iconsax.document, size: 16),
+                      label: Text(
+                        file.name,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onDeleted: () =>
+                          setState(() => _existingAttachments.remove(file)),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
           if (_selectedAttachments.isNotEmpty) ...[
             const SizedBox(height: 16),
+            Text(
+              "New Files",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.grey600,
+              ),
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -700,7 +758,7 @@ class _TaskEditState extends State<TaskEdit> {
       try {
         futureLoading(context);
 
-        List<FileModel> attachments = [];
+        List<FileModel> attachments = List<FileModel>.from(_existingAttachments);
 
         if (_selectedAttachments.isNotEmpty) {
           List<String> urls = await StorageService.uploadFilesInBatch(

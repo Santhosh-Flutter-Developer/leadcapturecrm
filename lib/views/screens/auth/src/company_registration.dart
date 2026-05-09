@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:leadcapture/services/firebase/src/auth_service.dart';
 import 'package:leadcapture/theme/src/app_colors.dart';
 import 'package:leadcapture/utils/src/assets.dart';
 import 'package:leadcapture/utils/src/validation.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/form_fields.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
+import '/services/services.dart';
 
 class CompanyRegistration extends StatefulWidget {
   const CompanyRegistration({super.key});
@@ -27,9 +27,24 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
   final TextEditingController _adminName = TextEditingController();
   final TextEditingController _adminEmail = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  final TextEditingController _latitude = TextEditingController();
+  final TextEditingController _longitude = TextEditingController();
+  final TextEditingController _radius = TextEditingController(text: '100');
 
   File? _logo;
   bool _passwordVisible = false;
+  @override
+  void dispose() {
+    _companyName.dispose();
+    _companyEmail.dispose();
+    _adminName.dispose();
+    _adminEmail.dispose();
+    _password.dispose();
+    _latitude.dispose();
+    _longitude.dispose();
+    _radius.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
     final XFile? image = await ImagePicker().pickImage(
@@ -38,10 +53,40 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     if (image != null) setState(() => _logo = File(image.path));
   }
 
+  // Future<void> _detectLocation() async {
+  //   setState(() => _detectingLocation = true);
+  //   try {
+  //     final position = await LocationService.getCurrentPosition();
+  //     if (position == null) {
+  //       if (mounted) {
+  //         FlushBar.show(
+  //           context,
+  //           'Location permission denied or service unavailable.',
+  //           isSuccess: false,
+  //         );
+  //       }
+  //       return;
+  //     }
+  //     _latitude.text = position.latitude.toStringAsFixed(6);
+  //     _longitude.text = position.longitude.toStringAsFixed(6);
+  //     if (mounted) setState(() {});
+  //   } catch (e) {
+  //     if (mounted) {
+  //       FlushBar.show(context, 'Failed to detect location: $e', isSuccess: false);
+  //     }
+  //   } finally {
+  //     if (mounted) setState(() => _detectingLocation = false);
+  //   }
+  // }
+
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+
+        final double? lat = double.tryParse(_latitude.text.trim());
+        final double? lng = double.tryParse(_longitude.text.trim());
+        final double? radius = double.tryParse(_radius.text.trim());
 
         var result = await AuthService.registerCompany(
           name: _companyName.text.trim(),
@@ -49,6 +94,9 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           adminName: _adminName.text.trim(),
           password: _password.text.trim(),
           logo: _logo,
+          companyLat: lat,
+          companyLng: lng,
+          companyRadius: radius,
         );
 
         if (Navigator.canPop(context)) Navigator.pop(context);
@@ -102,7 +150,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                       _buildHeader(),
                       const SizedBox(height: 25),
 
-                      // 1. Logo Picker
+                      // Logo Picker
                       GestureDetector(
                         onTap: _pickImage,
                         child: CircleAvatar(
@@ -121,44 +169,34 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 2. Company Details Section
+                      // Company Details Section
                       _sectionTitle("Company Details"),
-                      _customField(
-                        "Company Name",
-                        _companyName,
-                        Iconsax.box,
-                        false,
-                      ),
+                      _customField("Company Name", _companyName, Iconsax.box),
                       _customField(
                         "Business Email",
                         _companyEmail,
                         Iconsax.sms,
-                        false,
                       ),
 
                       const SizedBox(height: 10),
 
-                      // 3. Admin Setup Section
+                      // Company Location Section
+                      _sectionTitle("Company Location (for Attendance)"),
+                      // _locationFields(),
+
+                      const SizedBox(height: 10),
+
+                      // Admin Setup Section
                       _sectionTitle("Super Admin Setup"),
-                      _customField(
-                        "Full Name",
-                        _adminName,
-                        Iconsax.user,
-                        false,
-                      ),
-                      _customField(
-                        "Admin Email",
-                        _adminEmail,
-                        Iconsax.sms,
-                        false,
-                      ),
+                      _customField("Full Name", _adminName, Iconsax.user),
+                      _customField("Admin Email", _adminEmail, Iconsax.sms),
 
                       // Password Field
                       _passwordField(),
 
                       const SizedBox(height: 35),
 
-                      // 4. Submit Button
+                      // Submit Button
                       _buildSubmitButton(),
                       const SizedBox(height: 20),
                       Center(
@@ -186,6 +224,53 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     );
   }
 
+  // Widget _locationFields() {
+  //   return Column(
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: _numericField("Latitude", _latitude, Iconsax.location),
+  //           ),
+  //           const SizedBox(width: 12),
+  //           Expanded(
+  //             child: _numericField("Longitude", _longitude, Iconsax.location),
+  //           ),
+  //         ],
+  //       ),
+  //       _numericField("Radius (metres)", _radius, Iconsax.radar),
+  //       if (kIsMobile) ...[
+  //         const SizedBox(height: 4),
+  //         SizedBox(
+  //           width: double.infinity,
+  //           child: OutlinedButton.icon(
+  //             onPressed: _detectingLocation ? null : _detectLocation,
+  //             icon: _detectingLocation
+  //                 ? const SizedBox(
+  //                     width: 16,
+  //                     height: 16,
+  //                     child: CircularProgressIndicator(strokeWidth: 2),
+  //                   )
+  //                 : const Icon(Iconsax.gps, size: 18),
+  //             label: Text(
+  //               _detectingLocation
+  //                   ? "Detecting..."
+  //                   : "Use Current Location",
+  //             ),
+  //             style: OutlinedButton.styleFrom(
+  //               padding: const EdgeInsets.symmetric(vertical: 12),
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(10),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 10),
+  //       ],
+  //     ],
+  //   );
+  // }
+
   Widget _sectionTitle(String title) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -207,7 +292,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     String label,
     TextEditingController controller,
     IconData icon,
-    bool isEmail,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -279,10 +363,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Image.asset(ImageAssets.logoTransparent, height: 45, width: 45),
-            // IconButton(
-            //   onPressed: () => Navigator.pop(context),
-            //   icon: const Icon(Icons.close),
-            // ),
           ],
         ),
         const Divider(height: 30, thickness: 1.2),

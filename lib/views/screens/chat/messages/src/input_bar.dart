@@ -902,9 +902,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
           height: 36,
           width: 36,
           fit: BoxFit.cover,
-          placeholder: (_, __) =>
+          placeholder: (_, _) =>
               CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade200),
-          errorWidget: (_, __, ___) => _initialAvatar(user.name),
+          errorWidget: (_, _, _) => _initialAvatar(user.name),
         ),
       );
     }

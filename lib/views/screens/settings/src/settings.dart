@@ -6,6 +6,7 @@ import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
+// import 'company_location_settings.dart';
 
 class SettingsColors {
   static const Color primary = Color(0xFF2563EB);
@@ -58,7 +59,7 @@ class _SettingsListingState extends State<SettingsListing> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: SettingsColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.showAppbar
           ? AppBar(
               backgroundColor: SettingsColors.white,
@@ -159,7 +160,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           );
                         },
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("App Appearance", Iconsax.brush),
                     const SizedBox(height: 12),
@@ -171,37 +172,60 @@ class _SettingsListingState extends State<SettingsListing> {
                         subtitle: "Reduce eye strain in low light",
                         value: isDark,
                         onChanged: (value) => themeProvider.setDarkMode(value),
-                        isInDevelop: true,
+                        isInDevelop: false,
                       ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.global,
-                        iconColor: Colors.indigoAccent,
-                        title: "Language",
-                        trailing: _buildDropdown(
-                          value: settings.language,
-                          options: ["English", "Hindi", "Tamil", "Telugu"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("language", val),
-                          ),
-                        ),
-                      ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.music_dashboard,
-                        iconColor: Colors.deepOrangeAccent,
-                        title: "Dashboard Layout",
-                        trailing: _buildDropdown(
-                          value: settings.dashboardLayout,
-                          options: ["Default", "Compact", "Analytics"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("dashboardLayout", val),
-                          ),
-                        ),
-                      ),
-                    ]),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.global,
+                      //   iconColor: Colors.indigoAccent,
+                      //   title: "Language",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.language,
+                      //     options: ["English", "Hindi", "Tamil", "Telugu"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("language", val),
+                      //     ),
+                      //   ),
+                      // ),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.music_dashboard,
+                      //   iconColor: Colors.deepOrangeAccent,
+                      //   title: "Dashboard Layout",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.dashboardLayout,
+                      //     options: ["Default", "Compact", "Analytics"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("dashboardLayout", val),
+                      //     ),
+                      //   ),
+                      // ),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("System & Data", Iconsax.status),
                     const SizedBox(height: 12),
                     _buildSettingsCard([
+                      FutureBuilder<bool>(
+                        future: Spdb.isAdminLoggedIn(),
+                        builder: (context, snap) {
+                          if (snap.data != true) return const SizedBox.shrink();
+                          return _buildInteractiveTile(
+                            icon: Iconsax.location,
+                            iconColor: Colors.teal,
+                            title: "Company Location",
+                            // onTap: () => Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) =>
+                            //         const CompanyLocationSettings(),
+                            //   ),
+                            // ),
+                            trailing: const Icon(
+                              Iconsax.arrow_right_3,
+                              size: 16,
+                              color: SettingsColors.border,
+                            ),
+                          );
+                        },
+                      ),
                       _buildInteractiveTile(
                         icon: Iconsax.mobile_programming,
                         iconColor: Colors.purpleAccent,
@@ -259,7 +283,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           color: SettingsColors.border,
                         ),
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 40),
                     _buildFooter(),
                   ],
@@ -292,12 +316,18 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(List<Widget> children, [BuildContext? ctx]) {
+    final cardColor = ctx != null
+        ? Theme.of(ctx).colorScheme.surface
+        : SettingsColors.white;
+    final borderColor = ctx != null
+        ? Theme.of(ctx).dividerColor
+        : SettingsColors.border;
     return Container(
       decoration: BoxDecoration(
-        color: SettingsColors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SettingsColors.border),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: children.asMap().entries.map((entry) {
@@ -415,42 +445,31 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required List<String> options,
-    required ValueChanged<String?> onChanged,
-  }) {
-    final validValue = options.contains(value) ? value : options.first;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: SettingsColors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: SettingsColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: validValue,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: SettingsColors.textSecondary,
-          ),
-          isDense: true,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: SettingsColors.textPrimary,
-          ),
-          items: options
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
+  // Widget _buildDropdown({
+  //   required String value,
+  //   required List<String> options,
+  //   required ValueChanged<String?> onChanged,
+  // }) {
+  //   final validValue = options.contains(value) ? value : options.first;
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       color: SettingsColors.background,
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: SettingsColors.border),
+  //     ),
+  //     child: DropdownButtonHideUnderline(
+  //       child: DropdownButton<String>(
+  //         value: validValue,
+  //         icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: SettingsColors.textSecondary),
+  //         isDense: true,
+  //         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: SettingsColors.textPrimary),
+  //         items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+  //         onChanged: onChanged,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFooter() {
     return Center(

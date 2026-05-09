@@ -65,6 +65,11 @@ class _ChatListingViewState extends State<ChatListingView> {
     });
   }
 
+  Future<void> _refreshChats(BuildContext context) async {
+    context.read<ChatBloc>().add(StreamChat());
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,7 +90,6 @@ class _ChatListingViewState extends State<ChatListingView> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth < 900) {
-                  print("the chats ${state.chats}");
                   if (state.chats.isNotEmpty) {
                     return ChatListPanel(
                       onSelect: (index) {
@@ -106,6 +110,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                       chats: state.chats,
                       selectedChatUid: _selectedChatUid,
                       currentUserUid: widget.currentUserUid,
+                      onRefresh: () => _refreshChats(context),
                     );
                   }
                   return _buildNoChatSelected();
@@ -121,6 +126,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                           });
                         },
                         currentUserUid: widget.currentUserUid,
+                        onRefresh: () => _refreshChats(context),
                       ),
                       Expanded(
                         child: selectedChat != null
@@ -201,6 +207,7 @@ class ChatListPanel extends StatefulWidget {
   final String? selectedChatUid;
   final ValueChanged<int> onSelect;
   final String currentUserUid;
+  final Future<void> Function()? onRefresh;
 
   const ChatListPanel({
     super.key,
@@ -208,6 +215,7 @@ class ChatListPanel extends StatefulWidget {
     this.selectedChatUid,
     required this.onSelect,
     required this.currentUserUid,
+    this.onRefresh,
   });
 
   @override
@@ -333,6 +341,19 @@ class _ChatListPanelState extends State<ChatListPanel> {
                 if (kIsDesktop) ...[
                   const SizedBox(width: 8),
                   Material(
+                    color: AppColors.grey200,
+                    borderRadius: BorderRadius.circular(10),
+                    child: IconButton(
+                      tooltip: "Refresh",
+                      icon: const Icon(Iconsax.refresh),
+                      iconSize: 18,
+                      onPressed: () async {
+                        await widget.onRefresh?.call();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
@@ -351,93 +372,123 @@ class _ChatListPanelState extends State<ChatListPanel> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: ListView.builder(
-              // Use the filtered list
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chat = _filteredChats[index];
+            child: RefreshIndicator(
+              onRefresh: widget.onRefresh ?? () async {},
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _filteredChats.isEmpty ? 1 : _filteredChats.length,
+                itemBuilder: (context, index) {
+                  if (_filteredChats.isEmpty) {
+                    return SizedBox(
+                      height: 300,
+                      child: Center(child: Text("No chats. Pull to refresh")),
+                    );
+                  }
+                  final chat = _filteredChats[index];
 
-                final originalIndex = widget.chats.indexOf(chat);
-                final isSelected = chat.uid == widget.selectedChatUid;
+                  final originalIndex = widget.chats.indexOf(chat);
+                  final isSelected = chat.uid == widget.selectedChatUid;
 
-                return _ChatListItem(
-                  chat: chat,
-                  isSelected: isSelected,
-                  onTap: () => widget.onSelect(originalIndex),
-                  currentUserUid: widget.currentUserUid,
-                  onAction: (action) async {
-                    switch (action) {
-                      case ChatAction.pin:
-                        await ChatService.toggleChatPin(
-                          chatId: chat.uid!,
-                          value: !chat.isPinnedForUser(widget.currentUserUid),
-                        );
-                        break;
+                  return _ChatListItem(
+                    chat: chat,
+                    isSelected: isSelected,
+                    onTap: () => widget.onSelect(originalIndex),
+                    currentUserUid: widget.currentUserUid,
+                    onAction: (action) async {
+                      switch (action) {
+                        case ChatAction.pin:
+                          await ChatService.toggleChatPin(
+                            chatId: chat.uid!,
+                            value: !chat.isPinnedForUser(widget.currentUserUid),
+                          );
+                          break;
 
-                      case ChatAction.favorite:
-                        await ChatService.toggleChatFavorite(
-                          chatId: chat.uid!,
-                          value: !chat.isFavoriteForUser(widget.currentUserUid),
-                        );
-                        break;
-                      case ChatAction.delete:
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete chat'),
-                            content: const Text(
-                              'This chat will be permanently deleted. Continue?',
+                        case ChatAction.favorite:
+                          await ChatService.toggleChatFavorite(
+                            chatId: chat.uid!,
+                            value: !chat.isFavoriteForUser(
+                              widget.currentUserUid,
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel'),
+                          );
+                          break;
+                        case ChatAction.delete:
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete chat'),
+                              content: const Text(
+                                'This chat will be permanently deleted. Continue?',
                               ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(),
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(),
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirm == true) {
-                          await ChatService.deleteChat(chatId: chat.uid!);
-                        }
-                        break;
-                    }
-                  },
-                );
-              },
+                          if (confirm == true) {
+                            final chatId = chat.uid!;
+                            final deletedChat = chat; // ✅ backup
+
+                            // ✅ DELETE
+                            await ChatService.deleteChat(chatId: chatId);
+
+                            if (!context.mounted) return;
+
+                            // ✅ SHOW UNDO
+                            FlushBar.show(
+                              context,
+                              'Chat deleted',
+                              actionLabel: 'UNDO',
+                              onActionPressed: () async {
+                                await ChatService.restoreChat(deletedChat);
+                                if (!context.mounted) return;
+                                context.read<ChatBloc>().add(StreamChat());
+                              },
+                            );
+                          }
+                          break;
+                      }
+                    },
+                  );
+                },
+              ),
             ),
-          ),
 
-          // if (kIsDesktop) ...[
-          //   SizedBox(
-          //     width: double.infinity,
-          //     child: Padding(
-          //       padding: const EdgeInsets.symmetric(
-          //         horizontal: 8.0,
-          //         vertical: 4,
-          //       ),
-          //       child: ElevatedButton(
-          //         onPressed: () =>
-          //             Sheet.showSheet(context, widget: const CreateChat()),
-          //         style: ElevatedButton.styleFrom(
-          //           backgroundColor: AppColors.primary, // button color
-          //           foregroundColor: AppColors.white, // text/icon color
-          //           elevation: 3, // shadow
-          //           padding: const EdgeInsets.symmetric(vertical: 16),
-          //           shape: RoundedRectangleBorder(
-          //             borderRadius: BorderRadius.circular(12),
-          //           ),
-          //         ),
-          //         child: const Text("Create Chat"),
-          //       ),
-          //     ),
-          //   ),
-          // ],
+            // if (kIsDesktop) ...[
+            //   SizedBox(
+            //     width: double.infinity,
+            //     child: Padding(
+            //       padding: const EdgeInsets.symmetric(
+            //         horizontal: 8.0,
+            //         vertical: 4,
+            //       ),
+            //       child: ElevatedButton(
+            //         onPressed: () =>
+            //             Sheet.showSheet(context, widget: const CreateChat()),
+            //         style: ElevatedButton.styleFrom(
+            //           backgroundColor: AppColors.primary, // button color
+            //           foregroundColor: AppColors.white, // text/icon color
+            //           elevation: 3, // shadow
+            //           padding: const EdgeInsets.symmetric(vertical: 16),
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(12),
+            //           ),
+            //         ),
+            //         child: const Text("Create Chat"),
+            //       ),
+            //     ),
+            //   ),
+            // ],
+          ),
         ],
       ),
     );

@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   firebase_storage
   flutter_window_close
+  geolocator_windows
   local_notifier
   permission_handler_windows
   screen_retriever_windows

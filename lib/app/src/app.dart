@@ -58,30 +58,27 @@ class _AppState extends State<App> {
 
           if (Platform.isWindows) {
           } else {
-            home = WillPopScope(
-              onWillPop: () async {
+            home = PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop) return;
                 final ctx = navigatorKey.currentContext;
-                if (ctx == null) return true;
-                return await showDialogs.showExitConfirmationDialog(ctx);
+                if (ctx == null) return;
+                await showDialogs.showExitConfirmationDialog(ctx);
               },
               child: home,
             );
           }
 
-          return AnimatedTheme(
-            data: themeProvider.themeMode == ThemeMode.dark
-                ? darkTheme
-                : lightTheme,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: MaterialApp(
-              navigatorKey: navigatorKey,
-              scaffoldMessengerKey: messengerKey,
-              debugShowCheckedModeBanner: false,
-              title: "Lead Capture",
-              theme: lightTheme,
-              home: authProvider.isLoggedIn ? home : const Splash(),
-            ),
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            scaffoldMessengerKey: messengerKey,
+            debugShowCheckedModeBanner: false,
+            title: "Lead Capture",
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: authProvider.isLoggedIn ? home : const Splash(),
           );
         },
       ),
