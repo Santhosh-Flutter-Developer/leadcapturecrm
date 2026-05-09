@@ -55,6 +55,8 @@ class ChatMessages extends StatefulWidget {
 class _ChatMessagesState extends State<ChatMessages> {
   late Stream<List<MessagesModel>> _stream;
   StreamSubscription<List<MessagesModel>>? _subscription;
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -103,11 +105,41 @@ class _ChatMessagesState extends State<ChatMessages> {
                 userUid: widget.opponentUid,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
+                isSearching: _isSearching,
+
+                onSearchChanged: (value) {
+                  setState(() {
+                    _isSearching = true;
+                    _searchQuery = value;
+                  });
+                },
+
+                onSearchClose: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                  });
+                },
               )
             : ChatTopBarDesktop(
                 userUid: widget.opponentUid,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
+                isSearching: _isSearching,
+
+                onSearchChanged: (value) {
+                  setState(() {
+                    _isSearching = true;
+                    _searchQuery = value;
+                  });
+                },
+
+                onSearchClose: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                  });
+                },
               ),
         body: SafeArea(
           child: Container(
@@ -128,15 +160,22 @@ class _ChatMessagesState extends State<ChatMessages> {
                   return ErrorDisplay(error: snapshot.error.toString());
                 }
 
-                final chats = snapshot.data ?? [];
+                final allChats = snapshot.data ?? [];
 
-                // Removed the unnecessary Stack
+                final chats = _searchQuery.isEmpty
+                    ? allChats
+                    : allChats.where((msg) {
+                        final text = (msg.message).toLowerCase();
+
+                        return text.contains(_searchQuery.toLowerCase());
+                      }).toList();
                 return Column(
                   children: [
                     Expanded(
                       // Pass the raw list to BuildSliverChat
                       child: BuildSliverChat(
                         chats: chats,
+                        searchQuery: _searchQuery,
                         onOpenChat: widget.onOpenChat,
                       ),
                     ),
@@ -156,8 +195,14 @@ class _ChatMessagesState extends State<ChatMessages> {
 /// and builds the reversible chat list with date separators.
 class BuildSliverChat extends StatefulWidget {
   final List<MessagesModel> chats;
+  final String searchQuery;
   final Function(ChatModel chat, String opponentUid)? onOpenChat;
-  const BuildSliverChat({super.key, required this.chats, this.onOpenChat});
+  const BuildSliverChat({
+    super.key,
+    required this.chats,
+    this.searchQuery = '',
+    this.onOpenChat,
+  });
 
   @override
   State<BuildSliverChat> createState() => _BuildSliverChatState();
