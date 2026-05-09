@@ -565,13 +565,21 @@ class _ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String opponentUid = chat.participants.firstWhere(
-      (id) => id != currentUserUid,
-      orElse: () => '',
+    final bool isSelfChat = chat.participants.every(
+      (id) => id == currentUserUid,
     );
+
+    String opponentUid = isSelfChat
+        ? currentUserUid
+        : chat.participants.firstWhere(
+            (id) => id != currentUserUid,
+            orElse: () => currentUserUid,
+          );
+
     var user = CacheService.getUserByUid(opponentUid);
-    // final user = employee ?? admin;
-    final String name = user?.name ?? user?.name ?? '';
+
+    final String name = isSelfChat ? 'You' : (user?.name ?? '');
+
     final String imageUrl = user is EmployeeModel
         ? (user.profileImageUrl ?? '')
         : user is AdminModel

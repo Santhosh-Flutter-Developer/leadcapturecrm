@@ -206,7 +206,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
+class ChatTopBarDesktop extends StatefulWidget implements PreferredSizeWidget {
   final String userUid;
   final String lastSeen;
   final VoidCallback? onBack;
@@ -221,11 +221,20 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
+  State<ChatTopBarDesktop> createState() => _ChatTopBarDesktopState();
+  @override
   Size get preferredSize => const Size.fromHeight(70);
+}
+
+class _ChatTopBarDesktopState extends State<ChatTopBarDesktop> {
+  bool isSearching = false;
+  final TextEditingController searchController = TextEditingController();
+  Timer? debounce;
+  List<MessagesModel> results = [];
 
   @override
   Widget build(BuildContext context) {
-    final dynamic user = CacheService.getUserByUid(userUid);
+    final dynamic user = CacheService.getUserByUid(widget.userUid);
 
     String? userName;
     String? userImage;
@@ -264,7 +273,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     String? userName,
     String? userImage,
   ) {
-    if (chat.isGroupChat) {
+    if (widget.chat.isGroupChat) {
       return const CircleAvatar(
         radius: 15,
         backgroundColor: AppColors.primary,
@@ -308,24 +317,25 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     String? userName,
     String? userImage,
   ) {
+    bool isSearching = false;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (chat.isGroupChat) ...[
+          if (widget.chat.isGroupChat) ...[
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  chat.title ?? '',
+                  widget.chat.title ?? '',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.black,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  '${chat.participants.length} Members',
+                  '${widget.chat.participants.length} Members',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: AppColors.grey500),
@@ -341,11 +351,14 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   onPressed: () {
                     if (kIsMobile) {
-                      Sheet.showSheet(context, widget: SearchChat(chat: chat));
+                      Sheet.showSheet(
+                        context,
+                        widget: SearchChat(chat: widget.chat),
+                      );
                     } else {
                       GeneralDialog.showRTLSheet(
                         context,
-                        SearchChat(chat: chat),
+                        SearchChat(chat: widget.chat),
                       );
                     }
                   },
@@ -359,12 +372,15 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                     if (kIsMobile) {
                       Sheet.showSheet(
                         context,
-                        widget: AboutChat(chat: chat, userUid: userUid),
+                        widget: AboutChat(
+                          chat: widget.chat,
+                          userUid: widget.userUid,
+                        ),
                       );
                     } else {
                       GeneralDialog.showRTLSheet(
                         context,
-                        AboutChat(chat: chat, userUid: userUid),
+                        AboutChat(chat: widget.chat, userUid: widget.userUid),
                       );
                     }
                   },
@@ -385,9 +401,9 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                   StreamBuilder<UserStatusModel?>(
-                    stream: UserStatusService.streamStatus(userUid),
+                    stream: UserStatusService.streamStatus(widget.userUid),
                     builder: (context, snapshot) {
-                      if (userUid.isEmpty) {
+                      if (widget.userUid.isEmpty) {
                         return Text(
                           "Last seen: ",
                           style: Theme.of(context).textTheme.bodySmall
@@ -425,11 +441,14 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   onPressed: () {
                     if (kIsMobile) {
-                      Sheet.showSheet(context, widget: SearchChat(chat: chat));
+                      Sheet.showSheet(
+                        context,
+                        widget: SearchChat(chat: widget.chat),
+                      );
                     } else {
                       GeneralDialog.showRTLSheet(
                         context,
-                        SearchChat(chat: chat),
+                        SearchChat(chat: widget.chat),
                       );
                     }
                   },
@@ -443,12 +462,15 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                     if (kIsMobile) {
                       Sheet.showSheet(
                         context,
-                        widget: AboutChat(chat: chat, userUid: userUid),
+                        widget: AboutChat(
+                          chat: widget.chat,
+                          userUid: widget.userUid,
+                        ),
                       );
                     } else {
                       GeneralDialog.showRTLSheet(
                         context,
-                        AboutChat(chat: chat, userUid: userUid),
+                        AboutChat(chat: widget.chat, userUid: widget.userUid),
                       );
                     }
                   },
