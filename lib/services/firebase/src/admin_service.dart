@@ -53,8 +53,9 @@ class AdminService {
           .doc(uid)
           .get();
 
-      if (snap.data() == null) throw "Admin data is empty";
-
+      if (!snap.exists || snap.data() == null) {
+        return null;
+      }
       return AdminModel.fromMap(snap.id, snap.data()!);
     } catch (e, st) {
       await ErrorService.recordError(e, st);
@@ -114,60 +115,58 @@ class AdminService {
     }
   }
 
-//  static Future<void> deleteAdmin({required String uid}) async {
-//   try {
-//     final firestore = FirebaseFirestore.instance;
-//     final cid = await Spdb.getCid();
+  //  static Future<void> deleteAdmin({required String uid}) async {
+  //   try {
+  //     final firestore = FirebaseFirestore.instance;
+  //     final cid = await Spdb.getCid();
 
-//     try {
-//       await _deleteAdminProfileImage(uid: uid);
-//     } catch (_) {}
+  //     try {
+  //       await _deleteAdminProfileImage(uid: uid);
+  //     } catch (_) {}
 
-//     final ref = firestore
-//         .collection(Collections.users.name)
-//         .doc(cid)
-//         .collection(Collections.admins.name)
-//         .doc(uid);
+  //     final ref = firestore
+  //         .collection(Collections.users.name)
+  //         .doc(cid)
+  //         .collection(Collections.admins.name)
+  //         .doc(uid);
 
-//     final snap = await ref.get();
-//     if (!snap.exists) return;
+  //     final snap = await ref.get();
+  //     if (!snap.exists) return;
 
-//     final data = snap.data()!;
+  //     final data = snap.data()!;
 
-//     try {
-//       await TrashService.moveToTrash(
-//         docRef: ref,
-//         docData: data,
-//         reason: 'user_deleted',
-//       );
-//     } catch (_) {}
+  //     try {
+  //       await TrashService.moveToTrash(
+  //         docRef: ref,
+  //         docData: data,
+  //         reason: 'user_deleted',
+  //       );
+  //     } catch (_) {}
 
-//     await ref.delete(); // ✅ actual delete
+  //     await ref.delete(); // ✅ actual delete
 
-//     try {
-//       final user = await Spdb.getUser();
-//       final log = ActivityLogModel(
-//         userData: user,
-//         activity: '${data['name']?.toString().decrypt ?? 'Admin'} deleted',
-//         description:
-//             'User deleted from ${Collections.admins.name}',
-//         collection:
-//             '${Collections.users.name}/$cid/${Collections.admins.name}',
-//         docId: uid,
-//       );
+  //     try {
+  //       final user = await Spdb.getUser();
+  //       final log = ActivityLogModel(
+  //         userData: user,
+  //         activity: '${data['name']?.toString().decrypt ?? 'Admin'} deleted',
+  //         description:
+  //             'User deleted from ${Collections.admins.name}',
+  //         collection:
+  //             '${Collections.users.name}/$cid/${Collections.admins.name}',
+  //         docId: uid,
+  //       );
 
-//       await CommonService.add(
-//         '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
-//         log.toMap(),
-//       );
-//     } catch (_) {}
-//   } catch (e, st) {
-//     await ErrorService.recordError(e, st);
-//     debugPrint('Delete admin failed: $e');
-//   }
-// }
-
-
+  //       await CommonService.add(
+  //         '${Collections.users.name}/$cid/${Collections.activityLogs.name}',
+  //         log.toMap(),
+  //       );
+  //     } catch (_) {}
+  //   } catch (e, st) {
+  //     await ErrorService.recordError(e, st);
+  //     debugPrint('Delete admin failed: $e');
+  //   }
+  // }
 
   static Future<void> deleteAdmin({required String uid}) async {
     try {

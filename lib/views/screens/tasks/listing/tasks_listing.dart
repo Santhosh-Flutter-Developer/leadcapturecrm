@@ -236,7 +236,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                         ),
                         DataColumn(
                           label: Text(
-                            "Task Created By",
+                            "Created By",
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -607,20 +607,19 @@ class _TaskListingViewState extends State<TaskListingView> {
 
         dataCell(
           context,
-          Text(
-            task.taskCreatedBy.name.isNotEmpty
-                ? task.taskCreatedBy.name
-                : task.createdBy
-                      .map((e) => CacheService.getUserByUid(e)?.name ?? '')
-                      .where((n) => n.isNotEmpty)
-                      .join(',\n'),
-            softWrap: true,
-            maxLines: null,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          task.taskCreatedBy.uid.isNotEmpty
+              ? CreatedByWidget(userData: task.taskCreatedBy)
+              : Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: task.createdBy
+                      .map((uid) => CacheService.getUserByUid(uid))
+                      .where((user) => user != null)
+                      .map((user) => CreatedByWidget(userData: user!))
+                      .toList(),
+                ),
           task.uid ?? '',
         ),
-
         dataCell(
           context,
           SizedBox(
