@@ -51,3 +51,29 @@ class DeleteDeal extends DealEvent {
   @override
   List<Object> get props => [dealUid];
 }
+
+class StreamDealActivities extends DealEvent {
+  final String dealUid;
+  StreamDealActivities(this.dealUid);
+}
+
+class AddDealActivity extends DealEvent {
+  final String dealUid;
+  final DealActivityModel activity;
+
+  AddDealActivity({required this.dealUid, required this.activity});
+}
+
+class EditDealActivity extends DealEvent {
+  final String dealUid;
+  final DealActivityModel activity;
+
+  EditDealActivity({required this.dealUid, required this.activity});
+}
+
+class DeleteDealActivity extends DealEvent {
+  final String dealUid;
+  final String activityUid;
+
+  DeleteDealActivity({required this.dealUid, required this.activityUid});
+}
