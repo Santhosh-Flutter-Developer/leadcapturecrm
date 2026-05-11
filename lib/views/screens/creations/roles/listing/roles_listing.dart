@@ -435,13 +435,13 @@ class _RolesListingViewState extends State<RolesListingView> {
           ],
         ),
 
-       if (kIsDesktop)
+        if (kIsDesktop)
           IconButton(
             tooltip: "Refresh",
             icon: const Icon(Iconsax.refresh),
             onPressed: _refreshRoles,
             iconSize: 18,
-          ), 
+          ),
       ],
     );
   }

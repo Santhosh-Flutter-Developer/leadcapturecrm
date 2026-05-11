@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:leadcapture/constants/src/enum.dart';
 import '/models/models.dart';
 
 class DealModel {
@@ -352,24 +353,34 @@ class DealModel {
 }
 
 class DealCommentModel {
+  final String? uid;
   final String userId;
   final String comment;
+  final List<FileModel> attachments;
+  final UserDataModel createdBy;
   final DateTime timestamp;
 
   DealCommentModel({
+    this.uid,
     required this.userId,
     required this.comment,
+    this.attachments = const [],
+    required this.createdBy,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
   DealCommentModel copyWith({
     String? userId,
     String? comment,
+    List<FileModel>? attachments,
+    UserDataModel? createdBy,
     DateTime? timestamp,
   }) {
     return DealCommentModel(
       userId: userId ?? this.userId,
       comment: comment ?? this.comment,
+      attachments: attachments ?? this.attachments,
+      createdBy: createdBy ?? this.createdBy,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -377,13 +388,27 @@ class DealCommentModel {
   Map<String, dynamic> toMap() => {
     'userId': userId,
     'comment': comment,
+    'attachments': attachments.map((x) => x.toMap()).toList(),
+    'createdBy': createdBy.toMap(),
     'timestamp': timestamp.millisecondsSinceEpoch,
   };
 
   factory DealCommentModel.fromMap(Map<String, dynamic> map) =>
       DealCommentModel(
+        uid: map['uid'] is String ? map['uid'] as String : null,
         userId: map['userId'] as String,
         comment: map['comment'] as String,
+        attachments: map['attachments'] != null && map['attachments'] is List
+            ? List<FileModel>.from(
+                (map['attachments'] as List)
+                    .whereType<Map<String, dynamic>>()
+                    .map((x) => FileModel.fromMap(x)),
+              )
+            : [],
+        createdBy:
+            map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
+            ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
+            : UserDataModel.fromEmptyMap(),
         timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       );
 }
@@ -429,4 +454,49 @@ class DealHistoryModel {
         update: map['update'] as String?,
         timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       );
+}
+
+class DealActivityModel {
+  final String? uid;
+  final String title;
+  final String description;
+  final DealActivityType type;
+  final DateTime scheduledAt;
+  final String createdBy;
+  final DateTime createdAt;
+  final bool completed;
+
+  DealActivityModel({
+    this.uid,
+    required this.title,
+    required this.description,
+    required this.type,
+    required this.scheduledAt,
+    required this.createdBy,
+    required this.createdAt,
+    this.completed = false,
+  });
+
+  Map<String, dynamic> toMap() => {
+    "title": title,
+    "description": description,
+    "type": type.name,
+    "scheduledAt": scheduledAt.millisecondsSinceEpoch,
+    "createdBy": createdBy,
+    "createdAt": createdAt.millisecondsSinceEpoch,
+    "completed": completed,
+  };
+
+  factory DealActivityModel.fromMap(String id, Map<String, dynamic> map) {
+    return DealActivityModel(
+      uid: id,
+      title: map["title"],
+      description: map["description"],
+      type: DealActivityType.values.byName(map["type"]),
+      scheduledAt: DateTime.fromMillisecondsSinceEpoch(map["scheduledAt"]),
+      createdBy: map["createdBy"],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map["createdAt"]),
+      completed: map["completed"] ?? false,
+    );
+  }
 }

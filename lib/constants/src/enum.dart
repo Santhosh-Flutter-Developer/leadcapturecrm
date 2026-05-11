@@ -89,6 +89,8 @@ enum FilterRequirements { staff }
 
 enum LeadActivityType { call, meeting, followUp, task }
 
+enum DealActivityType { call, meeting, followUp, task }
+
 enum HalfDaySession { morning, evening }
 
 enum PermissionsStatus { pending, approved, rejected }

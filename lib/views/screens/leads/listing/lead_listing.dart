@@ -76,6 +76,7 @@ class LeadsListingView extends StatefulWidget {
 
 class _LeadsListingViewState extends State<LeadsListingView> {
   final ScrollController _hScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   String _selectedView = 'Grid';
   final List<LeadModel> _selectedLeads = [];
   final List<LeadModel> _leadsList = [];
@@ -127,6 +128,18 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   Future<void> _refreshLeads(BuildContext context) async {
     context.read<LeadBloc>().add(StreamLead());
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+      _selectedStatus = null;
+      _selectedCategory = null;
+      _selectedCreatedBy = null;
+      _searchController.clear();
+    });
+    _applyFilters();
   }
 
   @override
@@ -422,187 +435,266 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     if (!Hive.isBoxOpen('leadStatus') ||
         !Hive.isBoxOpen('leadCategory') ||
         !Hive.isBoxOpen('employees')) {
-      return SizedBox(
-        width: 250,
-        child: TextField(
-          onChanged: onSearchChanged,
-          decoration: InputDecoration(
-            hintText: 'Search',
-            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
-            filled: true,
-            fillColor: AppColors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 16.0,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(color: AppColors.grey, width: 1),
-            ),
-          ),
-        ),
-      );
+      return _buildSearchField(onSearchChanged);
     }
+
     final statusBox = Hive.box<Map<dynamic, dynamic>>('leadStatus');
     final categoryBox = Hive.box<Map<dynamic, dynamic>>('leadCategory');
     final cache = CacheService();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 250,
-          child: TextField(
-            onChanged: onSearchChanged,
-            decoration: InputDecoration(
-              hintText: 'Search',
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 20,
-                color: Colors.grey,
-              ),
-              filled: true,
-              fillColor: AppColors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 12.0,
-                horizontal: 16.0,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.grey, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
-              ),
-              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+    final filters = [
+      _dateFilter(
+        label: "From Date",
+        value: _fromDate,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            initialDate: _fromDate ?? DateTime.now(),
+          );
+
+          if (picked != null) {
+            setState(() => _fromDate = picked);
+            _applyFilters();
+          }
+        },
+      ),
+
+      _dateFilter(
+        label: "To Date",
+        value: _toDate,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            initialDate: _toDate ?? DateTime.now(),
+          );
+
+          if (picked != null) {
+            setState(() => _toDate = picked);
+            _applyFilters();
+          }
+        },
+      ),
+
+      _filterDropdown(
+        label: "Status",
+        value: _selectedStatus != null
+            ? LeadStatusModel.fromMap(
+                _selectedStatus!,
+                Map<String, dynamic>.from(
+                  statusBox.get(_selectedStatus!) ?? {},
+                ),
+              ).name
+            : null,
+        items: statusItems(statusBox),
+        onChanged: (v) {
+          final selectedModel = statusBox.keys.firstWhere(
+            (key) =>
+                LeadStatusModel.fromMap(
+                  key,
+                  Map<String, dynamic>.from(statusBox.get(key) ?? {}),
+                ).name ==
+                v,
+            orElse: () => '',
+          );
+
+          setState(() => _selectedStatus = selectedModel);
+          _applyFilters();
+        },
+      ),
+
+      _filterDropdown(
+        label: "Lead Category",
+        value: _selectedCategory != null
+            ? LeadCategoryModel.fromMap(
+                _selectedCategory!,
+                Map<String, dynamic>.from(
+                  categoryBox.get(_selectedCategory!) ?? {},
+                ),
+              ).name
+            : null,
+        items: categoryItems(categoryBox),
+        onChanged: (v) {
+          final selectedModel = categoryBox.keys.firstWhere(
+            (key) =>
+                LeadCategoryModel.fromMap(
+                  key,
+                  Map<String, dynamic>.from(categoryBox.get(key) ?? {}),
+                ).name ==
+                v,
+            orElse: () => '',
+          );
+
+          setState(() => _selectedCategory = selectedModel);
+          _applyFilters();
+        },
+      ),
+
+      _filterDropdown(
+        label: "Created By",
+        value: _selectedCreatedBy != null
+            ? cache
+                  .getAllListenableEmployees()
+                  .value
+                  .firstWhere((e) => e.uid == _selectedCreatedBy)
+                  .name
+            : null,
+        items: employeeItems(cache),
+        onChanged: (v) {
+          final selectedEmployee = cache
+              .getAllListenableEmployees()
+              .value
+              .firstWhereOrNull((e) => e.name == v);
+
+          setState(() => _selectedCreatedBy = selectedEmployee?.uid);
+
+          _applyFilters();
+        },
+      ),
+
+      _valueFilter(onChanged: _onValueChanged),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// Search
+          kIsMobile
+              ? Column(
+                  children: [
+                    _buildSearchField(onSearchChanged),
+
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: _buildResetButton(),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                )
+              : Row(
+                  children: [
+                    SizedBox(
+                      width: 280,
+                      child: _buildSearchField(onSearchChanged),
+                    ),
+
+                    const Spacer(),
+
+                    _buildResetButton(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+
+          /// Filters
+          kIsMobile
+              ? Wrap(spacing: 10, runSpacing: 10, children: filters)
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final filter in filters) ...[
+                        filter,
+                        const SizedBox(width: 10),
+                      ],
+                    ],
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResetButton() {
+    return SizedBox(
+      height: 30,
+      child: ElevatedButton.icon(
+        onPressed: _resetFilters,
+        icon: const Icon(Icons.refresh, size: 18),
+        label: const Text("Reset Filters"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade50,
+          foregroundColor: Colors.redAccent,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          // shape: RoundedRectangleBorder(
+          //   borderRadius: BorderRadius.circular(12),
+          //   side: BorderSide(color: Colors.red.shade100),
+          // ),
         ),
-        const SizedBox(height: 12),
+      ),
+    );
+  }
 
-        // Filters Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _dateFilter(
-                label: "From Date",
-                value: _fromDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: _fromDate ?? DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() => _fromDate = picked);
+  Widget _buildSearchField(ValueChanged<String> onSearchChanged) {
+    return SizedBox(
+      height: 48,
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {});
+          onSearchChanged(value);
+          _applyFilters();
+        },
+        decoration: InputDecoration(
+          hintText: 'Search leads...',
+          prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                    onSearchChanged('');
                     _applyFilters();
-                  }
-                },
-              ),
-              const SizedBox(width: 10),
+                  },
+                )
+              : null,
 
-              // To Date
-              _dateFilter(
-                label: "To Date",
-                value: _toDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: _toDate ?? DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() => _toDate = picked);
-                    _applyFilters();
-                  }
-                },
-              ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
 
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Status",
-                value: _selectedStatus != null
-                    ? LeadStatusModel.fromMap(
-                        _selectedStatus!,
-                        Map<String, dynamic>.from(
-                          statusBox.get(_selectedStatus!) ?? {},
-                        ),
-                      ).name
-                    : null,
-                items: statusItems(statusBox),
-                onChanged: (v) {
-                  final selectedModel = statusBox.keys.firstWhere(
-                    (key) =>
-                        LeadStatusModel.fromMap(
-                          key,
-                          Map<String, dynamic>.from(statusBox.get(key) ?? {}),
-                        ).name ==
-                        v,
-                    orElse: () => '',
-                  );
-                  setState(() => _selectedStatus = selectedModel);
-                  _applyFilters();
-                },
-              ),
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Lead Category",
-                value: _selectedCategory != null
-                    ? LeadCategoryModel.fromMap(
-                        _selectedCategory!,
-                        Map<String, dynamic>.from(
-                          categoryBox.get(_selectedCategory!) ?? {},
-                        ),
-                      ).name
-                    : null,
-                items: categoryItems(categoryBox),
-                onChanged: (v) {
-                  final selectedModel = categoryBox.keys.firstWhere(
-                    (key) =>
-                        LeadCategoryModel.fromMap(
-                          key,
-                          Map<String, dynamic>.from(categoryBox.get(key) ?? {}),
-                        ).name ==
-                        v,
-                    orElse: () => '',
-                  );
-                  setState(() => _selectedCategory = selectedModel);
-                  _applyFilters();
-                },
-              ),
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Created By",
-                value: _selectedCreatedBy != null
-                    ? cache
-                          .getAllListenableEmployees()
-                          .value
-                          .firstWhere((e) => e.uid == _selectedCreatedBy)
-                          .name
-                    : null,
-                items: employeeItems(cache),
-                onChanged: (v) {
-                  final selectedEmployee = cache
-                      .getAllListenableEmployees()
-                      .value
-                      .firstWhereOrNull((e) => e.name == v);
-                  setState(() => _selectedCreatedBy = selectedEmployee?.uid);
-                  _applyFilters();
-                },
-              ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
 
-              const SizedBox(width: 10),
-
-              _valueFilter(onChanged: _onValueChanged),
-            ],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: AppColors.blue, width: 1.3),
+          ),
+
+          hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
-      ],
+      ),
     );
   }
 
@@ -771,7 +863,14 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         : <LeadModel>[];
 
     List<LeadModel> filtered = allLeads;
+    final query = _searchController.text.toLowerCase();
 
+    if (query.isNotEmpty) {
+      filtered = filtered.where((lead) {
+        return lead.leadName.toLowerCase().contains(query) ||
+            lead.leadEmail.toLowerCase().contains(query);
+      }).toList();
+    }
     if (_fromDate != null) {
       filtered = filtered
           .where((e) => !e.createdAt.isBefore(_fromDate!))

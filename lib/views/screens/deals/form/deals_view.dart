@@ -1,8 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:leadcapture/theme/src/app_colors.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:mime/mime.dart';
+import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '/utils/utils.dart';
@@ -37,7 +40,8 @@ class DealsViewPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => DealBloc()
         ..add(StreamDealComments(deal.uid!))
-        ..add(StreamDealHistory(deal.uid!)),
+        ..add(StreamDealHistory(deal.uid!))
+        ..add(StreamDealActivities(deal.uid!)),
       child: DealsView(deal: deal),
     );
   }
@@ -60,7 +64,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadOwnership();
   }
 
@@ -87,6 +91,368 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       AddDealComment(dealUid: widget.deal.uid!, commentText: text),
     );
     _commentController.clear();
+  }
+
+  void _uploadFiles() async {
+    var files = await FilePick.pickFiles(context);
+
+    if (files?.isNotEmpty ?? false) {
+      final int count = files!.length;
+
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: Colors.white, // 👈 force white background
+            title: const Text(
+              "Confirm Upload",
+              style: TextStyle(color: Colors.black),
+            ),
+            content: Text(
+              "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
+              style: const TextStyle(color: Colors.black),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DealsViewAppColors.primary,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  "Upload",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm == true) {
+        _startUpload(files);
+      }
+    }
+  }
+
+  void _startUpload(List<File> files) async {
+    try {
+      futureLoading(context);
+      List<FileModel> attachments = [];
+
+      if (files.isNotEmpty) {
+        List<String> urls = await StorageService.uploadFilesInBatch(
+          files: files,
+          folder: StorageFolder.dealAttachments,
+        );
+
+        for (var i = 0; i < files.length; i++) {
+          var file = files[i];
+          var mimeType = lookupMimeType(file.path) ?? '';
+
+          attachments.add(
+            FileModel(
+              name: path.basename(file.path),
+              extension: path.extension(file.path).replaceAll('.', ''),
+              size: file.lengthSync(),
+              url: urls[i],
+              mimeType: mimeType,
+            ),
+          );
+        }
+      }
+
+      var user = await Spdb.getUser();
+
+      DealCommentModel dealCommentModel = DealCommentModel(
+        userId: user.uid,
+        comment:
+            "Added ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}",
+        attachments: attachments,
+        timestamp: DateTime.now(),
+        createdBy: user,
+      );
+
+      await DealService.addDealComment(
+        dealUid: widget.deal.uid ?? '',
+        commentText: dealCommentModel,
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      FlushBar.show(
+        context,
+        "Failed to upload files: ${e.toString()}",
+        isSuccess: false,
+      );
+    }
+  }
+
+  void _editComment(DealCommentModel comment) {
+    final TextEditingController controller = TextEditingController(
+      text: comment.comment,
+    );
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Edit",
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.50,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Edit",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+
+                  /// Textbox
+                  FormFields(
+                    controller: controller,
+                    label: "Comment",
+                    hintText: "Edit your comment here...",
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text("Cancel"),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final value = controller.text.trim();
+
+                          if (value.isNotEmpty) {
+                            await DealService.editDealComment(
+                              dealUid: widget.deal.uid ?? '',
+                              commentUid: comment.uid ?? '',
+                              commentText: value,
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: DealsViewAppColors.primary,
+                        ),
+                        child: Text(
+                          "Submit",
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+
+      /// Animation
+      transitionBuilder: (context, anim1, anim2, child) {
+        return Transform.scale(
+          scale: anim1.value,
+          child: Opacity(opacity: anim1.value, child: child),
+        );
+      },
+    );
+  }
+
+  void _deleteComment(DealCommentModel comment) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Comment"),
+        content: const Text("Are you sure you want to delete this comment?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(
+              "Delete",
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await DealService.deleteDealComment(
+        dealUid: widget.deal.uid ?? '',
+        commentUid: comment.uid ?? '',
+      );
+    }
+  }
+
+  void _scheduleActivity([DealActivityModel? existing]) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<DealBloc>(),
+        child: ScheduleDealActivityDialog(
+          dealUid: widget.deal.uid!,
+          existing: existing,
+        ),
+      ),
+    );
+  }
+
+  IconData _activityIcon(DealActivityType type) {
+    switch (type) {
+      case DealActivityType.call:
+        return Iconsax.call;
+      case DealActivityType.meeting:
+        return Iconsax.video;
+      case DealActivityType.followUp:
+        return Iconsax.refresh;
+      case DealActivityType.task:
+        return Iconsax.task;
+    }
+  }
+
+  Future<void> _confirmDeleteActivity(DealActivityModel activity) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            width: 420,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// ICON
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 34,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// TITLE
+                const Text(
+                  "Delete Activity?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// DESCRIPTION
+                Text(
+                  "Are you sure you want to delete '${activity.title}'?\n\nThis action cannot be undone.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    height: 1.5,
+                    color: DealsViewAppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                /// BUTTONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text("Cancel"),
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        icon: const Icon(Icons.delete_rounded, size: 18),
+                        label: const Text("Delete"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      context.read<DealBloc>().add(
+        DeleteDealActivity(
+          dealUid: widget.deal.uid!,
+          activityUid: activity.uid!,
+        ),
+      );
+    }
   }
 
   @override
@@ -202,17 +568,17 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  if (isWide)
-                    Container(
-                      width: 450,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: DealsViewAppColors.border),
-                        ),
-                        color: DealsViewAppColors.white,
-                      ),
-                      child: _buildCommentsSection(),
-                    ),
+                  // if (isWide)
+                  //   Container(
+                  //     width: 450,
+                  //     decoration: const BoxDecoration(
+                  //       border: Border(
+                  //         left: BorderSide(color: DealsViewAppColors.border),
+                  //       ),
+                  //       color: DealsViewAppColors.white,
+                  //     ),
+                  //     child: _buildCommentsSection(),
+                  //   ),
                 ],
               );
             },
@@ -381,7 +747,6 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
           const SizedBox(width: 16),
 
-          /// ─── LEAD VALUE ───────────────────────────
           IntrinsicWidth(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -487,22 +852,73 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
   Widget _buildModernTabs() {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: DealsViewAppColors.border)),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: DealsViewAppColors.background,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: DealsViewAppColors.border),
       ),
       child: TabBar(
         controller: _tabController,
-        labelColor: DealsViewAppColors.primary,
+
+        /// ✅ FULL WIDTH
+        isScrollable: false,
+
+        dividerColor: Colors.transparent,
+
+        /// LABELS
+        labelColor: Colors.white,
         unselectedLabelColor: DealsViewAppColors.textSecondary,
-        indicatorColor: DealsViewAppColors.primary,
-        indicatorWeight: 3,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-        isScrollable: true,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        tabs: const [
-          Tab(text: "Deal Profile"),
-          Tab(text: "Files & Notes"),
-          Tab(text: "History Log"),
+
+        /// TEXT STYLE
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
+
+        /// INDICATOR
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: DealsViewAppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: DealsViewAppColors.primary.withOpacity(.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+
+        tabs: [
+          _modernTab(icon: Icons.person_outline_rounded, title: "Deal Profile"),
+
+          _modernTab(icon: Icons.folder_open_rounded, title: "Files & Notes"),
+
+          _modernTab(icon: Icons.history_rounded, title: "History Log"),
+
+          _modernTab(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: "Comments",
+          ),
+
+          _modernTab(icon: Icons.event_note_rounded, title: "Activities"),
+        ],
+      ),
+    );
+  }
+
+  Widget _modernTab({required IconData icon, required String title}) {
+    return Tab(
+      height: 48,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
+          Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
@@ -518,6 +934,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             _buildOverviewTab(),
             _buildNotesTab(),
             _buildTimelineTab(),
+            _buildCommentsTab(),
+            _buildActivitiesTab(),
           ],
         );
       },
@@ -648,199 +1066,6 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCommentsSection() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-          child: Row(
-            children: [
-              const Icon(
-                Iconsax.message_text_1,
-                color: DealsViewAppColors.textPrimary,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                "Comments & Activity",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const Spacer(),
-              _buildCommentCountIndicator(),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: BlocBuilder<DealBloc, DealState>(
-            builder: (context, state) {
-              if (state is DealDetailLoaded) {
-                if (state.comments.isEmpty) {
-                  return _emptyState(
-                    Iconsax.message_minus,
-                    "No comments found",
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(24),
-                  itemCount: state.comments.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 32),
-                  itemBuilder: (context, index) =>
-                      _buildCommentItem(state.comments[index]),
-                );
-              }
-              return const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              );
-            },
-          ),
-        ),
-        _buildCommentInputArea(),
-      ],
-    );
-  }
-
-  Widget _buildCommentItem(Map<String, dynamic> comment) {
-    final name = comment['createdBy']['name'] ?? 'System';
-    final date = comment['createdAt'] != null
-        ? (comment['createdAt'] as Timestamp).toDate()
-        : DateTime.now();
-
-    var userId = comment['createdBy']['uid'];
-    var user = CacheService.getUserByUid(userId);
-
-    UserDataModel userDataModel = UserDataModel.fromEmptyMap();
-    if (user is AdminModel) {
-      userDataModel = UserDataModel(
-        uid: userId,
-        name: user.name,
-        desc: user.email,
-        profilePic: user.profileImageUrl,
-        userType: UserType.admin,
-      );
-    } else if (user is EmployeeModel) {
-      userDataModel = UserDataModel(
-        uid: userId,
-        name: user.name,
-        desc: user.email,
-        profilePic: user.profileImageUrl,
-        userType: UserType.employee,
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        UserAvatar(userData: userDataModel),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: DealsViewAppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    DateFormat('MMM dd, hh:mm a').format(date),
-                    style: const TextStyle(
-                      color: DealsViewAppColors.textSecondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                comment['comment'] ?? '',
-                style: const TextStyle(
-                  height: 1.5,
-                  fontSize: 13,
-                  color: DealsViewAppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCommentInputArea() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
-        border: const Border(top: BorderSide(color: DealsViewAppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: _commentController,
-            maxLines: 3,
-            minLines: 1,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              hintText: "Add a comment...",
-              hintStyle: const TextStyle(
-                color: DealsViewAppColors.textSecondary,
-                fontSize: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: DealsViewAppColors.background,
-              contentPadding: const EdgeInsets.all(16),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton(
-                onPressed: _addComment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DealsViewAppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  "Post Comment",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _emptyState(IconData icon, String message) {
     return Center(
       child: Column(
@@ -959,6 +1184,289 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildCommentsTab() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: DealsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DealsViewAppColors.border),
+      ),
+      child: _buildCommentsSection(),
+    );
+  }
+
+  Widget _buildCommentsSection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Row(
+            children: [
+              const Icon(
+                Iconsax.message_text_1,
+                color: DealsViewAppColors.textPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "Comments ",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              _buildCommentCountIndicator(),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+
+        SizedBox(
+          height: 400,
+          child: BlocBuilder<DealBloc, DealState>(
+            builder: (context, state) {
+              if (state is DealDetailLoaded) {
+                if (state.comments.isEmpty) {
+                  return _emptyState(
+                    Iconsax.message_minus,
+                    "No comments found",
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.all(24),
+                  itemCount: state.comments.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 32),
+                  itemBuilder: (context, index) =>
+                      _buildCommentItem(state.comments[index]),
+                );
+              }
+              return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              );
+            },
+          ),
+        ),
+
+        _buildCommentInputArea(),
+      ],
+    );
+  }
+
+  Widget _buildCommentItem(DealCommentModel comment) {
+    final name = comment.createdBy.name;
+    final date = comment.timestamp;
+
+    var userId = comment.createdBy.uid;
+    var user = CacheService.getUserByUid(userId);
+
+    UserDataModel userDataModel = UserDataModel.fromEmptyMap();
+    if (user is AdminModel) {
+      userDataModel = UserDataModel(
+        uid: userId,
+        name: user.name,
+        desc: user.email,
+        profilePic: user.profileImageUrl,
+        userType: UserType.admin,
+      );
+    } else if (user is EmployeeModel) {
+      userDataModel = UserDataModel(
+        uid: userId,
+        name: user.name,
+        desc: user.email,
+        profilePic: user.profileImageUrl,
+        userType: UserType.employee,
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UserAvatar(userData: userDataModel),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: DealsViewAppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          comment.comment,
+                          style: const TextStyle(
+                            height: 1.5,
+                            fontSize: 13,
+                            color: DealsViewAppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        DateFormat('MMM dd, hh:mm a').format(date),
+                        style: const TextStyle(
+                          color: DealsViewAppColors.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          showMenu(
+                            context: context,
+                            color: Colors.white, // popup background
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            position: const RelativeRect.fromLTRB(
+                              100,
+                              100,
+                              0,
+                              0,
+                            ),
+                            items: [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.edit, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: const [
+                                    Icon(
+                                      Icons.delete,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Delete'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ).then((value) {
+                            if (value == 'edit') {
+                              _editComment(comment);
+                            } else if (value == 'delete') {
+                              _deleteComment(comment);
+                            }
+                          });
+                        },
+                        child: Icon(
+                          Iconsax.more,
+                          color: DealsViewAppColors.primary,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              if (comment.attachments.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                AttachmentPreview(attachments: comment.attachments),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCommentInputArea() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: DealsViewAppColors.white,
+        border: const Border(top: BorderSide(color: DealsViewAppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _commentController,
+            maxLines: 3,
+            minLines: 1,
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: "Add a comment...",
+              hintStyle: const TextStyle(
+                color: DealsViewAppColors.textSecondary,
+                fontSize: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: DealsViewAppColors.background,
+              contentPadding: const EdgeInsets.all(16),
+              suffixIcon: IconButton(
+                tooltip: 'Add Attachment',
+                icon: Icon(Iconsax.document),
+                onPressed: () {
+                  _uploadFiles();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: _addComment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DealsViewAppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  "Post Comment",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommentCountIndicator() {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
@@ -982,6 +1490,259 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         }
         return const SizedBox();
       },
+    );
+  }
+
+  Widget _buildActivitiesTab() {
+    return Container(
+      // Match the padding and decoration of your _infoSection
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: DealsViewAppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DealsViewAppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ─── HEADER SECTION ───────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Activities",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: DealsViewAppColors.textPrimary,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _scheduleActivity,
+                style: TextButton.styleFrom(
+                  backgroundColor: DealsViewAppColors.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Iconsax.add, size: 18),
+                label: const Text(
+                  "Schedule",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          /// ─── CONTENT SECTION ──────────────────────────
+          BlocBuilder<DealBloc, DealState>(
+            builder: (context, state) {
+              if (state is DealDetailLoaded) {
+                if (state.activities.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: _emptyState(
+                      Iconsax.calendar,
+                      "No activities scheduled yet",
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: state.activities.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (_, i) => _activityItem(state.activities[i]),
+                );
+              }
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: WaitingLoading(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityItem(DealActivityModel activity) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DealsViewAppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DealsViewAppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: DealsViewAppColors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              _activityIcon(activity.type),
+              color: DealsViewAppColors.primary,
+              size: 20,
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: DealsViewAppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Iconsax.clock,
+                      size: 12,
+                      color: DealsViewAppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      DateFormat(
+                        'MMM dd • hh:mm a',
+                      ).format(activity.scheduledAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: DealsViewAppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            tooltip: "More",
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: DealsViewAppColors.background,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: DealsViewAppColors.textSecondary,
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 6,
+            color: Colors.white,
+            position: PopupMenuPosition.under,
+            onSelected: (value) {
+              if (value == 'edit') {
+                _scheduleActivity(activity);
+              } else if (value == 'delete') {
+                _confirmDeleteActivity(activity);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'edit',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Edit Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              PopupMenuItem<String>(
+                value: 'delete',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Delete Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1048,6 +1809,358 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             ),
         ]),
       ],
+    );
+  }
+}
+
+class ScheduleDealActivityDialog extends StatefulWidget {
+  final String dealUid;
+  final DealActivityModel? existing;
+
+  const ScheduleDealActivityDialog({
+    super.key,
+    required this.dealUid,
+    this.existing,
+  });
+
+  @override
+  State<ScheduleDealActivityDialog> createState() =>
+      _ScheduleDealActivityDialogState();
+}
+
+class _ScheduleDealActivityDialogState
+    extends State<ScheduleDealActivityDialog> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController descController = TextEditingController();
+
+  final TextEditingController dateTimeController = TextEditingController();
+
+  DealActivityType selectedType = DealActivityType.call;
+
+  DateTime? selectedDateTime;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final e = widget.existing;
+
+    if (e != null) {
+      titleController.text = e.title;
+      descController.text = e.description;
+
+      selectedType = e.type;
+      selectedDateTime = e.scheduledAt;
+
+      /// ✅ SET DATETIME TEXT
+      dateTimeController.text =
+          "${selectedDateTime!.day}/${selectedDateTime!.month}/${selectedDateTime!.year} "
+          "${selectedDateTime!.hour.toString().padLeft(2, '0')}:"
+          "${selectedDateTime!.minute.toString().padLeft(2, '0')}:00";
+    }
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    dateTimeController.dispose();
+    super.dispose();
+  }
+
+  /// ✅ PICK DATE & TIME
+  Future<void> pickDateTime() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+      initialDate: selectedDateTime ?? DateTime.now(),
+    );
+
+    if (date == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: selectedDateTime != null
+          ? TimeOfDay.fromDateTime(selectedDateTime!)
+          : TimeOfDay.now(),
+    );
+
+    if (time == null) return;
+
+    final finalDateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    setState(() {
+      selectedDateTime = finalDateTime;
+
+      /// ✅ UPDATE CONTROLLER
+      dateTimeController.text =
+          "${finalDateTime.day}/${finalDateTime.month}/${finalDateTime.year} "
+          "${time.hour.toString().padLeft(2, '0')}:"
+          "${time.minute.toString().padLeft(2, '0')}:00";
+    });
+  }
+
+  void saveActivity() {
+    if (titleController.text.trim().isEmpty || selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all required fields")),
+      );
+      return;
+    }
+
+    if (_isEditing) {
+      final updated = DealActivityModel(
+        uid: widget.existing!.uid,
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        type: selectedType,
+        scheduledAt: selectedDateTime!,
+        createdBy: widget.existing!.createdBy,
+        createdAt: widget.existing!.createdAt,
+        completed: widget.existing!.completed,
+      );
+
+      context.read<DealBloc>().add(
+        EditDealActivity(dealUid: widget.dealUid, activity: updated),
+      );
+    } else {
+      final activity = DealActivityModel(
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        type: selectedType,
+        scheduledAt: selectedDateTime!,
+        createdBy: "user",
+        createdAt: DateTime.now(),
+      );
+
+      context.read<DealBloc>().add(
+        AddDealActivity(dealUid: widget.dealUid, activity: activity),
+      );
+    }
+
+    Navigator.pop(context);
+  }
+
+  IconData getTypeIcon(DealActivityType type) {
+    switch (type) {
+      case DealActivityType.call:
+        return Icons.call_rounded;
+      case DealActivityType.meeting:
+        return Icons.groups_rounded;
+      // case DealActivityType.email:
+      //   return Icons.email_rounded;
+      case DealActivityType.followUp:
+        return Icons.update_rounded;
+      default:
+        return Icons.event_note_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      _isEditing
+                          ? Icons.edit_calendar_rounded
+                          : Icons.add_task_rounded,
+                      color: theme.primaryColor,
+                    ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing ? "Edit Activity" : "Schedule Activity",
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          "Manage deal follow-up activities",
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              /// TITLE
+              TextFormField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Activity Title *",
+                  hintText: "Enter activity title",
+                  // prefixIcon: const Icon(Icons.title_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// DESCRIPTION
+              TextFormField(
+                controller: descController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  hintText: "Add notes or details",
+                  alignLabelWithHint: true,
+                  // prefixIcon: const Padding(
+                  //   padding: EdgeInsets.only(bottom: 60),
+                  //   child: Icon(Icons.description_rounded),
+                  // ),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// TYPE
+              DropdownButtonFormField<DealActivityType>(
+                initialValue: selectedType,
+                decoration: InputDecoration(
+                  labelText: "Activity Type",
+                  // prefixIcon: const Icon(Icons.category_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                items: DealActivityType.values.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Row(
+                      children: [
+                        Icon(getTypeIcon(e), size: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          e.name
+                              .replaceAllMapped(
+                                RegExp(r'([A-Z])'),
+                                (match) => ' ${match.group(0)}',
+                              )
+                              .toUpperCase(),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() => selectedType = v);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: dateTimeController,
+                readOnly: true,
+                onTap: pickDateTime,
+                decoration: InputDecoration(
+                  labelText: "Date & Time *",
+                  hintText: "DD/MM/YYYY HH:MM:SS",
+                  prefixIcon: const Icon(Icons.calendar_month_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              /// BUTTONS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  ElevatedButton.icon(
+                    onPressed: saveActivity,
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(_isEditing ? "Update" : "Save Activity"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

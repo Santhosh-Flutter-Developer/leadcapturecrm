@@ -507,24 +507,73 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   Widget _buildModernTabs() {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: LeadsViewAppColors.border)),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: LeadsViewAppColors.background,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: LeadsViewAppColors.border),
       ),
       child: TabBar(
         controller: _tabController,
-        labelColor: LeadsViewAppColors.primary,
+
+        /// ✅ FULL WIDTH
+        isScrollable: false,
+
+        dividerColor: Colors.transparent,
+
+        /// LABELS
+        labelColor: Colors.white,
         unselectedLabelColor: LeadsViewAppColors.textSecondary,
-        indicatorColor: LeadsViewAppColors.primary,
-        indicatorWeight: 3,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-        isScrollable: true,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        tabs: const [
-          Tab(text: "Lead Profile"),
-          Tab(text: "Files & Notes"),
-          Tab(text: "History Log"),
-          Tab(text: "Comments"),
-          Tab(text: "Activities"),
+
+        /// TEXT STYLE
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
+
+        /// INDICATOR
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: LeadsViewAppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: LeadsViewAppColors.primary.withOpacity(.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+
+        tabs: [
+          _modernTab(icon: Icons.person_outline_rounded, title: "Lead Profile"),
+
+          _modernTab(icon: Icons.folder_open_rounded, title: "Files & Notes"),
+
+          _modernTab(icon: Icons.history_rounded, title: "History Log"),
+
+          _modernTab(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: "Comments",
+          ),
+
+          _modernTab(icon: Icons.event_note_rounded, title: "Activities"),
+        ],
+      ),
+    );
+  }
+
+  Widget _modernTab({required IconData icon, required String title}) {
+    return Tab(
+      height: 48,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
+          Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
         ],
       ),
     );
@@ -1227,31 +1276,216 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           ),
 
           PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_vert,
-              size: 18,
-              color: LeadsViewAppColors.textSecondary,
+            padding: EdgeInsets.zero,
+            tooltip: "More",
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: LeadsViewAppColors.background,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: LeadsViewAppColors.textSecondary,
+              ),
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 6,
+            color: Colors.white,
+            position: PopupMenuPosition.under,
             onSelected: (value) {
               if (value == 'edit') {
                 _scheduleActivity(activity);
               } else if (value == 'delete') {
-                context.read<LeadBloc>().add(
-                  DeleteLeadActivity(
-                    leadUid: widget.lead.uid!,
-                    activityUid: activity.uid!,
-                  ),
-                );
+                _confirmDeleteActivity(activity);
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'edit',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Edit Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              PopupMenuItem<String>(
+                value: 'delete',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Delete Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteActivity(LeadActivityModel activity) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            width: 420,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// ICON
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 34,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// TITLE
+                const Text(
+                  "Delete Activity?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// DESCRIPTION
+                Text(
+                  "Are you sure you want to delete '${activity.title}'?\n\nThis action cannot be undone.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    height: 1.5,
+                    color: LeadsViewAppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                /// BUTTONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text("Cancel"),
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        icon: const Icon(Icons.delete_rounded, size: 18),
+                        label: const Text("Delete"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      context.read<LeadBloc>().add(
+        DeleteLeadActivity(
+          leadUid: widget.lead.uid!,
+          activityUid: activity.uid!,
+        ),
+      );
+    }
   }
 
   Widget _buildCommentCountIndicator() {
@@ -1622,69 +1856,88 @@ class _ScheduleLeadActivityDialogState
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
 
+  /// ✅ SINGLE DATETIME CONTROLLER
+  final TextEditingController dateTimeController = TextEditingController();
+
   LeadActivityType selectedType = LeadActivityType.call;
 
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
+  DateTime? selectedDateTime;
 
   bool get _isEditing => widget.existing != null;
 
   @override
   void initState() {
     super.initState();
+
     final e = widget.existing;
+
     if (e != null) {
       titleController.text = e.title;
       descController.text = e.description;
+
       selectedType = e.type;
-      selectedDate = e.scheduledAt;
-      selectedTime = TimeOfDay.fromDateTime(e.scheduledAt);
+      selectedDateTime = e.scheduledAt;
+
+      /// ✅ SET DATETIME TEXT
+      dateTimeController.text =
+          "${selectedDateTime!.day}/${selectedDateTime!.month}/${selectedDateTime!.year} "
+          "${selectedDateTime!.hour.toString().padLeft(2, '0')}:"
+          "${selectedDateTime!.minute.toString().padLeft(2, '0')}:00";
     }
   }
 
-  DateTime? get scheduledDateTime {
-    if (selectedDate == null || selectedTime == null) return null;
-
-    return DateTime(
-      selectedDate!.year,
-      selectedDate!.month,
-      selectedDate!.day,
-      selectedTime!.hour,
-      selectedTime!.minute,
-    );
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    dateTimeController.dispose();
+    super.dispose();
   }
 
-  Future<void> pickDate() async {
+  /// ✅ PICK DATE & TIME
+  Future<void> pickDateTime() async {
     final date = await showDatePicker(
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
-      initialDate: DateTime.now(),
+      initialDate: selectedDateTime ?? DateTime.now(),
     );
 
-    if (date != null) {
-      setState(() => selectedDate = date);
-    }
-  }
+    if (date == null) return;
 
-  Future<void> pickTime() async {
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: selectedDateTime != null
+          ? TimeOfDay.fromDateTime(selectedDateTime!)
+          : TimeOfDay.now(),
     );
 
-    if (time != null) {
-      setState(() => selectedTime = time);
-    }
+    if (time == null) return;
+
+    final finalDateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    setState(() {
+      selectedDateTime = finalDateTime;
+
+      /// ✅ UPDATE CONTROLLER
+      dateTimeController.text =
+          "${finalDateTime.day}/${finalDateTime.month}/${finalDateTime.year} "
+          "${time.hour.toString().padLeft(2, '0')}:"
+          "${time.minute.toString().padLeft(2, '0')}:00";
+    });
   }
 
   void saveActivity() {
-    final scheduled = scheduledDateTime;
-
-    if (titleController.text.isEmpty || scheduled == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Fill all required fields")));
+    if (titleController.text.trim().isEmpty || selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all required fields")),
+      );
       return;
     }
 
@@ -1694,11 +1947,12 @@ class _ScheduleLeadActivityDialogState
         title: titleController.text.trim(),
         description: descController.text.trim(),
         type: selectedType,
-        scheduledAt: scheduled,
+        scheduledAt: selectedDateTime!,
         createdBy: widget.existing!.createdBy,
         createdAt: widget.existing!.createdAt,
         completed: widget.existing!.completed,
       );
+
       context.read<LeadBloc>().add(
         EditLeadActivity(leadUid: widget.leadUid, activity: updated),
       );
@@ -1707,90 +1961,230 @@ class _ScheduleLeadActivityDialogState
         title: titleController.text.trim(),
         description: descController.text.trim(),
         type: selectedType,
-        scheduledAt: scheduled,
+        scheduledAt: selectedDateTime!,
         createdBy: "user",
         createdAt: DateTime.now(),
       );
+
       context.read<LeadBloc>().add(
         AddLeadActivity(leadUid: widget.leadUid, activity: activity),
       );
     }
 
-    Navigator.of(context).pop();
+    Navigator.pop(context);
+  }
+
+  IconData getTypeIcon(LeadActivityType type) {
+    switch (type) {
+      case LeadActivityType.call:
+        return Icons.call_rounded;
+      case LeadActivityType.meeting:
+        return Icons.groups_rounded;
+      // case LeadActivityType.email:
+      //   return Icons.email_rounded;
+      case LeadActivityType.followUp:
+        return Icons.update_rounded;
+      default:
+        return Icons.event_note_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEditing ? "Edit Activity" : "Schedule Activity"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            /// TITLE
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: "Title"),
-            ),
+    final theme = Theme.of(context);
 
-            const SizedBox(height: 12),
-
-            /// DESCRIPTION
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: "Description"),
-            ),
-
-            const SizedBox(height: 12),
-
-            /// TYPE DROPDOWN
-            DropdownButtonFormField<LeadActivityType>(
-              initialValue: selectedType,
-              items: LeadActivityType.values
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(e.name.toUpperCase()),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => selectedType = v!),
-              decoration: const InputDecoration(labelText: "Activity Type"),
-            ),
+                    child: Icon(
+                      _isEditing
+                          ? Icons.edit_calendar_rounded
+                          : Icons.add_task_rounded,
+                      color: theme.primaryColor,
+                    ),
+                  ),
 
-            const SizedBox(height: 12),
+                  const SizedBox(width: 14),
 
-            /// DATE
-            ListTile(
-              title: Text(
-                selectedDate == null
-                    ? "Select Date"
-                    : selectedDate.toString().split(' ')[0],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing ? "Edit Activity" : "Schedule Activity",
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          "Manage lead follow-up activities",
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
-              trailing: const Icon(Icons.calendar_month),
-              onTap: pickDate,
-            ),
 
-            /// TIME
-            ListTile(
-              title: Text(
-                selectedTime == null
-                    ? "Select Time"
-                    : selectedTime!.format(context),
+              const SizedBox(height: 24),
+
+              /// TITLE
+              TextFormField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Activity Title *",
+                  hintText: "Enter activity title",
+                  // prefixIcon: const Icon(Icons.title_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
-              trailing: const Icon(Icons.access_time),
-              onTap: pickTime,
-            ),
-          ],
+
+              const SizedBox(height: 18),
+
+              /// DESCRIPTION
+              TextFormField(
+                controller: descController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  hintText: "Add notes or details",
+                  alignLabelWithHint: true,
+                  // prefixIcon: const Padding(
+                  //   padding: EdgeInsets.only(bottom: 60),
+                  //   child: Icon(Icons.description_rounded),
+                  // ),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// TYPE
+              DropdownButtonFormField<LeadActivityType>(
+                initialValue: selectedType,
+                decoration: InputDecoration(
+                  labelText: "Activity Type",
+                  // prefixIcon: const Icon(Icons.category_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                items: LeadActivityType.values.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Row(
+                      children: [
+                        Icon(getTypeIcon(e), size: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          e.name
+                              .replaceAllMapped(
+                                RegExp(r'([A-Z])'),
+                                (match) => ' ${match.group(0)}',
+                              )
+                              .toUpperCase(),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() => selectedType = v);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: dateTimeController,
+                readOnly: true,
+                onTap: pickDateTime,
+                decoration: InputDecoration(
+                  labelText: "Date & Time *",
+                  hintText: "DD/MM/YYYY HH:MM:SS",
+                  prefixIcon: const Icon(Icons.calendar_month_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              /// BUTTONS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  ElevatedButton.icon(
+                    onPressed: saveActivity,
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(_isEditing ? "Update" : "Save Activity"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(onPressed: saveActivity, child: const Text("Save")),
-      ],
     );
   }
 }

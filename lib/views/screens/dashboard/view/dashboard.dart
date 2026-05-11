@@ -17,6 +17,7 @@ import '/views/views.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:flutter/foundation.dart';
 
 const Color kBgColor = Color(0xFFF4F7FE);
 const Color kCardColor = Colors.white;
@@ -73,8 +74,8 @@ class _DashboardState extends State<Dashboard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildKpiGrid(context, widget.isAdmin, data),
-                              const SizedBox(height: 20),
-                              _buildPayroll(context, widget.isAdmin, data),
+                              // const SizedBox(height: 20),
+                              // _buildPayroll(context, widget.isAdmin, data),
                               const SizedBox(height: 20),
                               if (widget.isAdmin) ...[
                                 LeadsSourcePieChart(leads: data.allLeads),
@@ -105,8 +106,8 @@ class _DashboardState extends State<Dashboard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildKpiGrid(context, widget.isAdmin, data),
-                                  const SizedBox(height: 20),
-                                  _buildPayroll(context, widget.isAdmin, data),
+                                  // const SizedBox(height: 20),
+                                  // _buildPayroll(context, widget.isAdmin, data),
                                   const SizedBox(height: 20),
                                   if (widget.isAdmin) ...[
                                     LeadsSourcePieChart(leads: data.allLeads),
@@ -1441,13 +1442,18 @@ class QuickActionCard extends StatelessWidget {
   }
 }
 
-class NotificationTile extends StatelessWidget {
+class NotificationTile extends StatefulWidget {
   final NotificationModel notification;
 
   const NotificationTile({super.key, required this.notification});
 
+  @override
+  State<NotificationTile> createState() => _NotificationTileState();
+}
+
+class _NotificationTileState extends State<NotificationTile> {
   Color _iconColor() {
-    switch (notification.type ?? NotificationType.info) {
+    switch (widget.notification.type ?? NotificationType.info) {
       case NotificationType.success:
         return Colors.green;
       case NotificationType.warning:
@@ -1461,7 +1467,7 @@ class NotificationTile extends StatelessWidget {
   }
 
   IconData _iconData() {
-    switch (notification.type) {
+    switch (widget.notification.type) {
       case NotificationType.success:
         return Icons.check_circle_outline;
       case NotificationType.warning:
@@ -1474,65 +1480,148 @@ class NotificationTile extends StatelessWidget {
     }
   }
 
+  Future<void> _openPlatformSheet(BuildContext context, Widget widget) async {
+    if (kIsDesktop) {
+      await GeneralDialog.showRTLSheet(context, widget);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => widget));
+    }
+  }
+
+  Future<void> _handleTap(BuildContext context) async {
+    switch (widget.notification.type) {
+      case NotificationType.chat:
+        final chatId = widget.notification.collectionId;
+        final senderId = widget.notification.senderId ?? '';
+
+        if (chatId!.isNotEmpty) {
+          await _openPlatformSheet(
+            context,
+            ChatListing(currentUserUid: senderId, selectedChatUid: chatId),
+          );
+        }
+        break;
+
+      case NotificationType.task:
+        final taskId = widget.notification.payload['taskId'] as String?;
+
+        if (taskId != null && taskId.isNotEmpty) {
+          await _openPlatformSheet(context, TaskView(uid: taskId));
+        } else {
+          await _openPlatformSheet(context, TasksListing());
+        }
+        break;
+
+      /// 📊 LEAD
+      case NotificationType.lead:
+        final leadId = widget.notification.payload['leadId'] as String?;
+
+        if (leadId != null && leadId.isNotEmpty) {
+          try {
+            final lead = await LeadService.getLead(uid: leadId);
+
+            await _openPlatformSheet(context, LeadsViewPage(lead: lead));
+          } catch (_) {
+            await _openPlatformSheet(context, LeadsListing(showAppBar: true));
+          }
+        }
+        break;
+
+      /// 💼 DEAL
+      case NotificationType.deal:
+        final dealId = widget.notification.payload['dealId'] as String?;
+
+        if (dealId != null && dealId.isNotEmpty) {
+          try {
+            final deal = await DealService.getDeal(uid: dealId);
+
+            await _openPlatformSheet(context, DealsViewPage(deal: deal));
+          } catch (_) {
+            await _openPlatformSheet(context, DealsListing(showAppBar: true));
+          }
+        }
+        break;
+
+      /// 📰 FEED
+      case NotificationType.feed:
+        await _openPlatformSheet(context, FeedListing());
+        break;
+
+      /// 📅 EVENT
+      case NotificationType.eventReminder:
+        await _openPlatformSheet(context, CalendarEventScreen());
+        break;
+
+      default:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final iconColor = _iconColor();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ICON
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconColor.withValues(alpha: 0.12),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _handleTap(context),
+
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-            child: Icon(_iconData(), color: iconColor, size: 22),
-          ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ICON
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconColor.withValues(alpha: 0.12),
+              ),
+              child: Icon(_iconData(), color: iconColor, size: 22),
+            ),
 
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          /// CONTENT
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: kTextPrimary,
+            /// CONTENT
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.notification.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: kTextPrimary,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 4),
-                Text(
-                  notification.createdAt!.formatDateMonthTime,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
-                ),
-              ],
+                  const SizedBox(height: 4),
+
+                  Text(
+                    widget.notification.createdAt!.formatDateMonthTime,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

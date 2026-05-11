@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shimmer/shimmer.dart';
 import '/constants/constants.dart';
 import '/views/views.dart';
 import '/models/models.dart';
@@ -128,27 +130,43 @@ class _UserAvatarState extends State<UserAvatar> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(
-                        0xFF2563EB,
-                      ).withValues(alpha: 0.1),
-                      backgroundImage:
+                    ClipOval(
+                      child:
                           widget.userData.profilePic != null &&
                               widget.userData.profilePic!.isNotEmpty
-                          ? NetworkImage(widget.userData.profilePic!)
-                          : null,
-                      child:
-                          widget.userData.profilePic == null ||
-                              (widget.userData.profilePic?.isEmpty ?? true)
-                          ? Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2563EB),
-                              ),
+                          ? CachedNetworkImage(
+                              imageUrl: widget.userData.profilePic!,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+
+                              errorWidget: (context, url, error) {
+                                return Container(
+                                  color: const Color(0xFF2563EB),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    name.isNotEmpty
+                                        ? name[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                );
+                              },
                             )
-                          : null,
+                          : Container(
+                              color: const Color(0xFF2563EB),
+                              alignment: Alignment.center,
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -292,9 +310,45 @@ class _UserAvatarState extends State<UserAvatar> {
                       child:
                           widget.userData.profilePic != null &&
                               widget.userData.profilePic!.isNotEmpty
-                          ? Image.network(
-                              widget.userData.profilePic!,
+                          ? CachedNetworkImage(
+                              imageUrl: widget.userData.profilePic!,
                               fit: BoxFit.cover,
+                              width: widget.size,
+                              height: widget.size,
+
+                              placeholder: (context, url) => Shimmer.fromColors(
+                                baseColor: AppColors.grey300,
+                                highlightColor: AppColors.grey100,
+                                child: Container(
+                                  width: widget.size,
+                                  height: widget.size,
+                                  color: Colors.white,
+                                ),
+                              ),
+
+                              errorWidget: (context, url, error) {
+                                return Container(
+                                  width: widget.size,
+                                  height: widget.size,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: LetterColors.getColor(
+                                      widget.userData.name.isNotEmpty
+                                          ? widget.userData.name[0]
+                                          : '?',
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _getInitials(widget.userData.name),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: widget.size * 0.4,
+                                        ),
+                                  ),
+                                );
+                              },
                             )
                           : Center(
                               child: Text(
