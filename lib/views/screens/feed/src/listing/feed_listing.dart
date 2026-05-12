@@ -299,12 +299,18 @@ class FeedCardState extends State<FeedCard> {
         ? 0
         : initialImageIndex.clamp(0, imageCount - 1);
 
-    final postAuthorDisplay = await _loadCommentAuthorDisplay(
-      widget.feed.authorId,
-    );
-    final postAuthorName = postAuthorDisplay?.name ?? widget.feed.authorName;
-    final postAuthorAvatar =
-        postAuthorDisplay?.avatar ?? widget.feed.authorAvatar;
+    String postAuthorName = widget.feed.authorName;
+    String postAuthorAvatar = widget.feed.authorAvatar;
+    Map<String, _CommentAuthorDisplay> commentAuthors = {};
+
+    try {
+      final postAuthorDisplay = await _loadCommentAuthorDisplay(
+        widget.feed.authorId,
+      );
+      if (!mounted) return;
+      postAuthorName = postAuthorDisplay?.name ?? widget.feed.authorName;
+      postAuthorAvatar = postAuthorDisplay?.avatar ?? widget.feed.authorAvatar;
+    } catch (_) {}
 
     final pollModel = widget.feed.poll == null
         ? null
@@ -328,13 +334,20 @@ class FeedCardState extends State<FeedCard> {
     final List<CommentModel> dialogComments = List<CommentModel>.from(
       widget.feed.comments ?? const <CommentModel>[],
     );
-    final commentAuthors = await _loadCommentAuthors(dialogComments);
+
+    try {
+      commentAuthors = await _loadCommentAuthors(dialogComments);
+      if (!mounted) return;
+    } catch (_) {}
+
     final TextEditingController dialogCommentController =
         TextEditingController();
     bool isPostingComment = false;
     final PageController dialogPageController = PageController(
       initialPage: startIndex,
     );
+
+    if (!mounted) return;
 
     try {
       await showDialog<void>(
@@ -793,7 +806,7 @@ class FeedCardState extends State<FeedCard> {
                                     primary: false,
                                     padding: const EdgeInsets.all(10),
                                     itemCount: widget.feed.attachments.length,
-                                    separatorBuilder: (_, _) =>
+                                    separatorBuilder: (context, index) =>
                                         const Divider(height: 14),
                                     itemBuilder: (context, index) {
                                       final file =
@@ -893,7 +906,7 @@ class FeedCardState extends State<FeedCard> {
                                             primary: false,
                                             padding: const EdgeInsets.all(10),
                                             itemCount: dialogComments.length,
-                                            separatorBuilder: (_, _) =>
+                                            separatorBuilder: (context, index) =>
                                                 const SizedBox(height: 10),
                                             itemBuilder: (context, index) {
                                               final comment =
