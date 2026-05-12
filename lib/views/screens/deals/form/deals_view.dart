@@ -619,174 +619,205 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   Widget _buildProfessionalHeader() {
     final status = CacheService.dealStatusByUid(widget.deal.dealStatus ?? '');
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DealsViewAppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ─── AVATAR ───────────────────────────────
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: DealsViewAppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                widget.deal.dealName[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 32,
-                  color: DealsViewAppColors.primary,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isMobile = constraints.maxWidth < 600;
+
+        return Container(
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
+          decoration: BoxDecoration(
+            color: DealsViewAppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: DealsViewAppColors.border),
           ),
-
-          const SizedBox(width: 20),
-
-          /// ─── MAIN CONTENT ─────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// NAME + STATUS
-                Row(
-                  children: [
-                    Expanded(
-                      child: Tooltip(
-                        message: widget.deal.dealName,
-                        child: Text(
-                          widget.deal.dealName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: DealsViewAppColors.textPrimary,
-                          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// ─── AVATAR ───────────────────────────────
+                  Container(
+                    width: isMobile ? 60 : 80,
+                    height: isMobile ? 60 : 80,
+                    decoration: BoxDecoration(
+                      color: DealsViewAppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.deal.dealName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: isMobile ? 24 : 32,
+                          color: DealsViewAppColors.primary,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: _buildStatusBadge(status?.name ?? 'Unknown'),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 4),
-
-                /// COMPANY
-                Text(
-                  widget.deal.companyName ?? 'Unspecified Company',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: DealsViewAppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
                   ),
-                ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(width: 20),
 
-                /// QUICK ACTIONS
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  /// ─── MAIN CONTENT ─────────────────────────
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// NAME + STATUS
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              widget.deal.dealName,
+                              style: TextStyle(
+                                fontSize: isMobile ? 18 : 22,
+                                fontWeight: FontWeight.w800,
+                                color: DealsViewAppColors.textPrimary,
+                              ),
+                            ),
+
+                            _buildStatusBadge(status?.name ?? 'Unknown'),
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        /// COMPANY
+                        Text(
+                          widget.deal.companyName ?? 'Unspecified Company',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: DealsViewAppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        /// DESKTOP ACTIONS
+                        if (!isMobile) ...[
+                          const SizedBox(height: 12),
+                          _buildActionsRow(),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  /// DESKTOP VALUE CARD
+                  if (!isMobile) ...[
+                    const SizedBox(width: 16),
+                    _buildDealValueCard(),
+                  ],
+                ],
+              ),
+
+              /// MOBILE LAYOUT
+              if (isMobile) ...[
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: DealsViewAppColors.border),
+                const SizedBox(height: 16),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _quickAction(
-                      Iconsax.call,
-                      "Call",
-                      () {
-                        if (widget.deal.companyMobile?.isNotEmpty ?? false) {
-                          launchUrl(
-                            Uri.parse("tel:${widget.deal.companyMobile}"),
-                          );
-                        }
-                      },
-                      tooltip: widget.deal.companyMobile?.isNotEmpty ?? false
-                          ? "Call ${widget.deal.companyMobile}"
-                          : "No contact number available",
-                    ),
-                    _quickAction(
-                      Iconsax.sms,
-                      "Email",
-                      () {},
-                      tooltip: widget.deal.dealEmail.isNotEmpty
-                          ? "Mail ${widget.deal.dealEmail}"
-                          : "No contact mail available",
-                    ),
-                    _quickAction(
-                      LineIcons.whatSApp,
-                      "WA",
-                      () {
-                        if (widget.deal.companyMobile?.isNotEmpty ?? false) {
-                          launchUrl(
-                            Uri.parse("tel:${widget.deal.companyMobile}"),
-                          );
-                        }
-                      },
-                      color: Colors.green,
-                      tooltip: widget.deal.dealEmail.isNotEmpty
-                          ? "Message ${widget.deal.dealEmail}"
-                          : "No contact number available",
-                    ),
+                    Expanded(child: _buildActionsRow()),
+
+                    const SizedBox(width: 12),
+
+                    _buildDealValueCard(),
                   ],
                 ),
               ],
-            ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(width: 16),
-
-          IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: DealsViewAppColors.background,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: DealsViewAppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "Deal Value",
-                    style: TextStyle(
-                      color: DealsViewAppColors.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  /// AMOUNT SAFE RENDER
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      "${widget.deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: DealsViewAppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
+  Widget _buildDealValueCard() {
+    return IntrinsicWidth(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: DealsViewAppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: DealsViewAppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const Text(
+              "Deal Value",
+              style: TextStyle(
+                color: DealsViewAppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 4),
+
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                "${widget.deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: DealsViewAppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildActionsRow() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _quickAction(
+          Iconsax.call,
+          "Call",
+          () {
+            if (widget.deal.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${widget.deal.companyMobile}"));
+            }
+          },
+          tooltip: widget.deal.companyMobile?.isNotEmpty ?? false
+              ? "Call ${widget.deal.companyMobile}"
+              : "No contact number available",
+        ),
+
+        _quickAction(
+          Iconsax.sms,
+          "Email",
+          () {},
+          tooltip: widget.deal.dealEmail.isNotEmpty
+              ? "Mail ${widget.deal.dealEmail}"
+              : "No contact mail available",
+        ),
+
+        _quickAction(
+          LineIcons.whatSApp,
+          "WA",
+          () {
+            if (widget.deal.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${widget.deal.companyMobile}"));
+            }
+          },
+          color: Colors.green,
+          tooltip: widget.deal.companyMobile?.isNotEmpty ?? false
+              ? "Message ${widget.deal.companyMobile}"
+              : "No contact number available",
+        ),
+      ],
     );
   }
 
@@ -862,24 +893,22 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       child: TabBar(
         controller: _tabController,
 
-        /// ✅ FULL WIDTH
-        isScrollable: false,
+        // ✅ FIX OVERFLOW
+        isScrollable: true,
 
         dividerColor: Colors.transparent,
 
-        /// LABELS
         labelColor: Colors.white,
         unselectedLabelColor: DealsViewAppColors.textSecondary,
 
-        /// TEXT STYLE
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
-          fontSize: 13,
+          fontSize: 12,
         ),
 
-        /// INDICATOR
         indicatorSize: TabBarIndicatorSize.tab,
+
         indicator: BoxDecoration(
           color: DealsViewAppColors.primary,
           borderRadius: BorderRadius.circular(14),
@@ -912,13 +941,18 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
   Widget _modernTab({required IconData icon, required String title}) {
     return Tab(
-      height: 48,
+      height: 46,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 8),
-          Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+
+          Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
     );

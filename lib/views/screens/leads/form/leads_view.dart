@@ -516,25 +516,18 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       ),
       child: TabBar(
         controller: _tabController,
-
-        /// ✅ FULL WIDTH
-        isScrollable: false,
-
+        isScrollable: true,
         dividerColor: Colors.transparent,
-
-        /// LABELS
         labelColor: Colors.white,
         unselectedLabelColor: LeadsViewAppColors.textSecondary,
-
-        /// TEXT STYLE
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
-          fontSize: 13,
+          fontSize: 12,
         ),
 
-        /// INDICATOR
         indicatorSize: TabBarIndicatorSize.tab,
+
         indicator: BoxDecoration(
           color: LeadsViewAppColors.primary,
           borderRadius: BorderRadius.circular(14),
@@ -567,13 +560,18 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   Widget _modernTab({required IconData icon, required String title}) {
     return Tab(
-      height: 48,
+      height: 46,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 8),
-          Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+
+          Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
     );

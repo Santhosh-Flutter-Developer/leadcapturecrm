@@ -432,46 +432,46 @@ class _MobileMenuState extends State<MobileMenu> {
                       SizedBox(height: 8),
                     ],
 
-                    Text(
-                      "Payroll",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.timer_1,
-                      title: 'Work Time',
-                      onTap: () => Navigate.route(
-                        context,
-                        _adminModel != null
-                            ? const DashboardWorktime()
-                            : const WorktimeCreate(),
-                      ),
-                    ),
+                    // Text(
+                    //   "Payroll",
+                    //   style: Theme.of(
+                    //     context,
+                    //   ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                    // ),
+                    // _buildListTile(
+                    //   icon: Iconsax.timer_1,
+                    //   title: 'Work Time',
+                    //   onTap: () => Navigate.route(
+                    //     context,
+                    //     _adminModel != null
+                    //         ? const DashboardWorktime()
+                    //         : const WorktimeCreate(),
+                    //   ),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.clipboard_tick,
-                      title: 'Attendance Ledger',
-                      onTap: () => Navigate.route(context, Attendance()),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.clipboard_tick,
+                    //   title: 'Attendance Ledger',
+                    //   onTap: () => Navigate.route(context, Attendance()),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.security_user,
-                      title: 'Permissions',
-                      onTap: () => Navigate.route(
-                        context,
-                        _adminModel != null
-                            ? const PermissionRequestsListing()
-                            : const PermissionListing(),
-                      ),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.security_user,
+                    //   title: 'Permissions',
+                    //   onTap: () => Navigate.route(
+                    //     context,
+                    //     _adminModel != null
+                    //         ? const PermissionRequestsListing()
+                    //         : const PermissionListing(),
+                    //   ),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.wallet_3,
-                      title: 'Salary Ledger',
-                      onTap: () =>
-                          Navigate.route(context, const SalaryLedgerList()),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.wallet_3,
+                    //   title: 'Salary Ledger',
+                    //   onTap: () =>
+                    //       Navigate.route(context, const SalaryLedgerList()),
+                    // ),
                     Text(
                       "Others",
                       style: Theme.of(
