@@ -1119,26 +1119,26 @@ List<Widget> _adminActions(BuildContext context) => [
     onTap: () => _openSheet(context, const TaskCreate(employees: [])),
   ),
 
-  QuickActionCard(
-    icon: Icons.access_time,
-    label: "Attendance",
-    color: Colors.green,
-    onTap: () => _openSheet(context, const Attendance()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.access_time,
+  //   label: "Attendance",
+  //   color: Colors.green,
+  //   onTap: () => _openSheet(context, const Attendance()),
+  // ),
 
-  QuickActionCard(
-    icon: Icons.payments_outlined,
-    label: "Salary Ledger",
-    color: Colors.indigo,
-    onTap: () => _openSheet(context, const SalaryLedgerList()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.payments_outlined,
+  //   label: "Salary Ledger",
+  //   color: Colors.indigo,
+  //   onTap: () => _openSheet(context, const SalaryLedgerList()),
+  // ),
 
-  QuickActionCard(
-    icon: Icons.verified_user_outlined,
-    label: "Permissions",
-    color: Colors.red,
-    onTap: () => _openSheet(context, const PermissionRequestsListing()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.verified_user_outlined,
+  //   label: "Permissions",
+  //   color: Colors.red,
+  //   onTap: () => _openSheet(context, const PermissionRequestsListing()),
+  // ),
 ];
 
 List<Widget> _userActions(BuildContext context) => [

@@ -283,15 +283,20 @@ class _ProjectCreateState extends State<ProjectCreate> {
         SizedBox(
           width: itemWidth,
           child: FormDropdownSearch(
+            key: ValueKey(_clientList.length),
             label: 'Client',
-            items: _clientList.map((e) => e.clientName).toList(),
-            onChanged: (value) async {
-              var clientModel = _clientList.firstWhere(
+            items: _clientList
+                .map((e) => e.clientName ?? '')
+                .where((e) => e.isNotEmpty)
+                .toList(),
+            onChanged: (value) {
+              final clientModel = _clientList.firstWhere(
                 (element) => element.clientName == value,
               );
-              _selectedClient = clientModel.uid;
 
-              setState(() {});
+              setState(() {
+                _selectedClient = clientModel.uid;
+              });
             },
           ),
         ),

@@ -376,17 +376,19 @@ class _ClientListingViewState extends State<ClientListingView> {
                     ]);
                   }
 
-                  for (var client
-                      in context
-                          .read<PaginatedDataController<ClientModel>>()
-                          .paginatedItems) {
+                  final controller =
+                      Provider.of<PaginatedDataController<ClientModel>>(
+                        context,
+                        listen: false,
+                      );
+                  for (var client in controller.paginatedItems) {
                     if (widget.section == ClientSection.contacts) {
                       exportData.add([
                         client.clientName ?? '',
                         client.email ?? '',
                         client.mobileNumber ?? '',
                         client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy?.name ?? '',
+                        client.createdBy.name,
                       ]);
                     } else {
                       exportData.add([
@@ -394,7 +396,7 @@ class _ClientListingViewState extends State<ClientListingView> {
                         client.officePhoneNo ?? '',
                         client.gstVatNumber ?? '',
                         client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy?.name ?? '',
+                        client.createdBy.name,
                       ]);
                     }
                   }

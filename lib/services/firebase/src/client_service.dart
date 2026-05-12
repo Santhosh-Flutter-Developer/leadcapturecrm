@@ -132,21 +132,38 @@ class ClientService {
   static Future<List<ClientModel>> getAllClients() async {
     try {
       var cid = await Spdb.getCid();
+
       var querySnapshot = await firebase.users
           .doc(cid)
           .collection(Collections.clients.name)
           .get();
 
+      debugPrint("Total Client Docs: ${querySnapshot.docs.length}");
+
       List<ClientModel> clients = querySnapshot.docs.map((doc) {
+        debugPrint("Client Data: ${doc.data()}");
+
         return ClientModel.fromMap(doc.id, doc.data());
       }).toList();
 
-      clients.sort((a, b) => a.clientName!.compareTo(b.clientName!));
+      // Remove null/empty names
+      clients = clients.where((e) {
+        return e.clientName != null && e.clientName!.trim().isNotEmpty;
+      }).toList();
+
+      // Safe sort
+      clients.sort(
+        (a, b) => (a.clientName ?? '').compareTo(b.clientName ?? ''),
+      );
+
+      debugPrint("Client Names: ${clients.map((e) => e.clientName).toList()}");
 
       return clients;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
+
       debugPrint("${e.toString()}, ${st.toString()}");
+
       throw 'Error fetching clients: $e';
     }
   }
