@@ -482,50 +482,60 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
     final chatData = ChatData.of(context);
     final uid = chatData.uid;
-    var message = _controller.text.trim();
-    List<FileModel> attachments = [];
+
+    final message = _controller.text.trim();
 
     if (_pickedFiles.isEmpty && message.isEmpty) return;
 
-    if (_pickedFiles.isNotEmpty) {
-      futureLoading(context);
+    // Store local copies BEFORE clearing UI
+    final pickedFiles = List<File>.from(_pickedFiles);
 
-      attachments = await _uploadFiles(_pickedFiles);
+    final updatedMentions = widget.chat.isGroupChat
+        ? _recalculateMentions(message)
+        : <MentionModel>[];
 
-      if (!mounted) return;
+    final replyId = _isReply ? _chat?.uid : null;
 
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-    }
-
-    if (_isEdit) {
-      await ChatService.editChatMessage(
-        uid: uid,
-        chatId: _chat?.uid ?? '',
-        message: message,
-        attachments: attachments,
-      );
-    } else {
-      final updatedMentions = widget.chat.isGroupChat
-          ? _recalculateMentions(message)
-          : <MentionModel>[];
-      await ChatService.sendChatMessage(
-        chatId: uid,
-        message: message,
-        attachments: attachments,
-        replyFor: _isReply ? _chat?.uid : null,
-        mentions: updatedMentions,
-      );
-    }
-
-    if (!mounted) return;
-    _messageProvider?.clearMessage();
+    // 🚀 INSTANT UI CLEAR
     _controller.clear();
     _pickedFiles.clear();
     _mentions.clear();
-    setState(() {});
-    ChatService.sendNotification(chatId: uid, message: message, isChat: true);
+
+    _messageProvider?.clearMessage();
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    try {
+      List<FileModel> attachments = [];
+
+      // Upload only if files exist
+      if (pickedFiles.isNotEmpty) {
+        attachments = await _uploadFiles(pickedFiles);
+      }
+
+      if (_isEdit) {
+        await ChatService.editChatMessage(
+          uid: uid,
+          chatId: _chat?.uid ?? '',
+          message: message,
+          attachments: attachments,
+        );
+      } else {
+        await ChatService.sendChatMessage(
+          chatId: uid,
+          message: message,
+          attachments: attachments,
+          replyFor: replyId,
+          mentions: updatedMentions,
+        );
+      }
+
+      ChatService.sendNotification(chatId: uid, message: message, isChat: true);
+    } catch (e) {
+      debugPrint("Send message error: $e");
+    }
   }
 
   final imageExtensions = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff"];

@@ -435,10 +435,20 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                         StreamBuilder<UserStatusModel?>(
                           stream: UserStatusService.streamStatus(userUid),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const SizedBox.shrink();
+                            if (userUid.isEmpty) {
+                              return Text(
+                                "Last seen: ",
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.grey500),
+                              );
                             }
-
+                            if (!snapshot.hasData) {
+                              return Text(
+                                "",
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.grey500),
+                              );
+                            }
                             final status = snapshot.data!;
                             return Text(
                               status.isOnline
