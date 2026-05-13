@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:leadcapture/theme/src/app_colors.dart';
 import 'package:leadcapture/utils/src/assets.dart';
 import 'package:leadcapture/utils/src/validation.dart';
+import 'package:leadcapture/views/screens/auth/src/login.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/form_fields.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
@@ -46,6 +47,26 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     super.dispose();
   }
 
+  void _clearForm() {
+    _companyName.clear();
+    _companyEmail.clear();
+    _adminName.clear();
+    _adminEmail.clear();
+    _password.clear();
+    _latitude.clear();
+    _longitude.clear();
+
+    // Reset default radius
+    _radius.text = '100';
+
+    setState(() {
+      _logo = null;
+      _passwordVisible = false;
+    });
+
+    _formKey.currentState?.reset();
+  }
+
   Future<void> _pickImage() async {
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -83,7 +104,21 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+        final existingAdmin = await AuthService.checkEmailExists(
+          email: _adminEmail.text.trim(),
+        );
 
+        if (existingAdmin != null) {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+
+          FlushBar.show(
+            context,
+            "Admin email already exists",
+            isSuccess: false,
+          );
+
+          return;
+        }
         final double? lat = double.tryParse(_latitude.text.trim());
         final double? lng = double.tryParse(_longitude.text.trim());
         final double? radius = double.tryParse(_radius.text.trim());
@@ -103,8 +138,14 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
         if (result["status"]) {
           FlushBar.show(context, result["message"], isSuccess: true);
+          _clearForm();
           Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) Navigator.pop(context);
+            if (!mounted) return;
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const Login()),
+            );
           });
         } else {
           FlushBar.show(context, result['error'], isSuccess: false);
@@ -176,22 +217,26 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                         "Business Email",
                         _companyEmail,
                         Iconsax.sms,
+                        isEmail: true,
                       ),
 
                       const SizedBox(height: 10),
 
                       // Company Location Section
                       _sectionTitle("Company Location (for Attendance)"),
-                      // _locationFields(),
 
+                      // _locationFields(),
                       const SizedBox(height: 10),
 
                       // Admin Setup Section
                       _sectionTitle("Super Admin Setup"),
                       _customField("Full Name", _adminName, Iconsax.user),
-                      _customField("Admin Email", _adminEmail, Iconsax.sms),
-
-                      // Password Field
+                      _customField(
+                        "Admin Email",
+                        _adminEmail,
+                        Iconsax.sms,
+                        isEmail: true,
+                      ),
                       _passwordField(),
 
                       const SizedBox(height: 35),
@@ -291,8 +336,9 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
   Widget _customField(
     String label,
     TextEditingController controller,
-    IconData icon,
-  ) {
+    IconData icon, {
+    bool isEmail = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -310,11 +356,16 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
             controller: controller,
             hintText: "Enter $label",
             prefixIcon: Icon(icon, size: 20),
-            valid: (value) => Validation.commonValidation(
-              input: value ?? '',
-              isReq: true,
-              label: label,
-            ),
+            valid: (value) {
+              if (isEmail) {
+                return Validation.validEmail(input: value, isReq: true);
+              }
+              return Validation.commonValidation(
+                input: value ?? '',
+                isReq: true,
+                label: label,
+              );
+            },
           ),
         ],
       ),
@@ -346,11 +397,8 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
               size: 20,
             ),
           ),
-          valid: (value) => Validation.commonValidation(
-            input: value ?? '',
-            isReq: true,
-            label: "Password",
-          ),
+          valid: (value) =>
+              Validation.passwordValidation(input: value, isReq: true),
         ),
       ],
     );
