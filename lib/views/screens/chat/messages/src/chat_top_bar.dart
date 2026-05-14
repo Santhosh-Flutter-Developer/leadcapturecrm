@@ -22,6 +22,7 @@ void openUser(BuildContext context, dynamic user) {
 
 class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String userUid;
+  final String currentUserUid;
   final String lastSeen;
   final VoidCallback? onBack;
   final ChatModel chat;
@@ -32,6 +33,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatTopBar({
     super.key,
     required this.userUid,
+    required this.currentUserUid,
     required this.lastSeen,
     this.onBack,
     required this.chat,
@@ -42,14 +44,19 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(70);
+
   @override
   Widget build(BuildContext context) {
+    final bool isSelfChat = userUid == currentUserUid;
     final dynamic user = CacheService.getUserByUid(userUid);
 
     String? userName;
     String? userImage;
 
-    if (user is AdminModel) {
+    if (isSelfChat) {
+      userName = "Saved Messages";
+      userImage = null; // We'll use a special icon below
+    } else if (user is AdminModel) {
       userName = user.name;
       userImage = user.profileImageUrl;
     } else if (user is EmployeeModel) {
@@ -80,7 +87,17 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                     child: Icon(Icons.group, size: 20),
                   ),
                 ] else ...[
-                  if (userImage != null && userImage.isNotEmpty) ...[
+                  if (isSelfChat) ...[
+                    const CircleAvatar(
+                      backgroundColor: AppColors.white24,
+                      radius: 20,
+                      child: Icon(
+                        Iconsax.save_2,
+                        size: 20,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ] else if (userImage != null && userImage.isNotEmpty) ...[
                     GestureDetector(
                       onTap: () => openUser(context, user),
                       child: ClipRRect(
@@ -118,7 +135,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => openUser(context, user),
+                    onTap: isSelfChat ? null : () => openUser(context, user),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -148,37 +165,47 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                                 ),
                           ),
                           const SizedBox(height: 2),
+                          if (isSelfChat)
+                            Text(
+                              "Chat with yourself",
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppColors.grey200),
+                            )
+                          else
+                            StreamBuilder<UserStatusModel?>(
+                              stream: UserStatusService.streamStatus(userUid),
+                              builder: (context, snapshot) {
+                                if (userUid.isEmpty) {
+                                  return Text(
+                                    "Last seen: Unknown",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: AppColors.grey200),
+                                  );
+                                }
 
-                          StreamBuilder<UserStatusModel?>(
-                            stream: UserStatusService.streamStatus(userUid),
-                            builder: (context, snapshot) {
-                              if (userUid.isEmpty) {
+                                if (!snapshot.hasData) {
+                                  return Text(
+                                    "Last seen: loading...",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: AppColors.grey200),
+                                  );
+                                }
+
+                                final status = snapshot.data!;
+
                                 return Text(
-                                  "Last seen: Unknown",
+                                  status.isOnline
+                                      ? "Online"
+                                      : "Last seen: ${formatLastSeen(status.lastSeen)}",
                                   style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(color: AppColors.grey200),
                                 );
-                              }
-
-                              if (!snapshot.hasData) {
-                                return Text(
-                                  "Last seen: loading...",
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: AppColors.grey200),
-                                );
-                              }
-
-                              final status = snapshot.data!;
-
-                              return Text(
-                                status.isOnline
-                                    ? "Online"
-                                    : "Last seen: ${formatLastSeen(status.lastSeen)}",
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.grey200),
-                              );
-                            },
-                          ),
+                              },
+                            ),
                         ],
                       ],
                     ),
@@ -256,6 +283,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 
 class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
   final String userUid;
+  final String currentUserUid;
   final String lastSeen;
   final VoidCallback? onBack;
   final ChatModel chat;
@@ -266,6 +294,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
   const ChatTopBarDesktop({
     super.key,
     required this.userUid,
+    required this.currentUserUid,
     required this.lastSeen,
     this.onBack,
     required this.chat,
@@ -279,12 +308,16 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSelfChat = userUid == currentUserUid;
     final dynamic user = CacheService.getUserByUid(userUid);
 
     String? userName;
     String? userImage;
 
-    if (user is AdminModel) {
+    if (isSelfChat) {
+      userName = "Saved Messages";
+      userImage = null;
+    } else if (user is AdminModel) {
       userName = user.name;
       userImage = user.profileImageUrl;
     } else if (user is EmployeeModel) {
@@ -307,12 +340,18 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
           ? const SizedBox.shrink()
           : Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: _buildLeadingAvatar(context, user, userName, userImage),
+              child: _buildLeadingAvatar(
+                context,
+                user,
+                userName,
+                userImage,
+                isSelfChat,
+              ),
             ),
 
       title: isSearching
           ? _buildSearchField(context)
-          : _buildTitle(context, user, userName, userImage),
+          : _buildTitle(context, user, userName, userImage, isSelfChat),
 
       actions: [
         IconButton(
@@ -348,12 +387,21 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     dynamic user,
     String? userName,
     String? userImage,
+    bool isSelfChat,
   ) {
     if (chat.isGroupChat) {
       return const CircleAvatar(
         radius: 15,
         backgroundColor: AppColors.primary,
         child: Icon(Icons.group, size: 18, color: AppColors.white),
+      );
+    }
+
+    if (isSelfChat) {
+      return const CircleAvatar(
+        radius: 15,
+        backgroundColor: AppColors.primary,
+        child: Icon(Iconsax.save_2, size: 18, color: AppColors.white),
       );
     }
 
@@ -392,6 +440,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     dynamic user,
     String? userName,
     String? userImage,
+    bool isSelfChat,
   ) {
     if (isSearching) return const SizedBox.shrink();
 
@@ -421,7 +470,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   )
                 : GestureDetector(
-                    onTap: () => openUser(context, user),
+                    onTap: isSelfChat ? null : () => openUser(context, user),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -432,33 +481,40 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        StreamBuilder<UserStatusModel?>(
-                          stream: UserStatusService.streamStatus(userUid),
-                          builder: (context, snapshot) {
-                            if (userUid.isEmpty) {
+                        if (isSelfChat)
+                          Text(
+                            "Chat with yourself",
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.grey500),
+                          )
+                        else
+                          StreamBuilder<UserStatusModel?>(
+                            stream: UserStatusService.streamStatus(userUid),
+                            builder: (context, snapshot) {
+                              if (userUid.isEmpty) {
+                                return Text(
+                                  "Last seen: ",
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: AppColors.grey500),
+                                );
+                              }
+                              if (!snapshot.hasData) {
+                                return Text(
+                                  "",
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: AppColors.grey500),
+                                );
+                              }
+                              final status = snapshot.data!;
                               return Text(
-                                "Last seen: ",
+                                status.isOnline
+                                    ? "Online"
+                                    : "Last seen: ${formatLastSeen(status.lastSeen)}",
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(color: AppColors.grey500),
                               );
-                            }
-                            if (!snapshot.hasData) {
-                              return Text(
-                                "",
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.grey500),
-                              );
-                            }
-                            final status = snapshot.data!;
-                            return Text(
-                              status.isOnline
-                                  ? "Online"
-                                  : "Last seen: ${formatLastSeen(status.lastSeen)}",
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.grey500),
-                            );
-                          },
-                        ),
+                            },
+                          ),
                       ],
                     ),
                   ),

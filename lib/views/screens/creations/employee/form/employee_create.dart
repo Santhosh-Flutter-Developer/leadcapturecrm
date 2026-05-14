@@ -335,11 +335,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
             isRequired: isAdmin ? false : true,
-            valid: isAdmin
-                ? null
-                : (input) => input == null || input.isEmpty
-                      ? 'Employee Id is required'
-                      : null,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'Employee Id',
+              isReq: isAdmin ? false : true,
+            ),
           ),
         ),
         SizedBox(
@@ -349,9 +349,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _nameController,
             hintText: 'Enter Employee Name',
             isRequired: true,
-            valid: (input) => input == null || input.isEmpty
-                ? 'Employee Name is required'
-                : null,
+            valid: (input) => Validation.validName(
+              input: input,
+              label: 'Employee Name',
+              isReq: true,
+            ),
           ),
         ),
         SizedBox(
@@ -361,11 +363,10 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _emailController,
             hintText: 'Enter Email',
             isRequired: isAdmin ? true : false,
-            valid: !isAdmin
-                ? null
-                : (input) => input == null || input.isEmpty
-                      ? 'Email is required'
-                      : null,
+            valid: (input) => Validation.validEmail(
+              input: input,
+              isReq: isAdmin ? true : false,
+            ),
           ),
         ),
         SizedBox(
@@ -376,7 +377,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             hintText: 'Enter Password',
             isRequired: true,
             valid: (input) =>
-                input == null || input.isEmpty ? 'Password is required' : null,
+                Validation.passwordValidation(input: input, isReq: true),
             obsecureText: !_passwordVisible,
             suffixIcon: IconButton(
               padding: EdgeInsets.zero,
@@ -480,6 +481,8 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             label: 'Mobile Number',
             controller: _mobileNumberController,
             hintText: 'Enter Mobile Number',
+            valid: (input) =>
+                Validation.validMobileNumber(input: input, isReq: false),
           ),
         ),
         SizedBox(
@@ -511,11 +514,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             hintText: 'DD/MM/YYYY',
             readOnly: true,
             isRequired: isAdmin ? false : true,
-            valid: isAdmin
-                ? null
-                : (input) => input == null || input.isEmpty
-                      ? 'Joining Date is required'
-                      : null,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'Joining Date',
+              isReq: isAdmin ? false : true,
+            ),
             onTap: () async {
               var result = await datePicker(context);
               if (result != null) {
@@ -658,6 +661,8 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _addressController,
             hintText: 'Enter Address',
             maxLines: 2,
+            valid: (input) =>
+                Validation.validAddress(input: input ?? '', isReq: false),
           ),
         ),
         SizedBox(
@@ -667,6 +672,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             controller: _aboutController,
             hintText: 'Enter About',
             maxLines: 2,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'About',
+              isReq: false,
+            ),
           ),
         ),
       ],

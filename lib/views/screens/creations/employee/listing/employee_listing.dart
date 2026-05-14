@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/views/screens/creations/employee/form/employee_create.dart';
 import 'package:provider/provider.dart';
 import '/services/services.dart';
 import '/constants/constants.dart';
@@ -157,7 +158,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                 scrollbarOrientation:
                                     ScrollbarOrientation.bottom,
                                 child: SingleChildScrollView(
-
                                   controller: _hScrollController,
                                   scrollDirection: Axis.horizontal,
                                   child: ConstrainedBox(
@@ -259,6 +259,17 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                                         DataColumn(
                                           label: IntrinsicWidth(
+                                            child: Text(
+                                              "Role",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ),
+
+                                        DataColumn(
+                                          label: IntrinsicWidth(
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
@@ -295,17 +306,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                           label: IntrinsicWidth(
                                             child: Text(
                                               "Desktop app",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Role",
                                               style: Theme.of(
                                                 context,
                                               ).textTheme.bodySmall,
@@ -1399,12 +1399,20 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "",
-                // getDepartmentNames(employee.isEmployee ? employee.toEmployeeModel() : null),
+                user.department != null && user.department!.isNotEmpty
+                    ? user.department!
+                          .map(
+                            (uid) =>
+                                CacheService.departmentByUid(uid)?.name ?? '',
+                          )
+                          .where((name) => name.isNotEmpty)
+                          .join(', ')
+                    : '',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
               ),
+
               if (user.subDepartment != null && user.subDepartment!.isNotEmpty)
                 Text(
                   CacheService.subDepartmentByUid(user.subDepartment!)?.name ??
@@ -1414,6 +1422,15 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
                 ),
             ],
+          ),
+        ),
+
+        /// Role
+        dataCell(
+          context,
+          Text(
+            CacheService.roleByUid(user.role ?? "")?.name ?? '',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
 
@@ -1440,15 +1457,6 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             icon: Icons.desktop_windows,
             platformLabel: desktopPlatformLabel,
             lastLogin: desktopLastLogin,
-          ),
-        ),
-
-        /// Role
-        dataCell(
-          context,
-          Text(
-            CacheService.roleByUid(user.role ?? "")?.name ?? '',
-            style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
 

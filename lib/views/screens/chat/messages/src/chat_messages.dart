@@ -103,6 +103,7 @@ class _ChatMessagesState extends State<ChatMessages> {
         appBar: kIsMobile
             ? ChatTopBar(
                 userUid: widget.opponentUid,
+                currentUserUid: widget.currentUser,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
                 isSearching: _isSearching,
@@ -123,6 +124,7 @@ class _ChatMessagesState extends State<ChatMessages> {
               )
             : ChatTopBarDesktop(
                 userUid: widget.opponentUid,
+                currentUserUid: widget.currentUser,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
                 isSearching: _isSearching,

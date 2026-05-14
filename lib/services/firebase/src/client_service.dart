@@ -9,10 +9,13 @@ class ClientService {
   static Future<String?> createClient({required ClientModel client}) async {
     try {
       var cid = await Spdb.getCid();
+      var name = client.isCompany
+          ? (client.companyName ?? 'A new company')
+          : (client.clientName ?? 'A new contact');
       var docRef = await CommonService.add(
         '${Collections.users.name}/$cid/${Collections.clients.name}',
         client.toMap(),
-        activity: '${client.companyName} has been added as a client',
+        activity: '$name has been added as a client',
       );
 
       return docRef.id;
@@ -30,11 +33,14 @@ class ClientService {
     try {
       var cid = await Spdb.getCid();
 
+      var name = client.isCompany
+          ? (client.companyName ?? 'Company')
+          : (client.clientName ?? 'Contact');
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.clients.name}',
         uid,
         client.toUpdateMap(),
-        activity: '${client.companyName} has been updated',
+        activity: '$name has been updated',
       );
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
@@ -207,10 +213,15 @@ class ClientService {
 
       await docRef.reference.delete();
 
+      var isCompany = data['isCompany'] ?? false;
+      var name = isCompany
+          ? (data['companyName'] ?? 'Company')
+          : (data['clientName'] ?? 'Contact');
+
       var user = await Spdb.getUser();
       ActivityLogModel activityLogModel = ActivityLogModel(
         userData: user,
-        activity: '${data['companyName'] ?? 'N/A'} has been deleted',
+        activity: '$name has been deleted',
         description: 'User has deleted an entry in ${Collections.clients.name}',
         collection:
             '${Collections.users.name}/$cid/${Collections.clients.name}',

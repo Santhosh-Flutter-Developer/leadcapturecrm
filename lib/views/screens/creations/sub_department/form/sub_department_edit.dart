@@ -34,9 +34,14 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
 
     _nameController.text = _subDepartmentModel?.name ?? '';
     _descriptionController.text = _subDepartmentModel?.description ?? '';
+
     _selectedDepartment = await DepartmentService.getDepartment(
       uid: _subDepartmentModel?.department ?? '',
     );
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -172,8 +177,8 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
             child: CustomFutureSearchableDropdown<DepartmentModel>(
               label: 'Department',
               isRequired: true,
-              validator: (value) {
-                if (value == null) {
+              validator: (_) {
+                if (_selectedDepartment == null) {
                   return 'Department is required';
                 }
                 return null;
@@ -184,11 +189,10 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
                 return departments;
               },
               itemAsString: (departments) => departments.name,
-              onChanged: (selectedDep) async {
-                if (selectedDep != null) {
+              onChanged: (selectedDep) {
+                setState(() {
                   _selectedDepartment = selectedDep;
-                }
-                setState(() {});
+                });
               },
             ),
           ),

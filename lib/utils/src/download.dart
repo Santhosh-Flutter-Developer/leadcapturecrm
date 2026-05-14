@@ -7,7 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
-import '/services/services.dart' show ErrorService;
+import '/services/services.dart' show ErrorService, Spdb;
 import '/theme/theme.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
@@ -70,6 +70,7 @@ class Download {
               fileSize: fileSize,
               downloadedAt: DateTime.now(),
               isSuccess: true,
+              userId: await Spdb.getUid() ?? '',
             ).toMap(),
           );
       overlayEntry.remove();
@@ -89,6 +90,7 @@ class Download {
               fileSize: 0,
               downloadedAt: DateTime.now(),
               isSuccess: false,
+              userId: await Spdb.getUid() ?? '',
             ).toMap(),
           );
 
