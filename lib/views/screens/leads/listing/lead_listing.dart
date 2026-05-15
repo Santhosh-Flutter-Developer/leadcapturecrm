@@ -979,8 +979,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             onPressed: () async {
               await Download.downloadFromAsset(
                 context,
-                "assets/templates/aaatp_lead_upload_template.xlsx",
-                "Lead_Import_Template.xlsx",
+                "assets/templates/lead_upload_template.xlsx",
+                "Lead_Template.xlsx",
               );
             },
             icon: const Icon(Icons.file_download_outlined, size: 18),

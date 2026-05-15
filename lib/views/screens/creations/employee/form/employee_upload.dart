@@ -94,11 +94,11 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBackgroundColor,
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Iconsax.close_circle, color: AppColors.text),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Close',
-          ),
+          // leading: IconButton(
+          //   icon: const Icon(Iconsax.close_circle, color: AppColors.text),
+          //   onPressed: () => Navigator.of(context).pop(),
+          //   tooltip: 'Close',
+          // ),
           backgroundColor: AppColors.white,
           elevation: 0,
           title: Text(
@@ -662,7 +662,7 @@ class _CustomMenuCard extends StatelessWidget {
                 if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
                   context,
-                  "assets/templates/leadcapture_employee_upload_template.xlsx",
+                  "assets/templates/employee_upload_template.xlsx",
                   "Employee Template.xlsx",
                 );
               },
@@ -671,12 +671,12 @@ class _CustomMenuCard extends StatelessWidget {
               context,
               icon: Icons.downloading_rounded,
               iconColor: AppColors.success,
-              label: "Template + Data",
+              label: "Template Data",
               onTap: () async {
                 if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
                   context,
-                  "assets/templates/leadcapture_employee_upload_template_with_data.xlsx",
+                  "assets/templates/employee_upload_template_with_data.xlsx",
                   "Employee Template With Data.xlsx",
                 );
               },

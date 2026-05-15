@@ -499,7 +499,7 @@ class _LeadCustomMenuCard extends StatelessWidget {
                 if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
                   parentContext,
-                  "assets/templates/aaatp_lead_upload_template.xlsx",
+                  "assets/templates/lead_upload_template.xlsx",
                   "Lead Template.xlsx",
                 );
               },
@@ -513,7 +513,7 @@ class _LeadCustomMenuCard extends StatelessWidget {
                 if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
                   parentContext,
-                  "assets/templates/aaatp_lead_upload_template_with_data.xlsx",
+                  "assets/templates/lead_upload_template_with_data.xlsx",
                   "Lead Sample Data.xlsx",
                 );
               },
