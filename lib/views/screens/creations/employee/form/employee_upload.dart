@@ -659,14 +659,12 @@ class _CustomMenuCard extends StatelessWidget {
               iconColor: AppColors.success,
               label: "Template",
               onTap: () async {
-                await Download.downloadFromUrl(
+                if (Navigator.canPop(context)) Navigator.pop(context);
+                await Download.downloadFromAsset(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Fleadcapture_employee_upload_template.xlsx?alt=media&token=85108573-f509-4d5a-baf7-460f16945598",
+                  "assets/templates/leadcapture_employee_upload_template.xlsx",
                   "Employee Template.xlsx",
                 );
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
               },
             ),
             _menuItem(
@@ -675,14 +673,12 @@ class _CustomMenuCard extends StatelessWidget {
               iconColor: AppColors.success,
               label: "Template + Data",
               onTap: () async {
-                await Download.downloadFromUrl(
+                if (Navigator.canPop(context)) Navigator.pop(context);
+                await Download.downloadFromAsset(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Fleadcapture_employee_upload_template_with_data.xlsx?alt=media&token=4cc3bb15-dddc-49e1-931c-34bd17b559b3",
-                  "Employee Template.xlsx",
+                  "assets/templates/leadcapture_employee_upload_template_with_data.xlsx",
+                  "Employee Template With Data.xlsx",
                 );
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
               },
             ),
           ],

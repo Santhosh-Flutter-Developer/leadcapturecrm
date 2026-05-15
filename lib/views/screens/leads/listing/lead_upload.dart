@@ -255,7 +255,7 @@ class _LeadUploadState extends State<LeadUpload> {
                 opacity: animation,
                 child: ScaleTransition(
                   scale: animation.drive(Tween(begin: 0.9, end: 1.0)),
-                  child: const _LeadCustomMenuCard(),
+                  child: _LeadCustomMenuCard(parentContext: context),
                 ),
               ),
             ),
@@ -466,14 +466,15 @@ class _LeadUploadState extends State<LeadUpload> {
 }
 
 class _LeadCustomMenuCard extends StatelessWidget {
-  const _LeadCustomMenuCard();
+  final BuildContext parentContext;
+  const _LeadCustomMenuCard({required this.parentContext});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.transparent,
       child: Container(
-        width: 200, // Slightly wider for lead labels
+        width: 200,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.grey900,
@@ -495,14 +496,12 @@ class _LeadCustomMenuCard extends StatelessWidget {
               iconColor: AppColors.success,
               label: "Lead Template",
               onTap: () async {
+                if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
-                  context,
+                  parentContext,
                   "assets/templates/aaatp_lead_upload_template.xlsx",
                   "Lead Template.xlsx",
                 );
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
               },
             ),
             _menuItem(
@@ -511,14 +510,12 @@ class _LeadCustomMenuCard extends StatelessWidget {
               iconColor: AppColors.blue,
               label: "Sample Lead Data",
               onTap: () async {
+                if (Navigator.canPop(context)) Navigator.pop(context);
                 await Download.downloadFromAsset(
-                  context,
+                  parentContext,
                   "assets/templates/aaatp_lead_upload_template_with_data.xlsx",
                   "Lead Sample Data.xlsx",
                 );
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
               },
             ),
           ],
