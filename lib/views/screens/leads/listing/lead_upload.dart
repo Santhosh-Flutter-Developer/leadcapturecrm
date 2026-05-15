@@ -495,9 +495,9 @@ class _LeadCustomMenuCard extends StatelessWidget {
               iconColor: AppColors.success,
               label: "Lead Template",
               onTap: () async {
-                await Download.downloadFromUrl(
+                await Download.downloadFromAsset(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_lead_upload_template.xlsx?alt=media&token=8173a050-72a3-403e-bc10-e8c876118721",
+                  "assets/templates/aaatp_lead_upload_template.xlsx",
                   "Lead Template.xlsx",
                 );
                 if (Navigator.canPop(context)) {
@@ -511,10 +511,10 @@ class _LeadCustomMenuCard extends StatelessWidget {
               iconColor: AppColors.blue,
               label: "Sample Lead Data",
               onTap: () async {
-                await Download.downloadFromUrl(
+                await Download.downloadFromAsset(
                   context,
-                  "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_lead_upload_template_with_data.xlsx?alt=media&token=831a10a4-1e61-48ec-b85e-a6fb7e964053",
-                  "Lead Template.xlsx",
+                  "assets/templates/aaatp_lead_upload_template_with_data.xlsx",
+                  "Lead Sample Data.xlsx",
                 );
                 if (Navigator.canPop(context)) {
                   Navigator.pop(context);

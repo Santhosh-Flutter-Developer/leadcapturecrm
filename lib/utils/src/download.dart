@@ -1,6 +1,6 @@
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:leadcapture/models/src/download_model.dart';
 import 'package:path/path.dart' as path;
@@ -102,6 +102,29 @@ class Download {
         error: e,
         stackTrace: st,
       );
+    }
+  }
+
+  static Future<void> downloadFromAsset(
+    BuildContext context,
+    String assetPath,
+    String fileName,
+  ) async {
+    try {
+      final bytes = await rootBundle.load(assetPath);
+      final savedPath = await saveFileToDownloads(
+        bytes.buffer.asUint8List(),
+        fileName: fileName,
+      );
+      if (context.mounted) {
+        FlushBar.show(context, "Download Completed", isSuccess: true);
+        openfile(savedPath, context);
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (context.mounted) {
+        FlushBar.show(context, "Download Failed", isSuccess: false, error: e, stackTrace: st);
+      }
     }
   }
 }
