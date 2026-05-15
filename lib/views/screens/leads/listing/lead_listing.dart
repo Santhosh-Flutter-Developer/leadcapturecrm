@@ -977,9 +977,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         actionButtons.add(
           OutlinedButton.icon(
             onPressed: () async {
-              await Download.downloadFromUrl(
+              await Download.downloadFromAsset(
                 context,
-                "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_lead_upload_template.xlsx?alt=media&token=8173a050-72a3-403e-bc10-e8c876118721",
+                "assets/templates/aaatp_lead_upload_template.xlsx",
                 "Lead_Import_Template.xlsx",
               );
             },
