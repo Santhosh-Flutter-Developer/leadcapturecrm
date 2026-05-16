@@ -122,7 +122,10 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.grey.withValues(alpha: 0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .shadow
+                                .withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -156,14 +159,18 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                                       sortAscending:
                                           controllerWatch.sortAscending,
                                       headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                        Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
                                       ),
                                       headingTextStyle: Theme.of(context)
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface,
                                           ),
                                       columns: [
                                         DataColumn(
@@ -179,7 +186,9 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                                               Icon(
                                                 Icons.arrow_upward,
                                                 size: 14,
-                                                color: AppColors.grey400,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                             ],
                                           ),
@@ -198,7 +207,9 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                                               Icon(
                                                 Icons.arrow_upward,
                                                 size: 14,
-                                                color: AppColors.grey400,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                             ],
                                           ),
@@ -217,7 +228,9 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                                               Icon(
                                                 Icons.arrow_upward,
                                                 size: 14,
-                                                color: AppColors.grey400,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                               ),
                                             ],
                                           ),
@@ -317,13 +330,13 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -346,9 +359,9 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                   ? ElevatedButton.icon(
                       label: Text(
                         "Delete",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
                       ),
                       icon: const Icon(Iconsax.trash),
                       onPressed: () async {
@@ -424,8 +437,8 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: AppColors.white,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor: Theme.of(context).colorScheme.onError,
                       ),
                     )
                   : ElevatedButton.icon(

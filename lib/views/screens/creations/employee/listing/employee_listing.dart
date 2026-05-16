@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
-import 'package:leadcapture/views/screens/creations/employee/form/employee_create.dart';
 import 'package:provider/provider.dart';
 import '/services/services.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
-import '/theme/theme.dart';
 import 'bloc/employee_bloc.dart';
 
 const String _pageTitle = "Employees";
@@ -138,7 +136,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.grey.withValues(alpha: 0.1),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.shadow.withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -177,14 +177,18 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                           controllerWatch.sortAscending,
 
                                       headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
                                       ),
                                       headingTextStyle: Theme.of(context)
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
 
                                       columns: [
@@ -203,7 +207,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                                 Icon(
                                                   Icons.arrow_upward,
                                                   size: 14,
-                                                  color: Colors.grey.shade400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ],
                                             ),
@@ -226,7 +232,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                                 Icon(
                                                   Icons.arrow_upward,
                                                   size: 14,
-                                                  color: AppColors.grey400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ],
                                             ),
@@ -249,7 +257,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                                 Icon(
                                                   Icons.arrow_upward,
                                                   size: 14,
-                                                  color: AppColors.grey400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ],
                                             ),
@@ -283,7 +293,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                                 Icon(
                                                   Icons.arrow_upward,
                                                   size: 14,
-                                                  color: AppColors.grey400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ],
                                             ),
@@ -328,7 +340,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                                                 Icon(
                                                   Icons.arrow_upward,
                                                   size: 14,
-                                                  color: AppColors.grey400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ],
                                             ),
@@ -505,22 +519,32 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 color: Colors.grey,
               ),
               filled: true,
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surfaceContainer,
               contentPadding: const EdgeInsets.symmetric(
                 vertical: 12.0,
                 horizontal: 16.0,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.grey, width: 1),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  width: 1,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
-              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+              hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       ],
@@ -548,13 +572,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(
                     "Add $_pageTitle",
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 )
               : ElevatedButton.icon(
@@ -567,8 +591,12 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade300,
-                    foregroundColor: Colors.grey.shade600,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainer,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
                   ),
                 ),
           ElevatedButton.icon(
@@ -582,13 +610,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             icon: const Icon(Iconsax.cloud_plus, size: 18),
             label: Text(
               "Upload",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blue,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ];
@@ -597,9 +625,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           ElevatedButton.icon(
             label: Text(
               "Export",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             icon: Icon(Iconsax.export_3),
             onPressed: () async {
@@ -688,8 +716,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.grey600,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         );
@@ -698,9 +726,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           ElevatedButton.icon(
             label: Text(
               "Worflow",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSecondary,
+              ),
             ),
             icon: Icon(Iconsax.data),
             onPressed: () async {
@@ -741,8 +769,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.teal,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
             ),
           ),
         );
@@ -753,9 +781,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 ? ElevatedButton.icon(
                     label: Text(
                       "Delete",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onError,
+                      ),
                     ),
                     icon: const Icon(Iconsax.trash),
                     onPressed: () async {
@@ -853,22 +881,26 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     },
 
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
                     ),
                   )
                 : ElevatedButton.icon(
                     label: Text(
                       "Delete",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     icon: const Icon(Iconsax.trash),
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.grey400,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ),
           );
@@ -932,13 +964,16 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       ElevatedButton(
                         onPressed: () => Navigator.pop(context, true),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                         ),
                         child: Text(
                           "Confirm",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
                         ),
                       ),
                     ],
@@ -1082,13 +1117,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 _selectedEmployees.length == 1
                     ? 'Chat with ${_selectedEmployees.first.name}'
                     : 'Group Chat (${_selectedEmployees.length})',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           );
@@ -1111,13 +1146,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               icon: const Icon(Icons.task, size: 18),
               label: Text(
                 "Create Task",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           );
@@ -1160,9 +1195,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     if (platformLabel == null && lastLogin == null) {
       return Text(
         'No activity',
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.grey400),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       );
     }
 
@@ -1172,7 +1207,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: AppColors.success),
+            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 4),
             Text(
               platformLabel ?? 'Unknown device',
@@ -1187,9 +1222,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             padding: const EdgeInsets.only(left: 22),
             child: Text(
               DateFormat('dd MMM, hh:mm a').format(lastLogin),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
       ],
@@ -1369,20 +1404,22 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       user.name,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Flexible(
-                    child: Text(
-                      CacheService.designationByUid(
-                            user.designation ?? "",
-                          )?.name ??
-                          '',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                    child: Flexible(
+                      child: Text(
+                        CacheService.designationByUid(
+                              user.designation ?? "",
+                            )?.name ??
+                            '',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1417,9 +1454,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 Text(
                   CacheService.subDepartmentByUid(user.subDepartment!)?.name ??
                       '',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
             ],
           ),
@@ -1466,13 +1503,15 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: user.isActive ? AppColors.success : AppColors.danger,
+              color: user.isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               user.isActive ? 'Active' : 'Inactive',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1489,7 +1528,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               (permissions?.canEdit ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.edit),
-                      color: AppColors.info,
+                      color: Theme.of(context).colorScheme.secondary,
                       onPressed: () {
                         if (kIsMobile) {
                           Sheet.showSheet(
@@ -1511,20 +1550,26 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       },
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      icon: Icon(
+                        Iconsax.edit,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: null,
                     ),
               if (!user.isAdmin)
                 (permissions?.canDelete ?? false)
                     ? IconButton(
                         icon: const Icon(Iconsax.trash),
-                        color: AppColors.danger,
+                        color: Theme.of(context).colorScheme.error,
                         onPressed: () async {
                           handleDelete(context, user);
                         },
                       )
                     : IconButton(
-                        icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                        icon: Icon(
+                          Iconsax.trash,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         onPressed: null,
                       ),
             ],

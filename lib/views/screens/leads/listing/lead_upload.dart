@@ -15,7 +15,7 @@ import 'package:leadcapture/services/firebase/src/lead_service.dart';
 import 'package:leadcapture/services/firebase/src/lead_source_service.dart';
 import 'package:leadcapture/services/firebase/src/lead_status_service.dart';
 import 'package:leadcapture/services/firebase/src/region_service.dart';
-import 'package:leadcapture/theme/src/app_colors.dart';
+
 import 'package:leadcapture/utils/src/download.dart';
 import 'package:leadcapture/views/components/src/xlsx_csv_reader.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
@@ -273,13 +273,9 @@ class _LeadUploadState extends State<LeadUpload> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.scaffoldBackgroundColor,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
-          // leading: IconButton(
-          //   icon: const Icon(Iconsax.close_circle, color: AppColors.text),
-          //   onPressed: () => Navigator.of(context).pop(),
-          // ),
-          backgroundColor: AppColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text(
             'Import Leads',
             style: Theme.of(
@@ -288,7 +284,7 @@ class _LeadUploadState extends State<LeadUpload> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Iconsax.more, color: AppColors.textLight),
+              icon: Icon(Iconsax.more, color: Theme.of(context).colorScheme.onSurfaceVariant),
               onPressed: () => _showTemplateMenu(context),
             ),
           ],
@@ -343,9 +339,9 @@ class _LeadUploadState extends State<LeadUpload> {
       child: Container(
         height: 200,
         decoration: BoxDecoration(
-          color: AppColors.primaryLight.withValues(alpha: 0.1),
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -353,10 +349,10 @@ class _LeadUploadState extends State<LeadUpload> {
             if (_loading)
               const CircularProgressIndicator()
             else
-              const Icon(
+               Icon(
                 Icons.cloud_upload_outlined,
                 size: 40,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             const SizedBox(height: 16),
             const Text(
@@ -373,13 +369,13 @@ class _LeadUploadState extends State<LeadUpload> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border.all(color: AppColors.border),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(Icons.description, color: AppColors.success, size: 30),
+          Icon(Icons.description, color: Theme.of(context).colorScheme.primary, size: 30),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -416,18 +412,18 @@ class _LeadUploadState extends State<LeadUpload> {
               "Showing first 10 rows of ${_rows.length - 1} leads found",
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
+              ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
         TextButton.icon(
           onPressed: _resetFile,
-          icon: const Icon(
+          icon: Icon(
             Icons.delete_outline,
             size: 18,
-            color: AppColors.danger,
+            color: Theme.of(context).colorScheme.error,
           ),
-          label: const Text("Clear", style: TextStyle(color: AppColors.danger)),
+          label: Text("Clear", style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     );
@@ -457,8 +453,8 @@ class _LeadUploadState extends State<LeadUpload> {
         icon: const Icon(Icons.check),
         label: const Text("Complete Import"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
       ),
     );
@@ -472,16 +468,16 @@ class _LeadCustomMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.transparent,
+      color: Colors.transparent,
       child: Container(
         width: 200,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.grey900,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -493,7 +489,7 @@ class _LeadCustomMenuCard extends StatelessWidget {
             _menuItem(
               context,
               icon: Icons.file_download_outlined,
-              iconColor: AppColors.success,
+              iconColor: Theme.of(context).colorScheme.primary,
               label: "Lead Template",
               onTap: () async {
                 if (Navigator.canPop(context)) Navigator.pop(context);
@@ -507,7 +503,7 @@ class _LeadCustomMenuCard extends StatelessWidget {
             _menuItem(
               context,
               icon: Icons.contact_page_outlined,
-              iconColor: AppColors.blue,
+              iconColor: Theme.of(context).colorScheme.secondary,
               label: "Sample Lead Data",
               onTap: () async {
                 if (Navigator.canPop(context)) Navigator.pop(context);
@@ -538,12 +534,12 @@ class _LeadCustomMenuCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: iconColor ?? AppColors.white),
+            Icon(icon, size: 20, color: iconColor ?? Theme.of(context).colorScheme.onSurface),
             const SizedBox(width: 12),
             Text(
               label,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),

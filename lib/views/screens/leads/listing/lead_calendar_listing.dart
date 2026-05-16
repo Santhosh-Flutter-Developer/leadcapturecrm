@@ -62,7 +62,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -84,7 +84,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
         child: Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? Theme.of(context).colorScheme.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
@@ -92,7 +92,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF5C59D4) : Colors.grey[600],
+              color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -117,12 +117,12 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
               width: 60,
               margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF5C59D4) : Colors.white,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: const Color(0xFF5C59D4).withValues(alpha: 0.3),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -134,14 +134,14 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                   Text(
                     DateFormat('E').format(date),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isSelected ? Colors.white70 : Colors.grey[400],
+                      color: isSelected ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7) : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
                     '${date.day}',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black,
+                      color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -187,8 +187,8 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
         return LeadCard(
           title: e.leadName,
           category: e.leadSource.name,
-          categoryColor: const Color(0xFFE8E7FF),
-          textColor: const Color(0xFF5C59D4),
+          categoryColor: Theme.of(context).colorScheme.primaryContainer,
+          textColor: Theme.of(context).colorScheme.onPrimaryContainer,
           time: (e.createdAt).formatDateTime,
           avatars: [e.createdBy.uid],
           onTap: () {
@@ -222,7 +222,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(15),
           ),
           child: InkWell(
@@ -259,7 +259,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                       '${day.day}',
                       style: Theme.of(
                         context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -307,7 +307,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                   ),
                 ],
               ),
-              const Icon(Iconsax.calendar_1, color: Colors.grey),
+              Icon(Iconsax.calendar_1, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
           const SizedBox(height: 20),
@@ -378,7 +378,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                             '$dayNum',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: isToday ? Colors.white : Colors.black,
+                                  color: isToday ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                                   fontWeight: isToday
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -392,10 +392,8 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                               ),
                               decoration: BoxDecoration(
                                 color: isToday
-                                    ? Colors.white.withValues(alpha: 0.2)
-                                    : const Color(
-                                        0xFF5C59D4,
-                                      ).withValues(alpha: 0.1),
+                                    ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2)
+                                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -404,8 +402,8 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: isToday
-                                          ? Colors.white
-                                          : const Color(0xFF5C59D4),
+                                          ? Theme.of(context).colorScheme.onPrimary
+                                          : Theme.of(context).colorScheme.primary,
                                     ),
                               ),
                             ),
@@ -433,10 +431,10 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                           ?.copyWith(
                                             height: 1.1,
                                             color: isToday
-                                                ? Colors.white.withValues(
+                                                ? Theme.of(context).colorScheme.onPrimary.withValues(
                                                     alpha: 0.9,
                                                   )
-                                                : Colors.black87,
+                                                : Theme.of(context).colorScheme.onSurface,
                                           ),
                                     ),
                                   );
@@ -477,7 +475,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
               height: MediaQuery.of(context).size.height * 0.7,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -498,7 +496,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                     description,
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
 
                   const SizedBox(height: 16),
@@ -534,7 +532,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                 children: [
                                   CircleAvatar(
                                     radius: 22,
-                                    backgroundColor: AppColors.grey200,
+                                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     backgroundImage: NetworkImage(
                                       item.createdBy.profilePic ??
                                           AppStrings.emptyProfilePhotoUrl,
@@ -578,7 +576,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                                 child: Text(
                                                   item.companyName!,
                                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                    color: Colors.grey[600],
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
@@ -597,7 +595,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                                   child: Text(
                                                     item.clientName!,
                                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                      color: Colors.grey[600],
+                                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                     ),
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
@@ -614,14 +612,14 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                             Text(
                                               item.createdBy.name,
                                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                color: Colors.grey[500],
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                               ),
                                             ),
                                             const Spacer(),
                                             Text(
                                               item.createdAt.formatTime,
                                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                color: Colors.grey[400],
+                                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                               ),
                                             ),
                                           ],
@@ -700,11 +698,11 @@ class LeadCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -743,7 +741,7 @@ class LeadCard extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1C1E),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 10),
@@ -755,7 +753,7 @@ class LeadCard extends StatelessWidget {
                   time,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -775,7 +773,7 @@ class LeadCard extends StatelessWidget {
                         left: index * 20.0,
                         child: CircleAvatar(
                           radius: 15,
-                          backgroundColor: Colors.white,
+                          backgroundColor: Theme.of(context).colorScheme.surface,
                           child: CircleAvatar(
                             radius: 13,
                             backgroundImage: NetworkImage(

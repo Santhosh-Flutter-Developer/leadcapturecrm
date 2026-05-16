@@ -10,15 +10,6 @@ import '/models/models.dart';
 import '/views/views.dart';
 import '/services/services.dart';
 
-class AttachmentColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-}
-
 class ChatAttachment extends StatefulWidget {
   final String chatId;
   const ChatAttachment({super.key, required this.chatId});
@@ -85,9 +76,9 @@ class _ChatAttachmentState extends State<ChatAttachment> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AttachmentColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AttachmentColors.white,
+          backgroundColor: Theme.of(context).cardTheme.color,
           elevation: 0,
           centerTitle: false,
           automaticallyImplyLeading: false,
@@ -95,22 +86,24 @@ class _ChatAttachmentState extends State<ChatAttachment> {
           //   onPressed: () => Navigator.pop(context),
           //   icon: const Icon(
           //     Iconsax.arrow_left,
-          //     color: AttachmentColors.textPrimary,
+          //     color: Theme.of(context).colorScheme.onSurface,
           //     size: 20,
           //   ),
           // ),
-          title: const Text(
+          title: Text(
             'Media & Assets',
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: AttachmentColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
             ),
           ),
           bottom: TabBar(
-            labelColor: AttachmentColors.primary,
-            unselectedLabelColor: AttachmentColors.textSecondary,
-            indicatorColor: AttachmentColors.primary,
+            labelColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant,
+            indicatorColor: Theme.of(context).colorScheme.primary,
             indicatorWeight: 3,
             labelStyle: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -140,7 +133,7 @@ class _MediaTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (media.isEmpty) {
-      return _buildEmptyState(Iconsax.gallery, "No media shared yet");
+      return _buildEmptyState(context, Iconsax.gallery, "No media shared yet");
     }
 
     return GridView.builder(
@@ -175,7 +168,9 @@ class _MediaTab extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AttachmentColors.border),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -193,7 +188,7 @@ class _MediaTab extends StatelessWidget {
                         child: Container(color: Colors.white),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: AttachmentColors.border,
+                        color: Theme.of(context).colorScheme.outlineVariant,
                         child: const Icon(Iconsax.gallery_slash),
                       ),
                     ),
@@ -237,7 +232,7 @@ class _LinksTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (links.isEmpty) {
-      return _buildEmptyState(Iconsax.link, "No links found in chat");
+      return _buildEmptyState(context, Iconsax.link, "No links found in chat");
     }
 
     return ListView.builder(
@@ -250,9 +245,11 @@ class _LinksTab extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: AttachmentColors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AttachmentColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: ListTile(
             onTap: () => launchUrl(Uri.parse(url)),
@@ -263,12 +260,14 @@ class _LinksTab extends StatelessWidget {
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AttachmentColors.primary.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Iconsax.link_1,
-                color: AttachmentColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
             ),
@@ -276,27 +275,27 @@ class _LinksTab extends StatelessWidget {
               url,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: AttachmentColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 domain.isEmpty ? "External Link" : domain,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AttachmentColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Iconsax.export_1,
               size: 18,
-              color: AttachmentColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         );
@@ -312,7 +311,11 @@ class _DocsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (docs.isEmpty) {
-      return _buildEmptyState(Iconsax.document_text, "No documents attached");
+      return _buildEmptyState(
+        context,
+        Iconsax.document_text,
+        "No documents attached",
+      );
     }
 
     return ListView.builder(
@@ -323,9 +326,11 @@ class _DocsTab extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: AttachmentColors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AttachmentColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
@@ -335,12 +340,14 @@ class _DocsTab extends StatelessWidget {
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orangeAccent.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Iconsax.document_text,
-                color: Colors.orangeAccent,
+                color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
             ),
@@ -348,27 +355,27 @@ class _DocsTab extends StatelessWidget {
               path.basename(file.name),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: AttachmentColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 '${file.size} KB • ${file.extension.toUpperCase()}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AttachmentColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Iconsax.arrow_circle_down,
               size: 22,
-              color: AttachmentColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onTap: () async {
               if (file.url.isEmpty) {
@@ -384,17 +391,21 @@ class _DocsTab extends StatelessWidget {
   }
 }
 
-Widget _buildEmptyState(IconData icon, String message) {
+Widget _buildEmptyState(BuildContext context, IconData icon, String message) {
   return Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 48, color: AttachmentColors.border),
+        Icon(
+          icon,
+          size: 48,
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
         const SizedBox(height: 16),
         Text(
           message,
-          style: const TextStyle(
-            color: AttachmentColors.textSecondary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),

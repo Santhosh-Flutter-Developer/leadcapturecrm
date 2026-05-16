@@ -114,7 +114,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -126,7 +126,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                   'Error: ${snapshot.error}',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               );
             }
@@ -191,10 +191,10 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).cardTheme.color,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -205,11 +205,11 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -253,15 +253,15 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                 }
               },
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 16,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ),
@@ -294,13 +294,13 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: AppColors.grey700),
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 SizedBox(height: 8),
                 Text(
                   "Upload Photo",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -609,8 +609,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               children: [
                 Switch(
                   value: _isActive,
-                  activeThumbColor: AppColors.success,
-                  inactiveThumbColor: AppColors.danger,
+                  activeColor: Theme.of(context).colorScheme.primary,
                   onChanged: (value) {
                     setState(() {
                       _isActive = value;
@@ -622,7 +621,9 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                   _isActive ? 'Active' : 'Inactive',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: _isActive ? AppColors.success : AppColors.danger,
+                    color: _isActive 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Theme.of(context).colorScheme.error,
                   ),
                 ),
               ],

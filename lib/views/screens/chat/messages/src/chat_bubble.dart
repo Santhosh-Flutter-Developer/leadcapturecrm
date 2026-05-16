@@ -390,7 +390,10 @@ class _ChatBubbleCore extends StatelessWidget {
                     : Alignment.centerLeft,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Icon(Icons.reply, color: AppColors.grey400),
+                  child: Icon(
+                    Icons.reply,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ),
             ),
@@ -409,9 +412,9 @@ class _ChatBubbleCore extends StatelessWidget {
                       SizedBox(width: 4),
                       Text(
                         "Pinned",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                     ],
                   ),
@@ -423,7 +426,7 @@ class _ChatBubbleCore extends StatelessWidget {
                     CacheService.getUserByUid(message.senderId)?.name ?? 'User',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.grey700,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -469,9 +472,9 @@ class _ChatBubbleCore extends StatelessWidget {
                   children: [
                     Text(
                       DateFormat('hh:mm a').format(message.timestamp),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                     if (isSender) ...[
                       const SizedBox(width: 4),
@@ -479,8 +482,8 @@ class _ChatBubbleCore extends StatelessWidget {
                         message.seenBy.isNotEmpty ? Icons.done_all : Icons.done,
                         size: 14,
                         color: message.seenBy.isNotEmpty
-                            ? AppColors.blue
-                            : AppColors.grey,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
                       ),
                     ],
                   ],
@@ -628,8 +631,8 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: widget.isSender
-                  ? AppColors.primary.withValues(alpha: 0.15)
-                  : AppColors.white,
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).cardTheme.color,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
@@ -643,7 +646,9 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
               boxShadow: [
                 if (!widget.isSender)
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.05),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 2,
                     offset: const Offset(0, 1),
                   ),
@@ -657,10 +662,15 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border(
-                        left: BorderSide(color: AppColors.primary, width: 3),
+                        left: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 3,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -674,7 +684,7 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                         ),
                         const SizedBox(height: 2),
@@ -683,7 +693,11 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.black87),
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -734,7 +748,7 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
         spans.add(
           TextSpan(
             text: text.substring(currentIndex, start),
-            style: const TextStyle(color: Colors.black),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
         );
       }
@@ -770,13 +784,15 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       mentionText,
-                      style: const TextStyle(
-                        color: Colors.blue,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -795,7 +811,7 @@ class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
       spans.add(
         TextSpan(
           text: text.substring(currentIndex),
-          style: const TextStyle(color: Colors.black),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
         ),
       );
     }
@@ -840,9 +856,12 @@ class _ReactionChipsState extends State<_ReactionChips> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.grey200,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.white, width: 2),
+              border: Border.all(
+                color: Theme.of(context).cardTheme.color!,
+                width: 2,
+              ),
             ),
             child: Text(
               "${entry.key} ${entry.value > 1 ? entry.value : ''}",
@@ -880,11 +899,11 @@ class _ChatBubbleHoverMenuState extends State<_ChatBubbleHoverMenu> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.15),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -899,7 +918,7 @@ class _ChatBubbleHoverMenuState extends State<_ChatBubbleHoverMenu> {
           Container(
             height: 20,
             width: 1,
-            color: AppColors.grey300,
+            color: Theme.of(context).colorScheme.outlineVariant,
             margin: const EdgeInsets.symmetric(horizontal: 4),
           ),
           _HoverIcon(icon: Icons.reply, onTap: widget.actions['reply']),
@@ -995,7 +1014,11 @@ class _HoverIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon, size: 18, color: AppColors.grey700),
+      icon: Icon(
+        icon,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       padding: const EdgeInsets.all(4),
       constraints: const BoxConstraints(),
       splashRadius: 16,
@@ -1011,8 +1034,12 @@ class _ChatBubbleSenderAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 12,
-      backgroundColor: AppColors.grey300,
-      child: const Icon(Icons.person, size: 14, color: AppColors.white),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.person,
+        size: 14,
+        color: Theme.of(context).colorScheme.outline,
+      ),
     );
   }
 }

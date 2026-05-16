@@ -146,11 +146,7 @@ class _ChatMessagesState extends State<ChatMessages> {
         body: SafeArea(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.blue50, AppColors.grey50, AppColors.white],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
             // The StreamBuilder is now the *only* thing responsible for UI data
             child: StreamBuilder<List<MessagesModel>>(
@@ -301,7 +297,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                   "Pinned messages",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.grey700.withValues(alpha: 0.8),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -332,11 +328,11 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
               margin: const EdgeInsets.symmetric(vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.8),
+                color: Theme.of(context).colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -346,7 +342,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                 dateLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.grey700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -391,7 +387,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
             child: Center(
               child: TextButton.icon(
                 style: TextButton.styleFrom(
-                  backgroundColor: AppColors.white.withValues(alpha: 0.9),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -404,14 +400,14 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                     curve: Curves.easeOut,
                   );
                 },
-                icon: const Icon(
+                icon:  Icon(
                   Icons.arrow_downward,
-                  color: AppColors.grey700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 label: Text(
                   "Go to Bottom",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.grey700,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

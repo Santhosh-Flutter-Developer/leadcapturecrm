@@ -162,8 +162,8 @@ class _ChatListingViewState extends State<ChatListingView> {
       floatingActionButton: kIsMobile
           ? FloatingActionButton(
               heroTag: null,
-              foregroundColor: AppColors.white,
-              backgroundColor: AppColors.primary,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               tooltip: "Appeals",
               shape: const CircleBorder(),
               onPressed: () =>
@@ -176,24 +176,28 @@ class _ChatListingViewState extends State<ChatListingView> {
 
   Widget _buildNoChatSelected() {
     return Container(
-      color: AppColors.grey100,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.message_search, size: 80, color: AppColors.grey400),
+            Icon(
+              Iconsax.message_search,
+              size: 80,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               "Select a Conversation",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppColors.grey600),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               "Click on a chat from the list to view messages.",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.grey500),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -311,8 +315,8 @@ class _ChatListPanelState extends State<ChatListPanel> {
     return Container(
       width: kIsMobile ? double.infinity : 320,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.grey300),
-        color: AppColors.white,
+        border: Border.all(color: Theme.of(context).dividerColor),
+        color: Theme.of(context).colorScheme.surface,
       ),
       child: Column(
         children: [
@@ -331,7 +335,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: AppColors.grey200,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       isDense: true,
                     ),
                     onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -341,7 +345,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                 if (kIsDesktop) ...[
                   const SizedBox(width: 8),
                   Material(
-                    color: AppColors.grey200,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
                       tooltip: "Refresh",
@@ -354,13 +358,13 @@ class _ChatListPanelState extends State<ChatListPanel> {
                   ),
                   const SizedBox(width: 8),
                   Material(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
                       tooltip: "Create Chat",
-                      icon: const Icon(
+                      icon: Icon(
                         Iconsax.message_add,
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                       onPressed: () =>
                           Sheet.showSheet(context, widget: const CreateChat()),
@@ -475,8 +479,8 @@ class _ChatListPanelState extends State<ChatListPanel> {
             //         onPressed: () =>
             //             Sheet.showSheet(context, widget: const CreateChat()),
             //         style: ElevatedButton.styleFrom(
-            //           backgroundColor: AppColors.primary, // button color
-            //           foregroundColor: AppColors.white, // text/icon color
+            //           backgroundColor: Theme.of(context).colorScheme.primary, // button color
+            //           foregroundColor: Theme.of(context).colorScheme.surface, // text/icon color
             //           elevation: 3, // shadow
             //           padding: const EdgeInsets.symmetric(vertical: 16),
             //           shape: RoundedRectangleBorder(
@@ -589,7 +593,9 @@ class _ChatListItem extends StatelessWidget {
     final bool avatarValid = imageUrl.isNotEmpty;
 
     return Material(
-      color: isSelected ? AppColors.blue50 : AppColors.transparent,
+      color: isSelected
+          ? Theme.of(context).colorScheme.secondaryContainer
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -599,7 +605,7 @@ class _ChatListItem extends StatelessWidget {
               chat.isGroupChat
                   ? CircleAvatar(
                       backgroundColor: AppColors.blue,
-                      foregroundColor: AppColors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       child: const Icon(Icons.group, size: 20),
                     )
                   : InkWell(
@@ -608,8 +614,8 @@ class _ChatListItem extends StatelessWidget {
                       child: CircleAvatar(
                         backgroundColor: nameValid
                             ? LetterColors.getColor(name.first)
-                            : AppColors.success,
-                        foregroundColor: AppColors.white,
+                            : Theme.of(context).colorScheme.secondary,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         child: avatarValid
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(100),
@@ -617,10 +623,16 @@ class _ChatListItem extends StatelessWidget {
                                   imageUrl: imageUrl,
                                   placeholder: (context, url) =>
                                       Shimmer.fromColors(
-                                        baseColor: AppColors.grey300,
-                                        highlightColor: AppColors.grey100,
+                                        baseColor: Theme.of(
+                                          context,
+                                        ).dividerColor,
+                                        highlightColor: Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor,
                                         child: Container(
-                                          color: AppColors.white,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surface,
                                         ),
                                       ),
                                   errorWidget: (context, url, error) =>
@@ -633,7 +645,11 @@ class _ChatListItem extends StatelessWidget {
                             : Text(
                                 nameValid ? name.first : '',
                                 style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.white),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                    ),
                               ),
                       ),
                     ),
@@ -669,7 +685,11 @@ class _ChatListItem extends StatelessWidget {
                                 ? ("You: ${chat.lastMessage?.message ?? ''}")
                                 : (chat.lastMessage?.message ?? ''),
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey600),
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -716,7 +736,11 @@ class _ChatListItem extends StatelessWidget {
                             child: Text(
                               count.toString(),
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.white),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                  ),
                             ),
                           );
                         },
@@ -747,7 +771,7 @@ class _ChatListItem extends StatelessWidget {
                                   ? Icons.push_pin_rounded
                                   : Icons.push_pin_outlined,
                               size: 20,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -755,7 +779,11 @@ class _ChatListItem extends StatelessWidget {
                                   ? 'Unpin chat'
                                   : 'Pin chat',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.black),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
@@ -774,8 +802,8 @@ class _ChatListItem extends StatelessWidget {
                                   : Iconsax.heart,
                               size: 20,
                               color: chat.isFavoriteForUser(currentUserUid)
-                                  ? AppColors.danger
-                                  : AppColors.primary,
+                                  ? Theme.of(context).colorScheme.error
+                                  : Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -783,7 +811,11 @@ class _ChatListItem extends StatelessWidget {
                                   ? 'Remove from favorites'
                                   : 'Add to favorites',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.black),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
@@ -797,16 +829,20 @@ class _ChatListItem extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.delete_outline,
                                 size: 20,
-                                color: AppColors.danger,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 'Delete chat',
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.danger),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
                               ),
                             ],
                           ),

@@ -134,7 +134,7 @@ class _LeadCreateState extends State<LeadCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -270,11 +270,11 @@ class _LeadCreateState extends State<LeadCreate> {
     bool expandable = false,
   }) {
     return Card(
-      color: AppColors.white,
-      elevation: 7,
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey200),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -294,7 +294,7 @@ class _LeadCreateState extends State<LeadCreate> {
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   if (expandable)
@@ -542,12 +542,12 @@ class _LeadCreateState extends State<LeadCreate> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(5.0),
-                          child: Icon(Icons.add, color: AppColors.white),
+                          child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
                         ),
                       ),
                     ),
@@ -687,12 +687,12 @@ class _LeadCreateState extends State<LeadCreate> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),
-                    child: Icon(Icons.add, color: AppColors.white),
+                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
                   ),
                 ),
               ),

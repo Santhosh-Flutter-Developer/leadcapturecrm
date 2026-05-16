@@ -226,7 +226,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -259,12 +259,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       sortColumnIndex: controllerWatch.sortColumnIndex,
                       sortAscending: controllerWatch.sortAscending,
                       headingRowColor: WidgetStateProperty.all(
-                        AppColors.grey100,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       headingTextStyle: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       columns: [
                         DataColumn(
@@ -280,7 +280,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: AppColors.grey400,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -300,7 +300,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: AppColors.grey400,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -561,12 +561,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -633,14 +633,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         icon: const Icon(Icons.refresh, size: 18),
         label: const Text("Reset Filters"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade50,
-          foregroundColor: Colors.redAccent,
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.errorContainer.withValues(alpha: 0.5),
+          foregroundColor: Theme.of(context).colorScheme.error,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          // shape: RoundedRectangleBorder(
-          //   borderRadius: BorderRadius.circular(12),
-          //   side: BorderSide(color: Colors.red.shade100),
-          // ),
         ),
       ),
     );
@@ -658,7 +656,11 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         },
         decoration: InputDecoration(
           hintText: 'Search leads...',
-          prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
 
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -673,26 +675,38 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               : null,
 
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
 
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
 
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
 
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
 
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: AppColors.blue, width: 1.3),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 1.3,
+            ),
           ),
 
-          hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          hintStyle: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
         ),
       ),
     );
@@ -710,7 +724,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           Text(
             "Lead Value",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -720,7 +734,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade700),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -787,7 +801,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -798,7 +812,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade700),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -806,7 +822,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   Icon(
                     Iconsax.calendar_1,
                     size: 18,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -820,9 +836,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 18,
                   ),
                 ],
@@ -933,8 +949,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               icon: const Icon(Icons.add, size: 18),
               label: Text("Add $_pageTitle"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           );
@@ -945,8 +961,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               icon: const Icon(Icons.add, size: 18),
               label: Text("Add $_pageTitle"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.grey300,
-                foregroundColor: AppColors.grey600,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           );
@@ -966,8 +984,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             icon: const Icon(Iconsax.cloud_plus, size: 18),
             label: const Text("Upload"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blue,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
             ),
           ),
         );
@@ -986,8 +1004,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             icon: const Icon(Icons.file_download_outlined, size: 18),
             label: const Text("Template"),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.blue,
-              side: const BorderSide(color: AppColors.blue),
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              side: BorderSide(color: Theme.of(context).colorScheme.primary),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -1001,8 +1019,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             label: const Text("Export"),
             icon: const Icon(Iconsax.export_3, size: 18),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.grey600,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             onPressed: () async {
               try {
@@ -1120,8 +1140,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           );
@@ -1133,7 +1153,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1147,9 +1169,15 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 ),
               const SizedBox(width: 10),
               _buildToggleIcon(Iconsax.grid_3, 'Grid'),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               _buildToggleIcon(Icons.list, 'List'),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               _buildToggleIcon(Iconsax.calendar_1, 'Calendar'),
             ],
           ),
@@ -1186,7 +1214,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     return IconButton(
       onPressed: () => setState(() => _selectedView = viewName),
       icon: Icon(icon, size: 18),
-      color: _selectedView == viewName ? AppColors.blue : AppColors.grey700,
+      color: _selectedView == viewName
+          ? Theme.of(context).colorScheme.primary
+          : Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 
@@ -1316,7 +1346,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
-                  color: AppColors.info,
+                  color: Theme.of(context).colorScheme.primary,
                   splashRadius: 20,
                   onPressed: () {
                     if (kIsMobile) {
@@ -1334,7 +1364,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                  icon: Icon(
+                    Iconsax.edit,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],
@@ -1342,7 +1375,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               IconButton(
                 icon: const Icon(Icons.autorenew_rounded),
                 tooltip: 'Convert $_pageTitle to Deal',
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.secondary,
                 splashRadius: 20,
                 onPressed: () async {
                   final result = await showDialog<bool>(
@@ -1364,7 +1397,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                   splashRadius: 20,
                   tooltip: 'Delete $_pageTitle',
                   onPressed: () async {
@@ -1408,7 +1441,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                  icon: Icon(
+                    Iconsax.trash,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],

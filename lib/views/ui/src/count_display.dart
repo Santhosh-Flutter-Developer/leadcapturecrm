@@ -30,7 +30,7 @@ class CountDisplay extends StatelessWidget {
         RichText(
           text: TextSpan(
             text: "Total Records : ",
-            style: TextStyle(color: AppColors.black),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             children: [
               TextSpan(
                 text: totalCount.toString(),
@@ -42,7 +42,7 @@ class CountDisplay extends StatelessWidget {
         RichText(
           text: TextSpan(
             text: "Showing : ",
-            style: TextStyle(color: AppColors.black),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             children: [
               TextSpan(
                 text: "$pageNumber / $pageLimit",

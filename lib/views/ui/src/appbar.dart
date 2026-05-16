@@ -8,7 +8,6 @@
 import 'package:flutter/material.dart';
 
 // Project imports:
-import '/theme/theme.dart';
 
 class Appbar extends StatelessWidget implements PreferredSizeWidget {
   final bool searchApplied;
@@ -65,19 +64,25 @@ class Appbar extends StatelessWidget implements PreferredSizeWidget {
               title: TextFormField(
                 controller: search,
                 autofocus: true,
-                cursorColor: AppColors.white,
+                cursorColor: Theme.of(context).colorScheme.onPrimary,
                 onChanged: onChanged,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.transparent,
                   hintText: searchHintText,
-                  hintStyle: const TextStyle(color: Colors.white54),
+                  hintStyle: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.6),
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: TextStyle(color: AppColors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
                 autocorrect: false,
                 enableSuggestions: false,
               ),

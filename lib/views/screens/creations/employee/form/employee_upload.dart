@@ -92,30 +92,36 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.scaffoldBackgroundColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           // leading: IconButton(
           //   icon: const Icon(Iconsax.close_circle, color: AppColors.text),
           //   onPressed: () => Navigator.of(context).pop(),
           //   tooltip: 'Close',
           // ),
-          backgroundColor: AppColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           title: Text(
             'Import Employees',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppColors.text,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(color: AppColors.border, height: 1),
+            child: Container(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              height: 1,
+            ),
           ),
           centerTitle: false,
           actions: [
             IconButton(
-              icon: const Icon(Iconsax.more, color: AppColors.textLight),
+              icon: Icon(
+                Iconsax.more,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               onPressed: () {
                 showCustomMenu(context);
               },
@@ -131,19 +137,19 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Page Header
                   Text(
                     'Upload Employee List',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.text,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
+
                   const SizedBox(height: 8),
                   Text(
-                    'Upload a CSV or Excel file to bulk import employees. \nEnsure the file follows the required template format.',
+                    'Upload Employee List',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textLight,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
@@ -169,7 +175,7 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.text,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                         ),
                         if (_rows.length > 50)
@@ -177,10 +183,20 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                             label: Text(
                               'Showing first 50',
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textLight),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
-                            backgroundColor: AppColors.scaffoldBackgroundColor,
-                            side: const BorderSide(color: AppColors.border),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).scaffoldBackgroundColor,
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
                           ),
                       ],
                     ),
@@ -204,10 +220,10 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
       child: Container(
         height: 250,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -218,7 +234,9 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: AppColors.primaryLight.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -231,11 +249,13 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -247,10 +267,10 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                             height: 32,
                             child: CircularProgressIndicator(strokeWidth: 3),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.cloud_upload_outlined,
                             size: 32,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                   ),
                   const SizedBox(height: 24),
@@ -258,7 +278,7 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                     text: TextSpan(
                       text: 'Click to upload',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
@@ -266,7 +286,9 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                           text: ' or drag and drop',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: AppColors.textLight,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.normal,
                               ),
                         ),
@@ -277,7 +299,7 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                   Text(
                     'Supported formats: .CSV, .XLSX',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textLight,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -294,12 +316,12 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -330,22 +352,25 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                   _fileName ?? 'Unknown file',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.text,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _formatFileSize(_fileSize),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
             onPressed: _resetFile,
-            icon: const Icon(Icons.close, color: AppColors.textLight),
+            icon: Icon(
+              Icons.close,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             tooltip: 'Remove file',
           ),
         ],
@@ -362,9 +387,9 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -372,7 +397,7 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(
-              AppColors.scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor,
             ),
             columnSpacing: 24,
             horizontalMargin: 24,
@@ -383,7 +408,7 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                   headers[i].toUpperCase(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textLight,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -397,9 +422,9 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
                   return DataCell(
                     Text(
                       val,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.text),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   );
                 }),
@@ -582,8 +607,8 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
         ElevatedButton.icon(
           onPressed: _uploadEmployeeData,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -607,7 +632,9 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: AppColors.black12, // light dim background
+      barrierColor: Theme.of(
+        context,
+      ).colorScheme.shadow.withValues(alpha: 0.3), // light dim background
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (_, _, _) {
         return const SizedBox.shrink();
@@ -640,11 +667,13 @@ class _CustomMenuCard extends StatelessWidget {
         width: 180,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.grey900,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.shadow.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -656,7 +685,7 @@ class _CustomMenuCard extends StatelessWidget {
             _menuItem(
               context,
               icon: Icons.downloading_rounded,
-              iconColor: AppColors.success,
+              iconColor: Theme.of(context).colorScheme.primary,
               label: "Template",
               onTap: () async {
                 if (Navigator.canPop(context)) Navigator.pop(context);
@@ -670,7 +699,7 @@ class _CustomMenuCard extends StatelessWidget {
             _menuItem(
               context,
               icon: Icons.downloading_rounded,
-              iconColor: AppColors.success,
+              iconColor: Theme.of(context).colorScheme.primary,
               label: "Template Data",
               onTap: () async {
                 if (Navigator.canPop(context)) Navigator.pop(context);
@@ -701,13 +730,17 @@ class _CustomMenuCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: iconColor ?? AppColors.white),
+            Icon(
+              icon,
+              size: 20,
+              color: iconColor ?? Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(width: 12),
             Text(
               label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppColors.white),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),

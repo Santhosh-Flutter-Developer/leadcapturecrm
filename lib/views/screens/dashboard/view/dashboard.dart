@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/views/screens/attendance/attendance.dart';
-import 'package:leadcapture/views/screens/permission/src/permission_requests/src/permission_requests_listing.dart';
-import 'package:leadcapture/views/screens/salary_ledger/salary_ledger_listing.dart';
 import 'package:leadcapture/views/screens/worktime/src/worktime_create.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
@@ -17,7 +15,6 @@ import '/views/views.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:flutter/foundation.dart';
 
 const Color kBgColor = Color(0xFFF4F7FE);
 const Color kCardColor = Colors.white;
@@ -40,7 +37,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading) {
@@ -163,7 +160,7 @@ class _DashboardState extends State<Dashboard> {
                 "Dashboard",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: kTextSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 5),
@@ -171,7 +168,7 @@ class _DashboardState extends State<Dashboard> {
                 isAdmin ? "Overview Analytics" : "My Workspace",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: kTextPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -351,7 +348,10 @@ class _DashboardState extends State<Dashboard> {
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: kTextSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -561,7 +561,10 @@ class _DashboardState extends State<Dashboard> {
         ),
         Text(
           title,
-          style: const TextStyle(fontSize: 12, color: kTextSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -761,7 +764,7 @@ class _DashboardState extends State<Dashboard> {
                   "Update Available (v${VersionService.version?.version})",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF222B45),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -769,7 +772,7 @@ class _DashboardState extends State<Dashboard> {
                   "A newer version of the app is available. Update now for better performance, features and stability.",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     height: 1.4,
-                    color: Color(0xFF4A4A4A),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -947,7 +950,9 @@ Widget _buildActivitySection(
       borderRadius: BorderRadius.circular(kBorderRadius),
       boxShadow: [
         BoxShadow(
-          color: kTextPrimary.withValues(alpha: 0.05),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.05),
           blurRadius: 20,
           offset: const Offset(0, 4),
         ),
@@ -963,10 +968,13 @@ Widget _buildActivitySection(
               isAdmin ? "Recent Activity" : "Your Activity",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: kTextPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Icon(Icons.more_horiz, color: kTextSecondary),
+            Icon(
+              Icons.more_horiz,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -975,9 +983,9 @@ Widget _buildActivitySection(
             padding: const EdgeInsets.all(20.0),
             child: Text(
               "No activity yet.",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ListView.separated(
@@ -1085,7 +1093,7 @@ Widget _sectionTitle(BuildContext context, String text) {
     text,
     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
       fontWeight: FontWeight.bold,
-      color: kTextPrimary,
+      color: Theme.of(context).colorScheme.onSurface,
     ),
   );
 }
@@ -1093,9 +1101,9 @@ Widget _sectionTitle(BuildContext context, String text) {
 Widget _emptyText(BuildContext context, String text) {
   return Text(
     text,
-    style: Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
   );
 }
 

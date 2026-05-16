@@ -43,7 +43,7 @@ class _RoleCreateState extends State<RoleCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -59,11 +59,11 @@ class _RoleCreateState extends State<RoleCreate> {
                   children: [
                     const SizedBox(height: 12),
                     Card(
-                      color: AppColors.white,
+                      color: Theme.of(context).cardTheme.color,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: AppColors.grey200),
+                        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -78,7 +78,7 @@ class _RoleCreateState extends State<RoleCreate> {
                               style: Theme.of(context).textTheme.titleMedium!
                                   .copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                             ),
                             const SizedBox(height: 10),
@@ -104,11 +104,11 @@ class _RoleCreateState extends State<RoleCreate> {
                     const SizedBox(height: 15),
 
                     Card(
-                      color: AppColors.white,
+                      color: Theme.of(context).cardTheme.color,
                       elevation: 0, // No elevation for the main card now
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: AppColors.grey200),
+                        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
@@ -120,7 +120,7 @@ class _RoleCreateState extends State<RoleCreate> {
                               style: Theme.of(context).textTheme.titleMedium!
                                   .copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                             ),
                             const SizedBox(height: 10),

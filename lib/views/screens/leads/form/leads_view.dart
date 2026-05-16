@@ -105,11 +105,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
-        title: const Text(
+        title: Text(
           "Lead Management",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: LeadsViewAppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
@@ -178,7 +178,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: LeadsViewAppColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
       ),
       body: Center(
@@ -238,15 +241,15 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         icon,
         size: 16,
         color: isDanger
-            ? LeadsViewAppColors.danger
-            : LeadsViewAppColors.primary,
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
       ),
       label: Text(
         label,
         style: TextStyle(
           color: isDanger
-              ? LeadsViewAppColors.danger
-              : LeadsViewAppColors.primary,
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -265,9 +268,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         return Container(
           padding: EdgeInsets.all(isMobile ? 16 : 24),
           decoration: BoxDecoration(
-            color: LeadsViewAppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: LeadsViewAppColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             children: [
@@ -279,7 +284,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     width: isMobile ? 60 : 80,
                     height: isMobile ? 60 : 80,
                     decoration: BoxDecoration(
-                      color: LeadsViewAppColors.primary.withValues(alpha: 0.08),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -287,7 +294,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         widget.lead.leadName[0].toUpperCase(),
                         style: TextStyle(
                           fontSize: isMobile ? 24 : 32,
-                          color: LeadsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -311,7 +318,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                               style: TextStyle(
                                 fontSize: isMobile ? 18 : 22,
                                 fontWeight: FontWeight.w800,
-                                color: LeadsViewAppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             _buildStatusBadge(status?.name ?? 'Unknown'),
@@ -322,9 +329,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           widget.lead.companyName ?? 'Unspecified Company',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
-                            color: LeadsViewAppColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -349,7 +358,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               // On Mobile, Quick Actions and Lead Value stack below
               if (isMobile) ...[
                 const SizedBox(height: 20),
-                const Divider(height: 1, color: LeadsViewAppColors.border),
+                const Divider(height: 1, color: AppColors.grey200),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -410,18 +419,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: LeadsViewAppColors.background,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: LeadsViewAppColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               "Lead Value",
               style: TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -432,10 +443,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               fit: BoxFit.scaleDown,
               child: Text(
                 "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -449,18 +460,18 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.success.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: LeadsViewAppColors.success.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w800,
-          color: LeadsViewAppColors.success,
+          color: Theme.of(context).colorScheme.primary,
           letterSpacing: 0.5,
         ),
       ),
@@ -481,21 +492,27 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: LeadsViewAppColors.background,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: LeadsViewAppColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: color ?? LeadsViewAppColors.primary),
+              Icon(
+                icon,
+                size: 14,
+                color: color ?? Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -510,16 +527,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.background,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
         dividerColor: Colors.transparent,
         labelColor: Colors.white,
-        unselectedLabelColor: LeadsViewAppColors.textSecondary,
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
         labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
@@ -529,11 +546,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         indicatorSize: TabBarIndicatorSize.tab,
 
         indicator: BoxDecoration(
-          color: LeadsViewAppColors.primary,
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: LeadsViewAppColors.primary.withOpacity(.25),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.25),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -645,19 +664,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: LeadsViewAppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -681,10 +700,14 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.background,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 16, color: LeadsViewAppColors.secondary),
+            child: Icon(
+              icon,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -693,8 +716,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: LeadsViewAppColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.3,
@@ -707,8 +730,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: isLink
-                        ? LeadsViewAppColors.primary
-                        : LeadsViewAppColors.textPrimary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                     decoration: isLink ? TextDecoration.underline : null,
                   ),
                 ),
@@ -727,9 +750,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Iconsax.message_text_1,
-                color: LeadsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -820,18 +843,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: LeadsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
+
                         Text(
                           comment.comment,
-                          style: const TextStyle(
+                          style: TextStyle(
                             height: 1.5,
                             fontSize: 13,
-                            color: LeadsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -842,8 +866,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     children: [
                       Text(
                         DateFormat('MMM dd, hh:mm a').format(date),
-                        style: const TextStyle(
-                          color: LeadsViewAppColors.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -852,7 +876,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         onTap: () {
                           showMenu(
                             context: context,
-                            color: Colors.white, // popup background
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface, // popup background
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -898,7 +924,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         },
                         child: Icon(
                           Iconsax.more,
-                          color: LeadsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 16,
                         ),
                       ),
@@ -922,11 +948,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
-        border: const Border(top: BorderSide(color: LeadsViewAppColors.border)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -941,8 +969,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText: "Add a comment...",
-              hintStyle: const TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
@@ -950,7 +978,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: LeadsViewAppColors.background,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: IconButton(
                 tooltip: 'Add Attachment',
@@ -968,8 +996,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               ElevatedButton(
                 onPressed: _addComment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -996,12 +1024,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: LeadsViewAppColors.border),
+          Icon(
+            icon,
+            size: 48,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             message,
-            style: const TextStyle(
-              color: LeadsViewAppColors.textSecondary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1015,9 +1047,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: LeadsViewAppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: LeadsViewAppColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
@@ -1056,17 +1090,22 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: LeadsViewAppColors.primary.withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: LeadsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   ),
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 1, color: LeadsViewAppColors.border),
+                  child: Container(
+                    width: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
             ],
           ),
@@ -1079,17 +1118,17 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 children: [
                   Text(
                     history.updateDisposition,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: LeadsViewAppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
-                    style: const TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1099,8 +1138,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     DateFormat(
                       'MMM dd, yyyy • hh:mm a',
                     ).format(history.timestamp),
-                    style: const TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1118,9 +1157,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: _buildCommentsSection(),
     );
@@ -1131,9 +1170,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       // Match the padding and decoration of your _infoSection
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1153,9 +1192,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               TextButton.icon(
                 onPressed: _scheduleActivity,
                 style: TextButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary.withValues(
-                    alpha: 0.1,
-                  ),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
@@ -1215,21 +1254,21 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.background,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               _activityIcon(activity.type),
-              color: LeadsViewAppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
           ),
@@ -1242,10 +1281,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   activity.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: LeadsViewAppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1261,10 +1300,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                       DateFormat(
                         'MMM dd • hh:mm a',
                       ).format(activity.scheduledAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: LeadsViewAppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1279,20 +1318,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: LeadsViewAppColors.background,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.more_vert_rounded,
                 size: 18,
-                color: LeadsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             elevation: 6,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             position: PopupMenuPosition.under,
             onSelected: (value) {
               if (value == 'edit') {
@@ -1421,9 +1460,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 Text(
                   "Are you sure you want to delete '${activity.title}'?\n\nThis action cannot be undone.",
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     height: 1.5,
-                    color: LeadsViewAppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
 
@@ -1493,14 +1532,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.background,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: LeadsViewAppColors.border),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: Text(
               state.comments.length.toString(),
-              style: const TextStyle(
-                color: LeadsViewAppColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
@@ -1522,10 +1563,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               widget.lead.notes.isEmpty
                   ? "No internal notes provided."
                   : widget.lead.notes,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.7,
-                color: LeadsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1534,27 +1575,29 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         const SizedBox(height: 16),
         _infoSection("Shared Attachments", [
           if (widget.lead.attachments.isEmpty)
-            const Text(
+            Text(
               "No documents found.",
               style: TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             )
           else
             ...widget.lead.attachments.map(
               (file) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: LeadsViewAppColors.background,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: LeadsViewAppColors.border),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(
+                  leading: Icon(
                     Iconsax.document_text,
-                    color: LeadsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
                   title: Text(
@@ -1597,7 +1640,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               width: MediaQuery.of(context).size.width * 0.50,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1643,12 +1686,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: LeadsViewAppColors.primary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                         ),
-                        child: Text(
+                        child: const Text(
                           "Submit",
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -1727,26 +1774,28 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            backgroundColor: Colors.white, // 👈 force white background
-            title: const Text(
-              "Confirm Upload",
-              style: TextStyle(color: Colors.black),
-            ),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Text("Confirm Upload"),
             content: Text(
               "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
-              style: const TextStyle(color: Colors.black),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text(
+                child: Text(
                   "Cancel",
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(

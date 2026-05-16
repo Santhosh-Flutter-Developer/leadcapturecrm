@@ -4,7 +4,6 @@ import 'package:iconsax/iconsax.dart';
 import '/app/app.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import '/services/services.dart';
 // import 'company_location_settings.dart';
 
@@ -62,24 +61,27 @@ class _SettingsListingState extends State<SettingsListing> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.showAppbar
           ? AppBar(
-              backgroundColor: SettingsColors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               centerTitle: false,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 8.0),
-                child: Back(color: AppColors.black),
+                child: Back(),
               ),
-              title: const Text(
+              title: Text(
                 "Preferences",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: SettingsColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                 ),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: SettingsColors.border, height: 1),
+                child: Container(
+                  color: Theme.of(context).dividerColor,
+                  height: 1,
+                ),
               ),
             )
           : null,
@@ -303,14 +305,18 @@ class _SettingsListingState extends State<SettingsListing> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: SettingsColors.textSecondary),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: SettingsColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1.2,
           ),
         ),
@@ -319,12 +325,9 @@ class _SettingsListingState extends State<SettingsListing> {
   }
 
   Widget _buildSettingsCard(List<Widget> children, [BuildContext? ctx]) {
-    final cardColor = ctx != null
-        ? Theme.of(ctx).colorScheme.surface
-        : SettingsColors.white;
-    final borderColor = ctx != null
-        ? Theme.of(ctx).dividerColor
-        : SettingsColors.border;
+    final effectiveCtx = ctx ?? context;
+    final cardColor = Theme.of(effectiveCtx).colorScheme.surface;
+    final borderColor = Theme.of(effectiveCtx).dividerColor;
     return Container(
       decoration: BoxDecoration(
         color: cardColor,
@@ -340,7 +343,7 @@ class _SettingsListingState extends State<SettingsListing> {
               if (!isLast)
                 Container(
                   margin: const EdgeInsets.only(left: 64),
-                  color: SettingsColors.border,
+                  color: borderColor,
                   height: 1,
                 ),
             ],
@@ -371,16 +374,16 @@ class _SettingsListingState extends State<SettingsListing> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: SettingsColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 14,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: SettingsColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                   ),
                 ),
@@ -422,9 +425,9 @@ class _SettingsListingState extends State<SettingsListing> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: SettingsColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,
                 ),
               ),
@@ -512,7 +515,9 @@ class MorphSwitch extends StatelessWidget {
         width: 48,
         height: 26,
         decoration: BoxDecoration(
-          color: value ? SettingsColors.primary : SettingsColors.border,
+          color: value
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).dividerColor,
           borderRadius: BorderRadius.circular(20),
         ),
         padding: const EdgeInsets.all(3),

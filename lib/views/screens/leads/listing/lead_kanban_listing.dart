@@ -12,7 +12,11 @@ import '/utils/utils.dart';
 class LeadKanbanListing extends StatefulWidget {
   final List<LeadModel> leadList;
   final VoidCallback? onLeadDeleted;
-  const LeadKanbanListing({super.key, required this.leadList, this.onLeadDeleted});
+  const LeadKanbanListing({
+    super.key,
+    required this.leadList,
+    this.onLeadDeleted,
+  });
 
   @override
   State<LeadKanbanListing> createState() => _LeadKanbanListingState();
@@ -122,7 +126,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           return ErrorDisplay(error: snapshot.error.toString());
         } else {
           return Container(
-            color: const Color(0xFFF3F4F6),
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
@@ -229,7 +233,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                 : Color(list.color).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16.0),
             border: Border.all(
-              color: isHovering ? AppColors.blue : Colors.transparent,
+              color: isHovering
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -237,7 +243,10 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildKanbanColumnHeader(list, leads.length, totalValue),
-              const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              Divider(
+                height: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(
@@ -274,7 +283,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         'companyZipCode': leadDetails.companyZipCode,
         'companyMobile': leadDetails.companyMobile,
         'companyAddress': leadDetails.companyAddress,
-                'clientName': leadDetails.clientName,
+        'clientName': leadDetails.clientName,
         'salutation': leadDetails.salutation,
         'clientEmail': leadDetails.clientEmail,
         'clientMobile': leadDetails.clientMobile,
@@ -372,13 +381,13 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: AppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Text(
             _currencyFormat.format(totalValue),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12,
-              color: AppColors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -402,12 +411,17 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           builder: (context, snapshot) {
             final allClients = snapshot.data ?? [];
             final companies = allClients
-                .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
+                .where(
+                  (c) => c.isCompany && (c.companyName?.isNotEmpty ?? false),
+                )
                 .toList();
             final contacts = allClients
-                .where((c) => !c.isCompany && (c.clientName?.isNotEmpty ?? false))
+                .where(
+                  (c) => !c.isCompany && (c.clientName?.isNotEmpty ?? false),
+                )
                 .toList();
-            final isLoading = snapshot.connectionState == ConnectionState.waiting;
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
 
             return ClipRRect(
               borderRadius: const BorderRadius.only(
@@ -415,7 +429,7 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                 topRight: Radius.circular(30),
               ),
               child: Scaffold(
-                backgroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 body: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Form(
@@ -444,13 +458,19 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                                 children: [
                                   Text(
                                     'Quick Lead',
-                                    style: Theme.of(context).textTheme.bodyMedium
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
                                         ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   Text(
                                     status.name,
                                     style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: AppColors.grey600),
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -471,8 +491,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                           controller: leadNameCtrl,
                           hintText: 'Enter lead name',
                           isRequired: true,
-                          valid: (v) =>
-                              v == null || v.isEmpty ? 'Lead name is required' : null,
+                          valid: (v) => v == null || v.isEmpty
+                              ? 'Lead name is required'
+                              : null,
                         ),
 
                         const SizedBox(height: 20),
@@ -506,13 +527,17 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                               )
                             : FormDropdownSearch(
                                 initialItem: selectedCompany?.companyName ?? '',
-                                items: companies.map((e) => e.companyName).toList(),
+                                items: companies
+                                    .map((e) => e.companyName)
+                                    .toList(),
                                 onChanged: (value) {
                                   setSheetState(() {
-                                    selectedCompany = companies.cast<ClientModel?>().firstWhere(
-                                      (c) => c?.companyName == value,
-                                      orElse: () => null,
-                                    );
+                                    selectedCompany = companies
+                                        .cast<ClientModel?>()
+                                        .firstWhere(
+                                          (c) => c?.companyName == value,
+                                          orElse: () => null,
+                                        );
                                   });
                                 },
                               ),
@@ -533,13 +558,17 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                               )
                             : FormDropdownSearch(
                                 initialItem: selectedContact?.clientName ?? '',
-                                items: contacts.map((e) => e.clientName).toList(),
+                                items: contacts
+                                    .map((e) => e.clientName)
+                                    .toList(),
                                 onChanged: (value) {
                                   setSheetState(() {
-                                    selectedContact = contacts.cast<ClientModel?>().firstWhere(
-                                      (c) => c?.clientName == value,
-                                      orElse: () => null,
-                                    );
+                                    selectedContact = contacts
+                                        .cast<ClientModel?>()
+                                        .firstWhere(
+                                          (c) => c?.clientName == value,
+                                          orElse: () => null,
+                                        );
                                   });
                                 },
                               ),
@@ -552,28 +581,37 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                             width: 200,
                             child: ElevatedButton.icon(
                               onPressed: () async {
-                                if (!quickFormKey.currentState!.validate()) return;
+                                if (!quickFormKey.currentState!.validate())
+                                  return;
 
                                 try {
                                   futureLoading(context);
 
                                   final lead = LeadModel.quick(
                                     leadName: leadNameCtrl.text.trim(),
-                                    leadValue: double.tryParse(leadValueCtrl.text) ?? 0,
+                                    leadValue:
+                                        double.tryParse(leadValueCtrl.text) ??
+                                        0,
                                     leadStatus: status.uid!,
                                     createdBy: await Spdb.getUser(),
-                                    workflow: await EmployeeService.getUserWorkflow(),
+                                    workflow:
+                                        await EmployeeService.getUserWorkflow(),
                                     // company fields
                                     companyName: selectedCompany?.companyName,
-                                    companyWebsite: selectedCompany?.officialWebsite,
-                                    companyMobile: selectedCompany?.officePhoneNo,
+                                    companyWebsite:
+                                        selectedCompany?.officialWebsite,
+                                    companyMobile:
+                                        selectedCompany?.officePhoneNo,
                                     companyCountry: selectedCompany?.country,
                                     companyState: selectedCompany?.state,
                                     companyCity: selectedCompany?.city,
-                                    companyAddress: selectedCompany?.companyAddress,
+                                    companyAddress:
+                                        selectedCompany?.companyAddress,
                                     companyZipCode: selectedCompany?.postalCode,
                                     // contact fields
-                                    clientId: selectedContact?.uid ?? selectedCompany?.uid,
+                                    clientId:
+                                        selectedContact?.uid ??
+                                        selectedCompany?.uid,
                                     clientName: selectedContact?.clientName,
                                     clientEmail: selectedContact?.email,
                                     clientMobile: selectedContact?.mobileNumber,
@@ -584,12 +622,18 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                                   await LeadService.createLead(lead: lead);
 
                                   // pop loading dialog
-                                  if (Navigator.canPop(context)) Navigator.pop(context);
+                                  if (Navigator.canPop(context))
+                                    Navigator.pop(context);
                                   // pop quick lead sheet
-                                  if (Navigator.canPop(context)) Navigator.pop(context);
-                                  FlushBar.show(context, 'Lead created successfully');
+                                  if (Navigator.canPop(context))
+                                    Navigator.pop(context);
+                                  FlushBar.show(
+                                    context,
+                                    'Lead created successfully',
+                                  );
                                 } catch (e) {
-                                  if (Navigator.canPop(context)) Navigator.pop(context);
+                                  if (Navigator.canPop(context))
+                                    Navigator.pop(context);
                                   FlushBar.show(
                                     context,
                                     e.toString(),
@@ -604,8 +648,12 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                               ),
                               style: ElevatedButton.styleFrom(
                                 elevation: 2,
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.white,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimary,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 24,
                                   vertical: 12,
@@ -652,16 +700,22 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
-              border: Border.all(color: AppColors.blue.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -713,10 +767,12 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
               width: 244,
               padding: const EdgeInsets.all(12.0),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12.0),
                 border: Border.all(
-                  color: AppColors.blue.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
               child: _buildCardContent(task, list),
@@ -728,7 +784,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.grey200,
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -751,11 +809,13 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -779,16 +839,17 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
           children: [
             CircleAvatar(
               radius: 14,
-              backgroundColor: AppColors.blue100,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Text(
                 lead.leadName.isNotEmpty ? lead.leadName[0].toUpperCase() : '?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.blue700,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
+
             const SizedBox(width: 10),
 
             /// Name + Email + Company
@@ -800,10 +861,10 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                     lead.leadName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
@@ -813,9 +874,9 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                       lead.leadEmail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.grey700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -838,16 +899,22 @@ class _LeadKanbanListingState extends State<LeadKanbanListing> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 10, color: AppColors.grey600),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 10,
+                          color: AppColors.grey600,
+                        ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             lead.clientName!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: AppColors.grey600,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),

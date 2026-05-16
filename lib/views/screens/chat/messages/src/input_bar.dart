@@ -348,21 +348,21 @@ class _ChatInputBarState extends State<ChatInputBar> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.white, AppColors.grey50],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: Theme.of(context).inputDecorationTheme.fillColor,
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.05),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.shadow.withValues(alpha: 0.05),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                         ],
                         border: Border.all(
-                          color: AppColors.black45,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.5),
                           width: 1.2,
                         ),
                       ),
@@ -438,13 +438,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Iconsax.send_2,
-                      color: AppColors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 18,
                     ),
                     onPressed: () async => await _sendMessage(),
@@ -562,10 +562,16 @@ class _ChatInputBarState extends State<ChatInputBar> {
                     right: 2,
                     child: GestureDetector(
                       onTap: () => _removeFile(index),
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 12,
-                        backgroundColor: Colors.black54,
-                        child: Icon(Icons.close, size: 16, color: Colors.white),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.5),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onInverseSurface,
+                        ),
                       ),
                     ),
                   ),
@@ -613,7 +619,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: Colors.orange,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
         ),
         child: const Icon(Icons.audiotrack, color: Colors.white),
       );
@@ -626,7 +632,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: Colors.red.shade400,
+          color: Theme.of(context).colorScheme.errorContainer,
         ),
         child: const Icon(Icons.picture_as_pdf, size: 40, color: Colors.white),
       );
@@ -693,20 +699,22 @@ class _ChatInputBarState extends State<ChatInputBar> {
       child: SizedBox(
         height: 70,
         child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(10),
               topRight: Radius.circular(10),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black26,
-                offset: Offset(0, -3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                offset: const Offset(0, -3),
                 blurRadius: 6,
                 spreadRadius: -1,
               ),
             ],
-            color: AppColors.white,
+            color: Theme.of(context).cardTheme.color,
           ),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -717,7 +725,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 Container(
                   width: 6,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -747,7 +755,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                                           baseColor: AppColors.grey300,
                                           highlightColor: AppColors.grey100,
                                           child: Container(
-                                            color: AppColors.white,
+                                            color: Theme.of(
+                                              context,
+                                            ).cardTheme.color,
                                           ),
                                         ),
                                     errorWidget: (context, url, error) =>
@@ -759,7 +769,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                                 )
                               : CircleAvatar(
                                   radius: 8,
-                                  backgroundColor: AppColors.grey200,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                                   child:
                                       ((CacheService.getUserByUid(
                                                 chat?.senderId ?? '',
@@ -791,7 +803,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         child: Text(
                           chat?.message ?? '',
                           style: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(color: AppColors.grey700),
+                              .copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -800,7 +816,10 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.grey),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   onPressed: () =>
                       setState(() => messageProvider?.clearMessage()),
                 ),
@@ -819,7 +838,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
         margin: const EdgeInsets.symmetric(horizontal: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -842,7 +861,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -851,7 +870,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: ListView.builder(
         shrinkWrap: true,
@@ -912,8 +931,12 @@ class _ChatInputBarState extends State<ChatInputBar> {
           height: 36,
           width: 36,
           fit: BoxFit.cover,
-          placeholder: (_, _) =>
-              CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade200),
+          placeholder: (_, _) => CircleAvatar(
+            radius: 18,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
+          ),
           errorWidget: (_, _, _) => _initialAvatar(user.name),
         ),
       );
@@ -925,10 +948,13 @@ class _ChatInputBarState extends State<ChatInputBar> {
   Widget _initialAvatar(String name) {
     return CircleAvatar(
       radius: 18,
-      backgroundColor: Colors.blue.shade100,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       child: Text(
         name[0].toUpperCase(),
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
       ),
     );
   }
@@ -963,18 +989,18 @@ class _ChatInputBarState extends State<ChatInputBar> {
         children: [
           TextSpan(
             text: name.substring(0, startIndex),
-            style: const TextStyle(color: Colors.black),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
           TextSpan(
             text: name.substring(startIndex, endIndex),
-            style: const TextStyle(
-              color: Colors.blue,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
           TextSpan(
             text: name.substring(endIndex),
-            style: const TextStyle(color: Colors.black),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),
@@ -991,20 +1017,22 @@ class _ChatInputBarState extends State<ChatInputBar> {
       child: SizedBox(
         height: 70,
         child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(10),
               topRight: Radius.circular(10),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black26,
-                offset: Offset(0, -3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                offset: const Offset(0, -3),
                 blurRadius: 6,
                 spreadRadius: -1,
               ),
             ],
-            color: AppColors.white,
+            color: Theme.of(context).cardTheme.color,
           ),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -1015,7 +1043,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 Container(
                   width: 6,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -1040,7 +1068,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         child: Text(
                           chat?.message ?? '',
                           style: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(color: AppColors.grey700),
+                              .copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1049,7 +1081,10 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.grey),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   onPressed: () =>
                       setState(() => messageProvider?.clearMessage()),
                 ),
@@ -1067,20 +1102,22 @@ class _ChatInputBarState extends State<ChatInputBar> {
       child: SizedBox(
         height: 70,
         child: Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(10),
               topRight: Radius.circular(10),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black26,
-                offset: Offset(0, -3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                offset: const Offset(0, -3),
                 blurRadius: 6,
                 spreadRadius: -1,
               ),
             ],
-            color: AppColors.white,
+            color: Theme.of(context).cardTheme.color,
           ),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -1091,7 +1128,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 Container(
                   width: 6,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -1113,7 +1150,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         child: Text(
                           _formatDuration(_timer?.tick ?? 0),
                           style: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(color: AppColors.grey700),
+                              .copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

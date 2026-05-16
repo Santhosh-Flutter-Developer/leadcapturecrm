@@ -64,25 +64,27 @@ class _FeedListingState extends State<FeedListing> {
         : 2; // Pro dashboard often uses 3 on wide screens
 
     return Scaffold(
-      backgroundColor: FeedAppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        leading: kIsMobile ? Back(color: FeedAppColors.textPrimary) : null,
-        backgroundColor: FeedAppColors.white,
+        leading: kIsMobile
+            ? Back(color: Theme.of(context).colorScheme.onSurface)
+            : null,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
-        title: const Text(
+        title: Text(
           "Community Feed",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: FeedAppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Iconsax.refresh,
-              color: FeedAppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
             onPressed: _refreshFeed,
@@ -91,11 +93,11 @@ class _FeedListingState extends State<FeedListing> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: FeedAppColors.border, height: 1),
+          child: Container(color: Theme.of(context).dividerColor, height: 1),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: FeedAppColors.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 4,
         onPressed: () async {
           if (kIsMobile) {
@@ -388,7 +390,9 @@ class FeedCardState extends State<FeedCard> {
                               ),
                               child: CircleAvatar(
                                 radius: 16,
-                                backgroundColor: FeedAppColors.background,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).scaffoldBackgroundColor,
                                 backgroundImage: NetworkImage(
                                   postAuthorAvatar.isNotEmpty
                                       ? postAuthorAvatar
@@ -407,17 +411,21 @@ class FeedCardState extends State<FeedCard> {
                                     ),
                                     child: Text(
                                       postAuthorName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
-                                        color: FeedAppColors.textPrimary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
                                   Text(
                                     _buildTimeLabel(widget.feed),
-                                    style: const TextStyle(
-                                      color: FeedAppColors.textSecondary,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -586,10 +594,12 @@ class FeedCardState extends State<FeedCard> {
                               if (widget.feed.content.trim().isNotEmpty) ...[
                                 SelectableText(
                                   widget.feed.content,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     height: 1.4,
-                                    color: FeedAppColors.textPrimary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -600,10 +610,12 @@ class FeedCardState extends State<FeedCard> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: FeedAppColors.background,
+                                    color: Theme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: FeedAppColors.border,
+                                      color: Theme.of(context).dividerColor,
                                     ),
                                   ),
                                   child: Column(
@@ -612,10 +624,12 @@ class FeedCardState extends State<FeedCard> {
                                     children: [
                                       Text(
                                         pollModel.question,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
-                                          color: FeedAppColors.textPrimary,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 10),
@@ -647,15 +661,21 @@ class FeedCardState extends State<FeedCard> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: isSelected
-                                                  ? FeedAppColors.primary
+                                                  ? Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
                                                         .withValues(alpha: 0.1)
                                                   : Colors.white,
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                               border: Border.all(
                                                 color: isSelected
-                                                    ? FeedAppColors.primary
-                                                    : FeedAppColors.border,
+                                                    ? Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary
+                                                    : Theme.of(
+                                                        context,
+                                                      ).dividerColor,
                                               ),
                                             ),
                                             child: Row(
@@ -785,20 +805,24 @@ class FeedCardState extends State<FeedCard> {
                               if (widget.feed.attachments.isNotEmpty) ...[
                                 Text(
                                   'Attachments (${widget.feed.attachments.length})',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: FeedAppColors.textPrimary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
                                   width: double.infinity,
                                   decoration: BoxDecoration(
-                                    color: FeedAppColors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: FeedAppColors.border,
+                                      color: Theme.of(context).dividerColor,
                                     ),
                                   ),
                                   child: ListView.separated(
@@ -813,10 +837,12 @@ class FeedCardState extends State<FeedCard> {
                                           widget.feed.attachments[index];
                                       return Row(
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Iconsax.document,
                                             size: 18,
-                                            color: FeedAppColors.textSecondary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
@@ -870,10 +896,12 @@ class FeedCardState extends State<FeedCard> {
 
                               Text(
                                 'Comments (${dialogComments.length})',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: FeedAppColors.textPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -881,10 +909,12 @@ class FeedCardState extends State<FeedCard> {
                                 height: 300,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: FeedAppColors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: FeedAppColors.border,
+                                      color: Theme.of(context).dividerColor,
                                     ),
                                   ),
                                   child: dialogComments.isEmpty
@@ -893,8 +923,9 @@ class FeedCardState extends State<FeedCard> {
                                             'No comments yet',
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color:
-                                                  FeedAppColors.textSecondary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
                                             ),
                                           ),
                                         )
@@ -906,8 +937,9 @@ class FeedCardState extends State<FeedCard> {
                                             primary: false,
                                             padding: const EdgeInsets.all(10),
                                             itemCount: dialogComments.length,
-                                            separatorBuilder: (context, index) =>
-                                                const SizedBox(height: 10),
+                                            separatorBuilder:
+                                                (context, index) =>
+                                                    const SizedBox(height: 10),
                                             itemBuilder: (context, index) {
                                               final comment =
                                                   dialogComments[index];
@@ -1418,9 +1450,9 @@ class FeedCardState extends State<FeedCard> {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: FeedAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: FeedAppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1436,7 +1468,7 @@ class FeedCardState extends State<FeedCard> {
                       _openUserProfileFromComment(widget.feed.authorId),
                   child: CircleAvatar(
                     radius: 14,
-                    backgroundColor: FeedAppColors.background,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     backgroundImage: NetworkImage(
                       _postAuthorAvatar.isNotEmpty
                           ? _postAuthorAvatar
@@ -1456,17 +1488,17 @@ class FeedCardState extends State<FeedCard> {
                           _postAuthorName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
-                            color: FeedAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
                       Text(
                         _buildTimeLabel(widget.feed),
-                        style: const TextStyle(
-                          color: FeedAppColors.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 10,
                         ),
                       ),
@@ -1475,10 +1507,10 @@ class FeedCardState extends State<FeedCard> {
                 ),
                 if (widget.currentUserUid == widget.feed.authorId)
                   PopupMenuButton<String>(
-                    icon: const Icon(
+                    icon: Icon(
                       Iconsax.more,
                       size: 16,
-                      color: FeedAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     onSelected: (value) async {
                       if (value == 'edit') {
@@ -1534,7 +1566,7 @@ class FeedCardState extends State<FeedCard> {
                   else if (widget.feed.content.isNotEmpty)
                     Container(
                       width: double.infinity,
-                      color: FeedAppColors.background,
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       padding: const EdgeInsets.all(12),
                       alignment: Alignment.center,
                       child: Text(
@@ -1542,19 +1574,19 @@ class FeedCardState extends State<FeedCard> {
                         maxLines: 5,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           height: 1.4,
-                          color: FeedAppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     )
                   else
-                    const Center(
+                    Center(
                       child: Icon(
                         Iconsax.document_text,
-                        color: FeedAppColors.border,
+                        color: Theme.of(context).dividerColor,
                         size: 40,
                       ),
                     ),
@@ -1600,9 +1632,9 @@ class FeedCardState extends State<FeedCard> {
                     widget.feed.content,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: FeedAppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 if (widget.feed.content.length > 120)
@@ -1610,12 +1642,12 @@ class FeedCardState extends State<FeedCard> {
                     padding: const EdgeInsets.only(top: 2),
                     child: InkWell(
                       onTap: _openPostPreview,
-                      child: const Text(
+                      child: Text(
                         'View full post',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: FeedAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -1627,22 +1659,24 @@ class FeedCardState extends State<FeedCard> {
                   children: [
                     _interactionIcon(
                       _isLiked ? Iconsax.heart5 : Iconsax.heart,
-                      _isLiked ? Colors.red : FeedAppColors.textSecondary,
+                      _isLiked
+                          ? Colors.red
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                       _likeCount > 0 ? _likeCount.toString() : "",
                       _handleLike,
                     ),
                     const SizedBox(width: 12),
                     _interactionIcon(
                       Iconsax.message,
-                      FeedAppColors.textSecondary,
+                      Theme.of(context).colorScheme.onSurfaceVariant,
                       _commentCount > 0 ? _commentCount.toString() : "",
                       () => _showCommentSheet(),
                     ),
                     const Spacer(),
-                    const Icon(
+                    Icon(
                       Iconsax.archive_add,
                       size: 18,
-                      color: FeedAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -1671,10 +1705,10 @@ class FeedCardState extends State<FeedCard> {
             const SizedBox(width: 4),
             Text(
               count,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: FeedAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],

@@ -123,7 +123,7 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.grey.withValues(alpha: 0.1),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -157,14 +157,14 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                                       sortAscending:
                                           controllerWatch.sortAscending,
                                       headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                        Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       headingTextStyle: Theme.of(context)
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                       columns: [
                                         DataColumn(
@@ -286,13 +286,13 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -300,13 +300,13 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.grey300,
-                      foregroundColor: AppColors.grey600,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
             const SizedBox(width: 10),
@@ -420,17 +420,17 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                       },
                     )
                   : ElevatedButton.icon(
-                      label: Text(
+                        label: Text(
                         "Delete",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                       ),
-                      icon: Icon(Iconsax.trash),
+                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.grey400,
-                        foregroundColor: AppColors.white,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
             ],
@@ -498,17 +498,17 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           );
                         }
                       },
-                      color: AppColors.info,
+                      color: Theme.of(context).colorScheme.primary,
                       splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
-                      color: AppColors.danger,
+                      color: Theme.of(context).colorScheme.error,
                       splashRadius: 20,
                       tooltip: 'Delete $_pageTitle',
                       onPressed: () async {
@@ -596,7 +596,7 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                       },
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
             ],

@@ -68,7 +68,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return AppBar(
-      backgroundColor: AppColors.primary,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       elevation: 2,
       titleSpacing: 0,
       title: isSearching
@@ -77,24 +77,27 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 if (onBack != null)
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.black),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                     onPressed: onBack,
                   ),
                 if (chat.isGroupChat) ...[
-                  const CircleAvatar(
-                    backgroundColor: AppColors.grey200,
+                  CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     radius: 22,
                     child: Icon(Icons.group, size: 20),
                   ),
                 ] else ...[
                   if (isSelfChat) ...[
-                    const CircleAvatar(
-                      backgroundColor: AppColors.white24,
+                    CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       radius: 20,
                       child: Icon(
                         Iconsax.save_2,
                         size: 20,
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ] else if (userImage != null && userImage.isNotEmpty) ...[
@@ -105,9 +108,13 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                         child: CachedNetworkImage(
                           imageUrl: userImage,
                           placeholder: (context, url) => Shimmer.fromColors(
-                            baseColor: AppColors.grey300,
-                            highlightColor: AppColors.grey100,
-                            child: Container(color: AppColors.white),
+                            baseColor: Theme.of(context).dividerColor,
+                            highlightColor: Theme.of(
+                              context,
+                            ).scaffoldBackgroundColor,
+                            child: Container(
+                              color: Theme.of(context).colorScheme.surface,
+                            ),
                           ),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error),
@@ -121,7 +128,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                     GestureDetector(
                       onTap: () => openUser(context, user),
                       child: CircleAvatar(
-                        backgroundColor: AppColors.grey200,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         radius: 22,
                         child: Text(
                           (userName ?? '?').capitalizeFirst,
@@ -217,7 +224,7 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: Icon(
             isSearching ? Icons.close : Iconsax.search_normal,
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
           onPressed: () {
             if (isSearching) {
@@ -230,7 +237,10 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 
         if (!isSearching)
           IconButton(
-            icon: const Icon(Icons.info_outline, color: AppColors.white),
+            icon: Icon(
+              Icons.info_outline,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -330,7 +340,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       centerTitle: false,
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       toolbarHeight: 56,
       leadingWidth: 48,
@@ -357,7 +367,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: Icon(
             isSearching ? Icons.close : Iconsax.search_normal,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () {
             if (isSearching) {
@@ -370,7 +380,10 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
         if (!isSearching)
           IconButton(
-            icon: const Icon(Iconsax.info_circle, color: AppColors.primary),
+            icon: Icon(
+              Iconsax.info_circle,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             onPressed: () {
               GeneralDialog.showRTLSheet(
                 context,
@@ -390,18 +403,26 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
     bool isSelfChat,
   ) {
     if (chat.isGroupChat) {
-      return const CircleAvatar(
+      return CircleAvatar(
         radius: 15,
-        backgroundColor: AppColors.primary,
-        child: Icon(Icons.group, size: 18, color: AppColors.white),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: Icon(
+          Icons.group,
+          size: 18,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       );
     }
 
     if (isSelfChat) {
-      return const CircleAvatar(
+      return CircleAvatar(
         radius: 15,
         backgroundColor: AppColors.primary,
-        child: Icon(Iconsax.save_2, size: 18, color: AppColors.white),
+        child: Icon(
+          Iconsax.save_2,
+          size: 18,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       );
     }
 
@@ -464,7 +485,7 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
                       Text(
                         '${chat.participants.length} Members',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

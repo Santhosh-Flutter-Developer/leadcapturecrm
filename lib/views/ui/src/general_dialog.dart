@@ -17,7 +17,7 @@ class GeneralDialog {
             Align(
               alignment: Alignment.centerRight,
               child: Material(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   bottomLeft: Radius.circular(16),

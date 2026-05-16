@@ -15,7 +15,6 @@ import 'package:leadcapture/views/ui/src/form_fields.dart';
 import 'package:leadcapture/views/ui/src/submit_button.dart';
 
 // Project imports:
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 
 class Filter extends StatefulWidget {
@@ -73,7 +72,7 @@ class _FilterState extends State<Filter> {
         topRight: Radius.circular(30),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: SubmitButton(
           event: () {
             var filterModel = FilterModel(
@@ -101,7 +100,7 @@ class _FilterState extends State<Filter> {
               readOnly: true,
               controller: _pageNo,
               label: "Page No",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 RenderBox renderBox =
                     _pageNoKey.currentContext!.findRenderObject() as RenderBox;
@@ -131,7 +130,7 @@ class _FilterState extends State<Filter> {
               controller: _pageLimit,
               label: "Page Limit",
               readOnly: true,
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 RenderBox renderBox =
                     _pageLimitKey.currentContext!.findRenderObject()
@@ -162,7 +161,7 @@ class _FilterState extends State<Filter> {
               controller: _fromDate,
               label: "From Date",
               hintText: "dd-mm-yyyy",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 var v = await pickDate(
                   context,
@@ -180,7 +179,7 @@ class _FilterState extends State<Filter> {
               controller: _toDate,
               label: "To Date",
               hintText: "dd-mm-yyyy",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 var v = await pickDate(context, lastDate: DateTime.now());
                 if (v != null) {
@@ -227,7 +226,7 @@ class _RideFilterState extends State<RideFilter> {
         topRight: Radius.circular(30),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: SubmitButton(
           event: () {
             var filterModel = RideFilterModel(
@@ -253,7 +252,7 @@ class _RideFilterState extends State<RideFilter> {
               controller: _fromDate,
               label: "From Date",
               hintText: "dd-mm-yyyy",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 var v = await pickDate(
                   context,
@@ -271,7 +270,7 @@ class _RideFilterState extends State<RideFilter> {
               controller: _toDate,
               label: "To Date",
               hintText: "dd-mm-yyyy",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               onTap: () async {
                 var v = await pickDate(context, lastDate: DateTime.now());
                 if (v != null) {

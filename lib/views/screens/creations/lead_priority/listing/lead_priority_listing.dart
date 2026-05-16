@@ -118,7 +118,7 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.grey.withValues(alpha: 0.1),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -152,14 +152,14 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                                       sortAscending:
                                           controllerWatch.sortAscending,
                                       headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                        Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       headingTextStyle: Theme.of(context)
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                       columns: [
                                         DataColumn(
@@ -312,13 +312,13 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -326,13 +326,13 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                     icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.grey300,
-                      foregroundColor: AppColors.grey600,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
             const SizedBox(width: 10),
@@ -456,8 +456,8 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: AppColors.white,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
                   : ElevatedButton.icon(
@@ -544,17 +544,17 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                           );
                         }
                       },
-                      color: AppColors.info,
+                      color: Theme.of(context).colorScheme.primary,
                       splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
-                      color: AppColors.danger,
+                      color: Theme.of(context).colorScheme.error,
                       splashRadius: 20,
                       onPressed: () async {
                         // ✅ STEP 0: check assignment
@@ -647,7 +647,7 @@ class _LeadPriorityListingViewState extends State<LeadPriorityListingView> {
                       },
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
             ],

@@ -50,7 +50,7 @@ class _LeadCategoryEditState extends State<LeadCategoryEdit> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -105,12 +105,12 @@ class _LeadCategoryEditState extends State<LeadCategoryEdit> {
                                           .titleMedium!
                                           .copyWith(
                                             fontWeight: FontWeight.w700,
-                                            color: AppColors.primary,
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
                                     ),
                                     const SizedBox(height: 10),
                                     Divider(
-                                      color: AppColors.grey300,
+                                      color: Theme.of(context).colorScheme.outlineVariant,
                                       thickness: 1,
                                     ),
                                     const SizedBox(height: 20),

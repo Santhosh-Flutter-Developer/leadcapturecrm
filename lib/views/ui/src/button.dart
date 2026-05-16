@@ -10,9 +10,6 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:iconsax/iconsax.dart';
 
-// Project imports:
-import '/theme/theme.dart';
-
 class Button extends StatelessWidget {
   final VoidCallback? event;
   final Future<void> Function()? onPressed;
@@ -42,7 +39,7 @@ class Button extends StatelessWidget {
     return ElevatedButton(
       style: ButtonStyle(
         backgroundColor: WidgetStateProperty.all(
-          backgroundColor ?? AppColors.primary,
+          backgroundColor ?? Theme.of(context).colorScheme.primary,
         ),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         minimumSize: WidgetStateProperty.all(Size(height ?? 80, width ?? 40)),
@@ -58,11 +55,16 @@ class Button extends StatelessWidget {
         children: [
           Icon(
             icon ?? Iconsax.tick_circle,
-            color: iconColor ?? AppColors.white,
+            color: iconColor ?? Theme.of(context).colorScheme.onPrimary,
             size: 20,
           ),
           const SizedBox(width: 5),
-          Text(text, style: TextStyle(color: textColor ?? AppColors.white)),
+          Text(
+            text,
+            style: TextStyle(
+              color: textColor ?? Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
         ],
       ),
     );

@@ -331,8 +331,8 @@ class CommentSheetState extends State<CommentSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: FeedAppColors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -344,7 +344,7 @@ class CommentSheetState extends State<CommentSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: FeedAppColors.border,
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -354,19 +354,19 @@ class CommentSheetState extends State<CommentSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Comments",
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
-                    color: FeedAppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
+                  icon: Icon(
                     Iconsax.close_circle,
-                    color: FeedAppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -401,10 +401,13 @@ class CommentSheetState extends State<CommentSheet> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: FeedAppColors.background,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border(
-                  left: BorderSide(color: FeedAppColors.primary, width: 4),
+                  left: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 4,
+                  ),
                 ),
               ),
               child: Row(
@@ -416,9 +419,9 @@ class CommentSheetState extends State<CommentSheet> {
                         Text(
                           _commentAuthors[_replyingTo!.authorId]?.name ??
                               _replyingTo!.authorName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: FeedAppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         Text(
