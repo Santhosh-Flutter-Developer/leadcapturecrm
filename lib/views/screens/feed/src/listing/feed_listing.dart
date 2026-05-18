@@ -184,6 +184,7 @@ class FeedCard extends StatefulWidget {
 class FeedCardState extends State<FeedCard> {
   int _currentImageIndex = 0;
   late bool _isLiked;
+  late bool _isSaved;
   late int _likeCount;
   late String _postAuthorName;
   late String _postAuthorAvatar;
@@ -1369,6 +1370,9 @@ class FeedCardState extends State<FeedCard> {
     _isLiked = widget.feed.reactions.any(
       (r) => r.userId == widget.currentUserUid,
     );
+    _isSaved =
+        widget.currentUserUid != null &&
+        widget.feed.savedBy.contains(widget.currentUserUid);
     _likeCount = widget.feed.reactions.length;
   }
 
@@ -1397,6 +1401,16 @@ class FeedCardState extends State<FeedCard> {
     });
     context.read<FeedBloc>().add(
       ToggleLike(feedId: widget.feed.uid!, userId: widget.currentUserUid!),
+    );
+  }
+
+  void _handleSave() {
+    if (widget.currentUserUid == null) return;
+    setState(() {
+      _isSaved = !_isSaved;
+    });
+    context.read<FeedBloc>().add(
+      ToggleSaveFeed(feedId: widget.feed.uid!, userId: widget.currentUserUid!),
     );
   }
 
@@ -1626,10 +1640,15 @@ class FeedCardState extends State<FeedCard> {
                       () => _showCommentSheet(),
                     ),
                     const Spacer(),
-                    const Icon(
-                      Iconsax.archive_add,
-                      size: 18,
-                      color: FeedAppColors.textSecondary,
+                    InkWell(
+                      onTap: _handleSave,
+                      child: Icon(
+                        _isSaved ? Iconsax.archive_minus5 : Iconsax.archive_add,
+                        size: 18,
+                        color: _isSaved
+                            ? FeedAppColors.primary
+                            : FeedAppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -1691,10 +1710,10 @@ class FeedCardState extends State<FeedCard> {
     final updatedAt = feed.updatedAt;
 
     if (updatedAt == null || updatedAt.isAtSameMomentAs(feed.createdAt)) {
-      return 'Posted ${createdLabel} ago';
+      return 'Posted $createdLabel ago';
     }
 
-    return 'Posted ${createdLabel} ago · Edited ${_formatShortTime(updatedAt)} ago';
+    return 'Posted $createdLabel ago · Edited ${_formatShortTime(updatedAt)} ago';
   }
 
   Future<void> _showCommentSheet() async {

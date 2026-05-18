@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/views/screens/attendance/attendance.dart';
-import 'package:leadcapture/views/screens/permission/src/permission_requests/src/permission_requests_listing.dart';
-import 'package:leadcapture/views/screens/salary_ledger/salary_ledger_listing.dart';
 import 'package:leadcapture/views/screens/worktime/src/worktime_create.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
@@ -39,7 +37,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading) {
@@ -73,8 +71,8 @@ class _DashboardState extends State<Dashboard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildKpiGrid(context, widget.isAdmin, data),
-                              const SizedBox(height: 20),
-                              _buildPayroll(context, widget.isAdmin, data),
+                              // const SizedBox(height: 20),
+                              // _buildPayroll(context, widget.isAdmin, data),
                               const SizedBox(height: 20),
                               if (widget.isAdmin) ...[
                                 LeadsSourcePieChart(leads: data.allLeads),
@@ -105,8 +103,8 @@ class _DashboardState extends State<Dashboard> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildKpiGrid(context, widget.isAdmin, data),
-                                  const SizedBox(height: 20),
-                                  _buildPayroll(context, widget.isAdmin, data),
+                                  // const SizedBox(height: 20),
+                                  // _buildPayroll(context, widget.isAdmin, data),
                                   const SizedBox(height: 20),
                                   if (widget.isAdmin) ...[
                                     LeadsSourcePieChart(leads: data.allLeads),
@@ -162,7 +160,7 @@ class _DashboardState extends State<Dashboard> {
                 "Dashboard",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: kTextSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 5),
@@ -170,7 +168,7 @@ class _DashboardState extends State<Dashboard> {
                 isAdmin ? "Overview Analytics" : "My Workspace",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: kTextPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -253,7 +251,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -350,7 +348,10 @@ class _DashboardState extends State<Dashboard> {
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: kTextSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -441,7 +442,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -498,7 +499,7 @@ class _DashboardState extends State<Dashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -560,7 +561,10 @@ class _DashboardState extends State<Dashboard> {
         ),
         Text(
           title,
-          style: const TextStyle(fontSize: 12, color: kTextSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -760,7 +764,7 @@ class _DashboardState extends State<Dashboard> {
                   "Update Available (v${VersionService.version?.version})",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF222B45),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -768,7 +772,7 @@ class _DashboardState extends State<Dashboard> {
                   "A newer version of the app is available. Update now for better performance, features and stability.",
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     height: 1.4,
-                    color: Color(0xFF4A4A4A),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -942,11 +946,13 @@ Widget _buildActivitySection(
   return Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: kCardColor,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(kBorderRadius),
       boxShadow: [
         BoxShadow(
-          color: kTextPrimary.withValues(alpha: 0.05),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.05),
           blurRadius: 20,
           offset: const Offset(0, 4),
         ),
@@ -962,10 +968,13 @@ Widget _buildActivitySection(
               isAdmin ? "Recent Activity" : "Your Activity",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: kTextPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Icon(Icons.more_horiz, color: kTextSecondary),
+            Icon(
+              Icons.more_horiz,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -974,9 +983,9 @@ Widget _buildActivitySection(
             padding: const EdgeInsets.all(20.0),
             child: Text(
               "No activity yet.",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ListView.separated(
@@ -1084,7 +1093,7 @@ Widget _sectionTitle(BuildContext context, String text) {
     text,
     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
       fontWeight: FontWeight.bold,
-      color: kTextPrimary,
+      color: Theme.of(context).colorScheme.onSurface,
     ),
   );
 }
@@ -1092,9 +1101,9 @@ Widget _sectionTitle(BuildContext context, String text) {
 Widget _emptyText(BuildContext context, String text) {
   return Text(
     text,
-    style: Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
   );
 }
 
@@ -1118,26 +1127,26 @@ List<Widget> _adminActions(BuildContext context) => [
     onTap: () => _openSheet(context, const TaskCreate(employees: [])),
   ),
 
-  QuickActionCard(
-    icon: Icons.access_time,
-    label: "Attendance",
-    color: Colors.green,
-    onTap: () => _openSheet(context, const Attendance()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.access_time,
+  //   label: "Attendance",
+  //   color: Colors.green,
+  //   onTap: () => _openSheet(context, const Attendance()),
+  // ),
 
-  QuickActionCard(
-    icon: Icons.payments_outlined,
-    label: "Salary Ledger",
-    color: Colors.indigo,
-    onTap: () => _openSheet(context, const SalaryLedgerList()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.payments_outlined,
+  //   label: "Salary Ledger",
+  //   color: Colors.indigo,
+  //   onTap: () => _openSheet(context, const SalaryLedgerList()),
+  // ),
 
-  QuickActionCard(
-    icon: Icons.verified_user_outlined,
-    label: "Permissions",
-    color: Colors.red,
-    onTap: () => _openSheet(context, const PermissionRequestsListing()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.verified_user_outlined,
+  //   label: "Permissions",
+  //   color: Colors.red,
+  //   onTap: () => _openSheet(context, const PermissionRequestsListing()),
+  // ),
 ];
 
 List<Widget> _userActions(BuildContext context) => [
@@ -1223,8 +1232,8 @@ class KpiCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: [
-              kCardColor.withValues(alpha: 0.95),
-              kCardColor.withValues(alpha: 0.85),
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1295,7 +1304,7 @@ class KpiCard extends StatelessWidget {
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: kTextPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
@@ -1303,7 +1312,7 @@ class KpiCard extends StatelessWidget {
               title,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+              ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
 
             const Spacer(),
@@ -1316,7 +1325,7 @@ class KpiCard extends StatelessWidget {
                   "Target",
                   style: Theme.of(
                     context,
-                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                  ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 Text(
                   "${(progress * 100).toInt()}%",
@@ -1337,7 +1346,7 @@ class KpiCard extends StatelessWidget {
                   return LinearProgressIndicator(
                     value: value,
                     minHeight: 6,
-                    backgroundColor: kBgColor,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       gradientColors.first,
                     ),
@@ -1381,7 +1390,7 @@ class QuickActionCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [kCardColor, kCardColor.withValues(alpha: 0.9)],
+              colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.surface.withValues(alpha: 0.9)],
             ),
             boxShadow: [
               BoxShadow(
@@ -1428,7 +1437,7 @@ class QuickActionCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: kTextPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.25,
                   ),
                 ),
@@ -1441,13 +1450,18 @@ class QuickActionCard extends StatelessWidget {
   }
 }
 
-class NotificationTile extends StatelessWidget {
+class NotificationTile extends StatefulWidget {
   final NotificationModel notification;
 
   const NotificationTile({super.key, required this.notification});
 
+  @override
+  State<NotificationTile> createState() => _NotificationTileState();
+}
+
+class _NotificationTileState extends State<NotificationTile> {
   Color _iconColor() {
-    switch (notification.type ?? NotificationType.info) {
+    switch (widget.notification.type ?? NotificationType.info) {
       case NotificationType.success:
         return Colors.green;
       case NotificationType.warning:
@@ -1461,7 +1475,7 @@ class NotificationTile extends StatelessWidget {
   }
 
   IconData _iconData() {
-    switch (notification.type) {
+    switch (widget.notification.type) {
       case NotificationType.success:
         return Icons.check_circle_outline;
       case NotificationType.warning:
@@ -1474,65 +1488,148 @@ class NotificationTile extends StatelessWidget {
     }
   }
 
+  Future<void> _openPlatformSheet(BuildContext context, Widget widget) async {
+    if (kIsDesktop) {
+      await GeneralDialog.showRTLSheet(context, widget);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => widget));
+    }
+  }
+
+  Future<void> _handleTap(BuildContext context) async {
+    switch (widget.notification.type) {
+      case NotificationType.chat:
+        final chatId = widget.notification.collectionId;
+        final senderId = widget.notification.senderId ?? '';
+
+        if (chatId!.isNotEmpty) {
+          await _openPlatformSheet(
+            context,
+            ChatListing(currentUserUid: senderId, selectedChatUid: chatId),
+          );
+        }
+        break;
+
+      case NotificationType.task:
+        final taskId = widget.notification.payload['taskId'] as String?;
+
+        if (taskId != null && taskId.isNotEmpty) {
+          await _openPlatformSheet(context, TaskView(uid: taskId));
+        } else {
+          await _openPlatformSheet(context, TasksListing());
+        }
+        break;
+
+      /// 📊 LEAD
+      case NotificationType.lead:
+        final leadId = widget.notification.payload['leadId'] as String?;
+
+        if (leadId != null && leadId.isNotEmpty) {
+          try {
+            final lead = await LeadService.getLead(uid: leadId);
+
+            await _openPlatformSheet(context, LeadsViewPage(lead: lead));
+          } catch (_) {
+            await _openPlatformSheet(context, LeadsListing(showAppBar: true));
+          }
+        }
+        break;
+
+      /// 💼 DEAL
+      case NotificationType.deal:
+        final dealId = widget.notification.payload['dealId'] as String?;
+
+        if (dealId != null && dealId.isNotEmpty) {
+          try {
+            final deal = await DealService.getDeal(uid: dealId);
+
+            await _openPlatformSheet(context, DealsViewPage(deal: deal));
+          } catch (_) {
+            await _openPlatformSheet(context, DealsListing(showAppBar: true));
+          }
+        }
+        break;
+
+      /// 📰 FEED
+      case NotificationType.feed:
+        await _openPlatformSheet(context, FeedListing());
+        break;
+
+      /// 📅 EVENT
+      case NotificationType.eventReminder:
+        await _openPlatformSheet(context, CalendarEventScreen());
+        break;
+
+      default:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final iconColor = _iconColor();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: kCardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ICON
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconColor.withValues(alpha: 0.12),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _handleTap(context),
+
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-            child: Icon(_iconData(), color: iconColor, size: 22),
-          ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ICON
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconColor.withValues(alpha: 0.12),
+              ),
+              child: Icon(_iconData(), color: iconColor, size: 22),
+            ),
 
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          /// CONTENT
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: kTextPrimary,
+            /// CONTENT
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.notification.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 4),
-                Text(
-                  notification.createdAt!.formatDateMonthTime,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
-                ),
-              ],
+                  const SizedBox(height: 4),
+
+                  Text(
+                    widget.notification.createdAt!.formatDateMonthTime,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1565,7 +1662,7 @@ class TaskReminderTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: kCardColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -1609,7 +1706,7 @@ class TaskReminderTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: kTextPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1617,7 +1714,7 @@ class TaskReminderTile extends StatelessWidget {
                       date,
                       style: Theme.of(
                         context,
-                      ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+                      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -1703,14 +1800,14 @@ class ActivityTimelineTile extends StatelessWidget {
                 Text(
                   activity.page,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    color: isFirst ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
                 Text(
                   timeago.format(activity.visitedAt, locale: 'en_short'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    color: isFirst ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),

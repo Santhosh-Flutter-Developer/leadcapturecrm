@@ -33,6 +33,7 @@ class FeedModel {
   final List<TaggedUserModel> taggedUsers;
   final PollModel? poll;
   final List<ReactionModel> reactions;
+  final List<String> savedBy;
   final int commentsCount;
   final List<CommentModel>? comments;
   final DateTime createdAt;
@@ -49,6 +50,7 @@ class FeedModel {
     required this.attachments,
     required this.taggedUsers,
     required this.reactions,
+    this.savedBy = const [],
     this.poll,
     this.commentsCount = 0,
     this.comments,
@@ -67,6 +69,7 @@ class FeedModel {
     List<FileModel>? attachments,
     List<TaggedUserModel>? taggedUsers,
     List<ReactionModel>? reactions,
+    List<String>? savedBy,
     PollModel? poll,
     int? commentsCount,
     List<CommentModel>? comments,
@@ -83,6 +86,7 @@ class FeedModel {
       attachments: attachments ?? this.attachments,
       taggedUsers: taggedUsers ?? this.taggedUsers,
       reactions: reactions ?? this.reactions,
+      savedBy: savedBy ?? this.savedBy,
       poll: poll ?? this.poll,
       commentsCount: commentsCount ?? this.commentsCount,
       comments: comments ?? this.comments,
@@ -128,6 +132,11 @@ class FeedModel {
                 .map((x) => ReactionModel.fromMap(x))
                 .toList()
           : [],
+      savedBy: map['savedBy'] != null
+          ? (map['savedBy'] as List<dynamic>? ?? [])
+                .map((x) => x.toString())
+                .toList()
+          : [],
       poll: map['poll'] != null ? PollModel.fromMap(map['poll']) : null,
       commentsCount: map['commentsCount'] != null && map['commentsCount'] is int
           ? map['commentsCount']
@@ -152,6 +161,7 @@ class FeedModel {
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'taggedUsers': taggedUsers.map((e) => e.toMap()).toList(),
       'reactions': reactions.map((e) => e.toMap()).toList(),
+      'savedBy': savedBy,
       'poll': poll?.toMap(),
       'commentsCount': commentsCount,
       'comments': comments?.map((e) => e.toMap()).toList(),
@@ -170,6 +180,7 @@ class FeedModel {
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'taggedUsers': taggedUsers.map((e) => e.toMap()).toList(),
       'reactions': reactions.map((e) => e.toMap()).toList(),
+      'savedBy': savedBy,
       'poll': poll?.toMap(),
       'commentsCount': commentsCount,
       'comments': comments?.map((e) => e.toMap()).toList(),

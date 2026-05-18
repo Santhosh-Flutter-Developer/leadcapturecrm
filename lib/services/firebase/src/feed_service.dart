@@ -220,6 +220,47 @@ class FeedService {
     await docRef.update({'reactions': reactions});
   }
 
+  static Future<void> toggleSaveFeed({
+    required String feedId,
+    required String userId,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+
+      final docRef = firestore
+          .collection(Collections.users.name)
+          .doc(cid)
+          .collection(Collections.feed.name)
+          .doc(feedId);
+
+      final snapshot = await docRef.get();
+
+      if (!snapshot.exists) {
+        throw "Feed post does not exist!";
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      List<dynamic> rawSavedBy = data['savedBy'] ?? [];
+      List<String> savedBy = List<String>.from(rawSavedBy);
+
+      if (savedBy.contains(userId)) {
+        // Remove from savedBy
+        await docRef.update({
+          'savedBy': FieldValue.arrayRemove([userId])
+        });
+      } else {
+        // Add to savedBy
+        await docRef.update({
+          'savedBy': FieldValue.arrayUnion([userId])
+        });
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error toggling save feed: $e\n$st");
+      throw "Error toggling save feed: $e";
+    }
+  }
+
   static Future<void> addComment({
     required String feedId,
     required CommentModel comment,

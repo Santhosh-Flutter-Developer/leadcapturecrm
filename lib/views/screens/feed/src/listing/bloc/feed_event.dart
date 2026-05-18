@@ -21,6 +21,16 @@ class ToggleLike extends FeedEvent {
   List<Object?> get props => [feedId, userId];
 }
 
+class ToggleSaveFeed extends FeedEvent {
+  final String feedId;
+  final String userId;
+
+  const ToggleSaveFeed({required this.feedId, required this.userId});
+
+  @override
+  List<Object?> get props => [feedId, userId];
+}
+
 class AddComment extends FeedEvent {
   final String feedId;
   final String userId;

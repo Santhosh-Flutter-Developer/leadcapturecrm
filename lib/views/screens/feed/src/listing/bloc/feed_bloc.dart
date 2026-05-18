@@ -13,6 +13,7 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     on<ToggleLike>(_onToggleLike);
     on<AddComment>(_onAddComment);
     on<VotePoll>(_onVotePoll);
+    on<ToggleSaveFeed>(_onToggleSaveFeed);
   }
 
   Future<void> _onLoadFeeds(LoadFeeds event, Emitter<FeedState> emit) async {
@@ -117,6 +118,41 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
       emit(FeedLoaded(updatedFeeds));
     } catch (e) {
       emit(FeedActionError('Failed to vote poll'));
+    }
+  }
+
+  Future<void> _onToggleSaveFeed(ToggleSaveFeed event, Emitter<FeedState> emit) async {
+    if (state is! FeedLoaded) return;
+    final currentState = state as FeedLoaded;
+    final feeds = List<FeedModel>.from(currentState.feeds);
+    final index = feeds.indexWhere((f) => f.uid == event.feedId);
+    if (index == -1) return;
+
+    final feed = feeds[index];
+
+    // Optimistic update
+    bool isSaved = feed.savedBy.contains(event.userId);
+    if (isSaved) {
+      feed.savedBy.remove(event.userId);
+    } else {
+      feed.savedBy.add(event.userId);
+    }
+
+    emit(FeedLoaded(feeds));
+
+    try {
+      await FeedService.toggleSaveFeed(
+        feedId: event.feedId,
+        userId: event.userId,
+      );
+    } catch (e) {
+      // Revert on error
+      if (isSaved) {
+        feed.savedBy.add(event.userId);
+      } else {
+        feed.savedBy.remove(event.userId);
+      }
+      emit(FeedLoaded(feeds));
     }
   }
 }
