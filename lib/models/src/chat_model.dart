@@ -12,7 +12,10 @@ class ChatModel {
   final bool isGroupChat;
   final LastMessageModel? lastMessage;
   final bool isPinned;
+  final Map<String, dynamic>? isPinnedBy;
   final bool isFavorite;
+  final Map<String, dynamic>? isFavoriteBy;
+  final List<String>? deletedFor;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -26,7 +29,10 @@ class ChatModel {
     this.isGroupChat = false,
     this.lastMessage,
     required this.isPinned,
+    this.isPinnedBy,
     required this.isFavorite,
+    this.isFavoriteBy,
+    this.deletedFor,
     this.createdAt,
     this.updatedAt,
   });
@@ -42,7 +48,10 @@ class ChatModel {
     LastMessageModel? lastMessage,
     Map<String, List<String>>? reactions,
     bool? isPinned,
+    Map<String, dynamic>? isPinnedBy,
     bool? isFavorite,
+    Map<String, dynamic>? isFavoriteBy,
+    List<String>? deletedFor,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -56,7 +65,10 @@ class ChatModel {
       isGroupChat: isGroupChat ?? this.isGroupChat,
       lastMessage: lastMessage ?? this.lastMessage,
       isPinned: isPinned ?? this.isPinned,
+      isPinnedBy: isPinnedBy ?? this.isPinnedBy,
       isFavorite: isFavorite ?? this.isFavorite,
+      isFavoriteBy: isFavoriteBy ?? this.isFavoriteBy,
+      deletedFor: deletedFor ?? this.deletedFor,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -64,6 +76,7 @@ class ChatModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'createdBy': createdBy,
       'participants': participants,
       'participantsKey': participantsKey,
@@ -72,7 +85,10 @@ class ChatModel {
       'isGroupChat': isGroupChat,
       'lastMessage': lastMessage?.toMap(),
       'isPinned': isPinned,
+      'isPinnedBy': isPinnedBy,
       'isFavorite': isFavorite,
+      'isFavoriteBy': isFavoriteBy,
+      'deletedFor': deletedFor,
       'createdAt': createdAt?.millisecondsSinceEpoch,
       'updatedAt': updatedAt?.millisecondsSinceEpoch,
     };
@@ -106,7 +122,16 @@ class ChatModel {
           ? LastMessageModel.fromMap(map['lastMessage'] as Map<String, dynamic>)
           : null,
       isPinned: map['isPinned'] != null ? map['isPinned'] as bool : false,
+      isPinnedBy: map['isPinnedBy'] != null
+          ? Map<String, dynamic>.from(map['isPinnedBy'])
+          : {},
       isFavorite: map['isFavorite'] != null ? map['isFavorite'] as bool : false,
+      isFavoriteBy: map['isFavoriteBy'] != null
+          ? Map<String, dynamic>.from(map['isFavoriteBy'])
+          : {},
+      deletedFor: map['deletedFor'] != null
+          ? List<String>.from(map['deletedFor'])
+          : [],
       createdAt: map['createdAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
           : null,
@@ -121,6 +146,18 @@ class ChatModel {
   factory ChatModel.fromJson(String uid, String source) =>
       ChatModel.fromMap(uid, json.decode(source) as Map<String, dynamic>);
 
+  bool isFavoriteForUser(String uid) {
+    return isFavoriteBy?[uid] ?? isFavorite;
+  }
+
+  bool isPinnedForUser(String uid) {
+    return isPinnedBy?[uid] == true;
+  }
+
+  bool isDeletedForUser(String uid) {
+    return deletedFor?.contains(uid) ?? false;
+  }
+
   @override
   String toString() {
     return 'ChatModel(uid: $uid, createdBy: $createdBy, participants: $participants, title: $title, description: $description, isGroupChat: $isGroupChat, lastMessage: $lastMessage, createdAt: $createdAt, updatedAt: $updatedAt)';
@@ -132,34 +169,23 @@ class MessagesModel {
   final String chatId;
   final String senderId;
   final String? senderName;
-
   String message;
-
   final List<String> receiverId;
-
   final List<FileModel> attachments;
-
   final bool edited;
   final List<MessagesEditHistory> editHistory;
-
   final String? replyFor;
   final String? replyForMessageId;
-
   final String? forwardFrom;
   final String? forwardFromMessageId;
   final String? forwardFromChatId;
-
   final List<String> seenBy;
-
   final Map<String, List<String>> reactions;
-
-  final bool deleted;
-
+  final List<String> deletedFor;
   final bool isPinned;
   final DateTime? pinnedTimeStamp;
-
+  final List<MentionModel>? mentions;
   final DateTime timestamp;
-
   final List<String> searchKeywords;
 
   MessagesModel({
@@ -179,14 +205,13 @@ class MessagesModel {
     this.forwardFromChatId,
     this.seenBy = const [],
     this.reactions = const {},
-    this.deleted = false,
+    this.deletedFor = const [],
     this.isPinned = false,
     this.pinnedTimeStamp,
+    this.mentions,
     DateTime? timestamp,
     this.searchKeywords = const [],
   }) : timestamp = timestamp ?? DateTime.now();
-
-  // ---------------- MAP ----------------
 
   Map<String, dynamic> toMap() {
     return {
@@ -205,9 +230,10 @@ class MessagesModel {
       'forwardFromChatId': forwardFromChatId,
       'seenBy': seenBy,
       'reactions': reactions,
-      'deleted': deleted,
+      'deletedFor': deletedFor,
       'isPinned': isPinned,
       'pinnedTimeStamp': pinnedTimeStamp?.millisecondsSinceEpoch,
+      'mentions': mentions?.map((e) => e.toMap()).toList(),
       'timestamp': timestamp.millisecondsSinceEpoch,
       'searchKeywords': [
         ...buildSearchKeywords(message),
@@ -215,8 +241,6 @@ class MessagesModel {
       ],
     };
   }
-
-  // ---------------- FROM MAP ----------------
 
   factory MessagesModel.fromMap(String id, Map<String, dynamic> map) {
     return MessagesModel(
@@ -243,16 +267,19 @@ class MessagesModel {
               ),
             )
           : {},
-      deleted: map['deleted'] ?? false,
+      deletedFor: List<String>.from(map['deletedFor'] ?? []),
       isPinned: map['isPinned'] ?? false,
+      mentions: (map['mentions'] as List?)
+          ?.map((e) => MentionModel.fromMap(e))
+          .toList(),
       pinnedTimeStamp: map['pinnedTimeStamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['pinnedTimeStamp'])
           : null,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        map['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
+      ),
     );
   }
-
-  // ---------------- EDIT ----------------
 
   Map<String, dynamic> toEditMap() {
     return {
@@ -270,18 +297,24 @@ class MessagesModel {
 
 class LastMessageModel {
   final String senderId;
+  final String? messageId;
   final String message;
+  final String? type;
   final DateTime? timestamp;
   LastMessageModel({
     required this.senderId,
+    this.messageId,
     required this.message,
+    this.type,
     this.timestamp,
   });
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'senderId': senderId,
+      'messageId': messageId,
       'message': message,
+      'type': type,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
   }
@@ -289,7 +322,9 @@ class LastMessageModel {
   factory LastMessageModel.fromMap(Map<String, dynamic> map) {
     return LastMessageModel(
       senderId: map['senderId'] as String,
+      messageId: map['messageId'] as String?,
       message: map['message'] as String,
+      type: map['type'] as String?,
       timestamp: map['timestamp'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
           : null,
@@ -329,4 +364,40 @@ List<String> buildSearchKeywords(String text) {
       .where((word) => word.isNotEmpty)
       .toSet() // avoid duplicates
       .toList();
+}
+
+class MentionModel {
+  final String uid;
+  final String name;
+  final String? image;
+  final int? start;
+  final int? end;
+
+  MentionModel({
+    required this.uid,
+    required this.name,
+    this.image,
+    this.start,
+    this.end,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'name': name,
+      'image': image,
+      'start': start,
+      'end': end,
+    };
+  }
+
+  factory MentionModel.fromMap(Map<String, dynamic> map) {
+    return MentionModel(
+      uid: map['uid'] ?? '',
+      name: map['name'] ?? '',
+      image: map['image'],
+      start: map['start'],
+      end: map['end'],
+    );
+  }
 }

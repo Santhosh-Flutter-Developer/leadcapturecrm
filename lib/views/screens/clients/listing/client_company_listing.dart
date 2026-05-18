@@ -107,6 +107,10 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshClients(BuildContext context) async {
+    context.read<ClientBloc>().add(StreamClients());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<ClientModel>>();
@@ -136,84 +140,82 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
               //   return buildNoPermissionView(context);
               // }
 
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshClients(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
-                                      ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
-                                          ),
-                                      columns: _buildColumns(controllerRead),
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (client) => _buildDataRow(
-                                              context,
-                                              client,
-                                              controllerWatch,
-                                              controllerRead,
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minWidth: constraints.maxWidth,
                                   ),
-                                );
-                              },
+                                  child: DataTable(
+                                    showCheckboxColumn: true,
+                                    sortColumnIndex:
+                                        controllerWatch.sortColumnIndex,
+                                    sortAscending:
+                                        controllerWatch.sortAscending,
+                                    headingRowColor: WidgetStateProperty.all(
+                                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                                    ),
+                                    headingTextStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                    columns: _buildColumns(controllerRead),
+                                    rows: controllerWatch.paginatedItems
+                                        .map(
+                                          (client) => _buildDataRow(
+                                            context,
+                                            client,
+                                            controllerWatch,
+                                            controllerRead,
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<ClientModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<ClientModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -329,11 +331,11 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                 "Add $pageTitle",
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(width: 10),
@@ -363,17 +365,19 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                     ]);
                   }
 
-                  for (var client
-                      in context
-                          .read<PaginatedDataController<ClientModel>>()
-                          .paginatedItems) {
+                  final controller =
+                      Provider.of<PaginatedDataController<ClientModel>>(
+                        context,
+                        listen: false,
+                      );
+                  for (var client in controller.paginatedItems) {
                     if (widget.section == ClientSection.contacts) {
                       exportData.add([
                         client.clientName ?? '',
                         client.email ?? '',
                         client.mobileNumber ?? '',
                         client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy?.name ?? '',
+                        client.createdBy.name,
                       ]);
                     } else {
                       exportData.add([
@@ -381,7 +385,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                         client.officePhoneNo ?? '',
                         client.gstVatNumber ?? '',
                         client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy?.name ?? '',
+                        client.createdBy.name,
                       ]);
                     }
                   }
@@ -402,8 +406,8 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.grey600,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
               ),
             ),
             const SizedBox(width: 10),
@@ -437,6 +441,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                 onPressed: () async {
                   if (_selectedClientCompany.isEmpty) return;
 
+                  // ✅ STEP 0: check assignment
                   for (var client in _selectedClientCompany) {
                     final isAssigned = await ClientService.isClientAssigned(
                       client.uid ?? '',
@@ -456,11 +461,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () {
-                                if (Navigator.canPop(context)) {
-                                  Navigator.pop(context);
-                                }
-                              },
+                              onPressed: () => Navigator.pop(context),
                               child: Text(
                                 'OK',
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -472,6 +473,8 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                       return;
                     }
                   }
+
+                  // ✅ STEP 1: confirm
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => ConfirmDialog(
@@ -481,20 +484,62 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                     barrierDismissible: false,
                   );
 
-                  if (confirm == true) {
-                    context.read<ClientBloc>().add(
-                      DeleteClientCompany(uid: 'uid'),
-                    );
+                  if (confirm != true) return;
+
+                  try {
+                    // ✅ STEP 2: BACKUP
+                    final deletedClients = _selectedClientCompany
+                        .map((e) => e.copyWith())
+                        .toList();
+
+                    // ✅ STEP 3: loader
+                    futureLoading(context);
+
+                    // ✅ STEP 4: DELETE (use service)
+                    for (var client in deletedClients) {
+                      await ClientService.deleteClient(uid: client.uid ?? '');
+                    }
+
+                    // ✅ STEP 5: close loader
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+
+                    // ✅ STEP 6: clear selection
+                    _selectedClientCompany.clear();
+                    setState(() {});
+
+                    // ✅ STEP 7: UNDO
                     FlushBar.show(
                       context,
-                      'Client deleted successfully',
-                      isSuccess: true,
+                      'Clients deleted successfully',
+                      actionLabel: 'UNDO',
+                      onActionPressed: () async {
+                        for (var client in deletedClients) {
+                          if (client.uid == null) continue;
+
+                          await ClientService.restoreClient(client);
+                        }
+
+                        if (!context.mounted) return;
+
+                        // ✅ refresh UI
+                        context.read<ClientBloc>().add(StreamClients());
+                      },
+                    );
+                  } catch (e, st) {
+                    if (Navigator.canPop(context)) Navigator.pop(context);
+
+                    await ErrorService.recordError(e, st);
+
+                    FlushBar.show(
+                      context,
+                      'Failed to delete clients: $e',
+                      isSuccess: false,
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ],
@@ -511,6 +556,13 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             // ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshClients(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -520,7 +572,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 4),
-        Icon(Icons.arrow_upward, size: 14, color: AppColors.grey400),
+        Icon(Icons.arrow_upward, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ],
     );
   }
@@ -560,7 +612,8 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             context,
             client,
             client.clientName,
-            client.profilePictureUrl,false
+            client.profilePictureUrl,
+            false,
           ),
         ),
 
@@ -615,7 +668,8 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             context,
             company,
             company.companyName,
-            company.companyLogoUrl,true
+            company.companyLogoUrl,
+            true,
           ),
         ),
 
@@ -654,7 +708,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
   ) {
     return InkWell(
       onTap: () {
-        final profile = ClientProfile(client: company, isCompany: isCompany,);
+        final profile = ClientProfile(client: company, isCompany: isCompany);
         kIsMobile
             ? Sheet.showSheet(context, widget: profile)
             : GeneralDialog.showRTLSheet(context, profile);
@@ -703,7 +757,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
       children: [
         IconButton(
           icon: const Icon(Iconsax.edit),
-          color: AppColors.info,
+          color: Theme.of(context).colorScheme.primary,
           splashRadius: 20,
           onPressed: () {
             final form = widget.section == ClientSection.contacts
@@ -719,11 +773,12 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
         ),
         IconButton(
           icon: const Icon(Iconsax.trash),
-          color: AppColors.danger,
+          color: Theme.of(context).colorScheme.error,
           splashRadius: 20,
           onPressed: () async {
+            // ✅ STEP 0: check assignment
             final isAssigned = await ClientService.isClientAssigned(
-              client.uid!,
+              client.uid ?? '',
             );
 
             if (isAssigned) {
@@ -738,11 +793,21 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                     'This client is associated with leads.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'OK',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
               );
               return;
             }
 
+            // ✅ STEP 1: confirm
             final confirm = await showDialog<bool>(
               context: context,
               builder: (_) => ConfirmDialog(
@@ -751,9 +816,40 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
               ),
             );
 
-            if (confirm == true) {
-              context.read<ClientCompanyBloc>().add(
-                DeleteClientCompany(uid: client.uid!),
+            if (confirm != true) return;
+
+            try {
+              // ✅ STEP 2: BACKUP
+              final deletedClient = client.copyWith();
+
+              // ✅ STEP 3: DELETE (use service, NOT bloc)
+              await ClientService.deleteClient(uid: client.uid ?? '');
+
+              if (!context.mounted) return;
+
+              // ✅ STEP 4: UNDO
+              FlushBar.show(
+                context,
+                '$pageTitle deleted successfully',
+                actionLabel: 'UNDO',
+                onActionPressed: () async {
+                  if (deletedClient.uid == null) return;
+
+                  await ClientService.restoreClient(deletedClient);
+
+                  if (!context.mounted) return;
+
+                  // ✅ refresh UI
+                  context.read<ClientCompanyBloc>().add(StreamClientCompany());
+                },
+              );
+            } catch (e, st) {
+              await ErrorService.recordError(e, st);
+
+              FlushBar.show(
+                context,
+                'Failed to delete $pageTitle: $e',
+                isSuccess: false,
               );
             }
           },

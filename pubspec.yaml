@@ -89,6 +89,9 @@ dependencies:
   syncfusion_flutter_calendar: ^31.2.18
   table_calendar: ^3.2.0
   flutter_face_api: ^8.1.765
+  image_cropper: ^12.2.1
+  geolocator: ^13.0.1
+  video_thumbnail: ^0.5.6
 
 dev_dependencies:
   flutter_test:
@@ -104,6 +107,7 @@ flutter:
     - assets/svg/
     - assets/images/
     - assets/audio/
+    - assets/templates/
     - shorebird.yaml
 
   fonts:

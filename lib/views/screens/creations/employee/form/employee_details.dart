@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/constants/constants.dart';
@@ -84,23 +83,22 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           "Employee Portfolio",
-          style: TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Color(0xFF0F172A),
-            fontSize: 18,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+          child: Container(color: Theme.of(context).dividerColor, height: 1),
         ),
       ),
       body: FutureBuilder(
@@ -200,7 +198,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Column(
         children: [
           Container(
@@ -208,13 +206,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 width: 3,
               ),
             ),
             child: CircleAvatar(
               radius: 55,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
               backgroundImage:
                   (widget.employee.profileImageUrl != null &&
                       widget.employee.profileImageUrl!.isNotEmpty)
@@ -227,10 +229,10 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                       widget.employee.name.isNotEmpty
                           ? widget.employee.name[0].toUpperCase()
                           : "?",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     )
                   : null,
@@ -240,25 +242,26 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           Text(
             widget.employee.name,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 20,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               designation,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -266,9 +269,8 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           Text(
             department,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF64748B),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -295,7 +297,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   Widget _buildQuickStats(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Row(
         children: [
           _statItem("Tasks", _taskCount, Colors.orange),
@@ -325,10 +327,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -404,9 +405,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
       child: Column(
         children: [
           if (_workflowUsers.isEmpty)
-            const Text(
+            Text(
               "No supervisors assigned",
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else ...[
             ListView.builder(
@@ -426,12 +429,12 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: LeadsViewAppColors.primary.withValues(
-                                  alpha: 0.2,
-                                ),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: LeadsViewAppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   width: 2,
                                 ),
                               ),
@@ -440,7 +443,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                               Expanded(
                                 child: Container(
                                   width: 1,
-                                  color: LeadsViewAppColors.border,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
                                 ),
                               ),
                           ],
@@ -473,12 +478,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "About",
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: Color(0xFF475569),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
@@ -486,19 +490,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             widget.employee.about.isEmpty
                 ? "No bio provided"
                 : widget.employee.about,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
-              fontSize: 13,
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             "Skills & Expertise",
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: Color(0xFF475569),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -513,15 +515,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: Theme.of(context).colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Text(
                       s.trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF475569),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -542,7 +546,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -551,18 +555,23 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 18, color: AppColors.primary),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -577,7 +586,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   Widget _buildDataPoint(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -585,20 +598,18 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             children: [
               Text(
                 label.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 8,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF94A3B8),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 1),
               Text(
                 value.isEmpty ? "-" : value,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -613,7 +624,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -621,18 +636,16 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 9,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF94A3B8),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF334155),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -643,14 +656,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
     );
   }
 
-  BoxDecoration _glassDecoration() {
+  BoxDecoration _glassDecoration(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFE2E8F0)),
+      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.02),
+          color: isDark
+              ? Colors.transparent
+              : Colors.black.withValues(alpha: 0.02),
           blurRadius: 15,
           offset: const Offset(0, 8),
         ),
@@ -659,5 +675,5 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   }
 
   Widget _vDivider() =>
-      Container(width: 1, height: 24, color: const Color(0xFFE2E8F0));
+      Container(width: 1, height: 24, color: Theme.of(context).dividerColor);
 }

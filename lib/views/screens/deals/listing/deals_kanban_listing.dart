@@ -119,7 +119,7 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           return ErrorDisplay(error: snapshot.error.toString());
         } else {
           return Container(
-            color: const Color(0xFFF3F4F6),
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
@@ -199,7 +199,10 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildKanbanColumnHeader(list, deals.length, totalValue),
-              const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              Divider(
+                height: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(
@@ -275,13 +278,13 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: AppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Text(
             _currencyFormat.format(totalValue),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12,
-              color: AppColors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -313,10 +316,12 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
               width: 244,
               padding: const EdgeInsets.all(12.0),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12.0),
                 border: Border.all(
-                  color: AppColors.blue.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
               child: _buildCardContent(task),
@@ -328,7 +333,7 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           child: Container(
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.grey200,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -344,11 +349,13 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -372,13 +379,13 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           children: [
             CircleAvatar(
               radius: 14,
-              backgroundColor: AppColors.blue100,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Text(
                 deal.dealName.isNotEmpty ? deal.dealName[0].toUpperCase() : '?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.blue700,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -393,10 +400,10 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                     deal.dealName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
@@ -406,9 +413,9 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                       deal.dealEmail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.grey700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -420,9 +427,9 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                       deal.companyName!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.grey600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -431,16 +438,22 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 10, color: AppColors.grey600),
+                        Icon(
+                          Icons.person_outline,
+                          size: 10,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             deal.clientName!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: AppColors.grey600,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -495,17 +508,17 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.calendar_today,
                   size: 12,
-                  color: AppColors.grey600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   DateFormat('dd MMM').format(deal.createdAt),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.grey600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -513,19 +526,19 @@ class _DealKanbanListingState extends State<DealKanbanListing> {
             ),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.person_outline,
                   size: 12,
-                  color: AppColors.grey600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   deal.createdBy.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
-                    color: AppColors.grey600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

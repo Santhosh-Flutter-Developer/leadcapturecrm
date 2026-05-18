@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -10,15 +11,7 @@ import '/utils/utils.dart';
 import '/constants/constants.dart';
 import '/theme/theme.dart';
 
-class ProfileColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color success = Color(0xFF10B981);
-}
+// ProfileColors removed in favor of Theme.of(context)
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -124,7 +117,6 @@ class _ProfileState extends State<Profile> {
 
     if (pickedImage == null) return;
     File imageFile = File(pickedImage.path);
-
     FlushBar.show(context, "Uploading profile picture...");
 
     try {
@@ -203,32 +195,86 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  Future<void> _removeProfileImage() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Remove Profile Photo"),
+        content: const Text("Are you sure you want to remove this photo?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    FlushBar.show(context, "Removing profile picture...");
+
+    try {
+      if (!isAdmin) {
+        await EmployeeService.deleteEmployeeImage(uid: employee!.uid!);
+
+        final updated = employee!.copyWith(profileImageUrl: '');
+
+        await Spdb.setEmployeeLogin(
+          model: updated,
+          cid: await Spdb.getCid() ?? '',
+        );
+
+        setState(() => employee = updated);
+      } else {
+        await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
+
+        final updated = admin!.copyWith(profileImageUrl: '');
+        setState(() => admin = updated);
+      }
+
+      FlushBar.show(context, "Profile removed", isSuccess: true);
+    } catch (e) {
+      FlushBar.show(context, "Remove failed: $e", isSuccess: false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ProfileColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: ProfileColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: const Back(color: AppColors.black),
-        title: const Text(
+        leading: Back(color: Theme.of(context).colorScheme.onSurface),
+        title: Text(
           "My Profile",
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: ProfileColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: ProfileColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
         actions: [
           if (isAdmin)
             IconButton(
               tooltip: 'Edit Profile',
               onPressed: _editAdminProfile,
-              icon: const Icon(Iconsax.edit, color: ProfileColors.textPrimary),
+              icon: Icon(
+                Iconsax.edit,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
         ],
       ),
@@ -308,9 +354,9 @@ class _ProfileState extends State<Profile> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: ProfileColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ProfileColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -324,67 +370,173 @@ class _ProfileState extends State<Profile> {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: ProfileColors.primary.withValues(alpha: 0.1),
-                    width: 4,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundColor: ProfileColors.background,
-                  backgroundImage: image != null ? NetworkImage(image) : null,
-                  child: image == null
-                      ? Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : "?",
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: ProfileColors.primary,
+              GestureDetector(
+                onTap: (image != null && image.isNotEmpty)
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: EdgeInsets.zero,
+                            child: SafeArea(
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: InteractiveViewer(
+                                      child: CachedNetworkImage(
+                                        imageUrl: image,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                          ),
+
+                                          Row(
+                                            children: [
+                                              if (image.isNotEmpty)
+                                                // IconButton(
+                                                //   icon: const Icon(
+                                                //     Icons.crop,
+                                                //     color: Colors.white,
+                                                //   ),
+                                                //   onPressed: () async {
+                                                //     if (image.isEmpty) return;
+                                                //     Navigator.pop(context);
+                                                //     await _cropExistingImage(
+                                                //       image,
+                                                //     );
+                                                //   },
+                                                // ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Iconsax.trash,
+                                                    color: Colors.red,
+                                                  ),
+                                                  onPressed: () async {
+                                                    Navigator.pop(context);
+                                                    await _removeProfileImage();
+                                                  },
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  Positioned(
+                                    bottom: 20,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Text(
+                                        "Profile Photo",
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        )
-                      : null,
-                ),
-              ),
-              if (!isAdmin)
-                Material(
-                  color: ProfileColors.primary,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: _changeProfileImage,
-                    customBorder: const CircleBorder(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(10.0),
-                      child: Icon(
-                        Iconsax.camera,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                        );
+                      }
+                    : null,
+
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      width: 4,
                     ),
                   ),
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    backgroundImage: (image != null && image.isNotEmpty)
+                        ? NetworkImage(image)
+                        : null,
+                    child: (image == null || image.isEmpty)
+                        ? Text(
+                            name.trim().isNotEmpty
+                                ? name.trim()[0].toUpperCase()
+                                : "?",
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
+              ),
+
+              // if (!isAdmin)
+              Material(
+                color: Theme.of(context).colorScheme.primary,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: _changeProfileImage,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: Icon(Iconsax.camera, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
             name,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: ProfileColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             role,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: ProfileColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -410,19 +562,23 @@ class _ProfileState extends State<Profile> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: ProfileColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ProfileColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem("Status", "Active", ProfileColors.success),
-          Container(width: 1, height: 40, color: ProfileColors.border),
+          _buildStatItem("Status", "Active", AppColors.success),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           _buildStatItem(
             "Joined",
             employee?.dateOfJoining.formatDate.split(' ').first ?? "-",
-            ProfileColors.primary,
+            Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -434,9 +590,9 @@ class _ProfileState extends State<Profile> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: ProfileColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -458,7 +614,11 @@ class _ProfileState extends State<Profile> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: ProfileColors.textSecondary),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -466,18 +626,18 @@ class _ProfileState extends State<Profile> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: ProfileColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: ProfileColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -580,9 +740,11 @@ class _ProfileState extends State<Profile> {
           width: width,
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: ProfileColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: ProfileColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,22 +754,24 @@ class _ProfileState extends State<Profile> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: ProfileColors.primary.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       getSectionIcon(title),
                       size: 20,
-                      color: ProfileColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: ProfileColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -639,10 +803,10 @@ class _ProfileState extends State<Profile> {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: ProfileColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 1,
                   ),
                 ),
@@ -667,8 +831,8 @@ class _ProfileState extends State<Profile> {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: (value == null || value.isEmpty)
-                          ? ProfileColors.textSecondary
-                          : ProfileColors.textPrimary,
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
               ],
@@ -686,7 +850,7 @@ class _ProfileState extends State<Profile> {
               icon: Icon(
                 isEditing ? Iconsax.tick_circle : Iconsax.edit,
                 size: 18,
-                color: ProfileColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
         ],
@@ -704,16 +868,16 @@ class _ProfileState extends State<Profile> {
               "Data synchronized with secure server",
               style: TextStyle(
                 fontSize: 11,
-                color: ProfileColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               "Security Patch: ${AppPackageInfo.version} • ${DateTime.now().monthYearFormat}",
               style: TextStyle(
                 fontSize: 10,
-                color: ProfileColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

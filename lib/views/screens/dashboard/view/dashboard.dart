@@ -971,10 +971,10 @@ Widget _buildActivitySection(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Icon(
-              Icons.more_horiz,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            // Icon(
+            //   Icons.more_horiz,
+            //   color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // ),
           ],
         ),
         const SizedBox(height: 20),
@@ -1310,9 +1310,9 @@ class KpiCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
 
             const Spacer(),
@@ -1323,9 +1323,9 @@ class KpiCard extends StatelessWidget {
               children: [
                 Text(
                   "Target",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   "${(progress * 100).toInt()}%",
@@ -1390,7 +1390,10 @@ class QuickActionCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Theme.of(context).colorScheme.surface, Theme.of(context).colorScheme.surface.withValues(alpha: 0.9)],
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+              ],
             ),
             boxShadow: [
               BoxShadow(
@@ -1621,9 +1624,9 @@ class _NotificationTileState extends State<NotificationTile> {
 
                   Text(
                     widget.notification.createdAt!.formatDateMonthTime,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1712,9 +1715,9 @@ class TaskReminderTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       date,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -1742,7 +1745,11 @@ class TaskReminderTile extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(width: 8),
-                  Icon(Icons.chevron_right, size: 20, color: kTextSecondary),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ],
@@ -1800,14 +1807,18 @@ class ActivityTimelineTile extends StatelessWidget {
                 Text(
                   activity.page,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isFirst ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: isFirst
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
                 Text(
                   timeago.format(activity.visitedAt, locale: 'en_short'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isFirst ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: isFirst
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),

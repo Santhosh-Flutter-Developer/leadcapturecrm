@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '/models/models.dart';
 import '/utils/utils.dart';
 
@@ -49,6 +51,7 @@ class RoleModel {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
@@ -61,6 +64,7 @@ class RoleModel {
 
   Map<String, dynamic> toUpdateMap() {
     return <String, dynamic>{
+      'uid': uid,
       'name': name.encrypt,
       'lowercaseName': lowercaseName.encrypt,
       'description': description.encrypt,
@@ -73,31 +77,47 @@ class RoleModel {
   factory RoleModel.fromMap(String uid, Map<String, dynamic> map) {
     return RoleModel(
       uid: uid,
-      name: (map['name'] as String).decrypt,
-      lowercaseName: (map['lowercaseName'] as String).decrypt,
-      description: (map['description'] as String).decrypt,
+
+      name: map['name'] != null ? (map['name'] as String).decrypt : '',
+
+      lowercaseName: map['lowercaseName'] != null
+          ? (map['lowercaseName'] as String).decrypt
+          : '',
+
+      description: map['description'] != null
+          ? (map['description'] as String).decrypt
+          : '',
+
       permissions: (map['permissions'] is List)
           ? (map['permissions'] as List)
+                .whereType<Map>()
                 .map(
-                  (e) => PermissionModel.fromMap(
-                    Map<String, dynamic>.from(e as Map),
-                  ),
+                  (e) => PermissionModel.fromMap(Map<String, dynamic>.from(e)),
                 )
                 .toList()
           : [],
-      createdBy:
-          map['createdBy'] != null && map['createdBy'] is Map<String, dynamic>
-          ? UserDataModel.fromMap(map['createdBy'] as Map<String, dynamic>)
+
+      createdBy: map['createdBy'] != null && map['createdBy'] is Map
+          ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),
+
       createdAt: map['createdAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
-          : null,
+          ? map['createdAt'] is Timestamp
+                ? (map['createdAt'] as Timestamp).toDate()
+                : map['createdAt'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
+                : DateTime.now()
+          : DateTime.now(),
+
       updatedAt: map['updatedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int)
-          : null,
+          ? map['updatedAt'] is Timestamp
+                ? (map['updatedAt'] as Timestamp).toDate()
+                : map['updatedAt'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int)
+                : DateTime.now()
+          : DateTime.now(),
     );
   }
-
   String toJson() => json.encode(toMap());
 
   factory RoleModel.fromJson(String uid, String source) =>

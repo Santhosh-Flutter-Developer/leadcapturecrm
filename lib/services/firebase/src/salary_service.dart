@@ -38,7 +38,6 @@ class SalaryLedgerService {
       }
       return result;
     } catch (e) {
-      print("Salary ledger fetch error: $e");
       return [];
     }
   }
@@ -50,19 +49,19 @@ class SalaryLedgerService {
     final ledger = await getSalaryLedger(month: month, userId: userId);
     final totalNetPay = ledger.fold<double>(
       0,
-      (sum, item) => sum + double.parse(item.netPay),
+      (amount, item) => amount + double.parse(item.netPay),
     );
     final totalGrossPay = ledger.fold<double>(
       0,
-      (sum, item) => sum + double.parse(item.grossPay),
+      (amount, item) => amount + double.parse(item.grossPay),
     );
     final totalDeductions = ledger.fold<double>(
       0,
-      (sum, item) => sum + double.parse(item.totalDeduction),
+      (amount, item) => amount + double.parse(item.totalDeduction),
     );
     final totalOtHours = ledger.fold<double>(
       0,
-      (sum, item) => sum + double.parse(item.otHours),
+      (amount, item) => amount + double.parse(item.otHours),
     );
     return SalarySummary(
       month: month,
@@ -173,8 +172,8 @@ class SalaryLedgerService {
             "month": monthCode,
             "createdAt": DateTime.now().millisecondsSinceEpoch,
           });
-    } catch (e) {
-      print("Salary processing error: $e");
+    } catch (_) {
+      // salary processing failure is non-fatal
     }
   }
 
@@ -241,9 +240,7 @@ class SalaryLedgerService {
         lessHourMinutes: totalLessMinutes,
         otHourMinutes: totalOtMinutes,
       );
-    } catch (e) {
-      print("Attendance summary error: $e");
-
+    } catch (_) {
       return AttendanceModel(
         employeeId: '',
         punchList: [],
@@ -373,8 +370,8 @@ class SalaryLedgerService {
           attendance: attendance,
         );
       }
-    } catch (e) {
-      print("Error processing salary for all employees: $e");
+    } catch (_) {
+      // salary batch processing failure is non-fatal
     }
   }
 }

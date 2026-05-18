@@ -130,8 +130,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Future<List<Map<String, dynamic>>> _getMenus() async {
-    final settings = await SettingsService().fetchSettings();
-    final bool payrollEnabled = settings.payrollEnabled;
+    // final settings = await SettingsService().fetchSettings();
+    // final bool payrollEnabled = settings.payrollEnabled;
     // bool admin =
     //     widget.isAdmin ||
     //     (await PermissionService.getPermissions('Admin')) != null;
@@ -180,35 +180,38 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool clientsContact =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Contact')) != null;
-    // bool projects =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Projects')) != null;
+    bool projects =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Projects')) != null;
     bool calendar =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Calendar')) != null;
-    // bool tasks =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Tasks')) != null;
-    bool workTime =
-        payrollEnabled &&
-        (widget.isAdmin ||
-            (await PermissionService.getPermissions('Work Time')) != null);
-    bool attendance =
-        payrollEnabled &&
-        (widget.isAdmin ||
-            (await PermissionService.getPermissions('Attendance Ledger')) !=
-                null);
-    bool salaryLedger =
-        payrollEnabled &&
-        (widget.isAdmin ||
-            (await PermissionService.getPermissions('Salary Ledger')) != null);
-    bool permissions =
-        payrollEnabled &&
-        (widget.isAdmin ||
-            (await PermissionService.getPermissions('Permissions')) != null);
+    bool tasks =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Tasks')) != null;
+    // bool workTime =
+    //     payrollEnabled &&
+    //     (widget.isAdmin ||
+    //         (await PermissionService.getPermissions('Work Time')) != null);
+    // bool attendance =
+    //     payrollEnabled &&
+    //     (widget.isAdmin ||
+    //         (await PermissionService.getPermissions('Attendance Ledger')) !=
+    //             null);
+    // bool salaryLedger =
+    //     payrollEnabled &&
+    //     (widget.isAdmin ||
+    //         (await PermissionService.getPermissions('Salary Ledger')) != null);
+    // bool permissions =
+    //     payrollEnabled &&
+    //     (widget.isAdmin ||
+    //         (await PermissionService.getPermissions('Permissions')) != null);
     bool downloads =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Downloads')) != null;
+    // bool backup =
+    //     widget.isAdmin ||
+    //     (await PermissionService.getPermissions('Backup')) != null;
     widget.isAdmin ||
         (await PermissionService.getPermissions('Developer Area')) != null;
     bool developerArea =
@@ -278,22 +281,23 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         ],
       },
       if (calendar) {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
-      // if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
-      // if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
-      {
-        'icon': Iconsax.wallet,
-        'title': 'Payroll',
-        'children': [
-          if (payrollEnabled && workTime) 'Work Time',
-          if (payrollEnabled && permissions) 'Permissions',
-          if (payrollEnabled && attendance) 'Attendance Ledger',
-          if (payrollEnabled && salaryLedger) 'Salary Ledger',
-        ],
-      },
+      if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
+      if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
+      // {
+      //   'icon': Iconsax.wallet,
+      //   'title': 'Payroll',
+      //   'children': [
+      //     if (payrollEnabled && workTime) 'Work Time',
+      //     if (payrollEnabled && permissions) 'Permissions',
+      //     if (payrollEnabled && attendance) 'Attendance Ledger',
+      //     if (payrollEnabled && salaryLedger) 'Salary Ledger',
+      //   ],
+      // },
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
       if (downloads) {'icon': Iconsax.document_download, 'title': 'Downloads'},
+      // if (backup) {'icon': Iconsax.cloud, 'title': 'Backup'},
       if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
       {
         'icon': Iconsax.info_circle,

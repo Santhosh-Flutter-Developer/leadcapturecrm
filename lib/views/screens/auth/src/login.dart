@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/views/screens/auth/src/company_registration.dart';
 import '/constants/constants.dart';
-import '/theme/theme.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
@@ -80,6 +79,9 @@ class _LoginState extends State<Login> {
           RoleModel role = await RoleService.getRole(uid: emp.role);
           await PermissionService.savePermissions(role.permissions);
           await CacheService.syncAllCollections();
+          if (kIsDesktop) {
+            FirestoreNotificationListener.listenForNotifications();
+          }
           Navigate.routeReplace(context, MainScreen(isAdmin: false));
           return;
         }
@@ -87,10 +89,6 @@ class _LoginState extends State<Login> {
         var data = result["adminData"];
         var uid = result["uid"];
         AdminModel admin = AdminModel.fromMap(uid, data);
-        print(
-          'the login admins id ${result["collectionId"]}, ${result["uid"]}',
-        );
-
         await Spdb.setAdminLogin(
           model: admin,
           cid: result["collectionId"],
@@ -104,6 +102,9 @@ class _LoginState extends State<Login> {
             user: await Spdb.getUser(),
           ),
         );
+        if (kIsDesktop) {
+          FirestoreNotificationListener.listenForNotifications();
+        }
         Navigate.routeReplace(context, MainScreen(isAdmin: true));
       } catch (e, st) {
         // if (Navigator.canPop(context)) {
@@ -118,7 +119,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -131,11 +132,13 @@ class _LoginState extends State<Login> {
                   vertical: 36,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.blueGrey.withValues(alpha: 0.08),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.shadow.withValues(alpha: 0.08),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -161,7 +164,7 @@ class _LoginState extends State<Login> {
                         style: Theme.of(context).textTheme.headlineSmall!
                             .copyWith(
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1C1F23),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                       ),
                       Row(
@@ -171,7 +174,9 @@ class _LoginState extends State<Login> {
                             style: Theme.of(context).textTheme.bodyLarge!
                                 .copyWith(
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.grey700,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                           TextButton(
@@ -179,7 +184,9 @@ class _LoginState extends State<Login> {
                               "Register",
                               style: Theme.of(context).textTheme.bodyLarge!
                                   .copyWith(
-                                    color: const Color(0xFF1565C0),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
@@ -201,7 +208,9 @@ class _LoginState extends State<Login> {
                             style: Theme.of(context).textTheme.bodySmall!
                                 .copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.grey700,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                           const SizedBox(height: 8),
@@ -240,7 +249,9 @@ class _LoginState extends State<Login> {
                             style: Theme.of(context).textTheme.bodySmall!
                                 .copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.grey700,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                           const SizedBox(height: 8),
@@ -263,7 +274,9 @@ class _LoginState extends State<Login> {
                                 _passwordVisible
                                     ? Iconsax.eye
                                     : Iconsax.eye_slash,
-                                color: AppColors.grey600,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -279,7 +292,9 @@ class _LoginState extends State<Login> {
                                 "Forgot Password?",
                                 style: Theme.of(context).textTheme.bodySmall!
                                     .copyWith(
-                                      color: const Color(0xFF1565C0),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),

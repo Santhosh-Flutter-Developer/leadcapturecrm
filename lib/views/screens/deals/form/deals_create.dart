@@ -7,7 +7,6 @@ import '/models/models.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/views/views.dart';
 
 class DealCreate extends StatefulWidget {
@@ -139,7 +138,7 @@ class _DealCreateState extends State<DealCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -523,11 +522,11 @@ class _DealCreateState extends State<DealCreate> {
     bool expandable = false,
   }) {
     return Card(
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surface,
       elevation: 7,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey200),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -547,7 +546,7 @@ class _DealCreateState extends State<DealCreate> {
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   if (expandable)

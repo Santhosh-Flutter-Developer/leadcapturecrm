@@ -4,11 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/constants/src/enum.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import 'bloc/notifications_bloc.dart';
 
 class NotifyColors {
@@ -51,6 +51,53 @@ class _NotificationsListingState extends State<NotificationsListing> {
 
   Future<void> _refresh(BuildContext context) async {
     context.read<NotificationsBloc>().add(StreamNotifications());
+  }
+
+  Future<void> _deleteNotification(NotificationModel item) async {
+    final confirm = await _showDeleteDialog();
+    if (confirm != true) return;
+
+    final deletedItem = item;
+
+    await deleteNotification(item.uid ?? '');
+
+    if (!mounted) return;
+
+    FlushBar.show(
+      context,
+      'Notification deleted',
+      actionLabel: 'UNDO',
+      onActionPressed: () async {
+        await restoreNotification(deletedItem);
+        setState(() {});
+      },
+    );
+  }
+
+  Future<bool?> _showDeleteDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Notification'),
+        content: const Text(
+          'Are you sure you want to delete this notification?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Map<String, List<NotificationModel>> _groupByDay(
@@ -138,8 +185,98 @@ class _NotificationsListingState extends State<NotificationsListing> {
       }
       return;
     }
-
     FlushBar.show(context, 'User profile not found', isSuccess: false);
+  }
+
+  Future<void> _openPlatformSheet(Widget widget) async {
+    if (kIsDesktop) {
+      await GeneralDialog.showRTLSheet(context, widget);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => widget));
+    }
+  }
+
+  Future<void> _handleNotificationTap(
+    NotificationModel item,
+    bool isDesktop,
+  ) async {
+    if (!mounted) return;
+    final id = item.collectionId;
+
+    switch (item.type) {
+      case NotificationType.chat:
+        if (!mounted) return;
+        await _openPlatformSheet(
+          ChatListing(currentUserUid: item.senderId ?? '', selectedChatUid: id),
+        );
+        break;
+
+      /// ✅ TASK → SHEET
+      case NotificationType.task:
+        final taskId = item.payload['taskId'] as String?;
+        if (taskId != null && taskId.isNotEmpty) {
+          if (!mounted) return;
+          await _openPlatformSheet(TaskView(uid: taskId));
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(TasksListing());
+        }
+        break;
+
+      /// 📊 LEAD → SHEET
+      case NotificationType.lead:
+        final leadId = item.payload['leadId'] as String?;
+        if (leadId != null && leadId.isNotEmpty) {
+          try {
+            final lead = await LeadService.getLead(uid: leadId);
+            if (!mounted) return;
+            await _openPlatformSheet(LeadsViewPage(lead: lead));
+          } catch (_) {
+            if (!mounted) return;
+            await _openPlatformSheet(LeadsListing(showAppBar: true));
+          }
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(LeadsListing(showAppBar: true));
+        }
+        break;
+
+      /// 💼 DEAL → SHEET
+      case NotificationType.deal:
+        final dealId = item.payload['dealId'] as String?;
+        if (dealId != null && dealId.isNotEmpty) {
+          try {
+            final deal = await DealService.getDeal(uid: dealId);
+            if (!mounted) return;
+            await _openPlatformSheet(DealsViewPage(deal: deal));
+          } catch (_) {
+            if (!mounted) return;
+            await _openPlatformSheet(DealsListing(showAppBar: true));
+          }
+        } else {
+          if (!mounted) return;
+          await _openPlatformSheet(DealsListing(showAppBar: true));
+        }
+        break;
+
+      /// 📅 EVENT → SHEET
+      case NotificationType.eventReminder:
+        await _openPlatformSheet(CalendarEventScreen());
+        break;
+
+      /// 📰 FEED → SHEET
+      case NotificationType.feed:
+        await _openPlatformSheet(FeedListing());
+        break;
+
+      /// ⚠️ DEFAULT → DETAIL VIEW
+      default:
+        if (isDesktop) {
+          setState(() => _selectedNotification = item);
+        } else {
+          _openDetailSheet(item);
+        }
+    }
   }
 
   @override
@@ -147,23 +284,26 @@ class _NotificationsListingState extends State<NotificationsListing> {
     return BlocProvider(
       create: (context) => NotificationsBloc()..add(StreamNotifications()),
       child: Scaffold(
-        backgroundColor: NotifyColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: NotifyColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          leading: const Back(color: AppColors.black),
+          leading: Back(color: Theme.of(context).colorScheme.onSurface),
           centerTitle: false,
-          title: const Text(
+          title: Text(
             "Notifications Center",
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: NotifyColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
             ),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(color: NotifyColors.border, height: 1),
+            child: Container(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              height: 1,
+            ),
           ),
         ),
         body: BlocBuilder<NotificationsBloc, NotificationsState>(
@@ -205,9 +345,13 @@ class _NotificationsListingState extends State<NotificationsListing> {
         // Left Side: Search & List
         Container(
           width: 400,
-          decoration: const BoxDecoration(
-            color: NotifyColors.white,
-            border: Border(right: BorderSide(color: NotifyColors.border)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              right: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
           ),
           child: Column(
             children: [
@@ -296,25 +440,27 @@ class _NotificationsListingState extends State<NotificationsListing> {
       padding: const EdgeInsets.all(16),
       child: Container(
         decoration: BoxDecoration(
-          color: NotifyColors.background,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: NotifyColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: TextField(
           controller: _searchController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             prefixIcon: Icon(
               Iconsax.search_normal,
               size: 18,
-              color: NotifyColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             hintText: 'Search alerts...',
             hintStyle: TextStyle(
               fontSize: 14,
-              color: NotifyColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
       ),
@@ -333,10 +479,10 @@ class _NotificationsListingState extends State<NotificationsListing> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: NotifyColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.2,
             ),
           ),
@@ -358,13 +504,34 @@ class _NotificationsListingState extends State<NotificationsListing> {
       child: Dismissible(
         key: ValueKey(item.uid ?? item.hashCode),
         direction: DismissDirection.endToStart,
-        onDismissed: (_) async {
+
+        confirmDismiss: (_) async {
+          final confirm = await _showDeleteDialog();
+          if (confirm != true) return false;
+
+          final deletedItem = item;
+
           await deleteNotification(item.uid ?? '');
-          if (mounted) FlushBar.show(context, 'Notification deleted');
+
+          if (!mounted) return false;
+
+          FlushBar.show(
+            context,
+            'Notification deleted',
+            actionLabel: 'UNDO',
+            onActionPressed: () async {
+              await restoreNotification(deletedItem);
+              setState(() {});
+            },
+          );
+
+          return true;
         },
+
+        onDismissed: (_) {},
         background: Container(
           decoration: BoxDecoration(
-            color: NotifyColors.danger,
+            color: Theme.of(context).colorScheme.error,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.centerRight,
@@ -372,24 +539,22 @@ class _NotificationsListingState extends State<NotificationsListing> {
           child: const Icon(Iconsax.trash, color: Colors.white, size: 20),
         ),
         child: InkWell(
-          onTap: () {
-            if (isDesktop) {
-              setState(() => _selectedNotification = item);
-            } else {
-              _openDetailSheet(item);
-            }
-          },
+          onTap: () => _handleNotificationTap(item, isDesktop),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
-                  ? NotifyColors.primary.withValues(alpha: 0.05)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.05)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? NotifyColors.primary.withValues(alpha: 0.2)
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2)
                     : Colors.transparent,
               ),
             ),
@@ -406,25 +571,30 @@ class _NotificationsListingState extends State<NotificationsListing> {
                         ),
                       )
                     : _smallAvatar(item.title, item.type?.name ?? 'info'),
+
                 const SizedBox(width: 16),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: hasSender
                                 ? InkWell(
-                                    onTap: () => _openSenderProfile(item),
+                                    // onTap: () => _openSenderProfile(item),
                                     child: Text(
                                       titleText,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         color: isSelected
-                                            ? NotifyColors.primary
-                                            : NotifyColors.textPrimary,
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -434,31 +604,92 @@ class _NotificationsListingState extends State<NotificationsListing> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: isSelected
-                                          ? NotifyColors.primary
-                                          : NotifyColors.textPrimary,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                       fontSize: 14,
                                     ),
                                   ),
                           ),
+
                           Text(
                             item.createdAt != null
                                 ? _timeAgo(item.createdAt!)
                                 : '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: NotifyColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
+
+                          const SizedBox(width: 6),
+
+                          /// INFO / MORE ICON
+                          Row(
+                            children: [
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  if (isDesktop) {
+                                    setState(
+                                      () => _selectedNotification = item,
+                                    );
+                                  } else {
+                                    _openDetailSheet(item);
+                                  }
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Iconsax.info_circle,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _deleteNotification(item),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Iconsax.trash,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // const SizedBox(width: 6),
+                          // IconButton(
+                          //   icon: const Icon(
+                          //     Iconsax.trash,
+                          //     size: 18,
+                          //     color: NotifyColors.danger,
+                          //   ),
+                          //   onPressed: () => _deleteNotification(item),
+                          // ),
                         ],
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         item.body,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: NotifyColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -473,16 +704,20 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Widget _buildEmptyDetailView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Iconsax.notification_bing, size: 64, color: NotifyColors.border),
-          SizedBox(height: 16),
+          Icon(
+            Iconsax.notification_bing,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: 16),
           Text(
             "Select a notification to view details",
             style: TextStyle(
-              color: NotifyColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -492,9 +727,9 @@ class _NotificationsListingState extends State<NotificationsListing> {
   }
 
   Widget _buildDetailContent(NotificationModel item) {
-    final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
+    // final hasSender = (item.senderId?.trim().isNotEmpty ?? false);
     return Container(
-      color: NotifyColors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.all(40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,22 +773,22 @@ class _NotificationsListingState extends State<NotificationsListing> {
             ],
           ),
           const SizedBox(height: 40),
-          const Text(
+          Text(
             "MESSAGE CONTENT",
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: NotifyColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             item.body,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               height: 1.6,
-              color: NotifyColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -618,7 +853,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                 icon: const Icon(Iconsax.tick_circle),
                 label: const Text("Dismiss Detail"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: NotifyColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -644,14 +879,14 @@ class _NotificationsListingState extends State<NotificationsListing> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: NotifyColors.primary.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(size / 3.3),
       ),
       alignment: Alignment.center,
       child: Text(
         initial.toUpperCase(),
         style: TextStyle(
-          color: NotifyColors.primary,
+          color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w900,
           fontSize: size * 0.4,
         ),
@@ -674,9 +909,9 @@ class _NotificationsListingState extends State<NotificationsListing> {
       initialChildSize: 0.7,
       maxChildSize: 0.95,
       builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: NotifyColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: ListView(
           controller: controller,
@@ -687,7 +922,7 @@ class _NotificationsListingState extends State<NotificationsListing> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: NotifyColors.border,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -718,37 +953,37 @@ class _NotificationsListingState extends State<NotificationsListing> {
                       child: Text(
                         item.title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: NotifyColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     )
                   : Text(
                       item.title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: NotifyColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
             ),
             const SizedBox(height: 8),
             Text(
               item.body,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 height: 1.5,
-                color: NotifyColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
-                backgroundColor: NotifyColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(

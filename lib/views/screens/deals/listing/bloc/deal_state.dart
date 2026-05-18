@@ -31,13 +31,18 @@ class DealError extends DealState {
 }
 
 class DealDetailLoaded extends DealState {
-  final List<Map<String, dynamic>> comments;
+  final List<DealCommentModel> comments;
   final List<DealHistoryModel> history;
+  final List<DealActivityModel> activities;
 
-  DealDetailLoaded({required this.comments, required this.history});
+  DealDetailLoaded({
+    required this.comments,
+    required this.history,
+    required this.activities,
+  });
 
   @override
-  List<Object> get props => [comments, history];
+  List<Object> get props => [comments, history, activities];
 }
 
 class DealDetailError extends DealState {

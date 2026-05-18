@@ -1,12 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:leadcapture/services/firebase/src/common_service.dart';
+import 'package:leadcapture/services/firebase/src/project_service.dart';
 import 'package:shimmer/shimmer.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
 import '/constants/constants.dart';
 import '/views/views.dart';
 
-class ClientProfile extends StatelessWidget {
+class ClientProfile extends StatefulWidget {
   final ClientModel client;
   final bool isCompany;
 
@@ -17,8 +19,34 @@ class ClientProfile extends StatelessWidget {
   });
 
   @override
+  State<ClientProfile> createState() => _ClientProfileState();
+}
+
+class _ClientProfileState extends State<ClientProfile> {
+  List<ProjectModel> projectsList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadProjects();
+  }
+
+  Future<void> loadProjects() async {
+    try {
+      projectsList = await ProjectService.getAllProjects();
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+
+      debugPrint("${e.toString()}, ${st.toString()}");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    print("the value of iscompany or not $isCompany");
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(16),
@@ -29,7 +57,7 @@ class ClientProfile extends StatelessWidget {
           context: context,
           title: "Client Details",
         ),
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 10, left: 10, right: 10),
           child: Center(
@@ -46,8 +74,8 @@ class ClientProfile extends StatelessWidget {
                   _buildCompanyInfo(context),
                   const SizedBox(height: 24),
                   _buildProjectsExpandable(context),
-                  const SizedBox(height: 24),
-                  _buildInvoicesExpandable(context),
+                  // const SizedBox(height: 24),
+                  // _buildInvoicesExpandable(context),
                 ],
               ),
             ),
@@ -58,41 +86,6 @@ class ClientProfile extends StatelessWidget {
   }
 
   // Widget _buildHeader(BuildContext context) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-  //     decoration: const BoxDecoration(
-  //       color: AppColors.white,
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: AppColors.black12,
-  //           blurRadius: 4,
-  //           offset: Offset(0, 2),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         // IconButton(
-  //         //   onPressed: () {
-  //         //     if (Navigator.canPop(context)) {
-  //         //       Navigator.pop(context);
-  //         //     }
-  //         //   },
-  //         //   icon: const Icon(Icons.close, color: AppColors.black),
-  //         // ),
-  //         // const SizedBox(width: 8),
-  //         Text(
-  //           "Client Details",
-  //           style: Theme.of(context).textTheme.titleLarge!.copyWith(
-  //             color: AppColors.primary,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildHeaderCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -107,14 +100,14 @@ class ClientProfile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
                 child: CachedNetworkImage(
                   imageUrl:
-                      client.profilePictureUrl != null &&
-                          client.profilePictureUrl!.isNotEmpty
-                      ? client.profilePictureUrl!
+                      widget.client.profilePictureUrl != null &&
+                          widget.client.profilePictureUrl!.isNotEmpty
+                      ? widget.client.profilePictureUrl!
                       : AppStrings.emptyProfilePhotoUrl,
                   placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
+                    baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    highlightColor: Theme.of(context).colorScheme.surface,
+                    child: Container(color: Theme.of(context).colorScheme.surface),
                   ),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   height: 45,
@@ -128,17 +121,17 @@ class ClientProfile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      client.clientName!,
+                      widget.client.clientName!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      client.companyName!,
+                      widget.client.companyName!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.blueGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -146,17 +139,21 @@ class ClientProfile extends StatelessWidget {
                       spacing: 20,
                       runSpacing: 6,
                       children: [
-                        _iconText(context, Icons.email, client.email!),
-                        _iconText(context, Icons.phone, client.mobileNumber!),
+                        _iconText(context, Icons.email, widget.client.email!),
+                        _iconText(
+                          context,
+                          Icons.phone,
+                          widget.client.mobileNumber!,
+                        ),
                         _iconText(
                           context,
                           Icons.language,
-                          client.officialWebsite ?? "No website",
+                          widget.client.officialWebsite ?? "No website",
                         ),
                         _iconText(
                           context,
                           Icons.location_on,
-                          "${client.city?.name ?? '-'}, ${client.state?.name ?? '-'}",
+                          "${widget.client.city?.name ?? '-'}, ${widget.client.state?.name ?? '-'}",
                         ),
                       ],
                     ),
@@ -200,70 +197,31 @@ class ClientProfile extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.grey600),
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Text(
           text,
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.black54),
+          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
       ],
     );
   }
 
   // Widget _statCard(
-  //   BuildContext context,
-  //   IconData icon,
-  //   String label,
-  //   String value,
-  //   Color color,
-  // ) {
-  //   return Expanded(
-  //     child: Container(
-  //       margin: const EdgeInsets.symmetric(horizontal: 6),
-  //       padding: const EdgeInsets.all(16),
-  //       decoration: BoxDecoration(
-  //         color: color.withValues(alpha: 0.08),
-  //         borderRadius: BorderRadius.circular(16),
-  //         border: Border.all(color: color.withValues(alpha: 0.15)),
-  //       ),
-  //       child: Column(
-  //         children: [
-  //           Icon(icon, color: color, size: 26),
-  //           const SizedBox(height: 8),
-  //           Text(
-  //             value,
-  //             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-  //               fontWeight: FontWeight.w700,
-  //               color: AppColors.black87,
-  //             ),
-  //           ),
-  //           const SizedBox(height: 4),
-  //           Text(
-  //             label,
-  //             style: Theme.of(
-  //               context,
-  //             ).textTheme.bodySmall?.copyWith(color: AppColors.black54),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _buildContactInfo(BuildContext context) {
     final items = [
       {
         "label": "Client Name",
-        "value": "${client.salutation} ${client.clientName}",
+        "value": "${widget.client.salutation} ${widget.client.clientName}",
       },
-      {"label": "Email", "value": client.email},
-      {"label": "Mobile", "value": client.mobileNumber},
-      {"label": "Gender", "value": client.gender},
+      {"label": "Email", "value": widget.client.email},
+      {"label": "Mobile", "value": widget.client.mobileNumber},
+      {"label": "Gender", "value": widget.client.gender},
       {
         "label": "Login Allowed",
-        "value": client.loginAllowed == true ? "Yes" : "No",
+        "value": widget.client.loginAllowed == true ? "Yes" : "No",
       },
     ];
 
@@ -271,25 +229,25 @@ class ClientProfile extends StatelessWidget {
       context: context,
       title: "Contact Details",
       icon: Icons.person_outline,
-      initiallyExpanded: isCompany ? false : true,
+      initiallyExpanded: widget.isCompany ? false : true,
       child: _infoGrid(context, items),
     );
   }
 
   Widget _buildCompanyInfo(BuildContext context) {
     final items = [
-      {"label": "Company Name", "value": client.companyName},
-      {"label": "Website", "value": client.officialWebsite},
-      {"label": "GST/VAT No", "value": client.gstVatNumber},
-      {"label": "Office Phone", "value": client.officePhoneNo},
-      {"label": "Address", "value": client.companyAddress},
+      {"label": "Company Name", "value": widget.client.companyName},
+      {"label": "Website", "value": widget.client.officialWebsite},
+      {"label": "GST/VAT No", "value": widget.client.gstVatNumber},
+      {"label": "Office Phone", "value": widget.client.officePhoneNo},
+      {"label": "Address", "value": widget.client.companyAddress},
     ];
 
     return expandableSection(
       context: context,
       title: "Company Details",
       icon: Icons.apartment_outlined,
-      initiallyExpanded: isCompany,
+      initiallyExpanded: widget.isCompany,
       child: _infoGrid(context, items),
     );
   }
@@ -306,7 +264,7 @@ class ClientProfile extends StatelessWidget {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         childrenPadding: const EdgeInsets.all(16),
-        leading: Icon(icon, color: AppColors.primary),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         initiallyExpanded: initiallyExpanded,
         title: Text(
           title,
@@ -347,48 +305,29 @@ class ClientProfile extends StatelessWidget {
   }
 
   Widget _buildProjectsExpandable(BuildContext context) {
-    final projects = [
-      Project("CRM Development", "In Progress"),
-      Project("E-Commerce Website", "Completed"),
-      Project("Mobile App", "Pending"),
-    ];
-
     return expandableSection(
       context: context,
       title: "Projects",
       icon: Icons.folder_open_outlined,
-      child: Column(
-        children: projects.map((p) {
-          return _listTile(context, p.name, p.status, _statusColor(p.status));
-        }).toList(),
-      ),
+      child: projectsList.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text("No projects found"),
+            )
+          : Column(
+              children: projectsList.map((project) {
+                return _listTile(
+                  context,
+                  project.projectName,
+                  // project.status,
+                  // _statusColor(project.status),
+                );
+              }).toList(),
+            ),
     );
   }
 
-  Widget _buildInvoicesExpandable(BuildContext context) {
-    final invoices = [
-      {"no": "INV-001", "status": "Paid"},
-      {"no": "INV-002", "status": "Pending"},
-      {"no": "INV-003", "status": "Overdue"},
-    ];
-
-    return expandableSection(
-      context: context,
-      title: "Invoices",
-      icon: Icons.receipt_long_outlined,
-      child: Column(
-        children: invoices.map((i) {
-          return _invoiceTile(
-            context,
-            "Invoice #${i['no']}",
-            i['status']!,
-            _statusColor(i['status']!),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
+  // Widget _buildInvoicesExpandable(BuildContext context) {
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case "completed":
@@ -404,43 +343,47 @@ class ClientProfile extends StatelessWidget {
     }
   }
 
-  Widget _invoiceTile(
-    BuildContext context,
-    String title,
-    String status,
-    Color color,
-  ) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.receipt_outlined, color: AppColors.black54),
-      title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-      trailing: Text(
-        status,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  // Widget _invoiceTile(
+  //   BuildContext context,
+  //   String title,
+  //   String status,
+  //   Color color,
+  // ) {
+  //   return ListTile(
+  //     contentPadding: EdgeInsets.zero,
+  //     leading: const Icon(Icons.receipt_outlined, color: AppColors.black54),
+  //     title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
+  //     trailing: Text(
+  //       status,
+  //       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //         color: color,
+  //         fontWeight: FontWeight.w600,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _listTile(
     BuildContext context,
     String title,
-    String status,
-    Color color,
+    // String status,
+    // Color color,
   ) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.circle, color: color, size: 14),
-      title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-      trailing: Text(
-        status,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+      leading: Icon(
+        Icons.circle,
+        // color: color,
+        size: 14,
       ),
+      title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
+      // trailing: Text(
+      //   status,
+      //   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      //     color: color,
+      //     fontWeight: FontWeight.w600,
+      //   ),
+      // ),
     );
   }
 
@@ -448,9 +391,9 @@ class ClientProfile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +402,7 @@ class ClientProfile extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.grey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 5),
@@ -467,7 +410,7 @@ class ClientProfile extends StatelessWidget {
             value.isEmpty ? "-" : value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -476,54 +419,12 @@ class ClientProfile extends StatelessWidget {
   }
 
   // Widget _sectionHeader(BuildContext context, String title, IconData icon) {
-  //   return Row(
-  //     children: [
-  //       Container(
-  //         padding: const EdgeInsets.all(8),
-  //         decoration: BoxDecoration(
-  //           color: AppColors.primary.withValues(alpha: 0.1),
-  //           borderRadius: BorderRadius.circular(10),
-  //         ),
-  //         child: Icon(icon, color: AppColors.primary, size: 20),
-  //       ),
-  //       const SizedBox(width: 10),
-  //       Text(
-  //         title,
-  //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-  //           fontWeight: FontWeight.w700,
-  //           color: AppColors.black87,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _sectionContainer({
-  //   required BuildContext context,
-  //   required String title,
-  //   required IconData icon,
-  //   required Widget child,
-  // }) {
-  //   return Container(
-  //     padding: const EdgeInsets.all(24),
-  //     decoration: _cardDecoration(),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         _sectionHeader(context, title, icon),
-  //         const SizedBox(height: 16),
-  //         child,
-  //       ],
-  //     ),
-  //   );
-  // }
-
   BoxDecoration _cardDecoration() => BoxDecoration(
-    color: AppColors.white,
+    color: Theme.of(context).colorScheme.surface,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: AppColors.grey.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 3),
       ),

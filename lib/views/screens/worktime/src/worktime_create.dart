@@ -17,8 +17,6 @@ import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/constants/src/svg.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/db.dart';
-import 'package:leadcapture/services/database/src/spdb.dart';
-import 'package:leadcapture/services/firebase/src/workpermission_service.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/utils/src/time_format.dart';
@@ -32,7 +30,7 @@ import 'package:leadcapture/views/ui/src/loading.dart';
 import 'package:leadcapture/views/ui/src/snackbar.dart';
 
 // Project imports:
-import '/constants/constants.dart';
+import '/services/services.dart';
 import '/theme/theme.dart';
 
 class WorktimeCreate extends StatefulWidget {
@@ -66,7 +64,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
 
   Future<void> _init() async {
     _dayEnd = await WorktimeService.checkDayEnd();
-    print("DayEnd status: $_dayEnd");
 
     // ✅ If day ended → reset everything
     if (_dayEnd) {
@@ -162,41 +159,54 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   void _clockIn() async {
-    // const LatLng buildingCenter = LatLng(9.44133, 77.79675); // Core data
-    // const LatLng buildingCenter = LatLng(9.441321, 77.796719); // DB data
-    // const double allowedRadiusMeters = 20;
-    // const double maxAllowedAccuracy = 20; // meters
-
     try {
       futureLoading(context);
-      // if (await LocationService.initalize()) {
-      //   LocationData currentLocation = await LocationService.getCurrentLocation();
 
-      // bool isInside = LocationService.isWithinRadius(
-      //   LatLng(currentLocation.latitude!, currentLocation.longitude!),
-      //   buildingCenter,allowedRadiusMeters,
-      // );
+      // --- Geofence check (mobile only) ---
+      // final geofence = await CompanyLocationService.getGeofence();
+      // if (geofence != null) {
+      //   final position = await LocationService.getCurrentPosition();
+      //   if (position == null) {
+      //     Navigator.pop(context);
+      //     Snackbar.showSnackBarOption(
+      //       context,
+      //       content:
+      //           "Location permission is required to clock in. Please enable it in your device settings.",
+      //       isSuccess: false,
+      //       actionText: "Try Again",
+      //       action: _clockIn,
+      //     );
+      //     return;
+      //   }
 
-      // if (currentLocation.accuracy == null || currentLocation.accuracy! > maxAllowedAccuracy) {
-      //   Navigator.pop(context);
-      //   Snackbar.showSnackBarOption( context,
-      //     content: "Location signal is weak. Please move near a window.", isSuccess: false,
-      //     actionText: "Try Again",
-      //     action: () {
-      //       _clockIn();
-      //     },
+      //   final isInside = LocationService.isWithinRadius(
+      //     currentLat: position.latitude,
+      //     currentLng: position.longitude,
+      //     centerLat: geofence.latitude,
+      //     centerLng: geofence.longitude,
+      //     radiusMeters: geofence.radiusMeters,
       //   );
-      //   return;
+
+      //   if (!isInside) {
+      //     Navigator.pop(context);
+      //     Snackbar.showSnackBarOption(
+      //       context,
+      //       content:
+      //           "You are outside the company premises. Move closer and try again.",
+      //       isSuccess: false,
+      //       actionText: "Try Again",
+      //       action: _clockIn,
+      //     );
+      //     return;
+      //   }
       // }
+      // ------------------------------------
 
       var uid = await Spdb.getUid();
       var user = await Spdb.getUser();
       var name = user.name;
 
-      // Navigator.pop(context);
-
       var existing = await WorktimeService.checkTodayClockIn();
-
       if (existing) {
         Navigator.pop(context);
         Snackbar.showSnackBar(
@@ -207,7 +217,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
         return;
       }
 
-      // if (isInside) {
       var id = await WorktimeService.createWorkTime(
         model: WorktimeModel(
           breaks: {},
@@ -223,40 +232,13 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       _alreadyClockIned = true;
       _elapsedWorkTime = Duration.zero;
       _startTimer();
-      // } else {
-      //   await WorktimeFunctions.createWrongLoginAttempt(
-      //     points: LatLng(
-      //       currentLocation.latitude!,
-      //       currentLocation.longitude!,
-      //     ),
-      //   );
 
-      // Snackbar.showSnackBarOption(
-      //   context,
-      //   content: "You are outside building",
-      //   isSuccess: false,
-      //   actionText: "Try Again",
-      //   action: () {
-      //     _clockIn();
-      //   },
-      // );
-      // }
-      // }
-      // else {
-      //   Snackbar.showSnackBar(
-      //     context,
-      //     content: "Location services are disabled",
-      //     isSuccess: false,
-      //   );
-      // }
       Navigator.pop(context);
       setState(() {});
     } catch (e, stackTrace) {
       Navigator.pop(context);
-
       debugPrint("❌ ClockIn Error: $e");
       debugPrint("📍 StackTrace: $stackTrace");
-
       Snackbar.showSnackBar(context, content: e.toString(), isSuccess: false);
     }
   }
@@ -304,16 +286,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       }
       futureLoading(context);
       if (!_isInBreak) {
-        Duration totalBreakDuration = Duration.zero;
-        for (var breakEntry in _worktimeModel!.breaks.entries) {
-          final breakStart = breakEntry.value["start"].toDate();
-          final breakEnd = breakEntry.value["end"]?.toDate();
-
-          if (breakEnd != null) {
-            totalBreakDuration += breakEnd.difference(breakStart);
-          }
-        }
-
         final breakId = (_worktimeModel!.breaks.length + 1).toString();
         _worktimeModel!.breaks[breakId] = {
           "start": DateTime.now(),
@@ -387,45 +359,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
     return totalBreakDuration;
   }
 
-  Duration _calculateWorkingTime(WorktimeModel work) {
-    final clockIn = work.clockIn;
-    final clockOut = work.clockOut!;
-
-    Duration totalTime = clockOut.difference(clockIn);
-
-    Duration breakTime = Duration.zero;
-
-    work.breaks.forEach((key, value) {
-      final start = value["start"].toDate();
-      final end = value["end"]?.toDate();
-
-      if (end != null) {
-        breakTime += end.difference(start);
-      }
-    });
-
-    return totalTime - breakTime;
-  }
-
-  int _durationToMinutes(Duration duration) {
-    return duration.inMinutes;
-  }
-
-  Map<String, int> _calculateOtLess(int workingMinutes) {
-    const int officeMinutes = 480;
-
-    int ot = 0;
-    int less = 0;
-
-    if (workingMinutes > officeMinutes) {
-      ot = workingMinutes - officeMinutes;
-    } else {
-      less = officeMinutes - workingMinutes;
-    }
-
-    return {"ot": ot, "less": less};
-  }
-
   void _clockOut() async {
     try {
       futureLoading(context);
@@ -451,95 +384,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
 
       // ✅ Clockout
       await WorktimeService.clockOut(id: workTimeId ?? '');
-
-      var work = await WorktimeService.getClockIn(id: workTimeId ?? '');
-
-      // calculate working duration
-      Duration workingDuration = _calculateWorkingTime(work);
-
-      // convert to minutes
-      int workingMinutes = _durationToMinutes(workingDuration);
-
-      // calculate OT / Less
-      var result = _calculateOtLess(workingMinutes);
-
-      int otMinutes = result["ot"]!;
-      int lessMinutes = result["less"]!;
-
-      var permissions = await WorkPermissionService.getTodayPermissions(
-        work.userUid,
-      );
-
-      var approvedPermissions = permissions
-          .where((p) => p.status == PermissionsStatus.approved)
-          .toList();
-
-      bool leaveFullDay = approvedPermissions.any(
-        (p) => p.type == PermissionType.leaveFullDay,
-      );
-
-      bool leaveHalfDay = approvedPermissions.any(
-        (p) => p.type == PermissionType.leaveHalfDay,
-      );
-
-      bool workFromHome = approvedPermissions.any(
-        (p) => p.type == PermissionType.workFromHome,
-      );
-
-      bool lateEntry = approvedPermissions.any(
-        (p) => p.type == PermissionType.lateEntry,
-      );
-
-      bool earlyExit = approvedPermissions.any(
-        (p) => p.type == PermissionType.earlyExit,
-      );
-
-      String status;
-
-      if (workingMinutes == 0) {
-        status = AttendanceStatus.absent.name;
-      } else if (workingMinutes < 240) {
-        status = AttendanceStatus.absent.name;
-      } else if (workingMinutes < 480) {
-        status = AttendanceStatus.halfDay.name;
-      } else {
-        status = AttendanceStatus.present.name;
-      }
-
-      if (leaveFullDay) {
-        status = AttendanceStatus.leave.name;
-        workingMinutes = 0;
-        otMinutes = 0;
-        lessMinutes = 0;
-      }
-      // HALF DAY LEAVE
-      else if (leaveHalfDay) {
-        status = AttendanceStatus.halfDay.name;
-        int requiredMinutes = 240;
-        if (workingMinutes >= requiredMinutes) {
-          lessMinutes = 0;
-        } else {
-          lessMinutes = requiredMinutes - workingMinutes;
-        }
-      } else if (workFromHome) {
-        status = AttendanceStatus.present.name;
-      }
-
-      if (lateEntry || earlyExit) {
-        lessMinutes = 0;
-      }
-
-      // var exists = await AttendanceService.checkTodayPunch();
-
-      // if (!exists) {
-      //   await AttendanceService.createPunch(
-      //     userUid: work.userUid,
-      //     workingMinutes: workingMinutes,
-      //     otMinutes: otMinutes,
-      //     lessMinutes: lessMinutes,
-      //     status: status,
-      //   );
-      // }
 
       await Db.clearClockIn();
 

@@ -76,11 +76,14 @@ class LeadsListingView extends StatefulWidget {
 
 class _LeadsListingViewState extends State<LeadsListingView> {
   final ScrollController _hScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   String _selectedView = 'Grid';
   final List<LeadModel> _selectedLeads = [];
   final List<LeadModel> _leadsList = [];
   List<LeadModel> _filteredLeads = [];
   PermissionModel? permissions;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -98,6 +101,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    _currentUid = await Spdb.getUid();
+    _isAdmin = await Spdb.isAdminLoggedIn();
     setState(() {});
   }
 
@@ -119,6 +124,22 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
   List<String> employeeItems(CacheService cache) {
     return cache.getAllListenableEmployees().value.map((e) => e.name).toList();
+  }
+
+  Future<void> _refreshLeads(BuildContext context) async {
+    context.read<LeadBloc>().add(StreamLead());
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+      _selectedStatus = null;
+      _selectedCategory = null;
+      _selectedCreatedBy = null;
+      _searchController.clear();
+    });
+    _applyFilters();
   }
 
   @override
@@ -149,33 +170,32 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshLeads(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    if (_selectedView == 'Grid') ...[
+                      LeadKanbanListing(
+                        leadList: _filteredLeads,
+                        onLeadDeleted: () =>
+                            context.read<LeadBloc>().add(StreamLead()),
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      if (_selectedView == 'Grid') ...[
-                        LeadKanbanListing(
-  leadList: _filteredLeads,
-  onLeadDeleted: () => context.read<LeadBloc>().add(StreamLead()),
-),
-                      ] else if (_selectedView == 'Calendar') ...[
-                        LeadCalendarListing(
-  leadList: _filteredLeads,
-  onLeadCreated: () => context.read<LeadBloc>().add(StreamLead()),
-),
-                      ] else ...[
-                        _buildListView(controllerWatch, controllerRead),
-                      ],
+                    ] else if (_selectedView == 'Calendar') ...[
+                      LeadCalendarListing(
+                        leadList: _filteredLeads,
+                        onLeadCreated: () =>
+                            context.read<LeadBloc>().add(StreamLead()),
+                      ),
+                    ] else ...[
+                      _buildListView(context, controllerWatch, controllerRead),
                     ],
-                  ),
+                  ],
                 ),
               );
             }
@@ -196,16 +216,17 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   }
 
   Container _buildListView(
+    BuildContext context,
     PaginatedDataController<LeadModel> controllerWatch,
     PaginatedDataController<LeadModel> controllerRead,
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -238,12 +259,12 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       sortColumnIndex: controllerWatch.sortColumnIndex,
                       sortAscending: controllerWatch.sortAscending,
                       headingRowColor: WidgetStateProperty.all(
-                        AppColors.grey100,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       headingTextStyle: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       columns: [
                         DataColumn(
@@ -259,7 +280,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: AppColors.grey400,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -279,7 +302,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: AppColors.grey400,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -414,187 +439,280 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     if (!Hive.isBoxOpen('leadStatus') ||
         !Hive.isBoxOpen('leadCategory') ||
         !Hive.isBoxOpen('employees')) {
-      return SizedBox(
-        width: 250,
-        child: TextField(
-          onChanged: onSearchChanged,
-          decoration: InputDecoration(
-            hintText: 'Search',
-            prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
-            filled: true,
-            fillColor: AppColors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 16.0,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(color: AppColors.grey, width: 1),
-            ),
-          ),
-        ),
-      );
+      return _buildSearchField(onSearchChanged);
     }
+
     final statusBox = Hive.box<Map<dynamic, dynamic>>('leadStatus');
     final categoryBox = Hive.box<Map<dynamic, dynamic>>('leadCategory');
     final cache = CacheService();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 250,
-          child: TextField(
-            onChanged: onSearchChanged,
-            decoration: InputDecoration(
-              hintText: 'Search',
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 20,
-                color: Colors.grey,
-              ),
-              filled: true,
-              fillColor: AppColors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 12.0,
-                horizontal: 16.0,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.grey, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
-              ),
-              hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+    final filters = [
+      _dateFilter(
+        label: "From Date",
+        value: _fromDate,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            initialDate: _fromDate ?? DateTime.now(),
+          );
+
+          if (picked != null) {
+            setState(() => _fromDate = picked);
+            _applyFilters();
+          }
+        },
+      ),
+
+      _dateFilter(
+        label: "To Date",
+        value: _toDate,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            initialDate: _toDate ?? DateTime.now(),
+          );
+
+          if (picked != null) {
+            setState(() => _toDate = picked);
+            _applyFilters();
+          }
+        },
+      ),
+
+      _filterDropdown(
+        label: "Status",
+        value: _selectedStatus != null
+            ? LeadStatusModel.fromMap(
+                _selectedStatus!,
+                Map<String, dynamic>.from(
+                  statusBox.get(_selectedStatus!) ?? {},
+                ),
+              ).name
+            : null,
+        items: statusItems(statusBox),
+        onChanged: (v) {
+          final selectedModel = statusBox.keys.firstWhere(
+            (key) =>
+                LeadStatusModel.fromMap(
+                  key,
+                  Map<String, dynamic>.from(statusBox.get(key) ?? {}),
+                ).name ==
+                v,
+            orElse: () => '',
+          );
+
+          setState(() => _selectedStatus = selectedModel);
+          _applyFilters();
+        },
+      ),
+
+      _filterDropdown(
+        label: "Lead Category",
+        value: _selectedCategory != null
+            ? LeadCategoryModel.fromMap(
+                _selectedCategory!,
+                Map<String, dynamic>.from(
+                  categoryBox.get(_selectedCategory!) ?? {},
+                ),
+              ).name
+            : null,
+        items: categoryItems(categoryBox),
+        onChanged: (v) {
+          final selectedModel = categoryBox.keys.firstWhere(
+            (key) =>
+                LeadCategoryModel.fromMap(
+                  key,
+                  Map<String, dynamic>.from(categoryBox.get(key) ?? {}),
+                ).name ==
+                v,
+            orElse: () => '',
+          );
+
+          setState(() => _selectedCategory = selectedModel);
+          _applyFilters();
+        },
+      ),
+
+      _filterDropdown(
+        label: "Created By",
+        value: _selectedCreatedBy != null
+            ? cache
+                  .getAllListenableEmployees()
+                  .value
+                  .firstWhere((e) => e.uid == _selectedCreatedBy)
+                  .name
+            : null,
+        items: employeeItems(cache),
+        onChanged: (v) {
+          final selectedEmployee = cache
+              .getAllListenableEmployees()
+              .value
+              .firstWhereOrNull((e) => e.name == v);
+
+          setState(() => _selectedCreatedBy = selectedEmployee?.uid);
+
+          _applyFilters();
+        },
+      ),
+
+      _valueFilter(onChanged: _onValueChanged),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// Search
+          kIsMobile
+              ? Column(
+                  children: [
+                    _buildSearchField(onSearchChanged),
+
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: _buildResetButton(),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                )
+              : Row(
+                  children: [
+                    SizedBox(
+                      width: 280,
+                      child: _buildSearchField(onSearchChanged),
+                    ),
+
+                    const Spacer(),
+
+                    _buildResetButton(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+
+          /// Filters
+          kIsMobile
+              ? Wrap(spacing: 10, runSpacing: 10, children: filters)
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final filter in filters) ...[
+                        filter,
+                        const SizedBox(width: 10),
+                      ],
+                    ],
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResetButton() {
+    return SizedBox(
+      height: 30,
+      child: ElevatedButton.icon(
+        onPressed: _resetFilters,
+        icon: const Icon(Icons.refresh, size: 18),
+        label: const Text("Reset Filters"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.errorContainer.withValues(alpha: 0.5),
+          foregroundColor: Theme.of(context).colorScheme.error,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(ValueChanged<String> onSearchChanged) {
+    return SizedBox(
+      height: 48,
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {});
+          onSearchChanged(value);
+          _applyFilters();
+        },
+        decoration: InputDecoration(
+          hintText: 'Search leads...',
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                    onSearchChanged('');
+                    _applyFilters();
+                  },
+                )
+              : null,
+
+          filled: true,
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 1.3,
+            ),
+          ),
+
+          hintStyle: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            fontSize: 14,
           ),
         ),
-        const SizedBox(height: 12),
-
-        // Filters Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _dateFilter(
-                label: "From Date",
-                value: _fromDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: _fromDate ?? DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() => _fromDate = picked);
-                    _applyFilters();
-                  }
-                },
-              ),
-              const SizedBox(width: 10),
-
-              // To Date
-              _dateFilter(
-                label: "To Date",
-                value: _toDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                    initialDate: _toDate ?? DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() => _toDate = picked);
-                    _applyFilters();
-                  }
-                },
-              ),
-
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Status",
-                value: _selectedStatus != null
-                    ? LeadStatusModel.fromMap(
-                        _selectedStatus!,
-                        Map<String, dynamic>.from(
-                          statusBox.get(_selectedStatus!) ?? {},
-                        ),
-                      ).name
-                    : null,
-                items: statusItems(statusBox),
-                onChanged: (v) {
-                  final selectedModel = statusBox.keys.firstWhere(
-                    (key) =>
-                        LeadStatusModel.fromMap(
-                          key,
-                          Map<String, dynamic>.from(statusBox.get(key) ?? {}),
-                        ).name ==
-                        v,
-                    orElse: () => '',
-                  );
-                  setState(() => _selectedStatus = selectedModel);
-                  _applyFilters();
-                },
-              ),
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Lead Category",
-                value: _selectedCategory != null
-                    ? LeadCategoryModel.fromMap(
-                        _selectedCategory!,
-                        Map<String, dynamic>.from(
-                          categoryBox.get(_selectedCategory!) ?? {},
-                        ),
-                      ).name
-                    : null,
-                items: categoryItems(categoryBox),
-                onChanged: (v) {
-                  final selectedModel = categoryBox.keys.firstWhere(
-                    (key) =>
-                        LeadCategoryModel.fromMap(
-                          key,
-                          Map<String, dynamic>.from(categoryBox.get(key) ?? {}),
-                        ).name ==
-                        v,
-                    orElse: () => '',
-                  );
-                  setState(() => _selectedCategory = selectedModel);
-                  _applyFilters();
-                },
-              ),
-              const SizedBox(width: 10),
-              _filterDropdown(
-                label: "Created By",
-                value: _selectedCreatedBy != null
-                    ? cache
-                          .getAllListenableEmployees()
-                          .value
-                          .firstWhere((e) => e.uid == _selectedCreatedBy)
-                          .name
-                    : null,
-                items: employeeItems(cache),
-                onChanged: (v) {
-                  final selectedEmployee = cache
-                      .getAllListenableEmployees()
-                      .value
-                      .firstWhereOrNull((e) => e.name == v);
-                  setState(() => _selectedCreatedBy = selectedEmployee?.uid);
-                  _applyFilters();
-                },
-              ),
-
-              const SizedBox(width: 10),
-
-              _valueFilter(onChanged: _onValueChanged),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -610,7 +728,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           Text(
             "Lead Value",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -620,7 +738,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade700),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -687,7 +807,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -698,7 +818,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade700),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -706,7 +828,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   Icon(
                     Iconsax.calendar_1,
                     size: 18,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -720,9 +842,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down,
-                    color: Colors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 18,
                   ),
                 ],
@@ -763,7 +885,14 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         : <LeadModel>[];
 
     List<LeadModel> filtered = allLeads;
+    final query = _searchController.text.toLowerCase();
 
+    if (query.isNotEmpty) {
+      filtered = filtered.where((lead) {
+        return lead.leadName.toLowerCase().contains(query) ||
+            lead.leadEmail.toLowerCase().contains(query);
+      }).toList();
+    }
     if (_fromDate != null) {
       filtered = filtered
           .where((e) => !e.createdAt.isBefore(_fromDate!))
@@ -814,10 +943,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             ElevatedButton.icon(
               onPressed: () async {
                 final result = kIsMobile
-                    ? await Sheet.showSheet(
-                        context,
-                        widget: const LeadCreate(),
-                      )
+                    ? await Sheet.showSheet(context, widget: const LeadCreate())
                     : await GeneralDialog.showRTLSheet(
                         context,
                         const LeadCreate(),
@@ -829,8 +955,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               icon: const Icon(Icons.add, size: 18),
               label: Text("Add $_pageTitle"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           );
@@ -841,8 +967,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               icon: const Icon(Icons.add, size: 18),
               label: Text("Add $_pageTitle"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.grey300,
-                foregroundColor: AppColors.grey600,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           );
@@ -862,8 +990,8 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             icon: const Icon(Iconsax.cloud_plus, size: 18),
             label: const Text("Upload"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blue,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
             ),
           ),
         );
@@ -873,17 +1001,17 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         actionButtons.add(
           OutlinedButton.icon(
             onPressed: () async {
-              await Download.downloadFromUrl(
+              await Download.downloadFromAsset(
                 context,
-                "https://firebasestorage.googleapis.com/v0/b/srisoftwarez-crm.firebasestorage.app/o/static%2Faaatp_lead_upload_template.xlsx?alt=media&token=8173a050-72a3-403e-bc10-e8c876118721",
-                "Lead_Import_Template.xlsx",
+                "assets/templates/lead_upload_template.xlsx",
+                "Lead_Template.xlsx",
               );
             },
             icon: const Icon(Icons.file_download_outlined, size: 18),
             label: const Text("Template"),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.blue,
-              side: const BorderSide(color: AppColors.blue),
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              side: BorderSide(color: Theme.of(context).colorScheme.primary),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -897,9 +1025,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             label: const Text("Export"),
             icon: const Icon(Iconsax.export_3, size: 18),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors
-                  .grey600, 
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             onPressed: () async {
               try {
@@ -956,7 +1085,6 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           ),
         );
 
-        // DELETE BUTTON (Only shows if items selected)
         if ((permissions?.canDelete ?? false) && _selectedLeads.isNotEmpty) {
           actionButtons.add(const SizedBox(width: 10));
           actionButtons.add(
@@ -972,25 +1100,54 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                         'Are you sure you want to delete the selected leads?',
                   ),
                 );
-                if (result == true) {
-                  try {
-                    futureLoading(context);
-                    for (var i in _selectedLeads) {
-                      await LeadService.deleteLead(uid: i.uid ?? '');
-                    }
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    FlushBar.show(context, 'Leads deleted successfully');
-                    _selectedLeads.clear();
-                    setState(() {});
-                  } catch (e) {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    FlushBar.show(context, e.toString(), isSuccess: false);
+
+                if (result != true) return;
+
+                try {
+                  // ✅ STEP 1: backup
+                  final deletedLeads = List<LeadModel>.from(_selectedLeads);
+
+                  futureLoading(context);
+
+                  // ✅ STEP 2: delete
+                  for (var lead in deletedLeads) {
+                    await LeadService.deleteLead(uid: lead.uid ?? '');
                   }
+
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+
+                  // ✅ STEP 3: clear selection
+                  _selectedLeads.clear();
+                  setState(() {});
+
+                  // ✅ STEP 4: UNDO
+                  FlushBar.show(
+                    context,
+                    'Leads deleted successfully',
+                    actionLabel: 'UNDO',
+                    onActionPressed: () async {
+                      for (var lead in deletedLeads) {
+                        await LeadService.restoreLead(
+                          lead,
+                        ); // 👈 implement this
+                      }
+
+                      // 🔥 refresh list
+                      context.read<LeadBloc>().add(StreamLead());
+                    },
+                    // onDismissed: () {
+                    //   // 🔥 refresh if user does nothing
+                    //   context.read<LeadBloc>().add(StreamLeads());
+                    // },
+                  );
+                } catch (e) {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                  FlushBar.show(context, e.toString(), isSuccess: false);
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           );
@@ -1000,17 +1157,33 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         final viewToggle = Container(
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (kIsDesktop)
+                IconButton(
+                  tooltip: "Refresh",
+                  icon: const Icon(Iconsax.refresh),
+                  iconSize: 18,
+                  onPressed: () => _refreshLeads(context),
+                ),
+              const SizedBox(width: 10),
               _buildToggleIcon(Iconsax.grid_3, 'Grid'),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               _buildToggleIcon(Icons.list, 'List'),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               _buildToggleIcon(Iconsax.calendar_1, 'Calendar'),
             ],
           ),
@@ -1047,7 +1220,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     return IconButton(
       onPressed: () => setState(() => _selectedView = viewName),
       icon: Icon(icon, size: 18),
-      color: _selectedView == viewName ? AppColors.blue : AppColors.grey700,
+      color: _selectedView == viewName
+          ? Theme.of(context).colorScheme.primary
+          : Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 
@@ -1173,10 +1348,11 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         DataCell(
           Row(
             children: [
-              if ((permissions?.canEdit ?? false)) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
-                  color: AppColors.info,
+                  color: Theme.of(context).colorScheme.primary,
                   splashRadius: 20,
                   onPressed: () {
                     if (kIsMobile) {
@@ -1194,7 +1370,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                  icon: Icon(
+                    Iconsax.edit,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],
@@ -1202,7 +1381,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               IconButton(
                 icon: const Icon(Icons.autorenew_rounded),
                 tooltip: 'Convert $_pageTitle to Deal',
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.secondary,
                 splashRadius: 20,
                 onPressed: () async {
                   final result = await showDialog<bool>(
@@ -1220,39 +1399,58 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 },
               ),
 
-              if ((permissions?.canDelete ?? false)) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin || lead.createdBy.uid == _currentUid)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                   splashRadius: 20,
                   tooltip: 'Delete $_pageTitle',
                   onPressed: () async {
                     final result = await showDialog<bool>(
                       context: context,
-                      builder: (_) => const ConfirmDialog(
+                      builder: (_) => ConfirmDialog(
                         title: 'Delete $_pageTitle',
                         content: 'Are you sure you want to delete this lead?',
                       ),
                     );
 
-                    if (result == true) {
-                      try {
-                        await LeadService.deleteLead(uid: lead.uid ?? '');
-                        FlushBar.show(
-                          context,
-                          '$_pageTitle deleted successfully',
-                        );
-                        context.read<LeadBloc>().add(StreamLead());
-                      } catch (e, st) {
-                        await ErrorService.recordError(e, st);
-                        FlushBar.show(context, e.toString(), isSuccess: false);
-                      }
+                    if (result != true) return;
+
+                    try {
+                      final deletedLead = lead;
+
+                      await LeadService.deleteLead(uid: lead.uid ?? '');
+
+                      if (!mounted) return;
+
+                      FlushBar.show(
+                        context,
+                        '$_pageTitle deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          await LeadService.restoreLead(deletedLead);
+
+                          // ✅ refresh after undo
+                          context.read<LeadBloc>().add(StreamLead());
+                        },
+                        // onDismissed: () {
+                        //   // ✅ refresh if no undo
+                        //   context.read<LeadBloc>().add(StreamLead());
+                        // },
+                      );
+                    } catch (e, st) {
+                      await ErrorService.recordError(e, st);
+                      FlushBar.show(context, e.toString(), isSuccess: false);
                     }
                   },
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                  icon: Icon(
+                    Iconsax.trash,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],

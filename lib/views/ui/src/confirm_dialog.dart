@@ -23,8 +23,8 @@ class _ConfirmDialogState extends State<ConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.white,
-      surfaceTintColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
       insetPadding: const EdgeInsets.all(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
@@ -45,13 +45,16 @@ class _ConfirmDialogState extends State<ConfirmDialog> {
                   height: 55,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: AppColors.white,
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       widget.cancelText ?? "Cancel",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.grey700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -73,7 +76,7 @@ class _ConfirmDialogState extends State<ConfirmDialog> {
                     child: Text(
                       widget.successText ?? "Confirm",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -103,8 +106,8 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.white,
-      surfaceTintColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(
         'Complete Lead',
@@ -137,9 +140,11 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
               return ChoiceChip(
                 label: Text(status.label),
                 selected: isSelected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 labelStyle: TextStyle(
-                  color: isSelected ? AppColors.primary : AppColors.grey700,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 onSelected: (_) {
@@ -163,7 +168,10 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
                   height: 48,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: AppColors.white,
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -197,7 +205,7 @@ class _LeadCompletionDialogState extends State<LeadCompletionDialog> {
                     child: Text(
                       'Confirm & Convert',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

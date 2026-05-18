@@ -2,11 +2,13 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:leadcapture/models/src/download_model.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
-import '/services/services.dart' show ErrorService;
+import '/services/services.dart' show ErrorService, Spdb;
 import '/theme/theme.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
@@ -25,10 +27,10 @@ class Download {
       directory = (await getDownloadsDirectory())!;
     }
 
-    final String fileName = name ?? url.split('/').last;
-    final String savePath = '${directory.path}/$fileName';
-
-    // Create an OverlayEntry to show live progress
+    final String fileName = name != null && name.isNotEmpty
+        ? path.basename(name)
+        : path.basename(url);
+    final String savePath = path.join(directory.path, fileName);
     OverlayState overlayState = Overlay.of(context);
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -52,8 +54,6 @@ class Download {
         onReceiveProgress: (received, total) {
           if (total > 0) {
             progress = (received / total * 100).toInt();
-
-            // Rebuild overlay to reflect progress updates
             overlayEntry.markNeedsBuild();
           }
         },
@@ -71,6 +71,7 @@ class Download {
               fileSize: fileSize,
               downloadedAt: DateTime.now(),
               isSuccess: true,
+              userId: await Spdb.getUid() ?? '',
             ).toMap(),
           );
       overlayEntry.remove();
@@ -90,10 +91,90 @@ class Download {
               fileSize: 0,
               downloadedAt: DateTime.now(),
               isSuccess: false,
+              userId: await Spdb.getUid() ?? '',
             ).toMap(),
           );
 
       overlayEntry.remove();
+      FlushBar.show(
+        context,
+        "Download Failed",
+        isSuccess: false,
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  static Future<void> downloadFromAsset(
+    BuildContext context,
+    String assetPath,
+    String fileName,
+  ) async {
+    int progress = 0;
+
+    OverlayState overlayState = Overlay.of(context);
+
+    OverlayEntry overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 80,
+        left: 0,
+        right: 0,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: _DownloadProgressIndicator(progress: progress),
+        ),
+      ),
+    );
+
+    overlayState.insert(overlayEntry);
+
+    try {
+      // Load asset bytes
+      final ByteData data = await rootBundle.load(assetPath);
+
+      progress = 50;
+      overlayEntry.markNeedsBuild();
+
+      final Uint8List bytes = data.buffer.asUint8List();
+
+      // Save file
+      final String savePath = await saveFileToDownloads(
+        bytes,
+        fileName: fileName,
+      );
+
+      progress = 100;
+      overlayEntry.markNeedsBuild();
+
+      final fileSize = await File(savePath).length();
+
+      await FirebaseFirestore.instance
+          .collection('download_history')
+          .add(
+            DownloadHistoryModel(
+              fileName: fileName,
+              filePath: savePath,
+              url: assetPath,
+              fileSize: fileSize,
+              downloadedAt: DateTime.now(),
+              isSuccess: true,
+              userId: await Spdb.getUid() ?? '',
+            ).toMap(),
+          );
+
+      overlayEntry.remove();
+
+      FlushBar.show(context, "Download Completed", isSuccess: true);
+
+      openfile(savePath, context);
+    } catch (e, st) {
+      debugPrint("${e.toString()}, ${st.toString()}");
+
+      await ErrorService.recordError(e, st);
+
+      overlayEntry.remove();
+
       FlushBar.show(
         context,
         "Download Failed",

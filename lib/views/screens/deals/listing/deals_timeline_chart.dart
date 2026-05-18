@@ -55,7 +55,7 @@ class DealsTimelineChart extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -78,10 +78,10 @@ class DealsTimelineChart extends StatelessWidget {
                     children: [
                       Text(
                         "Deals $monthName Activity",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -89,7 +89,7 @@ class DealsTimelineChart extends StatelessWidget {
                         "Daily deal creation performance for the current month",
                         style: TextStyle(
                           fontSize: 12,
-                          color: const Color(0xFF64748B).withValues(alpha: 0.8),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -102,13 +102,13 @@ class DealsTimelineChart extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
+                  child: Text(
                     "Live Data",
                     style: TextStyle(
-                      color: Color(0xFF2563EB),
+                      color: Theme.of(context).colorScheme.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -126,7 +126,7 @@ class DealsTimelineChart extends StatelessWidget {
                     drawVerticalLine: false,
                     horizontalInterval: maxY / 4,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: const Color(0xFFE2E8F0).withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
                       strokeWidth: 1,
                       dashArray: [5, 5],
                     ),
@@ -157,9 +157,9 @@ class DealsTimelineChart extends StatelessWidget {
                               space: 12,
                               child: Text(
                                 day.toString(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF94A3B8),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -178,9 +178,9 @@ class DealsTimelineChart extends StatelessWidget {
                           return Text(
                             value.toInt().toString(),
                             textAlign: TextAlign.left,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF94A3B8),
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           );
@@ -192,21 +192,21 @@ class DealsTimelineChart extends StatelessWidget {
                   lineTouchData: LineTouchData(
                     handleBuiltInTouches: true,
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (spot) => const Color(0xFF0F172A),
+                      getTooltipColor: (spot) => Theme.of(context).colorScheme.inverseSurface,
                       getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                         return touchedBarSpots.map((barSpot) {
                           return LineTooltipItem(
                             'Day ${barSpot.x.toInt()}\n',
-                            const TextStyle(
-                              color: Colors.white,
+                            TextStyle(
+                              color: Theme.of(context).colorScheme.onInverseSurface,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
                             children: [
                               TextSpan(
                                 text: '${barSpot.y.toInt()} New Deals',
-                                style: const TextStyle(
-                                  color: Color(0xFF60A5FA),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 12,
                                 ),
@@ -223,7 +223,7 @@ class DealsTimelineChart extends StatelessWidget {
                       isCurved: true,
                       curveSmoothness: 0.4,
                       preventCurveOverShooting: true,
-                      color: const Color(0xFF2563EB),
+                      color: Theme.of(context).colorScheme.primary,
                       barWidth: 4,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: false),
@@ -231,9 +231,9 @@ class DealsTimelineChart extends StatelessWidget {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            const Color(0xFF2563EB).withValues(alpha: 0.25),
-                            const Color(0xFF2563EB).withValues(alpha: 0.05),
-                            const Color(0xFF2563EB).withValues(alpha: 0.0),
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.0),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -255,18 +255,18 @@ class DealsTimelineChart extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2563EB),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   "Created Deals",
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -51,7 +51,10 @@ class Validation {
     return null;
   }
 
-  static String? passwordValidation({required String? input, required bool isReq}) {
+  static String? passwordValidation({
+    required String? input,
+    required bool isReq,
+  }) {
     if (input != null) {
       if (input.length < 8) {
         return "Must be at least 8 characters long";
@@ -89,6 +92,73 @@ class Validation {
 
       if (!RegExp(r'^[a-zA-Z0-9\s,.\-#/]+$').hasMatch(input)) {
         return 'Invalid characters in address';
+      }
+    }
+
+    return null;
+  }
+
+  static String? validMobileNumber({
+    required String? input,
+    bool isReq = false,
+  }) {
+    if (isReq && (input == null || input.isEmpty)) {
+      return 'Mobile number is required';
+    }
+
+    if (input != null && input.isNotEmpty) {
+      if (input.length != 10) {
+        return 'Mobile number must be 10 digits';
+      }
+
+      if (!RegExp(r'^[0-9]+$').hasMatch(input)) {
+        return 'Mobile number must contain only digits';
+      }
+    }
+
+    return null;
+  }
+
+  static String? validName({
+    required String? input,
+    String label = 'Name',
+    bool isReq = true,
+  }) {
+    if (isReq && (input == null || input.isEmpty)) {
+      return '$label is required';
+    }
+
+    if (input != null && input.isNotEmpty) {
+      if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(input)) {
+        return '$label must contain only alphabets';
+      }
+    }
+
+    return null;
+  }
+
+  static String? validGstVat({required String? input, bool isReq = false}) {
+    if (isReq && (input == null || input.isEmpty)) {
+      return 'GST/VAT number is required';
+    }
+
+    if (input != null && input.isNotEmpty) {
+      if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(input)) {
+        return 'GST/VAT must contain only alphanumeric characters';
+      }
+    }
+
+    return null;
+  }
+
+  static String? validPostalCode({required String? input, bool isReq = false}) {
+    if (isReq && (input == null || input.isEmpty)) {
+      return 'Postal code is required';
+    }
+
+    if (input != null && input.isNotEmpty) {
+      if (!RegExp(r'^[a-zA-Z0-9\s-]+$').hasMatch(input)) {
+        return 'Invalid postal code format';
       }
     }
 

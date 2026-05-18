@@ -114,7 +114,7 @@ class DealService {
         toUids: users,
         senderId: await Spdb.getUid(),
         type: NotificationType.deal,
-        payload: {},
+        payload: {'dealId': uid},
       );
 
       PostNotificationService.sendNotification(model: notif);
@@ -234,6 +234,21 @@ class DealService {
     }
   }
 
+  static Future<void> restoreDeal(DealModel deal) async {
+    try {
+      final firebase = FirebaseConfig();
+      final cid = await Spdb.getCid();
+
+      await firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(deal.uid)
+          .set(deal.toMap());
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+    }
+  }
+
   static Future isDealStatusAssigned(String s) async {}
 
   static Future<void> deleteDealComment({
@@ -267,7 +282,7 @@ class DealService {
 
   static Future<void> addDealComment({
     required String dealUid,
-    required String commentText,
+    required DealCommentModel commentText,
   }) async {
     try {
       final cid = await Spdb.getCid();
@@ -295,6 +310,38 @@ class DealService {
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("Error adding deal comment: $e\n$st");
+      rethrow;
+    }
+  }
+
+  static Future<void> editDealComment({
+    required String dealUid,
+    required String commentUid,
+    required String commentText,
+  }) async {
+    try {
+      final cid = await Spdb.getCid();
+      final uid = await Spdb.getUid();
+
+      if (cid == null || uid == null) throw "Missing cid or uid";
+
+      final commentsRef = firebase.users
+          .doc(cid)
+          .collection(Collections.deals.name)
+          .doc(dealUid)
+          .collection('comments')
+          .doc(commentUid);
+
+      final commentData = {'comment': commentText};
+
+      await commentsRef.update(commentData);
+      await addDealHistory(
+        dealUid: dealUid,
+        action: 'Comment Updated: $commentText',
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error updating deal comment: $e\n$st");
       rethrow;
     }
   }

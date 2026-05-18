@@ -4,8 +4,8 @@ import 'package:iconsax/iconsax.dart';
 import '/app/app.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import '/services/services.dart';
+// import 'company_location_settings.dart';
 
 class SettingsColors {
   static const Color primary = Color(0xFF2563EB);
@@ -58,27 +58,30 @@ class _SettingsListingState extends State<SettingsListing> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: SettingsColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.showAppbar
           ? AppBar(
-              backgroundColor: SettingsColors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               centerTitle: false,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 8.0),
-                child: Back(color: AppColors.black),
+                child: Back(),
               ),
-              title: const Text(
+              title: Text(
                 "Preferences",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: SettingsColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                 ),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: SettingsColors.border, height: 1),
+                child: Container(
+                  color: Theme.of(context).dividerColor,
+                  height: 1,
+                ),
               ),
             )
           : null,
@@ -119,19 +122,19 @@ class _SettingsListingState extends State<SettingsListing> {
                           UpdateSettingsEvent("pushNotification", val),
                         ),
                       ),
-                      _buildSwitchTile(
-                        icon: Iconsax.wallet,
-                        iconColor: Colors.green,
-                        title: "Payroll",
-                        subtitle: "Show payroll related modules",
-                        value: settings.payrollEnabled,
-                        onChanged: (val) async {
-                          context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("payrollEnabled", val),
-                          );
-                          await Spdb.savePayrollSettings(val);
-                        },
-                      ),
+                      // _buildSwitchTile(
+                      //   icon: Iconsax.wallet,
+                      //   iconColor: Colors.green,
+                      //   title: "Payroll",
+                      //   subtitle: "Show payroll related modules",
+                      //   value: settings.payrollEnabled,
+                      //   onChanged: (val) async {
+                      //     context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("payrollEnabled", val),
+                      //     );
+                      //     await Spdb.savePayrollSettings(val);
+                      //   },
+                      // ),
                       _buildSwitchTile(
                         icon: Iconsax.message,
                         iconColor: Colors.greenAccent,
@@ -159,7 +162,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           );
                         },
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("App Appearance", Iconsax.brush),
                     const SizedBox(height: 12),
@@ -171,37 +174,60 @@ class _SettingsListingState extends State<SettingsListing> {
                         subtitle: "Reduce eye strain in low light",
                         value: isDark,
                         onChanged: (value) => themeProvider.setDarkMode(value),
-                        isInDevelop: true,
+                        isInDevelop: false,
                       ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.global,
-                        iconColor: Colors.indigoAccent,
-                        title: "Language",
-                        trailing: _buildDropdown(
-                          value: settings.language,
-                          options: ["English", "Hindi", "Tamil", "Telugu"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("language", val),
-                          ),
-                        ),
-                      ),
-                      _buildInteractiveTile(
-                        icon: Iconsax.music_dashboard,
-                        iconColor: Colors.deepOrangeAccent,
-                        title: "Dashboard Layout",
-                        trailing: _buildDropdown(
-                          value: settings.dashboardLayout,
-                          options: ["Default", "Compact", "Analytics"],
-                          onChanged: (val) => context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("dashboardLayout", val),
-                          ),
-                        ),
-                      ),
-                    ]),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.global,
+                      //   iconColor: Colors.indigoAccent,
+                      //   title: "Language",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.language,
+                      //     options: ["English", "Hindi", "Tamil", "Telugu"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("language", val),
+                      //     ),
+                      //   ),
+                      // ),
+                      // _buildInteractiveTile(
+                      //   icon: Iconsax.music_dashboard,
+                      //   iconColor: Colors.deepOrangeAccent,
+                      //   title: "Dashboard Layout",
+                      //   trailing: _buildDropdown(
+                      //     value: settings.dashboardLayout,
+                      //     options: ["Default", "Compact", "Analytics"],
+                      //     onChanged: (val) => context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("dashboardLayout", val),
+                      //     ),
+                      //   ),
+                      // ),
+                    ], context),
                     const SizedBox(height: 32),
                     _buildSectionHeader("System & Data", Iconsax.status),
                     const SizedBox(height: 12),
                     _buildSettingsCard([
+                      FutureBuilder<bool>(
+                        future: Spdb.isAdminLoggedIn(),
+                        builder: (context, snap) {
+                          if (snap.data != true) return const SizedBox.shrink();
+                          return _buildInteractiveTile(
+                            icon: Iconsax.location,
+                            iconColor: Colors.teal,
+                            title: "Company Location",
+                            // onTap: () => Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) =>
+                            //         const CompanyLocationSettings(),
+                            //   ),
+                            // ),
+                            trailing: const Icon(
+                              Iconsax.arrow_right_3,
+                              size: 16,
+                              color: SettingsColors.border,
+                            ),
+                          );
+                        },
+                      ),
                       _buildInteractiveTile(
                         icon: Iconsax.mobile_programming,
                         iconColor: Colors.purpleAccent,
@@ -259,7 +285,7 @@ class _SettingsListingState extends State<SettingsListing> {
                           color: SettingsColors.border,
                         ),
                       ),
-                    ]),
+                    ], context),
                     const SizedBox(height: 40),
                     _buildFooter(),
                   ],
@@ -267,8 +293,10 @@ class _SettingsListingState extends State<SettingsListing> {
               ),
             );
           }
-
-          return const ErrorDisplay(error: "Synchronization issue detected.");
+          if (state is SettingsError) {
+            return ErrorDisplay(error: state.message);
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -277,14 +305,18 @@ class _SettingsListingState extends State<SettingsListing> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: SettingsColors.textSecondary),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: SettingsColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1.2,
           ),
         ),
@@ -292,12 +324,15 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(List<Widget> children, [BuildContext? ctx]) {
+    final effectiveCtx = ctx ?? context;
+    final cardColor = Theme.of(effectiveCtx).colorScheme.surface;
+    final borderColor = Theme.of(effectiveCtx).dividerColor;
     return Container(
       decoration: BoxDecoration(
-        color: SettingsColors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SettingsColors.border),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: children.asMap().entries.map((entry) {
@@ -308,7 +343,7 @@ class _SettingsListingState extends State<SettingsListing> {
               if (!isLast)
                 Container(
                   margin: const EdgeInsets.only(left: 64),
-                  color: SettingsColors.border,
+                  color: borderColor,
                   height: 1,
                 ),
             ],
@@ -339,16 +374,16 @@ class _SettingsListingState extends State<SettingsListing> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: SettingsColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 14,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: SettingsColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                   ),
                 ),
@@ -390,9 +425,9 @@ class _SettingsListingState extends State<SettingsListing> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: SettingsColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,
                 ),
               ),
@@ -415,42 +450,31 @@ class _SettingsListingState extends State<SettingsListing> {
     );
   }
 
-  Widget _buildDropdown({
-    required String value,
-    required List<String> options,
-    required ValueChanged<String?> onChanged,
-  }) {
-    final validValue = options.contains(value) ? value : options.first;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: SettingsColors.background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: SettingsColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: validValue,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: SettingsColors.textSecondary,
-          ),
-          isDense: true,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: SettingsColors.textPrimary,
-          ),
-          items: options
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
+  // Widget _buildDropdown({
+  //   required String value,
+  //   required List<String> options,
+  //   required ValueChanged<String?> onChanged,
+  // }) {
+  //   final validValue = options.contains(value) ? value : options.first;
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       color: SettingsColors.background,
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: SettingsColors.border),
+  //     ),
+  //     child: DropdownButtonHideUnderline(
+  //       child: DropdownButton<String>(
+  //         value: validValue,
+  //         icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: SettingsColors.textSecondary),
+  //         isDense: true,
+  //         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: SettingsColors.textPrimary),
+  //         items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+  //         onChanged: onChanged,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildFooter() {
     return Center(
@@ -491,7 +515,9 @@ class MorphSwitch extends StatelessWidget {
         width: 48,
         height: 26,
         decoration: BoxDecoration(
-          color: value ? SettingsColors.primary : SettingsColors.border,
+          color: value
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).dividerColor,
           borderRadius: BorderRadius.circular(20),
         ),
         padding: const EdgeInsets.all(3),

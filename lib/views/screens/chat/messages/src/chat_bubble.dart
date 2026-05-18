@@ -1,17 +1,12 @@
 part of 'chat_messages.dart';
 
-/// The main chat bubble widget.
-/// Refined for better UX:
-/// 1. Uses [OverlayPortal] for the hover menu so it floats above all other UI elements
-///    and ensures clicks (hit-testing) work reliably even outside widget bounds.
-/// 2. Implements a "Keep Alive" timer logic for smooth hovering.
-/// 3. Compact layout with pills for existing reactions.
 class ChatBubble extends StatefulWidget {
   final String chatUid;
   final MessagesModel message;
   final bool isSender;
   final bool isLast;
   final bool isPinned;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const ChatBubble({
     super.key,
@@ -20,6 +15,7 @@ class ChatBubble extends StatefulWidget {
     required this.isSender,
     this.isLast = false,
     this.isPinned = false,
+    this.onOpenChat,
   });
 
   @override
@@ -37,7 +33,7 @@ class _ChatBubbleState extends State<ChatBubble>
   Timer? _hoverTimer;
   bool _isMenuHovered = false;
   bool _isBubbleHovered = false;
-  bool _isPopupOpen = false; // FIX: Track if the popup menu is open
+  bool _isPopupOpen = false;
 
   late bool _isPinned;
   late MessagesModel _msg;
@@ -149,14 +145,11 @@ class _ChatBubbleState extends State<ChatBubble>
     _addReaction("❤️");
   }
 
-  // --- Actions ---
-
   void _addReaction(String emoji) async {
     // Optimistic UI update could be added here
     final uid = await Spdb.getUid();
     if (uid == null) return;
 
-    // Close menu after selection
     if (mounted) {
       _isMenuHovered = false;
       _overlayController.hide();
@@ -228,9 +221,27 @@ class _ChatBubbleState extends State<ChatBubble>
     }
   }
 
+  void _onReactionTap(String emoji) async {
+    final uid = await Spdb.getUid();
+    if (uid == null) return;
+
+    await ChatService.toggleReaction(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+      emoji: emoji,
+      userId: uid,
+    );
+
+    final updated = await ChatService.getChatMessage(
+      chatId: widget.chatUid,
+      messageId: _msg.uid!,
+    );
+
+    if (mounted) setState(() => _msg = updated);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // FIX: Capture the Provider instance here while the context is stable.
     final messageProvider = Provider.of<MessageProvider>(
       context,
       listen: false,
@@ -263,7 +274,6 @@ class _ChatBubbleState extends State<ChatBubble>
                   child: _ChatBubbleHoverMenu(
                     isSender: widget.isSender,
                     onReaction: _addReaction,
-                    // FIX: Pass callback to handle popup state
                     onMenuStateChanged: (isOpen) {
                       _isPopupOpen = isOpen;
                       // If closing, check if we need to hide the overlay
@@ -324,6 +334,8 @@ class _ChatBubbleState extends State<ChatBubble>
                 onHorizontalDragUpdate: _onHorizontalDragUpdate,
                 onHorizontalDragEnd: _onHorizontalDragEnd,
                 onLongPress: _showMobileChatOptions,
+                onReactionTap: _onReactionTap,
+                onOpenChat: widget.onOpenChat,
               ),
             ),
           ),
@@ -332,8 +344,6 @@ class _ChatBubbleState extends State<ChatBubble>
     );
   }
 }
-
-// --- CORE WIDGETS ---
 
 class _ChatBubbleCore extends StatelessWidget {
   final Offset slideOffset;
@@ -346,6 +356,8 @@ class _ChatBubbleCore extends StatelessWidget {
   final ValueChanged<DragUpdateDetails> onHorizontalDragUpdate;
   final ValueChanged<DragEndDetails> onHorizontalDragEnd;
   final VoidCallback onLongPress;
+  final Function(String)? onReactionTap;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleCore({
     required this.slideOffset,
@@ -358,6 +370,8 @@ class _ChatBubbleCore extends StatelessWidget {
     required this.onHorizontalDragUpdate,
     required this.onHorizontalDragEnd,
     required this.onLongPress,
+    this.onReactionTap,
+    this.onOpenChat,
   });
 
   @override
@@ -376,7 +390,10 @@ class _ChatBubbleCore extends StatelessWidget {
                     : Alignment.centerLeft,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Icon(Icons.reply, color: AppColors.grey400),
+                  child: Icon(
+                    Icons.reply,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ),
             ),
@@ -395,9 +412,9 @@ class _ChatBubbleCore extends StatelessWidget {
                       SizedBox(width: 4),
                       Text(
                         "Pinned",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
                     ],
                   ),
@@ -409,7 +426,7 @@ class _ChatBubbleCore extends StatelessWidget {
                     CacheService.getUserByUid(message.senderId)?.name ?? 'User',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.grey700,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -432,6 +449,7 @@ class _ChatBubbleCore extends StatelessWidget {
                           isSender: isSender,
                           message: message,
                           replyChat: replyChat,
+                          onOpenChat: onOpenChat,
                         ),
                         if (message.reactions.isNotEmpty)
                           Padding(
@@ -439,6 +457,7 @@ class _ChatBubbleCore extends StatelessWidget {
                             child: _ReactionChips(
                               reactions: message.reactions,
                               isSender: isSender,
+                              onTap: onReactionTap,
                             ),
                           ),
                       ],
@@ -452,12 +471,10 @@ class _ChatBubbleCore extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      message.timestamp != null
-                          ? DateFormat('hh:mm a').format(message.timestamp!)
-                          : 'Just now',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                      DateFormat('hh:mm a').format(message.timestamp),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                     if (isSender) ...[
                       const SizedBox(width: 4),
@@ -465,8 +482,8 @@ class _ChatBubbleCore extends StatelessWidget {
                         message.seenBy.isNotEmpty ? Icons.done_all : Icons.done,
                         size: 14,
                         color: message.seenBy.isNotEmpty
-                            ? AppColors.blue
-                            : AppColors.grey,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
                       ),
                     ],
                   ],
@@ -480,51 +497,158 @@ class _ChatBubbleCore extends StatelessWidget {
   }
 }
 
-class _ChatBubbleMessageBox extends StatelessWidget {
+class _ChatBubbleMessageBox extends StatefulWidget {
   final bool isSender;
   final MessagesModel message;
   final MessagesModel? replyChat;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
 
   const _ChatBubbleMessageBox({
     required this.isSender,
     required this.message,
     required this.replyChat,
+    this.onOpenChat,
   });
+
+  @override
+  State<_ChatBubbleMessageBox> createState() => _ChatBubbleMessageBoxState();
+}
+
+class _ChatBubbleMessageBoxState extends State<_ChatBubbleMessageBox> {
+  Timer? hoverTimer;
+
+  @override
+  void dispose() {
+    hoverTimer?.cancel();
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  Future<void> _openChat(BuildContext context, MentionModel mention) async {
+    final cid = await Spdb.getCid();
+    final uid = await Spdb.getUid();
+    final opponentUid = mention.uid;
+
+    if (uid == null) return;
+
+    String? chatId = await ChatService.getChatUid(opponentUid);
+
+    chatId ??= await ChatService.createIndividualChat(userId: opponentUid);
+
+    final doc = await FirebaseFirestore.instance
+        .collection(Collections.users.name)
+        .doc(cid)
+        .collection(Collections.chats.name)
+        .doc(chatId)
+        .get();
+
+    if (!doc.exists) return;
+
+    final chat = ChatModel.fromMap(doc.id, doc.data()!);
+
+    // 🔹 Step 4: Navigate
+    if (!kIsMobile && widget.onOpenChat != null) {
+      widget.onOpenChat!(chat, opponentUid);
+      return;
+    }
+
+    Navigate.route(
+      context,
+      ChatMessages(chat: chat, currentUser: uid, opponentUid: opponentUid),
+    );
+  }
+
+  OverlayEntry? _overlayEntry;
+
+  // void _showProfileOverlay(
+  //   BuildContext context,
+  //   Offset globalPosition,
+  //   MentionModel mention,
+  // ) {
+  //   _hideProfileOverlay(); // prevent stacking
+
+  //   final user = CacheService.getUserByUid(mention.uid);
+  //   if (user == null) return;
+
+  //   final overlay = Overlay.of(context);
+  //   final renderBox = overlay.context.findRenderObject() as RenderBox;
+
+  //   final localOffset = renderBox.globalToLocal(globalPosition);
+
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final left = (localOffset.dx.clamp(10, screenWidth - 220)).toDouble();
+  //   _overlayEntry = OverlayEntry(
+  //     builder: (context) => Positioned(
+  //       left: left,
+  //       top: localOffset.dy + 20,
+  //       child: Material(
+  //         color: Colors.transparent,
+  //         child: Container(
+  //           constraints: const BoxConstraints(maxWidth: 200),
+  //           padding: const EdgeInsets.all(8),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.circular(10),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withValues(alpha: 0.15),
+  //                 blurRadius: 10,
+  //               ),
+  //             ],
+  //           ),
+  //           child: CreatedByWidget(userData: user),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  //   overlay.insert(_overlayEntry!);
+  // }
+
+  void _hideProfileOverlay() {
+    hoverTimer?.cancel();
+    hoverTimer = Timer(const Duration(milliseconds: 150), () {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final urlRegex = RegExp(r'(https?:\/\/[^\s\)\]\}]+)');
-    final match = urlRegex.firstMatch(message.message);
+    final match = urlRegex.firstMatch(widget.message.message);
     final url = match?.group(0);
+
     return Column(
-      crossAxisAlignment: isSender
+      crossAxisAlignment: widget.isSender
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        if (message.message.isNotEmpty)
+        if (widget.message.message.isNotEmpty)
           Container(
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSender
-                  ? AppColors.primary.withValues(alpha: 0.15)
-                  : AppColors.white,
+              color: widget.isSender
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).cardTheme.color,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: isSender
+                bottomLeft: widget.isSender
                     ? const Radius.circular(16)
                     : const Radius.circular(4),
-                bottomRight: isSender
+                bottomRight: widget.isSender
                     ? const Radius.circular(4)
                     : const Radius.circular(16),
               ),
               boxShadow: [
-                if (!isSender)
+                if (!widget.isSender)
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.05),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 2,
                     offset: const Offset(0, 1),
                   ),
@@ -533,15 +657,20 @@ class _ChatBubbleMessageBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (replyChat != null)
+                if (widget.replyChat != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border(
-                        left: BorderSide(color: AppColors.primary, width: 3),
+                        left: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 3,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -549,74 +678,195 @@ class _ChatBubbleMessageBox extends StatelessWidget {
                       children: [
                         Text(
                           CacheService.getUserByUid(
-                                replyChat!.senderId,
+                                widget.replyChat!.senderId,
                               )?.name ??
                               'User',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          replyChat!.message,
+                          widget.replyChat!.message,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.black87),
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
                   ),
-                MarkdownText(message: message.message),
+                _buildMessageWithMentions(context, widget.message.message),
               ],
             ),
           ),
 
         // --- Attachment / URL Preview ---
-        if (url != null && message.attachments.isEmpty) ...[
-          UrlPreview(url: url, isSender: isSender),
-        ] else if (message.attachments.isNotEmpty) ...[
-          AttachmentPreview(attachments: message.attachments),
+        if (url != null && widget.message.attachments.isEmpty) ...[
+          UrlPreview(url: url, isSender: widget.isSender),
+        ] else if (widget.message.attachments.isNotEmpty) ...[
+          AttachmentPreview(attachments: widget.message.attachments),
         ],
       ],
     );
   }
+
+  Widget _buildMessageWithMentions(BuildContext context, String text) {
+    final mentions = widget.message.mentions ?? [];
+    if (mentions.isEmpty) {
+      return Text(text);
+    }
+
+    final spans = <InlineSpan>[];
+    int currentIndex = 0;
+
+    final sortedMentions = [...mentions]
+      ..sort((a, b) => (a.start ?? 0).compareTo(b.start ?? 0));
+
+    for (final mention in sortedMentions) {
+      final start = mention.start;
+      final end = mention.end;
+
+      if (start == null || end == null) continue;
+
+      if (start < 0 ||
+          end < 0 ||
+          start > text.length ||
+          end > text.length ||
+          start >= end) {
+        continue;
+      }
+
+      // Normal text before mention
+      if (currentIndex < start) {
+        spans.add(
+          TextSpan(
+            text: text.substring(currentIndex, start),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
+        );
+      }
+
+      String mentionText = text.substring(start, end);
+      if (mentionText.startsWith('@')) {
+        mentionText = mentionText.substring(1);
+      }
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Builder(
+            builder: (context) {
+              String mentionText = text.substring(start, end);
+
+              if (mentionText.startsWith('@')) {
+                mentionText = mentionText.substring(1);
+              }
+
+              return MouseRegion(
+                onEnter: (event) {
+                  hoverTimer?.cancel();
+                },
+                onExit: (event) {
+                  _hideProfileOverlay();
+                },
+                child: GestureDetector(
+                  onTap: () => _openChat(context, mention),
+
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      mentionText,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      currentIndex = end;
+    }
+
+    // Remaining text
+    if (currentIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(currentIndex),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
+      );
+    }
+
+    return RichText(text: TextSpan(children: spans));
+  }
 }
 
-class _ReactionChips extends StatelessWidget {
+class _ReactionChips extends StatefulWidget {
   final Map<String, List<String>> reactions;
   final bool isSender;
+  final Function(String)? onTap;
+  const _ReactionChips({
+    required this.reactions,
+    required this.isSender,
+    this.onTap,
+  });
 
-  const _ReactionChips({required this.reactions, required this.isSender});
+  @override
+  State<_ReactionChips> createState() => _ReactionChipsState();
+}
 
+class _ReactionChipsState extends State<_ReactionChips> {
   @override
   Widget build(BuildContext context) {
     // reactions = { "😂": ["u1","u2"], "❤️": ["u3"] }
     final counts = <String, int>{};
 
-    for (var entry in reactions.entries) {
+    for (var entry in widget.reactions.entries) {
       final emoji = entry.key;
       final users = entry.value;
       counts[emoji] = users.length; // number of reactions for that emoji
     }
 
     return Wrap(
-      alignment: isSender ? WrapAlignment.end : WrapAlignment.start,
+      alignment: widget.isSender ? WrapAlignment.end : WrapAlignment.start,
       spacing: 4,
       runSpacing: 4,
       children: counts.entries.map((entry) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.white, width: 2),
-          ),
-          child: Text(
-            "${entry.key} ${entry.value > 1 ? entry.value : ''}",
-            style: Theme.of(context).textTheme.bodyMedium,
+        return GestureDetector(
+          onTap: () => widget.onTap?.call(entry.key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).cardTheme.color!,
+                width: 2,
+              ),
+            ),
+            child: Text(
+              "${entry.key} ${entry.value > 1 ? entry.value : ''}",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
         );
       }).toList(),
@@ -649,11 +899,11 @@ class _ChatBubbleHoverMenuState extends State<_ChatBubbleHoverMenu> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.15),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -668,7 +918,7 @@ class _ChatBubbleHoverMenuState extends State<_ChatBubbleHoverMenu> {
           Container(
             height: 20,
             width: 1,
-            color: AppColors.grey300,
+            color: Theme.of(context).colorScheme.outlineVariant,
             margin: const EdgeInsets.symmetric(horizontal: 4),
           ),
           _HoverIcon(icon: Icons.reply, onTap: widget.actions['reply']),
@@ -764,7 +1014,11 @@ class _HoverIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon, size: 18, color: AppColors.grey700),
+      icon: Icon(
+        icon,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
       padding: const EdgeInsets.all(4),
       constraints: const BoxConstraints(),
       splashRadius: 16,
@@ -780,8 +1034,12 @@ class _ChatBubbleSenderAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 12,
-      backgroundColor: AppColors.grey300,
-      child: const Icon(Icons.person, size: 14, color: AppColors.white),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.person,
+        size: 14,
+        color: Theme.of(context).colorScheme.outline,
+      ),
     );
   }
 }

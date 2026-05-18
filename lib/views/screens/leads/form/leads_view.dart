@@ -59,6 +59,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
   late LeadCategoryModel widgetLeadCategory;
   late TabController _tabController;
+  String? _currentUid;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -66,6 +68,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     var leadCategory = CacheService.leadCategoryByUid(widget.lead.leadCategory);
     widgetLeadCategory = leadCategory ?? LeadCategoryModel.fromEmptyMap();
     _tabController = TabController(length: 5, vsync: this);
+    _loadOwnership();
+  }
+
+  Future<void> _loadOwnership() async {
+    final uid = await Spdb.getUid();
+    final isAdmin = await Spdb.isAdminLoggedIn();
+    setState(() {
+      _currentUid = uid;
+      _isAdmin = isAdmin;
+    });
   }
 
   @override
@@ -87,64 +99,89 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LeadsViewAppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: LeadsViewAppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
-        title: const Text(
+        title: Text(
           "Lead Management",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: LeadsViewAppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
         actions: [
-          _appBarButton(Iconsax.edit, "Edit", () {
-            if (kIsMobile) {
-              Sheet.showSheet(
-                context,
-                widget: LeadEdit(uid: widget.lead.uid ?? ''),
+          if (_isAdmin || widget.lead.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () {
+              if (kIsMobile) {
+                Sheet.showSheet(
+                  context,
+                  widget: LeadEdit(uid: widget.lead.uid ?? ''),
+                );
+              } else {
+                GeneralDialog.showRTLSheet(
+                  context,
+                  LeadEdit(uid: widget.lead.uid ?? ''),
+                );
+              }
+            }),
+            const SizedBox(width: 8),
+            _appBarButton(Iconsax.trash, "Delete", () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const ConfirmDialog(
+                  title: 'Delete Lead',
+                  content: 'Are you sure you want to delete this lead?',
+                ),
               );
-            } else {
-              GeneralDialog.showRTLSheet(
-                context,
-                LeadEdit(uid: widget.lead.uid ?? ''),
-              );
-            }
-          }),
-          const SizedBox(width: 8),
-          _appBarButton(Iconsax.trash, "Delete", () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (context) => const ConfirmDialog(
-                title: 'Delete Lead',
-                content: 'Are you sure you want to delete this lead?',
-              ),
-            );
 
-            if (result == true) {
+              if (result != true) return;
+
               try {
+                final deletedLead = widget.lead;
+                final isUndoPressed = ValueNotifier(false);
                 await LeadService.deleteLead(uid: widget.lead.uid ?? '');
-                if (context.mounted) {
-                  Navigator.of(context).pop('deleted');
-                  FlushBar.show(context, 'Lead deleted successfully');
-                }
+
+                if (!mounted) return;
+
+                FlushBar.show(
+                  context,
+                  'Lead deleted successfully',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    isUndoPressed.value = true;
+                    await LeadService.restoreLead(deletedLead);
+
+                    // refresh list
+                    context.read<LeadBloc>().add(StreamLead());
+
+                    Navigator.of(context).pop('restored');
+                  },
+                );
+                // Future.delayed(const Duration(seconds: 4), () {
+                // if (!isUndoPressed.value && mounted) {
+                //   Navigator.of(context).pop('deleted');
+                // }
+                // });
               } catch (e, st) {
                 await ErrorService.recordError(e, st);
-                if (context.mounted) {
+                if (mounted) {
                   FlushBar.show(context, e.toString(), isSuccess: false);
                 }
               }
-            }
-          }, isDanger: true),
+            }, isDanger: true),
+          ],
           const SizedBox(width: 16),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: LeadsViewAppColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
       ),
       body: Center(
@@ -204,15 +241,15 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         icon,
         size: 16,
         color: isDanger
-            ? LeadsViewAppColors.danger
-            : LeadsViewAppColors.primary,
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
       ),
       label: Text(
         label,
         style: TextStyle(
           color: isDanger
-              ? LeadsViewAppColors.danger
-              : LeadsViewAppColors.primary,
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -231,9 +268,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         return Container(
           padding: EdgeInsets.all(isMobile ? 16 : 24),
           decoration: BoxDecoration(
-            color: LeadsViewAppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: LeadsViewAppColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             children: [
@@ -245,7 +284,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     width: isMobile ? 60 : 80,
                     height: isMobile ? 60 : 80,
                     decoration: BoxDecoration(
-                      color: LeadsViewAppColors.primary.withValues(alpha: 0.08),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -253,7 +294,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         widget.lead.leadName[0].toUpperCase(),
                         style: TextStyle(
                           fontSize: isMobile ? 24 : 32,
-                          color: LeadsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -277,7 +318,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                               style: TextStyle(
                                 fontSize: isMobile ? 18 : 22,
                                 fontWeight: FontWeight.w800,
-                                color: LeadsViewAppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             _buildStatusBadge(status?.name ?? 'Unknown'),
@@ -288,9 +329,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           widget.lead.companyName ?? 'Unspecified Company',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
-                            color: LeadsViewAppColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -315,7 +358,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               // On Mobile, Quick Actions and Lead Value stack below
               if (isMobile) ...[
                 const SizedBox(height: 20),
-                const Divider(height: 1, color: LeadsViewAppColors.border),
+                const Divider(height: 1, color: AppColors.grey200),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -376,18 +419,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: LeadsViewAppColors.background,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: LeadsViewAppColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               "Lead Value",
               style: TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -398,10 +443,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               fit: BoxFit.scaleDown,
               child: Text(
                 "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -415,18 +460,18 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.success.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: LeadsViewAppColors.success.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w800,
-          color: LeadsViewAppColors.success,
+          color: Theme.of(context).colorScheme.primary,
           letterSpacing: 0.5,
         ),
       ),
@@ -447,21 +492,27 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: LeadsViewAppColors.background,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: LeadsViewAppColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: color ?? LeadsViewAppColors.primary),
+              Icon(
+                icon,
+                size: 14,
+                color: color ?? Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -473,24 +524,73 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   Widget _buildModernTabs() {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: LeadsViewAppColors.border)),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: TabBar(
         controller: _tabController,
-        labelColor: LeadsViewAppColors.primary,
-        unselectedLabelColor: LeadsViewAppColors.textSecondary,
-        indicatorColor: LeadsViewAppColors.primary,
-        indicatorWeight: 3,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 24),
         isScrollable: true,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        tabs: const [
-          Tab(text: "Lead Profile"),
-          Tab(text: "Files & Notes"),
-          Tab(text: "History Log"),
-          Tab(text: "Comments"),
-          Tab(text: "Activities"),
+        dividerColor: Colors.transparent,
+        labelColor: Colors.white,
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+
+        indicatorSize: TabBarIndicatorSize.tab,
+
+        indicator: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+
+        tabs: [
+          _modernTab(icon: Icons.person_outline_rounded, title: "Lead Profile"),
+
+          _modernTab(icon: Icons.folder_open_rounded, title: "Files & Notes"),
+
+          _modernTab(icon: Icons.history_rounded, title: "History Log"),
+
+          _modernTab(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: "Comments",
+          ),
+
+          _modernTab(icon: Icons.event_note_rounded, title: "Activities"),
+        ],
+      ),
+    );
+  }
+
+  Widget _modernTab({required IconData icon, required String title}) {
+    return Tab(
+      height: 46,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 4),
+
+          Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
     );
@@ -564,19 +664,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: LeadsViewAppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -600,10 +700,14 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.background,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 16, color: LeadsViewAppColors.secondary),
+            child: Icon(
+              icon,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -612,8 +716,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: LeadsViewAppColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.3,
@@ -626,8 +730,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: isLink
-                        ? LeadsViewAppColors.primary
-                        : LeadsViewAppColors.textPrimary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                     decoration: isLink ? TextDecoration.underline : null,
                   ),
                 ),
@@ -646,9 +750,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Iconsax.message_text_1,
-                color: LeadsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -739,18 +843,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: LeadsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
+
                         Text(
                           comment.comment,
-                          style: const TextStyle(
+                          style: TextStyle(
                             height: 1.5,
                             fontSize: 13,
-                            color: LeadsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -761,8 +866,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     children: [
                       Text(
                         DateFormat('MMM dd, hh:mm a').format(date),
-                        style: const TextStyle(
-                          color: LeadsViewAppColors.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -771,7 +876,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         onTap: () {
                           showMenu(
                             context: context,
-                            color: Colors.white, // popup background
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface, // popup background
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -817,7 +924,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         },
                         child: Icon(
                           Iconsax.more,
-                          color: LeadsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 16,
                         ),
                       ),
@@ -841,11 +948,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
-        border: const Border(top: BorderSide(color: LeadsViewAppColors.border)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -860,8 +969,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText: "Add a comment...",
-              hintStyle: const TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
@@ -869,7 +978,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: LeadsViewAppColors.background,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: IconButton(
                 tooltip: 'Add Attachment',
@@ -887,8 +996,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               ElevatedButton(
                 onPressed: _addComment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -915,12 +1024,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: LeadsViewAppColors.border),
+          Icon(
+            icon,
+            size: 48,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             message,
-            style: const TextStyle(
-              color: LeadsViewAppColors.textSecondary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -934,9 +1047,11 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: LeadsViewAppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: LeadsViewAppColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
@@ -975,17 +1090,22 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: LeadsViewAppColors.primary.withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: LeadsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   ),
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 1, color: LeadsViewAppColors.border),
+                  child: Container(
+                    width: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
             ],
           ),
@@ -998,17 +1118,17 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 children: [
                   Text(
                     history.updateDisposition,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: LeadsViewAppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
-                    style: const TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1018,8 +1138,8 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     DateFormat(
                       'MMM dd, yyyy • hh:mm a',
                     ).format(history.timestamp),
-                    style: const TextStyle(
-                      color: LeadsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1037,9 +1157,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: _buildCommentsSection(),
     );
@@ -1050,9 +1170,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       // Match the padding and decoration of your _infoSection
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1061,20 +1181,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Activities",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               TextButton.icon(
                 onPressed: _scheduleActivity,
                 style: TextButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary.withValues(
-                    alpha: 0.1,
-                  ),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
@@ -1134,21 +1254,21 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: LeadsViewAppColors.background,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: LeadsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               _activityIcon(activity.type),
-              color: LeadsViewAppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
           ),
@@ -1161,29 +1281,29 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   activity.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: LeadsViewAppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Iconsax.clock,
                       size: 12,
-                      color: LeadsViewAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       DateFormat(
                         'MMM dd • hh:mm a',
                       ).format(activity.scheduledAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: LeadsViewAppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1193,31 +1313,216 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           ),
 
           PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_vert,
-              size: 18,
-              color: LeadsViewAppColors.textSecondary,
+            padding: EdgeInsets.zero,
+            tooltip: "More",
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 6,
+            color: Theme.of(context).colorScheme.surface,
+            position: PopupMenuPosition.under,
             onSelected: (value) {
               if (value == 'edit') {
                 _scheduleActivity(activity);
               } else if (value == 'delete') {
-                context.read<LeadBloc>().add(
-                  DeleteLeadActivity(
-                    leadUid: widget.lead.uid!,
-                    activityUid: activity.uid!,
-                  ),
-                );
+                _confirmDeleteActivity(activity);
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'edit',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Edit Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              PopupMenuItem<String>(
+                value: 'delete',
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'Delete Activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteActivity(LeadActivityModel activity) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            width: 420,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// ICON
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 34,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// TITLE
+                const Text(
+                  "Delete Activity?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// DESCRIPTION
+                Text(
+                  "Are you sure you want to delete '${activity.title}'?\n\nThis action cannot be undone.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    height: 1.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                /// BUTTONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text("Cancel"),
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        icon: const Icon(Icons.delete_rounded, size: 18),
+                        label: const Text("Delete"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      context.read<LeadBloc>().add(
+        DeleteLeadActivity(
+          leadUid: widget.lead.uid!,
+          activityUid: activity.uid!,
+        ),
+      );
+    }
   }
 
   Widget _buildCommentCountIndicator() {
@@ -1227,14 +1532,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: LeadsViewAppColors.background,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: LeadsViewAppColors.border),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: Text(
               state.comments.length.toString(),
-              style: const TextStyle(
-                color: LeadsViewAppColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
@@ -1256,10 +1563,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               widget.lead.notes.isEmpty
                   ? "No internal notes provided."
                   : widget.lead.notes,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.7,
-                color: LeadsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1268,27 +1575,29 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         const SizedBox(height: 16),
         _infoSection("Shared Attachments", [
           if (widget.lead.attachments.isEmpty)
-            const Text(
+            Text(
               "No documents found.",
               style: TextStyle(
-                color: LeadsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             )
           else
             ...widget.lead.attachments.map(
               (file) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: LeadsViewAppColors.background,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: LeadsViewAppColors.border),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(
+                  leading: Icon(
                     Iconsax.document_text,
-                    color: LeadsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
                   title: Text(
@@ -1331,7 +1640,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               width: MediaQuery.of(context).size.width * 0.50,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1377,12 +1686,16 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: LeadsViewAppColors.primary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                         ),
-                        child: Text(
+                        child: const Text(
                           "Submit",
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -1461,26 +1774,28 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            backgroundColor: Colors.white, // 👈 force white background
-            title: const Text(
-              "Confirm Upload",
-              style: TextStyle(color: Colors.black),
-            ),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: const Text("Confirm Upload"),
             content: Text(
               "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
-              style: const TextStyle(color: Colors.black),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text(
+                child: Text(
                   "Cancel",
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: LeadsViewAppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
@@ -1588,69 +1903,88 @@ class _ScheduleLeadActivityDialogState
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
 
+  /// ✅ SINGLE DATETIME CONTROLLER
+  final TextEditingController dateTimeController = TextEditingController();
+
   LeadActivityType selectedType = LeadActivityType.call;
 
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
+  DateTime? selectedDateTime;
 
   bool get _isEditing => widget.existing != null;
 
   @override
   void initState() {
     super.initState();
+
     final e = widget.existing;
+
     if (e != null) {
       titleController.text = e.title;
       descController.text = e.description;
+
       selectedType = e.type;
-      selectedDate = e.scheduledAt;
-      selectedTime = TimeOfDay.fromDateTime(e.scheduledAt);
+      selectedDateTime = e.scheduledAt;
+
+      /// ✅ SET DATETIME TEXT
+      dateTimeController.text =
+          "${selectedDateTime!.day}/${selectedDateTime!.month}/${selectedDateTime!.year} "
+          "${selectedDateTime!.hour.toString().padLeft(2, '0')}:"
+          "${selectedDateTime!.minute.toString().padLeft(2, '0')}:00";
     }
   }
 
-  DateTime? get scheduledDateTime {
-    if (selectedDate == null || selectedTime == null) return null;
-
-    return DateTime(
-      selectedDate!.year,
-      selectedDate!.month,
-      selectedDate!.day,
-      selectedTime!.hour,
-      selectedTime!.minute,
-    );
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    dateTimeController.dispose();
+    super.dispose();
   }
 
-  Future<void> pickDate() async {
+  /// ✅ PICK DATE & TIME
+  Future<void> pickDateTime() async {
     final date = await showDatePicker(
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
-      initialDate: DateTime.now(),
+      initialDate: selectedDateTime ?? DateTime.now(),
     );
 
-    if (date != null) {
-      setState(() => selectedDate = date);
-    }
-  }
+    if (date == null) return;
 
-  Future<void> pickTime() async {
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: selectedDateTime != null
+          ? TimeOfDay.fromDateTime(selectedDateTime!)
+          : TimeOfDay.now(),
     );
 
-    if (time != null) {
-      setState(() => selectedTime = time);
-    }
+    if (time == null) return;
+
+    final finalDateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    setState(() {
+      selectedDateTime = finalDateTime;
+
+      /// ✅ UPDATE CONTROLLER
+      dateTimeController.text =
+          "${finalDateTime.day}/${finalDateTime.month}/${finalDateTime.year} "
+          "${time.hour.toString().padLeft(2, '0')}:"
+          "${time.minute.toString().padLeft(2, '0')}:00";
+    });
   }
 
   void saveActivity() {
-    final scheduled = scheduledDateTime;
-
-    if (titleController.text.isEmpty || scheduled == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Fill all required fields")));
+    if (titleController.text.trim().isEmpty || selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all required fields")),
+      );
       return;
     }
 
@@ -1660,11 +1994,12 @@ class _ScheduleLeadActivityDialogState
         title: titleController.text.trim(),
         description: descController.text.trim(),
         type: selectedType,
-        scheduledAt: scheduled,
+        scheduledAt: selectedDateTime!,
         createdBy: widget.existing!.createdBy,
         createdAt: widget.existing!.createdAt,
         completed: widget.existing!.completed,
       );
+
       context.read<LeadBloc>().add(
         EditLeadActivity(leadUid: widget.leadUid, activity: updated),
       );
@@ -1673,90 +2008,230 @@ class _ScheduleLeadActivityDialogState
         title: titleController.text.trim(),
         description: descController.text.trim(),
         type: selectedType,
-        scheduledAt: scheduled,
+        scheduledAt: selectedDateTime!,
         createdBy: "user",
         createdAt: DateTime.now(),
       );
+
       context.read<LeadBloc>().add(
         AddLeadActivity(leadUid: widget.leadUid, activity: activity),
       );
     }
 
-    Navigator.of(context).pop();
+    Navigator.pop(context);
+  }
+
+  IconData getTypeIcon(LeadActivityType type) {
+    switch (type) {
+      case LeadActivityType.call:
+        return Icons.call_rounded;
+      case LeadActivityType.meeting:
+        return Icons.groups_rounded;
+      // case LeadActivityType.email:
+      //   return Icons.email_rounded;
+      case LeadActivityType.followUp:
+        return Icons.update_rounded;
+      default:
+        return Icons.event_note_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEditing ? "Edit Activity" : "Schedule Activity"),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            /// TITLE
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: "Title"),
-            ),
+    final theme = Theme.of(context);
 
-            const SizedBox(height: 12),
-
-            /// DESCRIPTION
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: "Description"),
-            ),
-
-            const SizedBox(height: 12),
-
-            /// TYPE DROPDOWN
-            DropdownButtonFormField<LeadActivityType>(
-              initialValue: selectedType,
-              items: LeadActivityType.values
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(e.name.toUpperCase()),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => selectedType = v!),
-              decoration: const InputDecoration(labelText: "Activity Type"),
-            ),
+                    child: Icon(
+                      _isEditing
+                          ? Icons.edit_calendar_rounded
+                          : Icons.add_task_rounded,
+                      color: theme.primaryColor,
+                    ),
+                  ),
 
-            const SizedBox(height: 12),
+                  const SizedBox(width: 14),
 
-            /// DATE
-            ListTile(
-              title: Text(
-                selectedDate == null
-                    ? "Select Date"
-                    : selectedDate.toString().split(' ')[0],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing ? "Edit Activity" : "Schedule Activity",
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          "Manage lead follow-up activities",
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
-              trailing: const Icon(Icons.calendar_month),
-              onTap: pickDate,
-            ),
 
-            /// TIME
-            ListTile(
-              title: Text(
-                selectedTime == null
-                    ? "Select Time"
-                    : selectedTime!.format(context),
+              const SizedBox(height: 24),
+
+              /// TITLE
+              TextFormField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Activity Title *",
+                  hintText: "Enter activity title",
+                  // prefixIcon: const Icon(Icons.title_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
-              trailing: const Icon(Icons.access_time),
-              onTap: pickTime,
-            ),
-          ],
+
+              const SizedBox(height: 18),
+
+              /// DESCRIPTION
+              TextFormField(
+                controller: descController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  hintText: "Add notes or details",
+                  alignLabelWithHint: true,
+                  // prefixIcon: const Padding(
+                  //   padding: EdgeInsets.only(bottom: 60),
+                  //   child: Icon(Icons.description_rounded),
+                  // ),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// TYPE
+              DropdownButtonFormField<LeadActivityType>(
+                initialValue: selectedType,
+                decoration: InputDecoration(
+                  labelText: "Activity Type",
+                  // prefixIcon: const Icon(Icons.category_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                items: LeadActivityType.values.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Row(
+                      children: [
+                        Icon(getTypeIcon(e), size: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          e.name
+                              .replaceAllMapped(
+                                RegExp(r'([A-Z])'),
+                                (match) => ' ${match.group(0)}',
+                              )
+                              .toUpperCase(),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() => selectedType = v);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: dateTimeController,
+                readOnly: true,
+                onTap: pickDateTime,
+                decoration: InputDecoration(
+                  labelText: "Date & Time *",
+                  hintText: "DD/MM/YYYY HH:MM:SS",
+                  prefixIcon: const Icon(Icons.calendar_month_rounded),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              /// BUTTONS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  ElevatedButton.icon(
+                    onPressed: saveActivity,
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(_isEditing ? "Update" : "Save Activity"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(onPressed: saveActivity, child: const Text("Save")),
-      ],
     );
   }
 }

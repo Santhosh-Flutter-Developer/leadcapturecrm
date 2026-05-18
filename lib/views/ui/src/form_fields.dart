@@ -90,7 +90,7 @@ class _FormFieldsState extends State<FormFields> {
       style:
           widget.style ??
           Theme.of(context).textTheme.bodySmall!.copyWith(
-            color: AppColors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w500,
           ),
       decoration: InputDecoration(
@@ -98,25 +98,25 @@ class _FormFieldsState extends State<FormFields> {
             ? Text(widget.fLabel!, style: Theme.of(context).textTheme.bodySmall)
             : null,
         hintText: widget.hintText,
-        hintStyle: Theme.of(context).textTheme.bodySmall!,
+        hintStyle: Theme.of(context).textTheme.bodySmall,
         suffix: widget.suffix,
         suffixIcon: widget.suffixIcon,
         filled: true,
-        fillColor: widget.fillColor ?? AppColors.white,
+        fillColor: widget.fillColor ?? Theme.of(context).colorScheme.surface,
         prefixIcon: widget.prefixIcon,
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
             color: widget.fillColor != null
-                ? AppColors.black26
-                : AppColors.grey500,
+                ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.26)
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
         border: OutlineInputBorder(
           borderSide: BorderSide(
             color: widget.fillColor != null
-                ? AppColors.black12
-                : AppColors.grey500,
+                ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.12)
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
@@ -152,7 +152,7 @@ class _FormFieldsState extends State<FormFields> {
                   Text(
                     widget.label!,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -224,10 +224,16 @@ class _FormMultiDropdownsState extends State<FormMultiDropdowns> {
         vertical: 11,
       ),
       decoration: CustomDropdownDecoration(
-        expandedBorder: Border.all(color: AppColors.grey500),
+        expandedBorder: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
         expandedBorderRadius: BorderRadius.circular(8),
-        closedBorder: Border.all(color: AppColors.grey500),
+        closedBorder: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
         closedBorderRadius: BorderRadius.circular(8),
+        closedFillColor: Theme.of(context).colorScheme.surface,
+        expandedFillColor: Theme.of(context).colorScheme.surface,
       ),
       onListChanged: widget.onListChanged,
     );
@@ -244,7 +250,7 @@ class _FormMultiDropdownsState extends State<FormMultiDropdowns> {
                   Text(
                     widget.label!,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -319,7 +325,7 @@ class _FormDropdownSearchState extends State<FormDropdownSearch> {
                   Text(
                     widget.label!,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -380,9 +386,9 @@ class ListingSearchField extends StatelessWidget {
       ),
       decoration: InputDecoration(
         hintText: 'Search ${pageTitle ?? ''}',
-        hintStyle: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.grey500),
+        hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 8, right: 4),
           child: Icon(
@@ -401,18 +407,29 @@ class ListingSearchField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6), // small corner radius
-          borderSide: BorderSide(color: AppColors.black12),
+          borderSide: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.12),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: AppColors.black12),
+          borderSide: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.12),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: AppColors.primary, width: 1),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1,
+          ),
         ),
         filled: true,
-        fillColor: AppColors.white,
+        fillColor: Theme.of(context).colorScheme.surface,
       ),
     );
   }

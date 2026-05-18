@@ -12,6 +12,8 @@ import '/theme/theme.dart';
 import '/utils/utils.dart';
 import 'bloc/chat_bloc.dart';
 
+const String _pageTitle = "Chat";
+
 class ChatListing extends StatelessWidget {
   final String currentUserUid;
   final String? selectedChatUid;
@@ -57,23 +59,23 @@ class _ChatListingViewState extends State<ChatListingView> {
     super.initState();
   }
 
+  void _openChatFromMention(ChatModel chat, String opponentUid) {
+    setState(() {
+      _selectedChatUid = chat.uid;
+    });
+  }
+
+  Future<void> _refreshChats(BuildContext context) async {
+    context.read<ChatBloc>().add(StreamChat());
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: kIsMobile ? Back(color: FeedAppColors.textPrimary) : null,
-        backgroundColor: FeedAppColors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Chats",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: FeedAppColors.textPrimary,
-            fontSize: 18,
-          ),
-        ),
-      ),
+      appBar: kIsMobile
+          ? AppBar(leading: Back(), title: Text(_pageTitle))
+          : null,
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
           if (state is ChatLoading) {
@@ -88,7 +90,6 @@ class _ChatListingViewState extends State<ChatListingView> {
             return LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth < 900) {
-                  print("the chats ${state.chats}");
                   if (state.chats.isNotEmpty) {
                     return ChatListPanel(
                       onSelect: (index) {
@@ -102,12 +103,14 @@ class _ChatListingViewState extends State<ChatListingView> {
                                   (id) => id != widget.currentUserUid,
                                   orElse: () => '',
                                 ),
+                            onOpenChat: _openChatFromMention,
                           ),
                         );
                       },
                       chats: state.chats,
                       selectedChatUid: _selectedChatUid,
                       currentUserUid: widget.currentUserUid,
+                      onRefresh: () => _refreshChats(context),
                     );
                   }
                   return _buildNoChatSelected();
@@ -123,6 +126,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                           });
                         },
                         currentUserUid: widget.currentUserUid,
+                        onRefresh: () => _refreshChats(context),
                       ),
                       Expanded(
                         child: selectedChat != null
@@ -135,6 +139,7 @@ class _ChatListingViewState extends State<ChatListingView> {
                                       (id) => id != widget.currentUserUid,
                                       orElse: () => '',
                                     ),
+                                onOpenChat: _openChatFromMention,
                               )
                             : _buildNoChatSelected(),
                       ),
@@ -157,8 +162,8 @@ class _ChatListingViewState extends State<ChatListingView> {
       floatingActionButton: kIsMobile
           ? FloatingActionButton(
               heroTag: null,
-              foregroundColor: AppColors.white,
-              backgroundColor: AppColors.primary,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               tooltip: "Appeals",
               shape: const CircleBorder(),
               onPressed: () =>
@@ -171,24 +176,28 @@ class _ChatListingViewState extends State<ChatListingView> {
 
   Widget _buildNoChatSelected() {
     return Container(
-      color: AppColors.grey100,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.message_search, size: 80, color: AppColors.grey400),
+            Icon(
+              Iconsax.message_search,
+              size: 80,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               "Select a Conversation",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppColors.grey600),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               "Click on a chat from the list to view messages.",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.grey500),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -202,6 +211,7 @@ class ChatListPanel extends StatefulWidget {
   final String? selectedChatUid;
   final ValueChanged<int> onSelect;
   final String currentUserUid;
+  final Future<void> Function()? onRefresh;
 
   const ChatListPanel({
     super.key,
@@ -209,6 +219,7 @@ class ChatListPanel extends StatefulWidget {
     this.selectedChatUid,
     required this.onSelect,
     required this.currentUserUid,
+    this.onRefresh,
   });
 
   @override
@@ -258,6 +269,9 @@ class _ChatListPanelState extends State<ChatListPanel> {
 
     setState(() {
       _filteredChats = widget.chats.where((chat) {
+        if (chat.isDeletedForUser(widget.currentUserUid)) {
+          return false;
+        }
         String chatName = '';
 
         if (chat.isGroupChat) {
@@ -289,8 +303,8 @@ class _ChatListPanelState extends State<ChatListPanel> {
       }).toList();
       // keep pinned chats on top
       _filteredChats.sort((a, b) {
-        final ap = a.isPinned == true ? 1 : 0;
-        final bp = b.isPinned == true ? 1 : 0;
+        final ap = a.isPinnedForUser(widget.currentUserUid) ? 1 : 0;
+        final bp = b.isPinnedForUser(widget.currentUserUid) ? 1 : 0;
         return bp.compareTo(ap);
       });
     });
@@ -301,8 +315,8 @@ class _ChatListPanelState extends State<ChatListPanel> {
     return Container(
       width: kIsMobile ? double.infinity : 320,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.grey300),
-        color: AppColors.white,
+        border: Border.all(color: Theme.of(context).dividerColor),
+        color: Theme.of(context).colorScheme.surface,
       ),
       child: Column(
         children: [
@@ -321,7 +335,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: AppColors.grey200,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       isDense: true,
                     ),
                     onTapOutside: (_) => FocusScope.of(context).unfocus(),
@@ -331,13 +345,26 @@ class _ChatListPanelState extends State<ChatListPanel> {
                 if (kIsDesktop) ...[
                   const SizedBox(width: 8),
                   Material(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    child: IconButton(
+                      tooltip: "Refresh",
+                      icon: const Icon(Iconsax.refresh),
+                      iconSize: 18,
+                      onPressed: () async {
+                        await widget.onRefresh?.call();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(10),
                     child: IconButton(
                       tooltip: "Create Chat",
-                      icon: const Icon(
+                      icon: Icon(
                         Iconsax.message_add,
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                       onPressed: () =>
                           Sheet.showSheet(context, widget: const CreateChat()),
@@ -349,95 +376,123 @@ class _ChatListPanelState extends State<ChatListPanel> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: ListView.builder(
-              // Use the filtered list
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                // Get the chat from the filtered list
-                final chat = _filteredChats[index];
+            child: RefreshIndicator(
+              onRefresh: widget.onRefresh ?? () async {},
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _filteredChats.isEmpty ? 1 : _filteredChats.length,
+                itemBuilder: (context, index) {
+                  if (_filteredChats.isEmpty) {
+                    return SizedBox(
+                      height: 300,
+                      child: Center(child: Text("No chats. Pull to refresh")),
+                    );
+                  }
+                  final chat = _filteredChats[index];
 
-                // Find the original index to maintain selection state
-                final originalIndex = widget.chats.indexOf(chat);
-                final isSelected = chat.uid == widget.selectedChatUid;
+                  final originalIndex = widget.chats.indexOf(chat);
+                  final isSelected = chat.uid == widget.selectedChatUid;
 
-                return _ChatListItem(
-                  chat: chat,
-                  isSelected: isSelected,
-                  onTap: () => widget.onSelect(originalIndex),
-                  currentUserUid: widget.currentUserUid,
-                  onAction: (action) async {
-                    switch (action) {
-                      case ChatAction.pin:
-                        await ChatService.toggleChatPin(
-                          chatId: chat.uid!,
-                          value: !chat.isPinned,
-                        );
-                        break;
+                  return _ChatListItem(
+                    chat: chat,
+                    isSelected: isSelected,
+                    onTap: () => widget.onSelect(originalIndex),
+                    currentUserUid: widget.currentUserUid,
+                    onAction: (action) async {
+                      switch (action) {
+                        case ChatAction.pin:
+                          await ChatService.toggleChatPin(
+                            chatId: chat.uid!,
+                            value: !chat.isPinnedForUser(widget.currentUserUid),
+                          );
+                          break;
 
-                      case ChatAction.favorite:
-                        await ChatService.toggleChatFavorite(
-                          chatId: chat.uid!,
-                          value: !chat.isFavorite,
-                        );
-                        break;
-                      case ChatAction.delete:
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete chat'),
-                            content: const Text(
-                              'This chat will be permanently deleted. Continue?',
+                        case ChatAction.favorite:
+                          await ChatService.toggleChatFavorite(
+                            chatId: chat.uid!,
+                            value: !chat.isFavoriteForUser(
+                              widget.currentUserUid,
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel'),
+                          );
+                          break;
+                        case ChatAction.delete:
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete chat'),
+                              content: const Text(
+                                'This chat will be permanently deleted. Continue?',
                               ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(),
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(),
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirm == true) {
-                          await ChatService.deleteChat(chatId: chat.uid!);
-                        }
-                        break;
-                    }
-                  },
-                );
-              },
+                          if (confirm == true) {
+                            final chatId = chat.uid!;
+                            final deletedChat = chat; // ✅ backup
+
+                            // ✅ DELETE
+                            await ChatService.deleteChat(chatId: chatId);
+
+                            if (!context.mounted) return;
+
+                            // ✅ SHOW UNDO
+                            FlushBar.show(
+                              context,
+                              'Chat deleted',
+                              actionLabel: 'UNDO',
+                              onActionPressed: () async {
+                                await ChatService.restoreChat(deletedChat);
+                                if (!context.mounted) return;
+                                context.read<ChatBloc>().add(StreamChat());
+                              },
+                            );
+                          }
+                          break;
+                      }
+                    },
+                  );
+                },
+              ),
             ),
-          ),
 
-          // if (kIsDesktop) ...[
-          //   SizedBox(
-          //     width: double.infinity,
-          //     child: Padding(
-          //       padding: const EdgeInsets.symmetric(
-          //         horizontal: 8.0,
-          //         vertical: 4,
-          //       ),
-          //       child: ElevatedButton(
-          //         onPressed: () =>
-          //             Sheet.showSheet(context, widget: const CreateChat()),
-          //         style: ElevatedButton.styleFrom(
-          //           backgroundColor: AppColors.primary, // button color
-          //           foregroundColor: AppColors.white, // text/icon color
-          //           elevation: 3, // shadow
-          //           padding: const EdgeInsets.symmetric(vertical: 16),
-          //           shape: RoundedRectangleBorder(
-          //             borderRadius: BorderRadius.circular(12),
-          //           ),
-          //         ),
-          //         child: const Text("Create Chat"),
-          //       ),
-          //     ),
-          //   ),
-          // ],
+            // if (kIsDesktop) ...[
+            //   SizedBox(
+            //     width: double.infinity,
+            //     child: Padding(
+            //       padding: const EdgeInsets.symmetric(
+            //         horizontal: 8.0,
+            //         vertical: 4,
+            //       ),
+            //       child: ElevatedButton(
+            //         onPressed: () =>
+            //             Sheet.showSheet(context, widget: const CreateChat()),
+            //         style: ElevatedButton.styleFrom(
+            //           backgroundColor: Theme.of(context).colorScheme.primary, // button color
+            //           foregroundColor: Theme.of(context).colorScheme.surface, // text/icon color
+            //           elevation: 3, // shadow
+            //           padding: const EdgeInsets.symmetric(vertical: 16),
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(12),
+            //           ),
+            //         ),
+            //         child: const Text("Create Chat"),
+            //       ),
+            //     ),
+            //   ),
+            // ],
+          ),
         ],
       ),
     );
@@ -513,13 +568,21 @@ class _ChatListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String opponentUid = chat.participants.firstWhere(
-      (id) => id != currentUserUid,
-      orElse: () => '',
+    final bool isSelfChat = chat.participants.every(
+      (id) => id == currentUserUid,
     );
+
+    String opponentUid = isSelfChat
+        ? currentUserUid
+        : chat.participants.firstWhere(
+            (id) => id != currentUserUid,
+            orElse: () => currentUserUid,
+          );
+
     var user = CacheService.getUserByUid(opponentUid);
-    // final user = employee ?? admin;
-    final String name = user?.name ?? user?.name ?? '';
+
+    final String name = isSelfChat ? 'You' : (user?.name ?? '');
+
     final String imageUrl = user is EmployeeModel
         ? (user.profileImageUrl ?? '')
         : user is AdminModel
@@ -530,7 +593,9 @@ class _ChatListItem extends StatelessWidget {
     final bool avatarValid = imageUrl.isNotEmpty;
 
     return Material(
-      color: isSelected ? AppColors.blue50 : AppColors.transparent,
+      color: isSelected
+          ? Theme.of(context).colorScheme.secondaryContainer
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -540,7 +605,7 @@ class _ChatListItem extends StatelessWidget {
               chat.isGroupChat
                   ? CircleAvatar(
                       backgroundColor: AppColors.blue,
-                      foregroundColor: AppColors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       child: const Icon(Icons.group, size: 20),
                     )
                   : InkWell(
@@ -549,8 +614,8 @@ class _ChatListItem extends StatelessWidget {
                       child: CircleAvatar(
                         backgroundColor: nameValid
                             ? LetterColors.getColor(name.first)
-                            : AppColors.success,
-                        foregroundColor: AppColors.white,
+                            : Theme.of(context).colorScheme.secondary,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         child: avatarValid
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(100),
@@ -558,10 +623,16 @@ class _ChatListItem extends StatelessWidget {
                                   imageUrl: imageUrl,
                                   placeholder: (context, url) =>
                                       Shimmer.fromColors(
-                                        baseColor: AppColors.grey300,
-                                        highlightColor: AppColors.grey100,
+                                        baseColor: Theme.of(
+                                          context,
+                                        ).dividerColor,
+                                        highlightColor: Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor,
                                         child: Container(
-                                          color: AppColors.white,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surface,
                                         ),
                                       ),
                                   errorWidget: (context, url, error) =>
@@ -574,7 +645,11 @@ class _ChatListItem extends StatelessWidget {
                             : Text(
                                 nameValid ? name.first : '',
                                 style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.white),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                    ),
                               ),
                       ),
                     ),
@@ -610,13 +685,18 @@ class _ChatListItem extends StatelessWidget {
                                 ? ("You: ${chat.lastMessage?.message ?? ''}")
                                 : (chat.lastMessage?.message ?? ''),
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey600),
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    if (chat.isPinned == true)
+
+                    if (chat.isPinnedForUser(currentUserUid))
                       const Padding(
                         padding: EdgeInsets.only(left: 4),
                         child: Icon(
@@ -656,7 +736,11 @@ class _ChatListItem extends StatelessWidget {
                             child: Text(
                               count.toString(),
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.white),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                  ),
                             ),
                           );
                         },
@@ -683,17 +767,23 @@ class _ChatListItem extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              chat.isPinned
+                              chat.isPinnedForUser(currentUserUid)
                                   ? Icons.push_pin_rounded
                                   : Icons.push_pin_outlined,
                               size: 20,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              chat.isPinned ? 'Unpin chat' : 'Pin chat',
+                              chat.isPinnedForUser(currentUserUid)
+                                  ? 'Unpin chat'
+                                  : 'Pin chat',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.black),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
@@ -707,47 +797,56 @@ class _ChatListItem extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              chat.isFavorite
+                              chat.isFavoriteForUser(currentUserUid)
                                   ? Iconsax.heart_remove
                                   : Iconsax.heart,
                               size: 20,
-                              color: chat.isFavorite
-                                  ? AppColors.danger
-                                  : AppColors.primary,
+                              color: chat.isFavoriteForUser(currentUserUid)
+                                  ? Theme.of(context).colorScheme.error
+                                  : Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              chat.isFavorite
+                              chat.isFavoriteForUser(currentUserUid)
                                   ? 'Remove from favorites'
                                   : 'Add to favorites',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.black),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
                       ),
-                      PopupMenuItem(
-                        value: ChatAction.delete,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                      if (!chat.isGroupChat || chat.createdBy == currentUserUid)
+                        PopupMenuItem(
+                          value: ChatAction.delete,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Delete chat',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.delete_outline,
-                              size: 20,
-                              color: AppColors.danger,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Delete chat',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.danger),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ],

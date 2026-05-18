@@ -195,7 +195,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -207,7 +207,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                   'Error: ${snapshot.error}',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               );
             }
@@ -272,10 +272,10 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).cardTheme.color,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -286,11 +286,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -340,15 +340,15 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                 setState(() {});
               },
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 16,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ),
@@ -388,13 +388,13 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: AppColors.grey700),
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 SizedBox(height: 8),
                 Text(
                   "Upload Photo",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -433,11 +433,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _employeeIdController,
             hintText: 'Enter Employee Id',
             isRequired: isAdmin ? false : true,
-            valid: isAdmin
-                ? null
-                : (input) => input == null || input.isEmpty
-                      ? 'Employee Id is required'
-                      : null,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'Employee Id',
+              isReq: isAdmin ? false : true,
+            ),
           ),
         ),
         SizedBox(
@@ -447,9 +447,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _nameController,
             hintText: 'Enter Employee Name',
             isRequired: true,
-            valid: (input) => input == null || input.isEmpty
-                ? 'Employee Name is required'
-                : null,
+            valid: (input) => Validation.validName(
+              input: input,
+              label: 'Employee Name',
+              isReq: true,
+            ),
           ),
         ),
         SizedBox(
@@ -459,11 +461,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _emailController,
             hintText: 'Enter Email',
             isRequired: isAdmin,
-            valid: !isAdmin
-                ? null
-                : (input) => input == null || input.isEmpty
-                      ? 'Email is required'
-                      : null,
+            valid: (input) =>
+                Validation.validEmail(input: input, isReq: isAdmin),
           ),
         ),
         SizedBox(
@@ -474,7 +473,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             hintText: 'Enter Password',
             isRequired: true,
             valid: (input) =>
-                input == null || input.isEmpty ? 'Password is required' : null,
+                Validation.passwordValidation(input: input, isReq: true),
             obsecureText: !_passwordVisible,
             suffixIcon: IconButton(
               onPressed: () => setState(() {
@@ -522,7 +521,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                     Text(
                       "Department",
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: AppColors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -530,7 +529,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                     Text(
                       '*',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: AppColors.danger,
+                        color: Theme.of(context).colorScheme.error,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -602,6 +601,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             label: 'Mobile Number',
             controller: _mobileNumberController,
             hintText: 'Enter Mobile Number',
+            valid: (input) =>
+                Validation.validMobileNumber(input: input, isReq: false),
           ),
         ),
         SizedBox(
@@ -636,10 +637,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             hintText: 'DD/MM/YYYY',
             readOnly: true,
             isRequired: isAdmin ? false : true,
-            valid: isAdmin
-                ? null
-                : (input) =>
-                      input == null || input.isEmpty ? '* Required' : null,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'Joining Date',
+              isReq: isAdmin ? false : true,
+            ),
             onTap: () async {
               var result = await datePicker(context);
               if (result != null) {
@@ -727,24 +729,25 @@ class _EmployeeEditState extends State<EmployeeEdit> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Switch(
-                value: _isActive,
-                activeThumbColor: AppColors.success,
-                inactiveThumbColor: AppColors.danger,
-                onChanged: (value) {
-                  setState(() {
-                    _isActive = value;
-                  });
-                },
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _isActive ? 'Active' : 'Inactive',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: _isActive ? AppColors.success : AppColors.danger,
+                Switch(
+                  value: _isActive,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (value) {
+                    setState(() {
+                      _isActive = value;
+                    });
+                  },
                 ),
-              ),
+                const SizedBox(width: 8),
+                Text(
+                  _isActive ? 'Active' : 'Inactive',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: _isActive 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                ),
             ],
           ),
         ),
@@ -783,6 +786,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _addressController,
             hintText: 'Enter Address',
             maxLines: 2,
+            valid: (input) =>
+                Validation.validAddress(input: input ?? '', isReq: false),
           ),
         ),
         SizedBox(
@@ -792,6 +797,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             controller: _aboutController,
             hintText: 'Enter About',
             maxLines: 2,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'About',
+              isReq: false,
+            ),
           ),
         ),
       ],

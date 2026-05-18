@@ -167,6 +167,23 @@ class SubDepartmentService {
     }
   }
 
+  static Future<void> restoreSubDepartment(
+    SubDepartmentModel subDepartment,
+  ) async {
+    var cid = await Spdb.getCid();
+
+    final uid = subDepartment.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.subDepartments.name)
+        .doc(uid)
+        .set(subDepartment.toMap());
+  }
+
   static Future<String> getSubDepartmentByNameOrCreateSubDepartment({
     required String name,
     String? department,

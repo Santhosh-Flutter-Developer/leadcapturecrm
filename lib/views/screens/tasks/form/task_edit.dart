@@ -46,6 +46,7 @@ class _TaskEditState extends State<TaskEdit> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final List<File> _selectedAttachments = [];
+  List<FileModel> _existingAttachments = [];
   DateTime? _selectedDeadLine;
   DateTime? _selectedReminder;
   bool _deadlineRequired = false;
@@ -79,6 +80,7 @@ class _TaskEditState extends State<TaskEdit> {
       _selectedSubTaskOf = _taskModel!.subTaskOf;
       _selectedReminder = _taskModel!.reminder;
       _deadlineRequired = _taskModel?.deadlineRequired ?? false;
+      _existingAttachments = List<FileModel>.from(_taskModel!.attachments);
 
       _employeeList.clear();
       _employeeList = await EmployeeService.getAllEmployees();
@@ -149,7 +151,7 @@ class _TaskEditState extends State<TaskEdit> {
         final bool isDesktop = constraints.maxWidth > 900;
 
         return Scaffold(
-          backgroundColor: AppColors.grey100,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: FormWidgets.buildHeader(context: context, title: "Edit Task"),
           body: FutureBuilder(
             future: _future,
@@ -246,6 +248,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Project",
                         _projectList.map((e) => e.projectName).toList(),
+                        initialItem: _selectedProject != null
+                            ? _projectList
+                                  .where((e) => e.uid == _selectedProject)
+                                  .map((e) => e.projectName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedProject = _projectList
                               .firstWhere((e) => e.projectName == val)
@@ -256,6 +264,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Subtask of",
                         _taskList.map((e) => e.taskName).toList(),
+                        initialItem: _selectedSubTaskOf != null
+                            ? _taskList
+                                  .where((e) => e.uid == _selectedSubTaskOf)
+                                  .map((e) => e.taskName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedSubTaskOf = _taskList
                               .firstWhere((e) => e.taskName == val)
@@ -266,6 +280,12 @@ class _TaskEditState extends State<TaskEdit> {
                       _buildDropdownField(
                         "Lead",
                         _leadList.map((e) => e.leadName).toList(),
+                        initialItem: _selectedLead != null
+                            ? _leadList
+                                  .where((e) => e.uid == _selectedLead)
+                                  .map((e) => e.leadName)
+                                  .firstOrNull
+                            : null,
                         (val) {
                           _selectedLead = _leadList
                               .firstWhere((e) => e.leadName == val)
@@ -335,11 +355,11 @@ class _TaskEditState extends State<TaskEdit> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -351,7 +371,7 @@ class _TaskEditState extends State<TaskEdit> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -375,15 +395,15 @@ class _TaskEditState extends State<TaskEdit> {
       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: 'Enter Task Title...',
-        hintStyle: TextStyle(color: AppColors.grey400),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         border: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
       ),
       validator: (v) => Validation.commonValidation(
@@ -400,7 +420,7 @@ class _TaskEditState extends State<TaskEdit> {
       maxLines: 5,
       decoration: InputDecoration(
         hintText: 'Describe the requirements and objectives...',
-        fillColor: AppColors.grey100.withValues(alpha: 0.5),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -419,8 +439,8 @@ class _TaskEditState extends State<TaskEdit> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _highPriority
-                ? AppColors.danger.withValues(alpha: 0.15)
-                : Colors.grey.shade200,
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -428,7 +448,7 @@ class _TaskEditState extends State<TaskEdit> {
               Icon(
                 Icons.priority_high,
                 size: 16,
-                color: _highPriority ? AppColors.danger : Colors.grey,
+                color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
               Text(
@@ -436,7 +456,7 @@ class _TaskEditState extends State<TaskEdit> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _highPriority ? AppColors.danger : Colors.grey,
+                  color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -445,7 +465,7 @@ class _TaskEditState extends State<TaskEdit> {
         const SizedBox(width: 12),
         Switch.adaptive(
           value: _highPriority,
-          activeTrackColor: AppColors.danger.withValues(alpha: 0.4),
+          activeTrackColor: Theme.of(context).colorScheme.errorContainer,
           onChanged: (val) => setState(() => _highPriority = val),
         ),
       ],
@@ -566,8 +586,9 @@ class _TaskEditState extends State<TaskEdit> {
   Widget _buildDropdownField(
     String label,
     List<String> items,
-    Function(dynamic) onChanged,
-  ) {
+    Function(dynamic) onChanged, {
+    String? initialItem,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -578,7 +599,11 @@ class _TaskEditState extends State<TaskEdit> {
           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        FormDropdownSearch(items: items, onChanged: onChanged),
+        FormDropdownSearch(
+          items: items,
+          onChanged: onChanged,
+          initialItem: initialItem,
+        ),
       ],
     );
   }
@@ -596,6 +621,7 @@ class _TaskEditState extends State<TaskEdit> {
       title: "Attachments",
       icon: Iconsax.paperclip,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: () async {
@@ -608,16 +634,12 @@ class _TaskEditState extends State<TaskEdit> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  style: BorderStyle.none,
-                ),
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  Icon(Iconsax.cloud_plus, color: AppColors.primary, size: 32),
+                  Icon(Iconsax.cloud_plus, color: Theme.of(context).colorScheme.primary, size: 32),
                   const SizedBox(height: 8),
                   const Text("Click to upload or drag and drop"),
                   Text(
@@ -628,8 +650,44 @@ class _TaskEditState extends State<TaskEdit> {
               ),
             ),
           ),
+          if (_existingAttachments.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              "Existing Files",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _existingAttachments
+                  .map(
+                    (file) => Chip(
+                      avatar: const Icon(Iconsax.document, size: 16),
+                      label: Text(
+                        file.name,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onDeleted: () =>
+                          setState(() => _existingAttachments.remove(file)),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
           if (_selectedAttachments.isNotEmpty) ...[
             const SizedBox(height: 16),
+            Text(
+              "New Files",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -657,10 +715,10 @@ class _TaskEditState extends State<TaskEdit> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -676,8 +734,8 @@ class _TaskEditState extends State<TaskEdit> {
           const SizedBox(width: 16),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -700,7 +758,7 @@ class _TaskEditState extends State<TaskEdit> {
       try {
         futureLoading(context);
 
-        List<FileModel> attachments = [];
+        List<FileModel> attachments = List<FileModel>.from(_existingAttachments);
 
         if (_selectedAttachments.isNotEmpty) {
           List<String> urls = await StorageService.uploadFilesInBatch(

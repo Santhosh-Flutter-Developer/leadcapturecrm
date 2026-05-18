@@ -65,15 +65,22 @@ class TaskModel {
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
+  static DateTime? _toDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value.runtimeType.toString().contains('Timestamp')) {
+      return (value as dynamic).toDate() as DateTime;
+    }
+    return null;
+  }
+
   factory TaskModel.fromMap(String uid, Map<String, dynamic> map) {
     return TaskModel(
       uid: uid,
       taskNumber: map['taskNumber'] as int?,
       taskName: map['taskName'] as String,
       description: map['description'] as String,
-      deadline: map['deadline'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['deadline'] as int)
-          : null,
+      deadline: _toDateTime(map['deadline']),
       deadlineRequired: map['deadlineRequired'] as bool,
       highPriority: map['highPriority'] as bool,
       statusSummaryRequired: map['statusSummaryRequired'] as bool,
@@ -82,19 +89,13 @@ class TaskModel {
       observers: List<String>.from(map['observers'] ?? []),
       participants: List<String>.from(map['participants'] ?? []),
       tags: List<String>.from(map['tags'] ?? []),
-      reminder: map['reminder'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['reminder'] as int)
-          : null,
+      reminder: _toDateTime(map['reminder']),
       project: map['project'] as String?,
       lead: map['lead'] as String?,
       subTaskOf: map['subTaskOf'] as String?,
       hasStarted: map['hasStarted'] as bool? ?? false,
-      startedTime: map['startedTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['startedTime'] as int)
-          : null,
-      completedTime: map['completedTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['completedTime'] as int)
-          : null,
+      startedTime: _toDateTime(map['startedTime']),
+      completedTime: _toDateTime(map['completedTime']),
       completed: map['completed'] as bool? ?? false,
       attachments: map['attachments'] != null
           ? List<FileModel>.from(
@@ -116,14 +117,15 @@ class TaskModel {
               map['taskCreatedBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['taskCreatedBy'] as Map<String, dynamic>)
           : UserDataModel.fromEmptyMap(),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int),
+      createdAt: _toDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: _toDateTime(map['updatedAt']) ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'taskNumber': taskNumber,
       'taskName': taskName,
       'description': description,
       'deadline': deadline?.millisecondsSinceEpoch,
@@ -140,9 +142,10 @@ class TaskModel {
       'lead': lead,
       'subTaskOf': subTaskOf,
       'hasStarted': hasStarted,
-      'startedTime': startedTime,
+      'startedTime': startedTime?.millisecondsSinceEpoch,
+      'completedTime': completedTime?.millisecondsSinceEpoch,
       'completed': completed,
-      'completedTime': completedTime,
+      'taskCreatedBy': taskCreatedBy.toMap(),
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'comments': comments.map((c) => c.toMap()).toList(),
       'history': history.map((h) => h.toMap()).toList(),
@@ -169,9 +172,10 @@ class TaskModel {
       'lead': lead,
       'subTaskOf': subTaskOf,
       'hasStarted': hasStarted,
-      'startedTime': startedTime,
+      'startedTime': startedTime?.millisecondsSinceEpoch,
       'completed': completed,
-      'completedTime': completedTime,
+      'completedTime': completedTime?.millisecondsSinceEpoch,
+      'taskCreatedBy': taskCreatedBy.toMap(),
       'attachments': attachments.map((e) => e.toMap()).toList(),
       'comments': comments.map((c) => c.toMap()).toList(),
       'history': history.map((h) => h.toMap()).toList(),

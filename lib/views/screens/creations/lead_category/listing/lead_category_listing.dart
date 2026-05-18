@@ -75,6 +75,10 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshLeadCategory(BuildContext context) async {
+    context.read<LeadCategoryBloc>().add(StreamLeadCategory());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -103,144 +107,140 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshLeadCategory(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
+
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text("Name"),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text("Desc"),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text("Created"),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          const DataColumn(
-                                            label: Text("Created By"),
-                                          ),
-                                          const DataColumn(
-                                            label: Text("Action"),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (leadCategories) => _buildDataRow(
-                                                context,
-                                                leadCategories,
-                                                controllerWatch,
-                                                controllerRead,
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text("Name"),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text("Desc"),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text("Created"),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        const DataColumn(
+                                          label: Text("Created By"),
+                                        ),
+                                        const DataColumn(label: Text("Action")),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (leadCategories) => _buildDataRow(
+                                              context,
+                                              leadCategories,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<LeadCategoryModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<LeadCategoryModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -286,13 +286,13 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -300,29 +300,25 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.grey300,
-                      foregroundColor: AppColors.grey600,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
             const SizedBox(width: 10),
             if (_selectedLeadCategories.isNotEmpty) ...[
               (permissions?.canDelete ?? false)
                   ? ElevatedButton.icon(
-                      label: Text(
-                        "Delete",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
-                      ),
+                      label: const Text("Delete"),
                       icon: const Icon(Iconsax.trash),
                       onPressed: () async {
                         if (_selectedLeadCategories.isEmpty) return;
 
+                        // ✅ STEP 0: Check assignment
                         for (var category in _selectedLeadCategories) {
                           final isAssigned =
                               await LeadCategoryService.isLeadCategoryAssigned(
@@ -333,18 +329,14 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                             await showDialog(
                               context: context,
                               builder: (_) => AlertDialog(
-                                title: Text('Cannot Delete'),
-                                content: Text(
-                                  'One or more selected lead categories are associated with leads and cannot be deleted.',
+                                title: const Text('Cannot Delete'),
+                                content: const Text(
+                                  'One or more selected categories are associated with leads.',
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () {
-                                      if (Navigator.canPop(context)) {
-                                        Navigator.pop(context);
-                                      }
-                                    },
-                                    child: Text('OK'),
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
                                   ),
                                 ],
                               ),
@@ -353,41 +345,70 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           }
                         }
 
-                        final confirm = await showDialog<bool>(
+                        // ✅ STEP 1: Confirm
+                        final result = await showDialog<bool>(
                           context: context,
                           builder: (context) => ConfirmDialog(
                             title: 'Delete $_pageTitle',
                             content:
-                                'Are you sure want to delete this $_pageTitle?',
+                                'Are you sure you want to delete selected $_pageTitle?',
                           ),
-                          barrierDismissible: false,
                         );
 
-                        if (confirm != true) return;
+                        if (result != true) return;
 
                         try {
+                          // ✅ STEP 2: Backup (IMPORTANT — deep copy)
+                          final deletedCategories = _selectedLeadCategories
+                              .map((e) => e.copyWith())
+                              .toList();
+
+                          // ✅ STEP 3: Loader
                           futureLoading(context);
 
-                          for (var category in _selectedLeadCategories) {
+                          // ✅ STEP 4: Delete
+                          for (var category in deletedCategories) {
                             await LeadCategoryService.deleteLeadCategory(
                               uid: category.uid ?? '',
                             );
                           }
 
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
+                          // ✅ STEP 5: Close loader
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          // ✅ STEP 6: Clear selection
+                          _selectedLeadCategories.clear();
+                          setState(() {});
+
+                          // ✅ STEP 7: UNDO
                           FlushBar.show(
                             context,
                             '$_pageTitle deleted successfully',
-                          );
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              for (var category in deletedCategories) {
+                                if (category.uid == null) continue;
 
-                          _selectedLeadCategories.clear();
-                          setState(() {});
+                                await LeadCategoryService.restoreLeadCategory(
+                                  category,
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              // 🔥 refresh list
+                              context.read<LeadCategoryBloc>().add(
+                                StreamLeadCategory(),
+                              );
+                            },
+                            // Optional (same as your leads pattern)
+                            // onDismissed: () {
+                            //   context.read<LeadCategoryBloc>().add(StreamLeadCategory());
+                            // },
+                          );
                         } catch (e, st) {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
                           await ErrorService.recordError(e, st);
 
                           FlushBar.show(
@@ -397,28 +418,31 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           );
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: AppColors.white,
-                      ),
                     )
                   : ElevatedButton.icon(
-                      label: Text(
+                        label: Text(
                         "Delete",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                       ),
-                      icon: Icon(Iconsax.trash),
+                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.grey400,
-                        foregroundColor: AppColors.white,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshLeadCategory(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -474,19 +498,21 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           );
                         }
                       },
-                      color: AppColors.info,
+                      color: Theme.of(context).colorScheme.primary,
                       splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
-                      color: AppColors.danger,
+                      color: Theme.of(context).colorScheme.error,
                       splashRadius: 20,
+                      tooltip: 'Delete $_pageTitle',
                       onPressed: () async {
+                        // ✅ STEP 0: check assignment
                         final isAssigned =
                             await LeadCategoryService.isLeadCategoryAssigned(
                               leadCategory.uid ?? '',
@@ -496,18 +522,14 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           await showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: Text('Cannot Delete'),
-                              content: Text(
+                              title: const Text('Cannot Delete'),
+                              content: const Text(
                                 'This lead category is associated with one or more leads and cannot be deleted.',
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () {
-                                    if (Navigator.canPop(context)) {
-                                      Navigator.pop(context);
-                                    }
-                                  },
-                                  child: Text('OK'),
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
                                 ),
                               ],
                             ),
@@ -515,30 +537,66 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                           return;
                         }
 
-                        final confirm = await showDialog<bool>(
+                        // ✅ STEP 1: confirm
+                        final result = await showDialog<bool>(
                           context: context,
-                          builder: (context) => ConfirmDialog(
+                          builder: (_) => ConfirmDialog(
                             title: 'Delete $_pageTitle',
                             content:
-                                'Are you sure want to delete this $_pageTitle?',
+                                'Are you sure you want to delete this $_pageTitle?',
                           ),
-                          barrierDismissible: false,
                         );
 
-                        if (confirm == true) {
-                          context.read<LeadCategoryBloc>().add(
-                            DeleteLeadCategory(leadCategory.uid ?? ''),
+                        if (result != true) return;
+
+                        try {
+                          // ✅ STEP 2: BACKUP (VERY IMPORTANT)
+                          final deletedCategory = leadCategory.copyWith();
+
+                          // ✅ STEP 3: DELETE
+                          await LeadCategoryService.deleteLeadCategory(
+                            uid: leadCategory.uid ?? '',
                           );
+
+                          if (!context.mounted) return;
+
+                          // ✅ STEP 4: UNDO (same as Lead)
+                          FlushBar.show(
+                            context,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              if (deletedCategory.uid == null) return;
+
+                              await LeadCategoryService.restoreLeadCategory(
+                                deletedCategory,
+                              );
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh list
+                              context.read<LeadCategoryBloc>().add(
+                                StreamLeadCategory(),
+                              );
+                            },
+                            // Optional consistency with lead
+                            // onDismissed: () {
+                            //   context.read<LeadCategoryBloc>().add(StreamLeadCategory());
+                            // },
+                          );
+                        } catch (e, st) {
+                          await ErrorService.recordError(e, st);
 
                           FlushBar.show(
                             context,
-                            'Category deleted successfully',
+                            e.toString(),
+                            isSuccess: false,
                           );
                         }
                       },
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: null,
                     ),
             ],

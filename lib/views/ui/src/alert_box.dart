@@ -22,8 +22,8 @@ class _AlertBoxState extends State<AlertBox> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.white,
-      surfaceTintColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
       insetPadding: const EdgeInsets.all(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
@@ -44,13 +44,16 @@ class _AlertBoxState extends State<AlertBox> {
                   height: 55,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: AppColors.white,
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       widget.cancelText ?? "Cancel",
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.grey600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -72,7 +75,7 @@ class _AlertBoxState extends State<AlertBox> {
                     child: Text(
                       widget.successText ?? "Confirm",
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

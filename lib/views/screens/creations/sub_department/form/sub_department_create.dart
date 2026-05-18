@@ -32,7 +32,7 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           children: [
             FormWidgets.buildHeader(
@@ -48,11 +48,11 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 500),
                   child: Card(
-                    color: AppColors.white,
+                    color: Theme.of(context).cardTheme.color,
                     elevation: 7,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppColors.grey200),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -67,11 +67,11 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
                             style: Theme.of(context).textTheme.titleMedium!
                                 .copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                           ),
                           const SizedBox(height: 10),
-                          Divider(color: AppColors.grey300, thickness: 1),
+                          Divider(color: Theme.of(context).colorScheme.outlineVariant, thickness: 1),
                           const SizedBox(height: 20),
                           LayoutBuilder(
                             builder: (context, constraints) =>

@@ -6,14 +6,11 @@
 
 // Flutter imports:
 import 'package:flutter/material.dart';
-
-import '/theme/theme.dart';
-
 class Sheet {
   static Future<dynamic> showSheet(BuildContext context,
       {required Widget widget, double size = 0.9}) async {
     final value = await showModalBottomSheet(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       useSafeArea: true,
       showDragHandle: true,
       isScrollControlled: true,

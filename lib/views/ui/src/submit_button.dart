@@ -22,11 +22,13 @@ class SubmitButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomAppBar(
       height: 70,
-      color: Colors.white,
-      surfaceTintColor: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
       child: ElevatedButton(
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(AppColors.primary),
+          backgroundColor: WidgetStateProperty.all(
+            Theme.of(context).colorScheme.primary,
+          ),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           minimumSize: WidgetStateProperty.all(const Size(80, 30)),
           padding: WidgetStateProperty.all(EdgeInsets.zero),
@@ -37,11 +39,14 @@ class SubmitButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.tick_circle, color: AppColors.white),
+            Icon(
+              Iconsax.tick_circle,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             const SizedBox(width: 10),
             Text(
               text ?? "Submit",
-              style: TextStyle(color: AppColors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
             ),
           ],
         ),

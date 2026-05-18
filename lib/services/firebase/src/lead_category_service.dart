@@ -45,6 +45,21 @@ class LeadCategoryService {
     }
   }
 
+  static Future<void> restoreLeadCategory(LeadCategoryModel category) async {
+    var cid = await Spdb.getCid();
+
+    final uid = category.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.leadCategory.name)
+        .doc(uid)
+        .set(category.toMap());
+  }
+
   static Future<LeadCategoryModel> getLeadCategory({
     required String uid,
   }) async {

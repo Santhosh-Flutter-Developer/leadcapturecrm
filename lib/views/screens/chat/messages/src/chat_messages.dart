@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:any_link_preview/any_link_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:line_icons/line_icon.dart';
+import 'package:path/path.dart' as path;
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,11 +39,13 @@ class ChatMessages extends StatefulWidget {
   final ChatModel chat;
   final String currentUser;
   final String opponentUid;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
   const ChatMessages({
     super.key,
     required this.chat,
     required this.currentUser,
     required this.opponentUid,
+    this.onOpenChat,
   });
 
   @override
@@ -51,6 +55,8 @@ class ChatMessages extends StatefulWidget {
 class _ChatMessagesState extends State<ChatMessages> {
   late Stream<List<MessagesModel>> _stream;
   StreamSubscription<List<MessagesModel>>? _subscription;
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -97,22 +103,50 @@ class _ChatMessagesState extends State<ChatMessages> {
         appBar: kIsMobile
             ? ChatTopBar(
                 userUid: widget.opponentUid,
+                currentUserUid: widget.currentUser,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
+                isSearching: _isSearching,
+
+                onSearchChanged: (value) {
+                  setState(() {
+                    _isSearching = true;
+                    _searchQuery = value;
+                  });
+                },
+
+                onSearchClose: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                  });
+                },
               )
             : ChatTopBarDesktop(
                 userUid: widget.opponentUid,
+                currentUserUid: widget.currentUser,
                 lastSeen: DateTime.now().formatTime,
                 chat: widget.chat,
+                isSearching: _isSearching,
+
+                onSearchChanged: (value) {
+                  setState(() {
+                    _isSearching = true;
+                    _searchQuery = value;
+                  });
+                },
+
+                onSearchClose: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                  });
+                },
               ),
         body: SafeArea(
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.blue50, AppColors.grey50, AppColors.white],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
             // The StreamBuilder is now the *only* thing responsible for UI data
             child: StreamBuilder<List<MessagesModel>>(
@@ -124,16 +158,26 @@ class _ChatMessagesState extends State<ChatMessages> {
                   return ErrorDisplay(error: snapshot.error.toString());
                 }
 
-                final chats = snapshot.data ?? [];
+                final allChats = snapshot.data ?? [];
 
-                // Removed the unnecessary Stack
+                final chats = _searchQuery.isEmpty
+                    ? allChats
+                    : allChats.where((msg) {
+                        final text = (msg.message).toLowerCase();
+
+                        return text.contains(_searchQuery.toLowerCase());
+                      }).toList();
                 return Column(
                   children: [
                     Expanded(
                       // Pass the raw list to BuildSliverChat
-                      child: BuildSliverChat(chats: chats),
+                      child: BuildSliverChat(
+                        chats: chats,
+                        searchQuery: _searchQuery,
+                        onOpenChat: widget.onOpenChat,
+                      ),
                     ),
-                    const ChatInputBar(),
+                    ChatInputBar(chat: widget.chat),
                   ],
                 );
               },
@@ -149,7 +193,14 @@ class _ChatMessagesState extends State<ChatMessages> {
 /// and builds the reversible chat list with date separators.
 class BuildSliverChat extends StatefulWidget {
   final List<MessagesModel> chats;
-  const BuildSliverChat({super.key, required this.chats});
+  final String searchQuery;
+  final Function(ChatModel chat, String opponentUid)? onOpenChat;
+  const BuildSliverChat({
+    super.key,
+    required this.chats,
+    this.searchQuery = '',
+    this.onOpenChat,
+  });
 
   @override
   State<BuildSliverChat> createState() => _BuildSliverChatState();
@@ -191,7 +242,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
     Map<String, List<MessagesModel>> grouped = {};
 
     for (var chat in chats) {
-      final date = chat.timestamp ?? DateTime.now();
+      final date = chat.timestamp;
       final now = DateTime.now();
       String key;
 
@@ -246,7 +297,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                   "Pinned messages",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.grey700.withValues(alpha: 0.8),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -257,6 +308,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                   isPinned: true,
                   isSender: msg.senderId == currentUser,
                   chatUid: uid,
+                  onOpenChat: widget.onOpenChat,
                 );
               }),
             ],
@@ -276,11 +328,11 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
               margin: const EdgeInsets.symmetric(vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.8),
+                color: Theme.of(context).colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -290,7 +342,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                 dateLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.grey700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -312,6 +364,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
               // If they are sorted oldest-to-newest, this should be `index == chats.length - 1`.
               // Based on `reverse: true` in CustomScrollView, assuming 0 is the *newest*.
               isLast: message.senderId == currentUser && index == 0,
+              onOpenChat: widget.onOpenChat,
             );
           }, childCount: chats.length),
         ),
@@ -334,7 +387,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
             child: Center(
               child: TextButton.icon(
                 style: TextButton.styleFrom(
-                  backgroundColor: AppColors.white.withValues(alpha: 0.9),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -347,14 +400,14 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                     curve: Curves.easeOut,
                   );
                 },
-                icon: const Icon(
+                icon:  Icon(
                   Icons.arrow_downward,
-                  color: AppColors.grey700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 label: Text(
                   "Go to Bottom",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.grey700,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

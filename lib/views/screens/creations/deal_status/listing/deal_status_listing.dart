@@ -72,6 +72,10 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshDealStatus(BuildContext context) async {
+    context.read<DealStatusBloc>().add(StreamDealStatus());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -100,187 +104,190 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshDealStatus(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context, state.dealStatus),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.shadow.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context, state.dealStatus),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "No",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Color",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Created",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (dealStatus) => _buildDataRow(
-                                                context,
-                                                dealStatus,
-                                                controllerWatch,
-                                                controllerRead,
+                                      columns: [
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "No",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Name",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Color",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Row(
+                                            children: [
+                                              Text(
+                                                "Created",
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.arrow_upward,
+                                                size: 14,
+                                                color: AppColors.grey400,
+                                              ),
+                                            ],
+                                          ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (dealStatus) => _buildDataRow(
+                                              context,
+                                              dealStatus,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<DealStatusModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<DealStatusModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -348,13 +355,13 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -362,13 +369,17 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                     icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
                     label: Text(
                       "Add $_pageTitle",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.grey300,
-                      foregroundColor: AppColors.grey600,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ),
             const SizedBox(width: 10),
@@ -385,6 +396,7 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                       onPressed: () async {
                         if (_selectedDealStatus.isEmpty) return;
 
+                        // ✅ STEP 0: check assignment
                         for (var status in _selectedDealStatus) {
                           final isAssigned =
                               await DealStatusService.isDealStatusAssigned(
@@ -405,11 +417,7 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () {
-                                      if (Navigator.canPop(context)) {
-                                        Navigator.pop(context);
-                                      }
-                                    },
+                                    onPressed: () => Navigator.pop(context),
                                     child: Text(
                                       'OK',
                                       style: Theme.of(
@@ -424,30 +432,81 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                           }
                         }
 
+                        // ✅ STEP 1: confirm
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => ConfirmDialog(
                             title: 'Delete $_pageTitle',
                             content:
-                                'Are you sure want to delete this $_pageTitle?',
+                                'Are you sure want to delete selected $_pageTitle?',
                           ),
                           barrierDismissible: false,
                         );
 
-                        if (confirm == true) {
-                          context.read<DealStatusBloc>().add(
-                            DeleteDealStatus(uid: 'uid'),
-                          );
+                        if (confirm != true) return;
+
+                        try {
+                          // ✅ STEP 2: BACKUP (IMPORTANT)
+                          final deletedStatuses = _selectedDealStatus
+                              .map((e) => e.copyWith())
+                              .toList();
+
+                          // ✅ STEP 3: loader
+                          futureLoading(context);
+
+                          // ✅ STEP 4: DELETE (use service, NOT bloc)
+                          for (var status in deletedStatuses) {
+                            await DealStatusService.deleteDealStatus(
+                              uid: status.uid ?? '',
+                            );
+                          }
+
+                          // ✅ STEP 5: close loader
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          // ✅ STEP 6: clear selection
+                          _selectedDealStatus.clear();
+                          setState(() {});
+
+                          // ✅ STEP 7: UNDO
                           FlushBar.show(
                             context,
-                            'Dealstatus deleted successfully',
-                            isSuccess: true,
+                            '$_pageTitle deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              for (var status in deletedStatuses) {
+                                if (status.uid == null) continue;
+
+                                await DealStatusService.restoreDealStatus(
+                                  status,
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              // 🔥 refresh UI
+                              context.read<DealStatusBloc>().add(
+                                StreamDealStatus(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            'Failed to delete $_pageTitle: $e',
+                            isSuccess: false,
                           );
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: AppColors.white,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
                       ),
                     )
                   : ElevatedButton.icon(
@@ -469,9 +528,9 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
             ElevatedButton.icon(
               label: Text(
                 "Reorder",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
               icon: Icon(Iconsax.arrange_circle),
               onPressed: () async {
@@ -488,12 +547,19 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.blue,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
               ),
             ),
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshDealStatus(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -560,17 +626,23 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                           );
                         }
                       },
-                      color: AppColors.info,
+                      color: Theme.of(context).colorScheme.primary,
                       splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                      icon: Icon(
+                        Iconsax.edit,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: null,
                     ),
               (permissions?.canDelete ?? false)
                   ? IconButton(
                       icon: const Icon(Iconsax.trash),
+                      color: Theme.of(context).colorScheme.error,
+                      splashRadius: 20,
                       onPressed: () async {
+                        // ✅ STEP 0: check assignment
                         final isAssigned =
                             await DealStatusService.isDealStatusAssigned(
                               dealStatus.uid ?? '',
@@ -580,18 +652,14 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                           await showDialog(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: Text('Cannot Delete'),
+                              title: const Text('Cannot Delete'),
                               content: Text(
                                 'This deal status is associated with one or more deals and cannot be deleted.',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () {
-                                    if (Navigator.canPop(context)) {
-                                      Navigator.pop(context);
-                                    }
-                                  },
+                                  onPressed: () => Navigator.pop(context),
                                   child: Text(
                                     'OK',
                                     style: Theme.of(
@@ -605,39 +673,65 @@ class _DealStatusListingViewState extends State<DealStatusListingView> {
                           return;
                         }
 
+                        // ✅ STEP 1: confirm
                         final confirm = await showDialog<bool>(
                           context: context,
-                          builder: (_) => ConfirmDialog(
+                          builder: (_) => const ConfirmDialog(
                             title: 'Delete Deal Status',
                             content:
                                 'Are you sure you want to delete this deal status?',
                           ),
                         );
 
-                        if (confirm == true) {
-                          try {
-                            await DealStatusService.deleteDealStatus(
-                              uid: dealStatus.uid ?? '',
-                            );
+                        if (confirm != true) return;
 
-                            FlushBar.show(
-                              context,
-                              'Deal status deleted successfully',
-                            );
-                          } catch (e) {
-                            FlushBar.show(
-                              context,
-                              'Failed to delete deal status: $e',
-                              isSuccess: false,
-                            );
-                          }
+                        try {
+                          // ✅ STEP 2: BACKUP (IMPORTANT)
+                          final deletedStatus = dealStatus.copyWith();
+
+                          // ✅ STEP 3: DELETE
+                          await DealStatusService.deleteDealStatus(
+                            uid: dealStatus.uid ?? '',
+                          );
+
+                          if (!context.mounted) return;
+
+                          // ✅ STEP 4: UNDO
+                          FlushBar.show(
+                            context,
+                            'Deal status deleted successfully',
+                            actionLabel: 'UNDO',
+                            onActionPressed: () async {
+                              if (deletedStatus.uid == null) return;
+
+                              await DealStatusService.restoreDealStatus(
+                                deletedStatus,
+                              );
+
+                              if (!context.mounted) return;
+
+                              // ✅ refresh UI
+                              context.read<DealStatusBloc>().add(
+                                StreamDealStatus(),
+                              );
+                            },
+                          );
+                        } catch (e, st) {
+                          await ErrorService.recordError(e, st);
+
+                          FlushBar.show(
+                            context,
+                            'Failed to delete deal status: $e',
+                            isSuccess: false,
+                          );
                         }
                       },
-                      color: AppColors.danger,
-                      splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                      icon: Icon(
+                        Iconsax.trash,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: null,
                     ),
             ],

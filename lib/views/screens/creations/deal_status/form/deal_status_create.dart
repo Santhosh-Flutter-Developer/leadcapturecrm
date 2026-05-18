@@ -34,7 +34,7 @@ class _DealStatusCreateState extends State<DealStatusCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           children: [
             FormWidgets.buildHeader(
@@ -53,11 +53,11 @@ class _DealStatusCreateState extends State<DealStatusCreate> {
                     child: FractionallySizedBox(
                       widthFactor: 0.7,
                       child: Card(
-                        color: AppColors.white,
-                        elevation: 7,
+                        color: Theme.of(context).colorScheme.surface,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: AppColors.grey200),
+                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -76,7 +76,7 @@ class _DealStatusCreateState extends State<DealStatusCreate> {
                                     ),
                               ),
                               const SizedBox(height: 10),
-                              Divider(color: AppColors.grey300, thickness: 1),
+                              Divider(color: Theme.of(context).colorScheme.outlineVariant, thickness: 1),
                               const SizedBox(height: 20),
                               LayoutBuilder(
                                 builder: (context, constraints) =>

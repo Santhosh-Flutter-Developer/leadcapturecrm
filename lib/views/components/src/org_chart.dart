@@ -45,7 +45,7 @@ class _OrgChartState extends State<OrgChart> {
           parentNode,
           childNode,
           paint: Paint()
-            ..color = Colors.blue.withValues(alpha: 0.3)
+            ..color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
             ..strokeWidth = 1.5
             ..style = PaintingStyle.stroke,
         );
@@ -83,12 +83,12 @@ class _OrgChartState extends State<OrgChart> {
       constraints: const BoxConstraints(minWidth: 160),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade50),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -101,10 +101,10 @@ class _OrgChartState extends State<OrgChart> {
             height: 32,
             width: 32,
             decoration: BoxDecoration(
-              color: Colors.blue.shade500,
+              color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Iconsax.user, color: Colors.white, size: 16),
+            child: Icon(Iconsax.user, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 16),
           ),
           const SizedBox(width: 12),
           Flexible(
@@ -114,10 +114,10 @@ class _OrgChartState extends State<OrgChart> {
               children: [
                 Text(
                   CacheService.getUserByUid(id)?.name ?? 'Unknown',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: Color(0xFF2D3748),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -125,7 +125,7 @@ class _OrgChartState extends State<OrgChart> {
                   "Member",
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -140,23 +140,23 @@ class _OrgChartState extends State<OrgChart> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Workflow Hierarchy',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A202C),
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
         centerTitle: false,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0.5,
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.refresh, color: Colors.blue, size: 20),
+            icon: Icon(Iconsax.refresh, color: Theme.of(context).colorScheme.primary, size: 20),
             onPressed: () {
               setState(() {
                 nodeCache.clear();
@@ -180,7 +180,7 @@ class _OrgChartState extends State<OrgChart> {
               graph: graph,
               algorithm: algorithm,
               paint: Paint()
-                ..color = Colors.blue.shade100
+                ..color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                 ..strokeWidth = 2
                 ..style = PaintingStyle.stroke,
               builder: (Node node) {
@@ -201,12 +201,12 @@ class _OrgChartState extends State<OrgChart> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
+                child: Text(
                   "Force-directed layout: Zoom & Pan enabled",
-                  style: TextStyle(color: Colors.white, fontSize: 11),
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11),
                 ),
               ),
             ),

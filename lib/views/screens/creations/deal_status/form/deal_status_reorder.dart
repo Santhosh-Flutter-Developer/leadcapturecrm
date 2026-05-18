@@ -53,20 +53,22 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F9FB), // Soft background
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Soft background
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- HEADER ---
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black12,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.transparent 
+                        : Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -75,7 +77,7 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                   Text(
                     "Reorder Deal Status",
                     style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -108,7 +110,7 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                         key: ValueKey(status.uid),
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         elevation: 2,
-                        shadowColor: AppColors.black26,
+                        shadowColor: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -138,19 +140,19 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B),
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                           ),
                           subtitle: Text(
                             "Drag to reorder",
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.grey600),
+                                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                           trailing: ReorderableDragStartListener(
                             index: index,
                             child: Icon(
                               Icons.drag_indicator_rounded,
-                              color: AppColors.grey500,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -163,10 +165,12 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
             // --- FOOTER BUTTON ---
             Container(
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.transparent 
+                        : Colors.black.withValues(alpha: 0.05),
                     blurRadius: 6,
                     offset: const Offset(0, -2),
                   ),
@@ -191,15 +195,15 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                     ),
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
-                      backgroundColor: AppColors.grey100,
-                      foregroundColor: AppColors.grey800,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 14,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: AppColors.grey300),
+                        side: BorderSide(color: Theme.of(context).colorScheme.outline),
                       ),
                     ),
                   ),
@@ -216,8 +220,8 @@ class _DealStatusReorderState extends State<DealStatusReorder> {
                     ),
                     style: ElevatedButton.styleFrom(
                       elevation: 2,
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 28,
                         vertical: 14,

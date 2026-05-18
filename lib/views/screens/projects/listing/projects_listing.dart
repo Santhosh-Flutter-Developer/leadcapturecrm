@@ -82,6 +82,10 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
     setState(() {});
   }
 
+  Future<void> _refreshProjects(BuildContext context) async {
+    context.read<ProjectsBloc>().add(StreamProjects());
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -110,189 +114,138 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              return SingleChildScrollView(
-                child: Padding(
+              return RefreshIndicator(
+                onRefresh: () => _refreshProjects(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      _buildFilterRow(
-                        onSearchChanged: controllerRead.setSearch,
+                  children: [
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    const SizedBox(height: 10),
+                    _buildActionRow(context),
+                    const SizedBox(height: 20),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      _buildActionRow(context),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.grey.withValues(alpha: 0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Scrollbar(
+                      child: Column(
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                controller: _hScrollController,
+                                thumbVisibility: true,
+                                trackVisibility: true,
+                                thickness: 4,
+                                radius: const Radius.circular(6),
+                                scrollbarOrientation:
+                                    ScrollbarOrientation.bottom,
+                                child: SingleChildScrollView(
                                   controller: _hScrollController,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  thickness: 4,
-                                  radius: const Radius.circular(6),
-                                  scrollbarOrientation:
-                                      ScrollbarOrientation.bottom,
-                                  child: SingleChildScrollView(
-                                    controller: _hScrollController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: constraints.maxWidth,
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
-                                      child: DataTable(
-                                        showCheckboxColumn: true,
-                                        sortColumnIndex:
-                                            controllerWatch.sortColumnIndex,
-                                        sortAscending:
-                                            controllerWatch.sortAscending,
-                                        headingRowColor:
-                                            WidgetStateProperty.all(
-                                              AppColors.grey100,
-                                            ),
-                                        headingTextStyle: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.black,
-                                            ),
-                                        columns: [
-                                          // DataColumn(
-                                          //   label: Row(
-                                          //     children: [
-                                          //       Text("Projects ID"),
-                                          //       const SizedBox(width: 4),
-                                          //       Icon(Icons.arrow_upward,
-                                          //           size: 14,
-                                          //           color: AppColors.grey400),
-                                          //     ],
-                                          //   ),
-                                          //   onSort: controllerRead.setSort,
-                                          // ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Project Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                      columns: [
+                                        DataColumn(
+                                          label: Text(
+                                            "Project Name",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Project Code",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Project Code",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Lead",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Lead",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                          DataColumn(
-                                            label: Row(
-                                              children: [
-                                                Text(
-                                                  "Deadline",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: AppColors.grey400,
-                                                ),
-                                              ],
-                                            ),
-                                            onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Deadline",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
+                                          onSort: controllerRead.setSort,
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Created By",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                          DataColumn(
-                                            label: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            "Action",
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
-                                        ],
-                                        rows: controllerWatch.paginatedItems
-                                            .map(
-                                              (project) => _buildDataRow(
-                                                context,
-                                                project,
-                                                controllerWatch,
-                                                controllerRead,
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
+                                        ),
+                                      ],
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (project) => _buildDataRow(
+                                              context,
+                                              project,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
-                              ),
-                              child: PaginationControls<ProjectModel>(),
-                            ),
-                          ],
-                        ),
+                            child: PaginationControls<ProjectModel>(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -350,16 +303,16 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
             ] else ...[
               ElevatedButton.icon(
                 onPressed: null,
-                icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
+                icon: Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 label: Text(
                   "Add $_pageTitle",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey300,
-                  foregroundColor: AppColors.grey600,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -376,6 +329,7 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                   onPressed: () async {
                     if (_selectedProjects.isEmpty) return;
 
+                    // ✅ STEP 0: CHECK ASSIGNMENT
                     for (var project in _selectedProjects) {
                       final isAssigned = await ProjectService.isProjectAssigned(
                         project.uid ?? '',
@@ -390,16 +344,12 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             content: Text(
-                              'One or more selected projects are associated with tasks and cannot be deleted.',
+                              'One or more selected projects are associated with tasks.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             actions: [
                               TextButton(
-                                onPressed: () {
-                                  if (Navigator.canPop(context)) {
-                                    Navigator.pop(context);
-                                  }
-                                },
+                                onPressed: () => Navigator.pop(context),
                                 child: Text(
                                   'OK',
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -411,6 +361,8 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                         return;
                       }
                     }
+
+                    // ✅ STEP 1: CONFIRM
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => ConfirmDialog(
@@ -421,14 +373,52 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                       barrierDismissible: false,
                     );
 
-                    if (confirm == true) {
-                      context.read<ProjectsBloc>().add(
-                        DeleteProjects(uid: 'uid'),
-                      );
+                    if (confirm != true) return;
+
+                    try {
+                      // ✅ STEP 2: BACKUP
+                      final deletedProjects = _selectedProjects
+                          .map((e) => e.copyWith())
+                          .toList();
+
+                      // ✅ STEP 3: DELETE (use service, NOT bloc)
+                      for (var project in deletedProjects) {
+                        await ProjectService.deleteProject(
+                          uid: project.uid ?? '',
+                        );
+                      }
+
+                      // ✅ STEP 4: CLEAR UI
+                      _selectedProjects.clear();
+                      setState(() {});
+
+                      if (!context.mounted) return;
+
+                      // ✅ STEP 5: UNDO
                       FlushBar.show(
                         context,
                         'Projects deleted successfully',
-                        isSuccess: true,
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          for (var project in deletedProjects) {
+                            if (project.uid == null) continue;
+
+                            await ProjectService.restoreProject(project);
+                          }
+
+                          if (!context.mounted) return;
+
+                          // 🔥 refresh UI
+                          context.read<ProjectsBloc>().add(StreamProjects());
+                        },
+                      );
+                    } catch (e, st) {
+                      await ErrorService.recordError(e, st);
+
+                      FlushBar.show(
+                        context,
+                        'Failed to delete projects: $e',
+                        isSuccess: false,
                       );
                     }
                   },
@@ -444,18 +434,25 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                   "Delete",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 icon: Icon(Iconsax.trash),
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey400,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ],
         ),
+        if (kIsDesktop)
+          IconButton(
+            tooltip: "Refresh",
+            icon: const Icon(Iconsax.refresh),
+            onPressed: () => _refreshProjects(context),
+            iconSize: 18,
+          ),
       ],
     );
   }
@@ -523,19 +520,22 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                       );
                     }
                   },
-                  color: AppColors.info,
+                  color: Theme.of(context).colorScheme.secondary,
                   splashRadius: 20,
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                  icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   onPressed: null,
                 ),
               ],
               if ((permissions?.canDelete ?? false)) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
+                  color: Theme.of(context).colorScheme.error,
+                  splashRadius: 20,
                   onPressed: () async {
+                    // ✅ STEP 0: CHECK ASSIGNMENT
                     final isAssigned = await ProjectService.isProjectAssigned(
                       project.uid ?? '',
                     );
@@ -549,16 +549,12 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           content: Text(
-                            'This project is associated with one or more task and cannot be deleted.',
+                            'This project is associated with one or more tasks.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () {
-                                if (Navigator.canPop(context)) {
-                                  Navigator.pop(context);
-                                }
-                              },
+                              onPressed: () => Navigator.pop(context),
                               child: Text(
                                 'OK',
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -570,6 +566,7 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                       return;
                     }
 
+                    // ✅ STEP 1: CONFIRM
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (_) => ConfirmDialog(
@@ -579,23 +576,49 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                       ),
                     );
 
-                    if (confirm == true) {
-                      context.read<ProjectsBloc>().add(
-                        DeleteProjects(uid: 'uid'),
+                    if (confirm != true) return;
+
+                    try {
+                      // ✅ STEP 2: BACKUP
+                      final deletedProject = project.copyWith();
+
+                      // ✅ STEP 3: DELETE (use service, NOT bloc)
+                      await ProjectService.deleteProject(
+                        uid: project.uid ?? '',
                       );
+
+                      if (!context.mounted) return;
+
+                      // ✅ STEP 4: UNDO
                       FlushBar.show(
                         context,
-                        'Projects deleted successfully',
-                        isSuccess: true,
+                        'Project deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          if (deletedProject.uid == null) return;
+
+                          await ProjectService.restoreProject(deletedProject);
+
+                          if (!context.mounted) return;
+
+                          // ✅ refresh UI
+                          context.read<ProjectsBloc>().add(StreamProjects());
+                        },
+                      );
+                    } catch (e, st) {
+                      await ErrorService.recordError(e, st);
+
+                      FlushBar.show(
+                        context,
+                        'Failed to delete project: $e',
+                        isSuccess: false,
                       );
                     }
                   },
-                  color: AppColors.danger,
-                  splashRadius: 20,
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                  icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   onPressed: null,
                 ),
               ],

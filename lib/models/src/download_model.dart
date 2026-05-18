@@ -7,6 +7,7 @@ class DownloadHistoryModel {
   final int fileSize;
   final DateTime downloadedAt;
   final bool isSuccess;
+  final String userId;
 
   DownloadHistoryModel({
     required this.fileName,
@@ -15,6 +16,7 @@ class DownloadHistoryModel {
     required this.fileSize,
     required this.downloadedAt,
     required this.isSuccess,
+    required this.userId,
   });
 
   factory DownloadHistoryModel.fromMap(Map<String, dynamic> map) {
@@ -25,6 +27,7 @@ class DownloadHistoryModel {
       fileSize: map['fileSize'] ?? 0,
       downloadedAt: (map['downloadedAt'] as Timestamp).toDate(),
       isSuccess: map['isSuccess'] ?? true,
+      userId: map['userId'] ?? '',
     );
   }
 
@@ -36,6 +39,7 @@ class DownloadHistoryModel {
       'fileSize': fileSize,
       'downloadedAt': Timestamp.fromDate(downloadedAt),
       'isSuccess': isSuccess,
+      'userId': userId,
     };
   }
 }

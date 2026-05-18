@@ -91,9 +91,9 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
             body: Center(
               child: Text(
                 'Error: ${snapshot.error}',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
           );
@@ -109,7 +109,9 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
                 child: Center(
                   child: CircleAvatar(
                     radius: 20, // Slightly smaller for standard AppBar leading
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     // 1. Try to load the Network Image
                     backgroundImage:
                         (_companyLogoUrl != null && _companyLogoUrl!.isNotEmpty)
@@ -149,7 +151,7 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
           body: _buildMainContentMobile(),
           bottomNavigationBar: BottomAppBar(
             elevation: 0,
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             child: SafeArea(
               top: false,
               child: SizedBox(
@@ -184,7 +186,9 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
               child: Icon(
                 icon,
                 size: 24,
-                color: selected ? AppColors.primary : AppColors.grey400,
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 8),
@@ -192,7 +196,9 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: selected ? AppColors.primary : AppColors.grey400,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
@@ -206,9 +212,13 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
                   duration: Duration(milliseconds: 200),
                   height: 6,
                   width: 6,
-                  transform: Matrix4.identity()..scale(selected ? 1.0 : 0.4),
+                  transform: Matrix4.diagonal3Values(
+                    selected ? 1.0 : 0.4,
+                    selected ? 1.0 : 0.4,
+                    1.0,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),

@@ -38,9 +38,11 @@ class PaginationControls<T> extends StatelessWidget {
               height: 38,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.grey300),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
@@ -157,9 +159,9 @@ class PaginationControls<T> extends StatelessWidget {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.grey300),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(

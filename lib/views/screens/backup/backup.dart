@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import 'bloc/backup_bloc.dart';
 
 class BackupColors {
@@ -113,8 +112,8 @@ class _BackupListingState extends State<BackupListing> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            BackupColors.primary,
-            BackupColors.primary.withValues(alpha: 0.7),
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -164,17 +163,17 @@ class _BackupListingState extends State<BackupListing> {
     return BlocProvider(
       create: (context) => BackupBloc()..add(StreamBackup()),
       child: Scaffold(
-        backgroundColor: BackupColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: BackupColors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          leading: const Back(color: AppColors.black),
+          leading: Back(color: Theme.of(context).colorScheme.onSurface),
           centerTitle: false,
-          title: const Text(
+          title: Text(
             "Security Vault",
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: BackupColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
             ),
           ),
@@ -193,9 +192,9 @@ class _BackupListingState extends State<BackupListing> {
             else
               IconButton(
                 onPressed: () => context.read<BackupBloc>().add(StreamBackup()),
-                icon: const Icon(
+                icon: Icon(
                   Iconsax.refresh,
-                  color: BackupColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 20,
                 ),
               ),
@@ -203,7 +202,10 @@ class _BackupListingState extends State<BackupListing> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(color: BackupColors.border, height: 1),
+            child: Container(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              height: 1,
+            ),
           ),
         ),
         body: BlocBuilder<BackupBloc, BackupState>(
@@ -245,9 +247,13 @@ class _BackupListingState extends State<BackupListing> {
         // Master List
         Container(
           width: 420,
-          decoration: const BoxDecoration(
-            color: BackupColors.white,
-            border: Border(right: BorderSide(color: BackupColors.border)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              right: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
           ),
           child: Column(
             children: [
@@ -329,25 +335,27 @@ class _BackupListingState extends State<BackupListing> {
       padding: const EdgeInsets.all(16),
       child: Container(
         decoration: BoxDecoration(
-          color: BackupColors.background,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BackupColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: TextField(
           onChanged: (v) => setState(() => _search = v.trim()),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             prefixIcon: Icon(
               Iconsax.search_normal,
               size: 18,
-              color: BackupColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             hintText: 'Filter registry...',
             hintStyle: TextStyle(
               fontSize: 14,
-              color: BackupColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
       ),
@@ -357,16 +365,18 @@ class _BackupListingState extends State<BackupListing> {
   Widget _buildExportBar({bool isMobile = false}) {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, isMobile ? 32 : 12),
-      decoration: const BoxDecoration(
-        color: BackupColors.white,
-        border: Border(top: BorderSide(color: BackupColors.border)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
       ),
       child: ElevatedButton.icon(
         onPressed: _busy ? null : () => exportBackup(context),
         icon: const Icon(Iconsax.export_3, size: 18),
         label: const Text("Create New Snapshot"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: BackupColors.primary,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(
@@ -390,10 +400,10 @@ class _BackupListingState extends State<BackupListing> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: BackupColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.2,
             ),
           ),
@@ -421,12 +431,12 @@ class _BackupListingState extends State<BackupListing> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isSelected
-                ? BackupColors.primary.withValues(alpha: 0.05)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? BackupColors.primary.withValues(alpha: 0.2)
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
                   : Colors.transparent,
             ),
           ),
@@ -445,27 +455,27 @@ class _BackupListingState extends State<BackupListing> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: isSelected
-                            ? BackupColors.primary
-                            : BackupColors.textPrimary,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
                         fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _timeAgo(item.timestamp),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: BackupColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
               if (isSelected)
-                const Icon(
+                Icon(
                   Iconsax.arrow_right_3,
                   size: 14,
-                  color: BackupColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
             ],
           ),
@@ -488,16 +498,16 @@ class _BackupListingState extends State<BackupListing> {
                 children: [
                   Text(
                     item.path,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      color: BackupColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     "Snapshot Type: ${item.type}",
-                    style: const TextStyle(
-                      color: BackupColors.primary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -521,9 +531,11 @@ class _BackupListingState extends State<BackupListing> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: BackupColors.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: BackupColors.border),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: SelectableText(
               item.url,
@@ -560,7 +572,9 @@ class _BackupListingState extends State<BackupListing> {
               onPressed: () => _confirmDelete(item),
               icon: const Icon(Iconsax.trash, size: 18),
               label: const Text("Delete Record"),
-              style: TextButton.styleFrom(foregroundColor: BackupColors.danger),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
             ),
           ],
         ),
@@ -574,10 +588,10 @@ class _BackupListingState extends State<BackupListing> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: BackupColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1.5,
           ),
         ),
@@ -596,8 +610,8 @@ class _BackupListingState extends State<BackupListing> {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
-                color: BackupColors.textSecondary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
@@ -605,10 +619,10 @@ class _BackupListingState extends State<BackupListing> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: BackupColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -618,15 +632,21 @@ class _BackupListingState extends State<BackupListing> {
   }
 
   Widget _buildEmptyDetailView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Iconsax.cloud_sunny, size: 64, color: BackupColors.border),
-          SizedBox(height: 16),
+          Icon(
+            Iconsax.cloud_sunny,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: 16),
           Text(
             "Select a backup to view technical metadata",
-            style: TextStyle(color: BackupColors.textSecondary),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -642,9 +662,9 @@ class _BackupListingState extends State<BackupListing> {
         initialChildSize: 0.7,
         maxChildSize: 0.95,
         builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: BackupColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ListView(
             controller: controller,
@@ -655,7 +675,7 @@ class _BackupListingState extends State<BackupListing> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: BackupColors.border,
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -686,25 +706,29 @@ class _BackupListingState extends State<BackupListing> {
           children: [
             Text(
               message,
-              style: const TextStyle(color: BackupColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             if (url != null) ...[
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 "VAULT URL",
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: BackupColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: BackupColors.background,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BackupColors.border),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: SelectableText(
                   url,
@@ -733,9 +757,11 @@ class _BackupListingState extends State<BackupListing> {
           'Delete Backup?',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: const Text(
+        content: Text(
           'This will remove the backup record from the registry. The storage file remains unaffected.',
-          style: TextStyle(color: BackupColors.textSecondary),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
@@ -745,7 +771,7 @@ class _BackupListingState extends State<BackupListing> {
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: BackupColors.danger,
+              backgroundColor: Theme.of(context).colorScheme.error,
               elevation: 0,
             ),
             child: const Text('Delete'),
@@ -772,20 +798,26 @@ class _BackupListingState extends State<BackupListing> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Iconsax.cloud_cross, size: 64, color: BackupColors.border),
+          Icon(
+            Iconsax.cloud_cross,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "Registry is empty",
             style: TextStyle(
-              color: BackupColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Create a new snapshot to begin.",
-            style: TextStyle(color: BackupColors.textSecondary),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -796,8 +828,8 @@ class _BackupListingState extends State<BackupListing> {
     return Center(
       child: Text(
         "Connection Error: $msg",
-        style: const TextStyle(
-          color: BackupColors.danger,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.error,
           fontWeight: FontWeight.bold,
         ),
       ),

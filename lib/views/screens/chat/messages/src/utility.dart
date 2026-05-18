@@ -96,106 +96,145 @@ class AttachmentPreview extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: attachments.map((e) {
-            if (e.mimeType.contains('image')) {
-              return GestureDetector(
-                onTap: () {
-                  final imageAttachments = attachments
-                      .where((a) => a.mimeType.contains('image'))
-                      .toList();
-                  final initialIndex = imageAttachments.indexOf(e);
+            final mime = e.mimeType.toLowerCase();
+            final ext = e.extension.toLowerCase();
 
-                  Navigate.route(
-                    context,
-                    GalleryScreen(
-                      images: imageAttachments,
-                      initialIndex: initialIndex,
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: e.url,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: AppColors.grey300,
-                        highlightColor: AppColors.grey100,
-                        child: Container(color: AppColors.white),
-                      ),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
-                    ),
-                  ),
-                ),
-              );
+            final imageExtensions = [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "bmp",
+              "gif",
+              "tiff",
+            ];
+            final videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+            final audioExtensions = ['mp3', 'wav', 'aac'];
+
+            if (mime.startsWith('image/') || imageExtensions.contains(ext)) {
+              return _buildImage(e, context);
+            } else if (mime.startsWith('video/') ||
+                videoExtensions.contains(ext)) {
+              return _buildVideo(e, context);
+            } else if (mime.startsWith('audio/') ||
+                audioExtensions.contains(ext)) {
+              return _buildAudio(e, context);
             } else {
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (e.mimeType.contains('audio')) {
-                        Navigate.route(context, AudioPlay(file: e));
-                      } else if (e.mimeType.contains('video')) {
-                        Navigate.route(context, VideoPlay(file: e));
-                      }
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: AppColors.grey200,
-                      ),
-                      child: Center(
-                        child: Text(
-                          e.extension,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: e.extension.getColorForFile,
-                              ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: IconButton(
-                      tooltip: "Download",
-                      icon: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: const BoxDecoration(
-                          color: AppColors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Iconsax.document_download,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      onPressed: () =>
-                          Download.downloadFromUrl(context, e.url, e.name),
-                    ),
-                  ),
-                ],
-              );
+              return _buildDocument(e, context);
             }
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImage(FileModel e, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        final images = attachments
+            .where((a) => a.mimeType.contains('image'))
+            .toList();
+
+        Navigate.route(
+          context,
+          GalleryScreen(images: images, initialIndex: images.indexOf(e)),
+        );
+      },
+      child: Container(
+        width: 100,
+        height: 100,
+        margin: const EdgeInsets.all(4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: CachedNetworkImage(imageUrl: e.url, fit: BoxFit.cover),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideo(FileModel e, BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigate.route(context, VideoPlay(file: e)),
+      child: Container(
+        width: 140,
+        height: 100,
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.black,
+        ),
+        child: const Center(
+          child: Icon(Icons.play_circle_fill, color: Colors.white, size: 40),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudio(FileModel e, BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigate.route(context, AudioPlay(file: e)),
+      child: Container(
+        width: 220,
+        height: 60,
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.green.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 14,
+              child: Icon(Icons.play_arrow, size: 16),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(height: 20, color: Colors.green.shade300),
+            ),
+            const SizedBox(width: 6),
+            const Text("00:30", style: TextStyle(fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocument(FileModel e, BuildContext context) {
+    return Container(
+      width: 220,
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.grey100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: e.extension.getColorForFile,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              e.extension.toUpperCase(),
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              path.basename(e.name),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Iconsax.document_download, size: 18),
+            onPressed: () => Download.downloadFromUrl(context, e.url, e.name),
+          ),
+        ],
       ),
     );
   }

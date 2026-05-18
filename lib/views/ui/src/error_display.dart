@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '/utils/utils.dart';
-import '/theme/theme.dart';
 
 class ErrorDisplay extends StatelessWidget {
   final String error;
@@ -14,8 +13,11 @@ class ErrorDisplay extends StatelessWidget {
         margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -24,16 +26,16 @@ class ErrorDisplay extends StatelessWidget {
             Text(
               "Error",
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.black,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 5),
             SelectableText(
               error,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -55,8 +57,11 @@ class NoData extends StatelessWidget {
         margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: bgColor ?? AppColors.white,
+          color: bgColor ?? Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
+          border: bgColor == null
+              ? Border.all(color: Theme.of(context).colorScheme.outlineVariant)
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -66,16 +71,16 @@ class NoData extends StatelessWidget {
             Text(
               "No records",
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.black,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 5),
             SelectableText(
               text ?? "No data available to show",
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 5),

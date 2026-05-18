@@ -21,251 +21,251 @@ class _ContactCreateState extends State<ContactCreate> {
 
   final _clientName = TextEditingController();
   final _email = TextEditingController();
-  // final _password = TextEditingController();
   final _mobile = TextEditingController();
 
   File? _profileImage;
   String? _salutation;
   String? _gender;
-  // String? _language;
 
   final bool _loginAllowed = true;
   final bool _emailNotify = true;
-  // bool _passwordVisible = false;
+
+  @override
+  void dispose() {
+    _clientName.dispose();
+    _email.dispose();
+    _mobile.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.grey50,
-      body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              FormWidgets.buildHeader(
-                context: context,
-                title: "Create Contact",
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+      ),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SingleChildScrollView(
+          child: Center(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  FormWidgets.buildHeader(
+                    context: context,
+                    title: "Create Contact",
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    title: "Contact Details",
+                    child: LayoutBuilder(
+                      builder: (context, constraints) =>
+                          _buildContactFormFields(constraints, 4),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionCard(
+                    title: "Profile Photo",
+                    child: Center(child: _buildProfileUploader()),
+                  ),
+                  const SizedBox(height: 80),
+                ],
               ),
-
-              _buildContactDetails(),
-
-              const SizedBox(height: 24),
-
-              _buildProfileImageSection(),
-            ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: FormWidgets.buildBottomBar(
-        context: context,
-        onSubmit: _submit,
-        isEdit: false,
-      ),
-    );
-  }
-
-  Widget _buildContactDetails() {
-    return _section(
-      "Contact Details",
-      Column(
-        children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormDropdownSearch(
-                    label: "Salutation",
-                    items: const ["Mr.", "Mrs.", "Ms.", "Dr."],
-                    onChanged: (v) => _salutation = v,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(
-                    label: "Name",
-                    controller: _clientName,
-                    isRequired: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(
-                    label: "Email",
-                    controller: _email,
-                    isRequired: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(child: Container()),
-                // Expanded(
-                //   child: FormFields(
-                //     label: "Password",
-                //     controller: _password,
-                //     obsecureText: !_passwordVisible,
-                //     suffixIcon: IconButton(
-                //       icon: Icon(
-                //         _passwordVisible ? Iconsax.eye : Iconsax.eye_slash,
-                //       ),
-                //       onPressed: () =>
-                //           setState(() => _passwordVisible = !_passwordVisible),
-                //     ),
-                //   ),
-                // ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFields(label: "Mobile", controller: _mobile),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormDropdownSearch(
-                    label: "Gender",
-                    items: const ["Male", "Female", "Other"],
-                    onChanged: (v) => _gender = v,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Expanded(
-                //   child: FormDropdownSearch(
-                //     label: "Language",
-                //     items: AppStrings.spokenLanguages,
-                //     onChanged: (v) => _language = v,
-                //   ),
-                // ),
-                Expanded(child: Container()),
-                const SizedBox(width: 16),
-                Expanded(child: Container()),
-              ],
-            ),
-          ),
-        ],
+        bottomNavigationBar: FormWidgets.buildBottomBar(
+          context: context,
+          onSubmit: _submit,
+          isEdit: false,
+        ),
       ),
     );
   }
 
-  Widget _buildProfileImageSection() {
-    return _section(
-      "Profile Picture",
-      imagePickerWidget(
-        context: context,
-        image: _profileImage,
-        onChanged: (file) => setState(() => _profileImage = file),
-        label: "Upload Profile",
-      ),
-    );
-  }
-
-  Widget imagePickerWidget({
-    required BuildContext context,
-    required File? image,
-    required Function(File) onChanged,
-    required String label,
-  }) {
-    return image != null
-        ? Stack(
-            alignment: Alignment.topRight,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.file(
-                  image,
-                  height: 140,
-                  width: 140,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: () async {
-                    File? result;
-                    if (kIsMobile) {
-                      result = await PickImage.selectImage(context);
-                    } else {
-                      result = await FilePick.pickFile(
-                        context,
-                        allowedExtensions: ['jpg', 'jpeg', 'png'],
-                      );
-                    }
-                    if (result != null) onChanged(result);
-                  },
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.danger,
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: AppColors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : GestureDetector(
-            onTap: () async {
-              File? result;
-              if (kIsMobile) {
-                result = await PickImage.selectImage(context);
-              } else {
-                result = await FilePick.pickFile(
-                  context,
-                  allowedExtensions: ['jpg', 'jpeg', 'png'],
-                );
-              }
-              if (result != null) onChanged(result);
-            },
-            child: DottedBorder(
-              child: Container(
-                height: 140,
-                width: 140,
-                decoration: const BoxDecoration(
-                  color: AppColors.grey200,
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Iconsax.gallery, color: AppColors.grey700),
-                      const SizedBox(height: 8),
-                      Text(
-                        label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-  }
-
-  Widget _section(String title, Widget child) {
+  Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const Divider(),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: 16),
             child,
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactFormFields(BoxConstraints constraints, int gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >=
+        (minColumnWidth * gridCounts + horizontalSpacing * (gridCounts - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+
+    return Wrap(
+      spacing: horizontalSpacing,
+      runSpacing: verticalSpacing,
+      children: [
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            label: "Salutation",
+            items: const ["Mr.", "Mrs.", "Ms.", "Dr."],
+            onChanged: (v) => _salutation = v,
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Name",
+            controller: _clientName,
+            isRequired: true,
+            valid: (input) =>
+                Validation.validName(input: input, label: 'Name', isReq: true),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Email",
+            controller: _email,
+            isRequired: true,
+            valid: (input) => Validation.validEmail(input: input, isReq: true),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Mobile",
+            controller: _mobile,
+            valid: (input) =>
+                Validation.validMobileNumber(input: input, isReq: false),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            label: "Gender",
+            items: const ["Male", "Female", "Other"],
+            onChanged: (v) => _gender = v,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileUploader() {
+    if (_profileImage != null) {
+      return Stack(
+        alignment: Alignment.topRight,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              _profileImage!,
+              height: 130,
+              width: 130,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () async {
+                File? result;
+                if (kIsMobile) {
+                  result = await PickImage.selectImage(context);
+                } else {
+                  result = await FilePick.pickFile(
+                    context,
+                    allowedExtensions: ['jpg', 'jpeg', 'png'],
+                  );
+                }
+
+                if (result != null) {
+                  setState(() => _profileImage = result);
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onError,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return GestureDetector(
+      onTap: () async {
+        var result = await FilePick.pickFile(
+          context,
+          allowedExtensions: ['jpg', 'jpeg', 'png'],
+        );
+        if (result != null) {
+          setState(() => _profileImage = result);
+        }
+      },
+      child: DottedBorder(
+        options: RectDottedBorderOptions(),
+        child: Container(
+          height: 130,
+          width: 130,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(height: 8),
+                Text(
+                  "Upload Photo",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -288,10 +288,8 @@ class _ContactCreateState extends State<ContactCreate> {
         salutation: _salutation,
         clientName: _clientName.text.trim(),
         email: _email.text.trim(),
-        // password: _password.text,
         mobileNumber: _mobile.text,
         gender: _gender,
-        // changeLanguage: _language,
         loginAllowed: _loginAllowed,
         receiveEmailNotifications: _emailNotify,
         profilePictureUrl: imageUrl,
@@ -303,9 +301,7 @@ class _ContactCreateState extends State<ContactCreate> {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      Navigator.pop(context, {
-        "status":true,
-        "contact":client});
+      Navigator.pop(context, {"status": true, "contact": client});
       FlushBar.show(context, "Contact created", isSuccess: true);
     } catch (e, st) {
       debugPrint("$e, $st");
@@ -339,220 +335,266 @@ class _CompanyCreateState extends State<CompanyCreate> {
   File? _logo;
 
   @override
+  void dispose() {
+    _companyName.dispose();
+    _website.dispose();
+    _gst.dispose();
+    _phone.dispose();
+    _postal.dispose();
+    _address.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.grey50,
-      body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              FormWidgets.buildHeader(
-                context: context,
-                title: "Create Company",
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+      ),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SingleChildScrollView(
+          child: Center(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  FormWidgets.buildHeader(
+                    context: context,
+                    title: "Create Company",
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    title: "Company Information",
+                    child: LayoutBuilder(
+                      builder: (context, constraints) =>
+                          _buildCompanyFormFields(constraints, 4),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionCard(
+                    title: "Company Logo",
+                    child: Center(child: _buildLogoUploader()),
+                  ),
+                  const SizedBox(height: 80),
+                ],
               ),
-
-              _buildCompanyDetails(),
-
-              _buildLogoSection(),
-            ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: FormWidgets.buildBottomBar(
-        context: context,
-        onSubmit: _submit,
-        isEdit: false,
-      ),
-    );
-  }
-
-  Widget _buildCompanyDetails() {
-    return _section(
-      "Company Information",
-      Column(
-        children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFields(
-                    label: "Company Name",
-                    controller: _companyName,
-                    isRequired: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(label: "Website", controller: _website),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(label: "GST / VAT", controller: _gst),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(label: "Office Phone", controller: _phone),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFields(
-                    label: "Postal Code",
-                    controller: _postal,
-                    isRequired: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(
-                    label: "Company Address",
-                    controller: _address,
-                    maxLines: 2,
-                    isRequired: true,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FormFields(
-                    label: "Note",
-                    controller: _note,
-                    maxLines: 3,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(child: Container()),
-              ],
-            ),
-          ),
-        ],
+        bottomNavigationBar: FormWidgets.buildBottomBar(
+          context: context,
+          onSubmit: _submit,
+          isEdit: false,
+        ),
       ),
     );
   }
 
-  Widget _buildLogoSection() {
-    return _section(
-      "Company Logo",
-      imagePickerWidget(
-        context: context,
-        image: _logo,
-        onChanged: (file) => setState(() => _logo = file),
-        label: "Upload Logo",
-      ),
-    );
-  }
-
-  Widget imagePickerWidget({
-    required BuildContext context,
-    required File? image,
-    required Function(File) onChanged,
-    required String label,
-  }) {
-    return image != null
-        ? Stack(
-            alignment: Alignment.topRight,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.file(
-                  image,
-                  height: 140,
-                  width: 140,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: () async {
-                    File? result;
-                    if (kIsMobile) {
-                      result = await PickImage.selectImage(context);
-                    } else {
-                      result = await FilePick.pickFile(
-                        context,
-                        allowedExtensions: ['jpg', 'jpeg', 'png'],
-                      );
-                    }
-                    if (result != null) onChanged(result);
-                  },
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.danger,
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: AppColors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : GestureDetector(
-            onTap: () async {
-              File? result;
-              if (kIsMobile) {
-                result = await PickImage.selectImage(context);
-              } else {
-                result = await FilePick.pickFile(
-                  context,
-                  allowedExtensions: ['jpg', 'jpeg', 'png'],
-                );
-              }
-              if (result != null) onChanged(result);
-            },
-            child: DottedBorder(
-              child: Container(
-                height: 140,
-                width: 140,
-                decoration: const BoxDecoration(
-                  color: AppColors.grey200,
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Iconsax.gallery, color: AppColors.grey700),
-                      const SizedBox(height: 8),
-                      Text(
-                        label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-  }
-
-  Widget _section(String title, Widget child) {
+  Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const Divider(),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: 16),
             child,
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanyFormFields(BoxConstraints constraints, int gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >=
+        (minColumnWidth * gridCounts + horizontalSpacing * (gridCounts - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+
+    return Wrap(
+      spacing: horizontalSpacing,
+      runSpacing: verticalSpacing,
+      children: [
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Company Name",
+            controller: _companyName,
+            isRequired: true,
+            valid: (input) => Validation.commonValidation(
+              input: input,
+              label: 'Company Name',
+              isReq: true,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Website",
+            controller: _website,
+            valid: (input) =>
+                Validation.validUrl(input: input ?? '', isReq: false),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "GST / VAT",
+            controller: _gst,
+            valid: (input) =>
+                Validation.validGstVat(input: input, isReq: false),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Office Phone",
+            controller: _phone,
+            valid: (input) =>
+                Validation.validMobileNumber(input: input, isReq: false),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Postal Code",
+            controller: _postal,
+            isRequired: true,
+            valid: (input) =>
+                Validation.validPostalCode(input: input, isReq: true),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: "Company Address",
+            controller: _address,
+            maxLines: 2,
+            isRequired: true,
+            valid: (input) =>
+                Validation.validAddress(input: input ?? '', isReq: true),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(label: "Note", controller: _note, maxLines: 2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogoUploader() {
+    if (_logo != null) {
+      return Stack(
+        alignment: Alignment.topRight,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              _logo!,
+              height: 130,
+              width: 130,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () async {
+                File? result;
+                if (kIsMobile) {
+                  result = await PickImage.selectImage(context);
+                } else {
+                  result = await FilePick.pickFile(
+                    context,
+                    allowedExtensions: ['jpg', 'jpeg', 'png'],
+                  );
+                }
+
+                if (result != null) {
+                  setState(() => _logo = result);
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onError,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return GestureDetector(
+      onTap: () async {
+        var result = await FilePick.pickFile(
+          context,
+          allowedExtensions: ['jpg', 'jpeg', 'png'],
+        );
+        if (result != null) {
+          setState(() => _logo = result);
+        }
+      },
+      child: DottedBorder(
+        options: RectDottedBorderOptions(),
+        child: Container(
+          height: 130,
+          width: 130,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(height: 8),
+                Text(
+                  "Upload Logo",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -588,9 +630,7 @@ class _CompanyCreateState extends State<CompanyCreate> {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-     Navigator.pop(context, {
-        "status":true,
-        "company":company});
+      Navigator.pop(context, {"status": true, "company": company});
       FlushBar.show(context, "Company created", isSuccess: true);
     } catch (e, st) {
       debugPrint("$e, $st");

@@ -332,6 +332,7 @@ class NotificationService {
             chat: chatModel,
             currentUser: uid ?? '',
             opponentUid: '',
+            onOpenChat: null,
           ),
         ),
       );
@@ -471,11 +472,26 @@ Future<void> deleteNotification(String uid) async {
   }
 }
 
+Future<void> restoreNotification(NotificationModel item) async {
+  try {
+    final FirebaseConfig firebase = FirebaseConfig();
+    final cid = await Spdb.getCid();
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.notifications.name)
+        .doc(item.uid)
+        .set(item.toMap()); // restore deleted notification
+  } catch (e, st) {
+    await ErrorService.recordError(e, st);
+  }
+}
+
 Stream<int> getNotificationCount() async* {
   try {
     final firebase = FirebaseConfig();
     final cid = await Spdb.getCid();
-    final uid = await Spdb.getCid();
+    final uid = await Spdb.getUid();
 
     yield* firebase.users
         .doc(cid)

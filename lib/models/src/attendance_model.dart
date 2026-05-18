@@ -175,7 +175,7 @@ class AttendanceModel {
     int updatedLess = lessHourMinutes;
     int updatedOt = otHourMinutes;
 
-    bool isHolidayDay = status == AttendanceStatus.holiday;
+    // bool isHolidayDay = status == AttendanceStatus.holiday;
 
     for (final p in permissions!) {
       if (!isAdmin && p.status != PermissionsStatus.approved) continue;

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
@@ -134,7 +133,7 @@ class _LeadEditState extends State<LeadEdit> {
       _clients = (await ClientService.getAllClients())
           .where((c) => c.isCompany && (c.companyName?.isNotEmpty ?? false))
           .toList();
-          _contacts = (await ClientService.getAllClients())
+      _contacts = (await ClientService.getAllClients())
           .where(
             (c) => c.isCompany == false && (c.clientName?.isNotEmpty ?? false),
           )
@@ -188,7 +187,7 @@ class _LeadEditState extends State<LeadEdit> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -351,11 +350,11 @@ class _LeadEditState extends State<LeadEdit> {
     bool expandable = false,
   }) {
     return Card(
-      color: AppColors.white,
-      elevation: 7,
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey200),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -375,7 +374,7 @@ class _LeadEditState extends State<LeadEdit> {
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   if (expandable)
@@ -624,12 +623,11 @@ class _LeadEditState extends State<LeadEdit> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(8.0),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(5.0),
-                          child: Icon(Icons.add, color: AppColors.white),
+                          child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
                         ),
                       ),
                     ),
@@ -767,12 +765,11 @@ class _LeadEditState extends State<LeadEdit> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8.0),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),
-                    child: Icon(Icons.add, color: AppColors.white),
+                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
                   ),
                 ),
               ),

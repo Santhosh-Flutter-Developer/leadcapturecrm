@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '/theme/theme.dart';
 import '/views/views.dart';
 
 class Back extends StatelessWidget {
@@ -13,7 +12,7 @@ class Back extends StatelessWidget {
       tooltip: "Back",
       icon: Icon(
         Icons.arrow_back_ios_new_rounded,
-        color: color ?? AppColors.white,
+        color: color ?? Theme.of(context).colorScheme.onPrimary,
       ),
       onPressed: () async {
         if (pop) {

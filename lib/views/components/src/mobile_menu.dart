@@ -60,6 +60,46 @@ class _MobileMenuState extends State<MobileMenu> {
     }
   }
 
+  void _openClientSection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Iconsax.user),
+                title: const Text("Contacts"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigate.route(
+                    context,
+                    const ClientsListing(section: ClientSection.contacts),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Iconsax.building),
+                title: const Text("Company"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigate.route(
+                    context,
+                    const ClientCompanyListing(section: ClientSection.company),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,7 +123,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       "Company",
                       style: Theme.of(
                         context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     _buildListTile(
                       icon: Iconsax.activity,
@@ -149,7 +189,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       Text(
                         "Creation",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       // if (_adminModel != null ||
@@ -231,14 +271,14 @@ class _MobileMenuState extends State<MobileMenu> {
                                     .where((e) => e.page == "Clients")
                                     .isNotEmpty ??
                                 false) ||
-                            // (_roleModel?.permissions
-                            //         .where((e) => e.page == "Projects")
-                            //         .isNotEmpty ??
-                            //     false) ||
-                            // (_roleModel?.permissions
-                            //         .where((e) => e.page == "Tasks")
-                            //         .isNotEmpty ??
-                            //     false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Projects")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
+                                    .where((e) => e.page == "Tasks")
+                                    .isNotEmpty ??
+                                false) ||
                             (_roleModel?.permissions
                                     .where((e) => e.page == "Lead Category")
                                     .isNotEmpty ??
@@ -258,7 +298,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       Text(
                         "CRM",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       if (_adminModel != null ||
@@ -313,56 +353,51 @@ class _MobileMenuState extends State<MobileMenu> {
                             const DealStatusListing(),
                           ),
                         ),
-                      // if (_adminModel != null ||
-                      //     (_roleModel?.permissions
-                      //             .where((e) => e.page == "Tasks")
-                      //             .isNotEmpty ??
-                      //         false))
-                      SizedBox(height: 8),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Tasks")
+                                  .isNotEmpty ??
+                              false))
+                        SizedBox(height: 8),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
                                   .where((e) => e.page == "Clients")
                                   .isNotEmpty ??
                               false))
-                        // _buildListTile(
-                        //   icon: Iconsax.people,
-                        //   title: 'Clients',
-                        //   onTap: () => Navigate.route(
-                        //     context,
-                        //     ClientsListing(section: section),
-                        //   ),
-                        // ),
-                        // if (_adminModel != null ||
-                        //     (_roleModel?.permissions
-                        //             .where((e) => e.page == "Projects")
-                        //             .isNotEmpty ??
-                        //         false))
-                        //   _buildListTile(
-                        //     icon: Iconsax.airdrop,
-                        //     title: 'Projects',
-                        //     onTap: () => Navigate.route(
-                        //       context,
-                        //       const ProjectsListing(),
-                        //     ),
-                        //   ),
-                        // if (_adminModel != null ||
-                        //     (_roleModel?.permissions
-                        //             .where((e) => e.page == "Tasks")
-                        //             .isNotEmpty ??
-                        //         false))
-                        //   _buildListTile(
-                        //     icon: Iconsax.check,
-                        //     title: 'Tasks',
-                        //     onTap: () =>
-                        //         Navigate.route(context, const TasksListing()),
-                        //   ),
-                        SizedBox(height: 8),
+                        _buildListTile(
+                          icon: Iconsax.people,
+                          title: 'Clients',
+                          onTap: () => _openClientSection(context),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Projects")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.airdrop,
+                          title: 'Projects',
+                          onTap: () =>
+                              Navigate.route(context, const ProjectsListing()),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Tasks")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.check,
+                          title: 'Tasks',
+                          onTap: () =>
+                              Navigate.route(context, const TasksListing()),
+                        ),
+                      SizedBox(height: 8),
                     ],
                     if (_adminModel != null) ...[
                       Text(
                         "System",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       _buildListTile(
@@ -397,51 +432,51 @@ class _MobileMenuState extends State<MobileMenu> {
                       SizedBox(height: 8),
                     ],
 
-                    Text(
-                      "Payroll",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.timer_1,
-                      title: 'Work Time',
-                      onTap: () => Navigate.route(
-                        context,
-                        _adminModel != null
-                            ? const DashboardWorktime()
-                            : const WorktimeCreate(),
-                      ),
-                    ),
+                    // Text(
+                    //   "Payroll",
+                    //   style: Theme.of(
+                    //     context,
+                    //   ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
+                    // ),
+                    // _buildListTile(
+                    //   icon: Iconsax.timer_1,
+                    //   title: 'Work Time',
+                    //   onTap: () => Navigate.route(
+                    //     context,
+                    //     _adminModel != null
+                    //         ? const DashboardWorktime()
+                    //         : const WorktimeCreate(),
+                    //   ),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.clipboard_tick,
-                      title: 'Attendance Ledger',
-                      onTap: () => Navigate.route(context, Attendance()),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.clipboard_tick,
+                    //   title: 'Attendance Ledger',
+                    //   onTap: () => Navigate.route(context, Attendance()),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.security_user,
-                      title: 'Permissions',
-                      onTap: () => Navigate.route(
-                        context,
-                        _adminModel != null
-                            ? const PermissionRequestsListing()
-                            : const PermissionListing(),
-                      ),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.security_user,
+                    //   title: 'Permissions',
+                    //   onTap: () => Navigate.route(
+                    //     context,
+                    //     _adminModel != null
+                    //         ? const PermissionRequestsListing()
+                    //         : const PermissionListing(),
+                    //   ),
+                    // ),
 
-                    _buildListTile(
-                      icon: Iconsax.wallet_3,
-                      title: 'Salary Ledger',
-                      onTap: () =>
-                          Navigate.route(context, const SalaryLedgerList()),
-                    ),
+                    // _buildListTile(
+                    //   icon: Iconsax.wallet_3,
+                    //   title: 'Salary Ledger',
+                    //   onTap: () =>
+                    //       Navigate.route(context, const SalaryLedgerList()),
+                    // ),
                     Text(
                       "Others",
                       style: Theme.of(
                         context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     _buildListTile(
                       icon: Iconsax.recovery_convert,
@@ -533,19 +568,19 @@ class _MobileMenuState extends State<MobileMenu> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isLogout ? AppColors.danger : AppColors.grey300,
+                color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outlineVariant,
               ),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: isLogout ? AppColors.danger : AppColors.black,
+              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           title: Text(
             title,
             style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-              color: isLogout ? AppColors.danger : AppColors.black,
+              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: subtitle != null
@@ -569,10 +604,10 @@ class _MobileMenuState extends State<MobileMenu> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: AppColors.grey100,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
               blurRadius: 10,
               spreadRadius: 1,
               offset: const Offset(0, 3),
@@ -593,7 +628,7 @@ class _MobileMenuState extends State<MobileMenu> {
                 Text(
                   employee?.name ?? admin?.name ?? 'User',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -607,7 +642,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       : "Administartor",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey500),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),

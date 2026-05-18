@@ -326,7 +326,9 @@ class _CustomSearchableDropdownState<T>
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide(
-                                          color: Colors.grey.shade300,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outlineVariant,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
@@ -481,23 +483,24 @@ class _CustomSearchableDropdownState<T>
                                                 theme.colorScheme.primary,
                                           ),
                                           onPressed: () {
-                                            // confirm selection and notify
                                             widget.onChangedList?.call(
                                               List<T>.from(_selectedList),
                                             );
+
                                             _close(
                                               returnFocus: true,
                                               notify: false,
                                             );
                                           },
                                           child: Text(
-                                            // 'Done (${_selectedList.length})',
                                             'Done',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall
                                                 ?.copyWith(
-                                                  color: AppColors.white,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onPrimary,
                                                 ),
                                           ),
                                         ),
@@ -547,7 +550,7 @@ class _CustomSearchableDropdownState<T>
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: displayText == null
                 ? Theme.of(context).hintColor
-                : AppColors.black,
+                : Theme.of(context).colorScheme.onSurface,
           ),
           overflow: TextOverflow.ellipsis,
         );
@@ -586,9 +589,9 @@ class _CustomSearchableDropdownState<T>
           if (remaining > 0)
             Text(
               '+$remaining',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.black54),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
         ],
       );
@@ -598,7 +601,7 @@ class _CustomSearchableDropdownState<T>
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: displayText == null
               ? Theme.of(context).hintColor
-              : AppColors.black,
+              : Theme.of(context).colorScheme.onSurface,
         ),
         overflow: TextOverflow.ellipsis,
       );
@@ -642,7 +645,7 @@ class _CustomSearchableDropdownState<T>
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? Theme.of(context).colorScheme.primary
-                    : AppColors.grey500,
+                    : Theme.of(context).colorScheme.outlineVariant,
                 width: _focusNode.hasFocus ? 2 : 1,
               ),
               borderRadius: widget.borderRadius,
@@ -732,8 +735,8 @@ class _CustomFutureSearchableDropdownState<T>
     super.initState();
     _selected = widget.initialValue;
     _selectedList = widget.initialValues == null
-      ? <T>{}
-      : widget.initialValues!.cast<T>().toSet();
+        ? <T>{}
+        : widget.initialValues!.cast<T>().toSet();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -895,7 +898,7 @@ class _CustomFutureSearchableDropdownState<T>
                   width: size.width,
                   constraints: BoxConstraints(maxHeight: panelHeight),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: widget.borderRadius,
                   ),
                   child: Column(
@@ -1067,7 +1070,9 @@ class _CustomFutureSearchableDropdownState<T>
       return Text(
         displayText ?? widget.hintText,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: hasSelection ? AppColors.black : Colors.grey,
+          color: hasSelection
+              ? Theme.of(context).colorScheme.onSurface
+              : Theme.of(context).hintColor,
         ),
         overflow: TextOverflow.ellipsis,
       );
@@ -1096,7 +1101,7 @@ class _CustomFutureSearchableDropdownState<T>
                   Text(
                     widget.label!,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: AppColors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1123,11 +1128,11 @@ class _CustomFutureSearchableDropdownState<T>
                     padding: widget.padding,
                     height: 33, // Match fixed dropdown size
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       border: Border.all(
                         color: _focusNode.hasFocus
-                            ? Theme.of(context).primaryColor
-                            : AppColors.grey500,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outlineVariant,
                         width: _focusNode.hasFocus
                             ? 2
                             : 1, // Match fixed dropdown border logic

@@ -4,7 +4,6 @@ import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 import '/models/models.dart';
@@ -303,12 +302,12 @@ class _FeedEditState extends State<FeedEdit> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         // leading: IconButton(
-        //   icon: const Icon(Icons.close, color: kTextPrimary),
+        //   icon: const Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
         //   onPressed: () {
         //     if (Navigator.canPop(context)) {
         //       Navigator.pop(context);
@@ -318,7 +317,7 @@ class _FeedEditState extends State<FeedEdit> {
         title: Text(
           "Edit Post",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: kTextPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -328,7 +327,7 @@ class _FeedEditState extends State<FeedEdit> {
             child: ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: FeedAppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -339,7 +338,7 @@ class _FeedEditState extends State<FeedEdit> {
                 "Post",
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ),
@@ -380,7 +379,9 @@ class _FeedEditState extends State<FeedEdit> {
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: kTextPrimary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                             ),
                           ],
@@ -396,11 +397,16 @@ class _FeedEditState extends State<FeedEdit> {
                             hintText: "What's on your mind?",
                             border: InputBorder.none,
                             hintStyle: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: kTextSecondary),
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: kTextPrimary),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                         ),
 
                         const SizedBox(height: 20),
@@ -492,7 +498,7 @@ class _FeedEditState extends State<FeedEdit> {
           width: 200,
           margin: const EdgeInsets.only(right: 10),
           decoration: BoxDecoration(
-            color: AppColors.grey200,
+            color: Theme.of(context).dividerColor,
             borderRadius: BorderRadius.circular(12),
             image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
           ),
@@ -508,7 +514,11 @@ class _FeedEditState extends State<FeedEdit> {
                 color: Colors.black.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close, size: 16, color: AppColors.white),
+              child: Icon(
+                Icons.close,
+                size: 16,
+                color: Theme.of(context).colorScheme.surface,
+              ),
             ),
           ),
         ),
@@ -521,25 +531,28 @@ class _FeedEditState extends State<FeedEdit> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kBgColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.grey200),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
-          const Icon(Icons.description, color: FeedAppColors.primary),
+          Icon(Icons.description, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               name,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: kTextPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: kTextSecondary),
+            icon: Icon(
+              Icons.close,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             onPressed: onRemove,
           ),
         ],
@@ -552,7 +565,7 @@ class _FeedEditState extends State<FeedEdit> {
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kBgColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -566,11 +579,14 @@ class _FeedEditState extends State<FeedEdit> {
                 "Edit Poll",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: kTextPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: kTextSecondary),
+                icon: Icon(
+                  Icons.close,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 onPressed: _togglePoll,
               ),
             ],
@@ -580,7 +596,7 @@ class _FeedEditState extends State<FeedEdit> {
             controller: _pollQuestionController,
             decoration: InputDecoration(
               hintText: "Ask a question...",
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               filled: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -603,7 +619,7 @@ class _FeedEditState extends State<FeedEdit> {
                       controller: _pollOptionControllers[index],
                       decoration: InputDecoration(
                         hintText: "Option ${index + 1}",
-                        fillColor: AppColors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                         filled: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -637,7 +653,7 @@ class _FeedEditState extends State<FeedEdit> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               style: TextButton.styleFrom(
-                foregroundColor: FeedAppColors.primary,
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -656,7 +672,7 @@ class _FeedEditState extends State<FeedEdit> {
         right: 20,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.1),
@@ -671,7 +687,7 @@ class _FeedEditState extends State<FeedEdit> {
           Text(
             "Add to your post",
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: kTextSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),

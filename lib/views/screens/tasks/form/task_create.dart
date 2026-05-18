@@ -6,7 +6,6 @@ import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 
@@ -53,16 +52,13 @@ class _TaskCreateState extends State<TaskCreate> {
     super.initState();
     _future = _init();
 
-    _selectedAssignees.addAll(widget.employees!.map((e) => e.uid!).toList());
-
     if (widget.employees != null && widget.employees!.isNotEmpty) {
-      debugPrint("the emp user is available");
-      for (final emp in widget.employees!) {
-        if (emp.uid != null) {
-          debugPrint("the emp user is not null available ${emp.employeeId}");
-          _selectedAssignees.add(emp.uid!);
-        }
-      }
+      _selectedAssignees.addAll(
+        widget.employees!
+            .where((e) => e.uid != null)
+            .map((e) => e.uid!)
+            .toList(),
+      );
     }
   }
 
@@ -83,7 +79,7 @@ class _TaskCreateState extends State<TaskCreate> {
         final bool isDesktop = constraints.maxWidth > 900;
 
         return Scaffold(
-          backgroundColor: AppColors.grey100,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: FormWidgets.buildHeader(
             context: context,
             title: "Create New Task",
@@ -272,11 +268,11 @@ class _TaskCreateState extends State<TaskCreate> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -288,7 +284,7 @@ class _TaskCreateState extends State<TaskCreate> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -312,15 +308,15 @@ class _TaskCreateState extends State<TaskCreate> {
       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: 'Enter Task Title...',
-        hintStyle: TextStyle(color: AppColors.grey400),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         border: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
       ),
       validator: (v) => Validation.commonValidation(
@@ -337,7 +333,7 @@ class _TaskCreateState extends State<TaskCreate> {
       maxLines: 5,
       decoration: InputDecoration(
         hintText: 'Describe the requirements and objectives...',
-        fillColor: AppColors.grey100.withValues(alpha: 0.5),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -356,8 +352,8 @@ class _TaskCreateState extends State<TaskCreate> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _highPriority
-                ? AppColors.danger.withValues(alpha: 0.15)
-                : Colors.grey.shade200,
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -365,7 +361,7 @@ class _TaskCreateState extends State<TaskCreate> {
               Icon(
                 Icons.priority_high,
                 size: 16,
-                color: _highPriority ? AppColors.danger : Colors.grey,
+                color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
               Text(
@@ -373,7 +369,7 @@ class _TaskCreateState extends State<TaskCreate> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _highPriority ? AppColors.danger : Colors.grey,
+                  color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -382,7 +378,7 @@ class _TaskCreateState extends State<TaskCreate> {
         const SizedBox(width: 12),
         Switch.adaptive(
           value: _highPriority,
-          activeTrackColor: AppColors.danger.withValues(alpha: 0.4),
+          activeTrackColor: Theme.of(context).colorScheme.errorContainer,
           onChanged: (val) => setState(() => _highPriority = val),
         ),
       ],
@@ -394,7 +390,7 @@ class _TaskCreateState extends State<TaskCreate> {
       children: [
         UsersListDropdown(
           label: 'Assign To',
-          initialValues: widget.employees!,
+          initialValues: widget.employees ?? [],
           onChangedList: (list) {
             _selectedAssignees.clear();
             _selectedAssignees.addAll(list.map((e) => e.uid!));
@@ -543,15 +539,15 @@ class _TaskCreateState extends State<TaskCreate> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   style: BorderStyle.none,
                 ),
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  Icon(Iconsax.cloud_plus, color: AppColors.primary, size: 32),
+                  Icon(Iconsax.cloud_plus, color: Theme.of(context).colorScheme.primary, size: 32),
                   const SizedBox(height: 8),
                   const Text("Click to upload or drag and drop"),
                   Text(
@@ -591,10 +587,10 @@ class _TaskCreateState extends State<TaskCreate> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -610,8 +606,8 @@ class _TaskCreateState extends State<TaskCreate> {
           const SizedBox(width: 16),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

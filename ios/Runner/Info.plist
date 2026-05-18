@@ -50,6 +50,10 @@
 		<false/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>This app uses your location to verify you are within the company premises before clocking in.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>This app uses your location to verify you are within the company premises before clocking in.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>This app requires access to your photo library to upload and manage images.</string>
 		<key>NSCameraUsageDescription</key>

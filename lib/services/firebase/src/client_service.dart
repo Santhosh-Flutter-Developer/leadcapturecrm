@@ -9,10 +9,13 @@ class ClientService {
   static Future<String?> createClient({required ClientModel client}) async {
     try {
       var cid = await Spdb.getCid();
+      var name = client.isCompany
+          ? (client.companyName ?? 'A new company')
+          : (client.clientName ?? 'A new contact');
       var docRef = await CommonService.add(
         '${Collections.users.name}/$cid/${Collections.clients.name}',
         client.toMap(),
-        activity: '${client.companyName} has been added as a client',
+        activity: '$name has been added as a client',
       );
 
       return docRef.id;
@@ -30,11 +33,14 @@ class ClientService {
     try {
       var cid = await Spdb.getCid();
 
+      var name = client.isCompany
+          ? (client.companyName ?? 'Company')
+          : (client.clientName ?? 'Contact');
       await CommonService.update(
         '${Collections.users.name}/$cid/${Collections.clients.name}',
         uid,
         client.toUpdateMap(),
-        activity: '${client.companyName} has been updated',
+        activity: '$name has been updated',
       );
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
@@ -132,21 +138,38 @@ class ClientService {
   static Future<List<ClientModel>> getAllClients() async {
     try {
       var cid = await Spdb.getCid();
+
       var querySnapshot = await firebase.users
           .doc(cid)
           .collection(Collections.clients.name)
           .get();
 
+      debugPrint("Total Client Docs: ${querySnapshot.docs.length}");
+
       List<ClientModel> clients = querySnapshot.docs.map((doc) {
+        debugPrint("Client Data: ${doc.data()}");
+
         return ClientModel.fromMap(doc.id, doc.data());
       }).toList();
 
-      clients.sort((a, b) => a.clientName!.compareTo(b.clientName!));
+      // Remove null/empty names
+      clients = clients.where((e) {
+        return e.clientName != null && e.clientName!.trim().isNotEmpty;
+      }).toList();
+
+      // Safe sort
+      clients.sort(
+        (a, b) => (a.clientName ?? '').compareTo(b.clientName ?? ''),
+      );
+
+      debugPrint("Client Names: ${clients.map((e) => e.clientName).toList()}");
 
       return clients;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
+
       debugPrint("${e.toString()}, ${st.toString()}");
+
       throw 'Error fetching clients: $e';
     }
   }
@@ -190,10 +213,15 @@ class ClientService {
 
       await docRef.reference.delete();
 
+      var isCompany = data['isCompany'] ?? false;
+      var name = isCompany
+          ? (data['companyName'] ?? 'Company')
+          : (data['clientName'] ?? 'Contact');
+
       var user = await Spdb.getUser();
       ActivityLogModel activityLogModel = ActivityLogModel(
         userData: user,
-        activity: '${data['companyName'] ?? 'N/A'} has been deleted',
+        activity: '$name has been deleted',
         description: 'User has deleted an entry in ${Collections.clients.name}',
         collection:
             '${Collections.users.name}/$cid/${Collections.clients.name}',
@@ -208,5 +236,20 @@ class ClientService {
       debugPrint("Error deleting client: $e\n$st");
       throw 'Error deleting client: $e';
     }
+  }
+
+  static Future<void> restoreClient(ClientModel client) async {
+    var cid = await Spdb.getCid();
+
+    final uid = client.uid;
+    if (uid == null || uid.isEmpty) {
+      throw Exception("UID missing");
+    }
+
+    await firebase.users
+        .doc(cid)
+        .collection(Collections.clients.name)
+        .doc(uid)
+        .set(client.toMap());
   }
 }
