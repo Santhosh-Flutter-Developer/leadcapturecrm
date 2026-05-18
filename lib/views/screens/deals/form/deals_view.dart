@@ -104,26 +104,22 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            backgroundColor: Colors.white, // 👈 force white background
             title: const Text(
               "Confirm Upload",
-              style: TextStyle(color: Colors.black),
             ),
             content: Text(
               "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
-              style: const TextStyle(color: Colors.black),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text(
                   "Cancel",
-                  style: TextStyle(color: Colors.black54),
                 ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: DealsViewAppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
@@ -216,7 +212,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               width: MediaQuery.of(context).size.width * 0.50,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -262,7 +258,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: DealsViewAppColors.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                         ),
                         child: Text(
                           "Submit",
@@ -302,7 +298,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: Text(
               "Delete",
               style: Theme.of(
@@ -366,12 +362,12 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(.1),
+                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.delete_outline_rounded,
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                     size: 34,
                   ),
                 ),
@@ -390,9 +386,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 Text(
                   "Are you sure you want to delete '${activity.title}'?\n\nThis action cannot be undone.",
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     height: 1.5,
-                    color: DealsViewAppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
 
@@ -426,7 +422,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                         icon: const Icon(Icons.delete_rounded, size: 18),
                         label: const Text("Delete"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: Theme.of(context).colorScheme.error,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -468,7 +464,6 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           "Deal Management",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: DealsViewAppColors.textPrimary,
             fontSize: 18,
           ),
         ),
@@ -540,7 +535,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: DealsViewAppColors.border, height: 1),
+          child: Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
         ),
       ),
       body: Center(
@@ -600,15 +595,15 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         icon,
         size: 16,
         color: isDanger
-            ? DealsViewAppColors.danger
-            : DealsViewAppColors.primary,
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
       ),
       label: Text(
         label,
         style: TextStyle(
           color: isDanger
-              ? DealsViewAppColors.danger
-              : DealsViewAppColors.primary,
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -626,9 +621,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         return Container(
           padding: EdgeInsets.all(isMobile ? 16 : 24),
           decoration: BoxDecoration(
-            color: DealsViewAppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: DealsViewAppColors.border),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             children: [
@@ -640,7 +635,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     width: isMobile ? 60 : 80,
                     height: isMobile ? 60 : 80,
                     decoration: BoxDecoration(
-                      color: DealsViewAppColors.primary.withValues(alpha: 0.08),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -648,7 +643,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                         widget.deal.dealName[0].toUpperCase(),
                         style: TextStyle(
                           fontSize: isMobile ? 24 : 32,
-                          color: DealsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -673,7 +668,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                               style: TextStyle(
                                 fontSize: isMobile ? 18 : 22,
                                 fontWeight: FontWeight.w800,
-                                color: DealsViewAppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
 
@@ -688,9 +683,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                           widget.deal.companyName ?? 'Unspecified Company',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
-                            color: DealsViewAppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -715,7 +710,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               /// MOBILE LAYOUT
               if (isMobile) ...[
                 const SizedBox(height: 20),
-                const Divider(height: 1, color: DealsViewAppColors.border),
+                Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                 const SizedBox(height: 16),
 
                 Row(
@@ -741,17 +736,17 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: DealsViewAppColors.background,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: DealsViewAppColors.border),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const Text(
+             Text(
               "Deal Value",
               style: TextStyle(
-                color: DealsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
@@ -764,10 +759,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               fit: BoxFit.scaleDown,
               child: Text(
                 "${widget.deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
-                  color: DealsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -825,18 +820,18 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.success.withValues(alpha: 0.1),
+        color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: DealsViewAppColors.success.withValues(alpha: 0.2),
+          color: AppColors.success.withValues(alpha: 0.2),
         ),
       ),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w800,
-          color: DealsViewAppColors.success,
+          color: AppColors.success,
           letterSpacing: 0.5,
         ),
       ),
@@ -857,9 +852,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: DealsViewAppColors.background,
+            color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: DealsViewAppColors.border),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -868,10 +863,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
-                  color: DealsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -886,9 +881,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: TabBar(
         controller: _tabController,
@@ -899,7 +894,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         dividerColor: Colors.transparent,
 
         labelColor: Colors.white,
-        unselectedLabelColor: DealsViewAppColors.textSecondary,
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
 
         labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
         unselectedLabelStyle: const TextStyle(
@@ -910,11 +905,11 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         indicatorSize: TabBarIndicatorSize.tab,
 
         indicator: BoxDecoration(
-          color: DealsViewAppColors.primary,
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: DealsViewAppColors.primary.withOpacity(.25),
+              color: Theme.of(context).colorScheme.primary.withOpacity(.25),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1025,19 +1020,19 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: DealsViewAppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -1061,10 +1056,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: DealsViewAppColors.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 16, color: DealsViewAppColors.secondary),
+            child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1073,8 +1068,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: DealsViewAppColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.3,
@@ -1087,8 +1082,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: isLink
-                        ? DealsViewAppColors.primary
-                        : DealsViewAppColors.textPrimary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                     decoration: isLink ? TextDecoration.underline : null,
                   ),
                 ),
@@ -1105,12 +1100,12 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: DealsViewAppColors.border),
+          Icon(icon, size: 48, color: Theme.of(context).colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
             message,
-            style: const TextStyle(
-              color: DealsViewAppColors.textSecondary,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1123,9 +1118,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
@@ -1160,17 +1155,17 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: DealsViewAppColors.primary.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: DealsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   ),
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 1, color: DealsViewAppColors.border),
+                  child: Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
                 ),
             ],
           ),
@@ -1183,17 +1178,17 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 children: [
                   Text(
                     history.updateDisposition,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: DealsViewAppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "Modified by ${CacheService.getUserByUid(history.userId)?.name ?? 'System'}",
-                    style: const TextStyle(
-                      color: DealsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1203,8 +1198,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     DateFormat(
                       'MMM dd, yyyy • hh:mm a',
                     ).format(history.timestamp),
-                    style: const TextStyle(
-                      color: DealsViewAppColors.textSecondary,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1222,9 +1217,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: _buildCommentsSection(),
     );
@@ -1237,9 +1232,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Iconsax.message_text_1,
-                color: DealsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -1330,18 +1325,18 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: DealsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         Text(
                           comment.comment,
-                          style: const TextStyle(
+                          style: TextStyle(
                             height: 1.5,
                             fontSize: 13,
-                            color: DealsViewAppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -1352,8 +1347,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     children: [
                       Text(
                         DateFormat('MMM dd, hh:mm a').format(date),
-                        style: const TextStyle(
-                          color: DealsViewAppColors.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1362,7 +1357,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                         onTap: () {
                           showMenu(
                             context: context,
-                            color: Colors.white, // popup background
+                            color: Theme.of(context).colorScheme.surface, // popup background
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1408,7 +1403,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                         },
                         child: Icon(
                           Iconsax.more,
-                          color: DealsViewAppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 16,
                         ),
                       ),
@@ -1432,8 +1427,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
-        border: const Border(top: BorderSide(color: DealsViewAppColors.border)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -1451,8 +1446,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText: "Add a comment...",
-              hintStyle: const TextStyle(
-                color: DealsViewAppColors.textSecondary,
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
@@ -1460,7 +1455,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: DealsViewAppColors.background,
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
               contentPadding: const EdgeInsets.all(16),
               suffixIcon: IconButton(
                 tooltip: 'Add Attachment',
@@ -1478,7 +1473,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               ElevatedButton(
                 onPressed: _addComment,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: DealsViewAppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
@@ -1508,14 +1503,14 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: DealsViewAppColors.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: DealsViewAppColors.border),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
             ),
             child: Text(
               state.comments.length.toString(),
-              style: const TextStyle(
-                color: DealsViewAppColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
@@ -1532,9 +1527,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       // Match the padding and decoration of your _infoSection
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1548,13 +1543,12 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: DealsViewAppColors.textPrimary,
                 ),
               ),
               TextButton.icon(
                 onPressed: _scheduleActivity,
                 style: TextButton.styleFrom(
-                  backgroundColor: DealsViewAppColors.primary.withValues(
+                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(
                     alpha: 0.1,
                   ),
                   padding: const EdgeInsets.symmetric(
@@ -1616,21 +1610,21 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: DealsViewAppColors.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: DealsViewAppColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: DealsViewAppColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               _activityIcon(activity.type),
-              color: DealsViewAppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
           ),
@@ -1643,29 +1637,29 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               children: [
                 Text(
                   activity.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: DealsViewAppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Iconsax.clock,
                       size: 12,
-                      color: DealsViewAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       DateFormat(
                         'MMM dd • hh:mm a',
                       ).format(activity.scheduledAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: DealsViewAppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1680,20 +1674,20 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: DealsViewAppColors.background,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.more_vert_rounded,
                 size: 18,
-                color: DealsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             elevation: 6,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             position: PopupMenuPosition.under,
             onSelected: (value) {
               if (value == 'edit') {
@@ -1790,10 +1784,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               widget.deal.notes.isEmpty
                   ? "No internal notes provided."
                   : widget.deal.notes,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.7,
-                color: DealsViewAppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1802,10 +1796,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         const SizedBox(height: 16),
         _infoSection("Shared Attachments", [
           if (widget.deal.attachments.isEmpty)
-            const Text(
+            Text(
               "No documents found.",
               style: TextStyle(
-                color: DealsViewAppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             )
@@ -1814,15 +1808,15 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               (file) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: DealsViewAppColors.background,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: DealsViewAppColors.border),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(
+                  leading: Icon(
                     Iconsax.document_text,
-                    color: DealsViewAppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
                   title: Text(

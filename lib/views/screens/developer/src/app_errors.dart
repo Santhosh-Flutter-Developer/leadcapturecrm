@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import '/constants/constants.dart';
 
 class DevColors {
@@ -89,20 +88,20 @@ class _AppErrorsState extends State<AppErrors> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DevColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: DevColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
-        leading: const Back(color: AppColors.black),
+        leading: Back(color: Theme.of(context).colorScheme.onSurface),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "System Logs",
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: DevColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
               ),
             ),
@@ -110,7 +109,7 @@ class _AppErrorsState extends State<AppErrors> {
               "Latest 100 entries",
               style: TextStyle(
                 fontSize: 11,
-                color: DevColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -119,9 +118,9 @@ class _AppErrorsState extends State<AppErrors> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Iconsax.refresh,
-              color: DevColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
             onPressed: _loadErrors,
@@ -131,7 +130,10 @@ class _AppErrorsState extends State<AppErrors> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: DevColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
       ),
       body: _loading
@@ -154,9 +156,13 @@ class _AppErrorsState extends State<AppErrors> {
         // Left Side: Error Feed
         Container(
           width: 400,
-          decoration: const BoxDecoration(
-            color: DevColors.white,
-            border: Border(right: BorderSide(color: DevColors.border)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              right: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
           ),
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -168,7 +174,9 @@ class _AppErrorsState extends State<AppErrors> {
               final isSelected = _selectedError?["id"] == item["id"];
               return ListTile(
                 selected: isSelected,
-                selectedTileColor: DevColors.primary.withValues(alpha: 0.05),
+                selectedTileColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.05),
                 onTap: () => setState(() => _selectedError = item),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -182,25 +190,25 @@ class _AppErrorsState extends State<AppErrors> {
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     fontSize: 13,
                     color: isSelected
-                        ? DevColors.primary
-                        : DevColors.textPrimary,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     _formatTime(item["time"]),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: DevColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 trailing: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Iconsax.arrow_right_3,
                         size: 14,
-                        color: DevColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       )
                     : null,
               );
@@ -239,12 +247,16 @@ class _AppErrorsState extends State<AppErrors> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.tick_circle, size: 48, color: DevColors.border),
+          Icon(
+            Iconsax.tick_circle,
+            size: 48,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "No system errors detected",
             style: TextStyle(
-              color: DevColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -257,21 +269,23 @@ class _AppErrorsState extends State<AppErrors> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: DevColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: DevColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          iconColor: DevColors.textSecondary,
-          collapsedIconColor: DevColors.textSecondary,
+          iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          collapsedIconColor: Theme.of(context).colorScheme.onSurfaceVariant,
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: DevColors.danger.withValues(alpha: 0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -290,9 +304,9 @@ class _AppErrorsState extends State<AppErrors> {
                   errorData["error"] ?? "Unknown Exception",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: DevColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 14,
                   ),
                 ),
@@ -303,16 +317,18 @@ class _AppErrorsState extends State<AppErrors> {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               _formatTime(errorData["time"]),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: DevColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           children: [
             Container(
-              color: DevColors.border.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
               height: 1,
             ),
             Padding(
@@ -339,12 +355,12 @@ class _AppErrorsState extends State<AppErrors> {
           isCode: true,
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           "METADATA",
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: DevColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1,
           ),
         ),
@@ -352,9 +368,11 @@ class _AppErrorsState extends State<AppErrors> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: DevColors.background,
+            color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: DevColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             children: [
@@ -384,10 +402,10 @@ class _AppErrorsState extends State<AppErrors> {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
-                color: DevColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 1,
               ),
             ),
@@ -401,14 +419,18 @@ class _AppErrorsState extends State<AppErrors> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Iconsax.copy, size: 12, color: DevColors.primary),
+                      Icon(
+                        Iconsax.copy,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       const SizedBox(width: 4),
-                      const Text(
+                      Text(
                         "Copy",
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: DevColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -422,15 +444,21 @@ class _AppErrorsState extends State<AppErrors> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isCode ? const Color(0xFF0F172A) : DevColors.background,
+            color: isCode
+                ? const Color(0xFF0F172A)
+                : Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: DevColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: SelectableText(
             value ?? "-",
             style: TextStyle(
               fontSize: 12,
-              color: isCode ? const Color(0xFFF1F5F9) : DevColors.textPrimary,
+              color: isCode
+                  ? const Color(0xFFF1F5F9)
+                  : Theme.of(context).colorScheme.onSurface,
               fontFamily: isCode ? 'monospace' : null,
               height: 1.5,
             ),
@@ -447,9 +475,9 @@ class _AppErrorsState extends State<AppErrors> {
           flex: 2,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: DevColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -459,9 +487,9 @@ class _AppErrorsState extends State<AppErrors> {
           child: SelectableText(
             value ?? "-",
             textAlign: TextAlign.right,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: DevColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),

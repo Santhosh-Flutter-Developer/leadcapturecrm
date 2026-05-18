@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/constants/constants.dart';
@@ -93,9 +92,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
         title: Text(
           "Employee Portfolio",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -199,7 +198,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Column(
         children: [
           Container(
@@ -207,19 +206,24 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 width: 3,
               ),
             ),
             child: CircleAvatar(
               radius: 55,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
               backgroundImage:
                   (widget.employee.profileImageUrl != null &&
                       widget.employee.profileImageUrl!.isNotEmpty)
                   ? NetworkImage(widget.employee.profileImageUrl!)
                   : null,
-              child: (widget.employee.profileImageUrl == null ||
+              child:
+                  (widget.employee.profileImageUrl == null ||
                       widget.employee.profileImageUrl!.isEmpty)
                   ? Text(
                       widget.employee.name.isNotEmpty
@@ -239,23 +243,25 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             widget.employee.name,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              fontWeight: FontWeight.w800,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               designation,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -264,9 +270,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             department,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 20),
           const Divider(height: 1),
@@ -291,7 +297,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   Widget _buildQuickStats(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Row(
         children: [
           _statItem("Tasks", _taskCount, Colors.orange),
@@ -322,9 +328,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -402,8 +408,8 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
             Text(
               "No supervisors assigned",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else ...[
             ListView.builder(
@@ -423,12 +429,12 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: LeadsViewAppColors.primary.withValues(
-                                  alpha: 0.2,
-                                ),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: LeadsViewAppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   width: 2,
                                 ),
                               ),
@@ -437,7 +443,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                               Expanded(
                                 child: Container(
                                   width: 1,
-                                  color: LeadsViewAppColors.border,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
                                 ),
                               ),
                           ],
@@ -473,9 +481,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           Text(
             "About",
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -483,17 +491,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                 ? "No bio provided"
                 : widget.employee.about,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.4,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
             "Skills & Expertise",
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -515,9 +523,9 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                     ),
                     child: Text(
                       s.trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF475569),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -538,7 +546,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: _glassDecoration(),
+      decoration: _glassDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -547,18 +555,24 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 18, color: AppColors.primary),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -572,7 +586,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
   Widget _buildDataPoint(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -581,18 +599,18 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
               Text(
                 label.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.5,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.5,
+                ),
               ),
               const SizedBox(height: 1),
               Text(
                 value.isEmpty ? "-" : value,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ],
           ),
@@ -606,7 +624,11 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -615,16 +637,16 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -634,14 +656,17 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
     );
   }
 
-  BoxDecoration _glassDecoration() {
+  BoxDecoration _glassDecoration(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFE2E8F0)),
+      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.02),
+          color: isDark
+              ? Colors.transparent
+              : Colors.black.withValues(alpha: 0.02),
           blurRadius: 15,
           offset: const Offset(0, 8),
         ),

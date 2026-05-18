@@ -280,7 +280,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -300,7 +302,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                                 Icon(
                                   Icons.arrow_upward,
                                   size: 14,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -734,7 +738,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(

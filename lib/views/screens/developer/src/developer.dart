@@ -4,16 +4,6 @@ import '/utils/utils.dart';
 import '/services/services.dart';
 import '/views/views.dart';
 
-class DevAppColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color danger = Color(0xFFEF4444);
-}
-
 class Developer extends StatefulWidget {
   final bool showAppbar;
   const Developer({super.key, this.showAppbar = true});
@@ -36,17 +26,20 @@ class _DeveloperState extends State<Developer> {
                 padding: EdgeInsets.only(left: 8.0),
                 child: Back(),
               ),
-              title: const Text(
+              title: Text(
                 "Developer Console",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: DevAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                 ),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: DevAppColors.border, height: 1),
+                child: Container(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  height: 1,
+                ),
               ),
             )
           : null,
@@ -116,14 +109,18 @@ class _DeveloperState extends State<Developer> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: DevAppColors.textSecondary),
+        Icon(
+          icon,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: DevAppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1.2,
           ),
         ),
@@ -165,9 +162,11 @@ class _DeveloperState extends State<Developer> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: DevAppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: DevAppColors.border),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
@@ -182,13 +181,17 @@ class _DeveloperState extends State<Developer> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isWarning
-                    ? DevAppColors.danger.withValues(alpha: 0.1)
-                    : DevAppColors.primary.withValues(alpha: 0.1),
+                    ? Theme.of(context).colorScheme.error.withValues(alpha: 0.1)
+                    : Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: isWarning ? DevAppColors.danger : DevAppColors.primary,
+                color: isWarning
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
             ),
@@ -199,28 +202,28 @@ class _DeveloperState extends State<Developer> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: DevAppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: DevAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.3,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Iconsax.arrow_right_3,
               size: 16,
-              color: DevAppColors.border,
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ],
         ),
@@ -234,22 +237,27 @@ class _DeveloperState extends State<Developer> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: DevAppColors.border.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Text(
+          child: Text(
             "Debug Mode Active",
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: DevAppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
         const SizedBox(height: 12),
         Text(
           "Version ${VersionService.version?.version ?? 'N/A'} (Stable Build)",
-          style: TextStyle(fontSize: 11, color: DevAppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

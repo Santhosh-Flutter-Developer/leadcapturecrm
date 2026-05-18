@@ -46,7 +46,7 @@ class _ContactCreateState extends State<ContactCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SingleChildScrollView(
           child: Center(
             child: Form(
@@ -88,10 +88,10 @@ class _ContactCreateState extends State<ContactCreate> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -102,11 +102,11 @@ class _ContactCreateState extends State<ContactCreate> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -215,15 +215,15 @@ class _ContactCreateState extends State<ContactCreate> {
                 }
               },
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 16,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ),
@@ -247,21 +247,21 @@ class _ContactCreateState extends State<ContactCreate> {
         child: Container(
           height: 130,
           width: 130,
-          decoration: const BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.all(Radius.circular(10)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
           ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: AppColors.grey700),
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 8),
                 Text(
                   "Upload Photo",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -354,7 +354,7 @@ class _CompanyCreateState extends State<CompanyCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SingleChildScrollView(
           child: Center(
             child: Form(
@@ -396,10 +396,10 @@ class _CompanyCreateState extends State<CompanyCreate> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -410,11 +410,11 @@ class _CompanyCreateState extends State<CompanyCreate> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -544,15 +544,15 @@ class _CompanyCreateState extends State<CompanyCreate> {
                 }
               },
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 16,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ),
@@ -576,21 +576,21 @@ class _CompanyCreateState extends State<CompanyCreate> {
         child: Container(
           height: 130,
           width: 130,
-          decoration: const BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.all(Radius.circular(10)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
           ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: AppColors.grey700),
+                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 8),
                 Text(
                   "Upload Logo",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),

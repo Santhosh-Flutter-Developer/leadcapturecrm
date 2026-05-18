@@ -971,10 +971,10 @@ Widget _buildActivitySection(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Icon(
-              Icons.more_horiz,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            // Icon(
+            //   Icons.more_horiz,
+            //   color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // ),
           ],
         ),
         const SizedBox(height: 20),
@@ -1232,8 +1232,8 @@ class KpiCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: [
-              kCardColor.withValues(alpha: 0.95),
-              kCardColor.withValues(alpha: 0.85),
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1304,15 +1304,15 @@ class KpiCard extends StatelessWidget {
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: kTextPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
 
             const Spacer(),
@@ -1323,9 +1323,9 @@ class KpiCard extends StatelessWidget {
               children: [
                 Text(
                   "Target",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   "${(progress * 100).toInt()}%",
@@ -1346,7 +1346,7 @@ class KpiCard extends StatelessWidget {
                   return LinearProgressIndicator(
                     value: value,
                     minHeight: 6,
-                    backgroundColor: kBgColor,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       gradientColors.first,
                     ),
@@ -1390,7 +1390,10 @@ class QuickActionCard extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [kCardColor, kCardColor.withValues(alpha: 0.9)],
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+              ],
             ),
             boxShadow: [
               BoxShadow(
@@ -1437,7 +1440,7 @@ class QuickActionCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: kTextPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.25,
                   ),
                 ),
@@ -1613,7 +1616,7 @@ class _NotificationTileState extends State<NotificationTile> {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: kTextPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
@@ -1621,9 +1624,9 @@ class _NotificationTileState extends State<NotificationTile> {
 
                   Text(
                     widget.notification.createdAt!.formatDateMonthTime,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: kTextSecondary),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1706,15 +1709,15 @@ class TaskReminderTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: kTextPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       date,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: kTextSecondary),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -1742,7 +1745,11 @@ class TaskReminderTile extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(width: 8),
-                  Icon(Icons.chevron_right, size: 20, color: kTextSecondary),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ],
@@ -1800,14 +1807,18 @@ class ActivityTimelineTile extends StatelessWidget {
                 Text(
                   activity.page,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    color: isFirst
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
                 Text(
                   timeago.format(activity.visitedAt, locale: 'en_short'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isFirst ? kTextPrimary : kTextSecondary,
+                    color: isFirst
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: isFirst ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),

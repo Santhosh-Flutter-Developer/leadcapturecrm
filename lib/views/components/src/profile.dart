@@ -11,15 +11,7 @@ import '/utils/utils.dart';
 import '/constants/constants.dart';
 import '/theme/theme.dart';
 
-class ProfileColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color success = Color(0xFF10B981);
-}
+// ProfileColors removed in favor of Theme.of(context)
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -254,29 +246,35 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ProfileColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: ProfileColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: const Back(color: AppColors.black),
-        title: const Text(
+        leading: Back(color: Theme.of(context).colorScheme.onSurface),
+        title: Text(
           "My Profile",
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: ProfileColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: ProfileColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
         actions: [
           if (isAdmin)
             IconButton(
               tooltip: 'Edit Profile',
               onPressed: _editAdminProfile,
-              icon: const Icon(Iconsax.edit, color: ProfileColors.textPrimary),
+              icon: Icon(
+                Iconsax.edit,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
         ],
       ),
@@ -356,9 +354,9 @@ class _ProfileState extends State<Profile> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: ProfileColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ProfileColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -479,13 +477,15 @@ class _ProfileState extends State<Profile> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: ProfileColors.primary.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       width: 4,
                     ),
                   ),
                   child: CircleAvatar(
                     radius: 70,
-                    backgroundColor: ProfileColors.background,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     backgroundImage: (image != null && image.isNotEmpty)
                         ? NetworkImage(image)
                         : null,
@@ -494,10 +494,10 @@ class _ProfileState extends State<Profile> {
                             name.trim().isNotEmpty
                                 ? name.trim()[0].toUpperCase()
                                 : "?",
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w800,
-                              color: ProfileColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           )
                         : null,
@@ -507,7 +507,7 @@ class _ProfileState extends State<Profile> {
 
               // if (!isAdmin)
               Material(
-                color: ProfileColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 shape: const CircleBorder(),
                 child: InkWell(
                   onTap: _changeProfileImage,
@@ -524,19 +524,19 @@ class _ProfileState extends State<Profile> {
           Text(
             name,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: ProfileColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             role,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: ProfileColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -562,19 +562,23 @@ class _ProfileState extends State<Profile> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: ProfileColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ProfileColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem("Status", "Active", ProfileColors.success),
-          Container(width: 1, height: 40, color: ProfileColors.border),
+          _buildStatItem("Status", "Active", AppColors.success),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           _buildStatItem(
             "Joined",
             employee?.dateOfJoining.formatDate.split(' ').first ?? "-",
-            ProfileColors.primary,
+            Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -586,9 +590,9 @@ class _ProfileState extends State<Profile> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: ProfileColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -610,7 +614,11 @@ class _ProfileState extends State<Profile> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: ProfileColors.textSecondary),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -618,18 +626,18 @@ class _ProfileState extends State<Profile> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: ProfileColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: ProfileColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -732,9 +740,11 @@ class _ProfileState extends State<Profile> {
           width: width,
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: ProfileColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: ProfileColors.border),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -744,22 +754,24 @@ class _ProfileState extends State<Profile> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: ProfileColors.primary.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       getSectionIcon(title),
                       size: 20,
-                      color: ProfileColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: ProfileColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -791,10 +803,10 @@ class _ProfileState extends State<Profile> {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: ProfileColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 1,
                   ),
                 ),
@@ -819,8 +831,8 @@ class _ProfileState extends State<Profile> {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: (value == null || value.isEmpty)
-                          ? ProfileColors.textSecondary
-                          : ProfileColors.textPrimary,
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
               ],
@@ -838,7 +850,7 @@ class _ProfileState extends State<Profile> {
               icon: Icon(
                 isEditing ? Iconsax.tick_circle : Iconsax.edit,
                 size: 18,
-                color: ProfileColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
         ],
@@ -856,16 +868,16 @@ class _ProfileState extends State<Profile> {
               "Data synchronized with secure server",
               style: TextStyle(
                 fontSize: 11,
-                color: ProfileColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               "Security Patch: ${AppPackageInfo.version} • ${DateTime.now().monthYearFormat}",
               style: TextStyle(
                 fontSize: 10,
-                color: ProfileColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

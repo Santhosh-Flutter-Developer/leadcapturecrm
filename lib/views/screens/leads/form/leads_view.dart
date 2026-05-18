@@ -1181,12 +1181,12 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Activities",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: LeadsViewAppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               TextButton.icon(
@@ -1290,10 +1290,10 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Iconsax.clock,
                       size: 12,
-                      color: LeadsViewAppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(

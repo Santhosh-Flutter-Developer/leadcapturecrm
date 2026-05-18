@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 
 class SharedPrefsColors {
   static const Color primary = Color(0xFF2563EB);
@@ -120,22 +119,26 @@ class _SharedprefsDataState extends State<SharedprefsData> {
           'Purge Storage?',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: const Text(
+        content: Text(
           'This will remove all local SharedPreferences keys. This action is permanent.',
-          style: TextStyle(color: SharedPrefsColors.textSecondary),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: SharedPrefsColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: SharedPrefsColors.danger,
+              backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Colors.white,
               elevation: 0,
             ),
@@ -156,7 +159,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     if (v is int || v is double) return const Color(0xFF8B5CF6);
     if (v is bool) return const Color(0xFF10B981);
     if (v is List) return const Color(0xFFF59E0B);
-    return SharedPrefsColors.textSecondary;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   String _typeLabel(Object? v) {
@@ -174,16 +177,16 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       ..sort((a, b) => a.key.compareTo(b.key));
 
     return Scaffold(
-      backgroundColor: SharedPrefsColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: SharedPrefsColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: const Back(color: AppColors.black),
-        title: const Text(
+        leading: Back(color: Theme.of(context).colorScheme.onSurface),
+        title: Text(
           "Storage Inspector",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: SharedPrefsColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
@@ -196,17 +199,17 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(
+                : Icon(
                     Iconsax.refresh,
-                    color: SharedPrefsColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
           ),
           IconButton(
             onPressed: _prefs.isEmpty ? null : _clearAll,
-            icon: const Icon(
+            icon: Icon(
               Iconsax.trash,
-              color: SharedPrefsColors.danger,
+              color: Theme.of(context).colorScheme.error,
               size: 20,
             ),
           ),
@@ -214,7 +217,10 @@ class _SharedprefsDataState extends State<SharedprefsData> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: SharedPrefsColors.border, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
       ),
       body: LayoutBuilder(
@@ -244,7 +250,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
 
   Widget _buildHeaderSearch(int count, bool isDesktop) {
     return Container(
-      color: SharedPrefsColors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 40 : 16,
         vertical: 16,
@@ -265,17 +271,17 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                   },
                   decoration: InputDecoration(
                     hintText: "Search keys or values...",
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 14,
-                      color: SharedPrefsColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Iconsax.search_normal,
                       size: 18,
-                      color: SharedPrefsColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     filled: true,
-                    fillColor: SharedPrefsColors.background,
+                    fillColor: Theme.of(context).scaffoldBackgroundColor,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -287,10 +293,10 @@ class _SharedprefsDataState extends State<SharedprefsData> {
               const SizedBox(width: 16),
               Text(
                 '$count pairs',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: SharedPrefsColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -338,16 +344,16 @@ class _SharedprefsDataState extends State<SharedprefsData> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Iconsax.document_filter,
             size: 48,
-            color: SharedPrefsColors.border,
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "No preferences found",
             style: TextStyle(
-              color: SharedPrefsColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -362,9 +368,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
 
     Widget cardContent = Container(
       decoration: BoxDecoration(
-        color: SharedPrefsColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SharedPrefsColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -408,9 +414,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                       key,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: SharedPrefsColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 14,
                       ),
                     ),
@@ -418,9 +424,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                   if (!isDesktop)
                     IconButton(
                       onPressed: () => _removeKey(key),
-                      icon: const Icon(
+                      icon: Icon(
                         Iconsax.close_circle,
-                        color: SharedPrefsColors.border,
+                        color: Theme.of(context).colorScheme.outlineVariant,
                         size: 18,
                       ),
                       padding: EdgeInsets.zero,
@@ -435,16 +441,16 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: SharedPrefsColors.background,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     valStr,
                     maxLines: isDesktop ? 4 : 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: SharedPrefsColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -459,7 +465,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                       Iconsax.trash,
                       "Delete",
                       () => _removeKey(key),
-                      color: SharedPrefsColors.danger,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                   const SizedBox(width: 8),
                   _actionButton(Iconsax.copy, "Copy", () {
@@ -500,8 +506,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
     IconData icon,
     String label,
     VoidCallback onTap, {
-    Color color = SharedPrefsColors.primary,
+    Color? color,
   }) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -510,14 +517,14 @@ class _SharedprefsDataState extends State<SharedprefsData> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: effectiveColor),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: effectiveColor,
               ),
             ),
           ],
@@ -553,9 +560,9 @@ class _SharedprefsDataState extends State<SharedprefsData> {
               const SizedBox(height: 4),
               Text(
                 value.runtimeType.toString(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: SharedPrefsColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -573,9 +580,11 @@ class _SharedprefsDataState extends State<SharedprefsData> {
                 padding: const EdgeInsets.all(16),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: SharedPrefsColors.background,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: SharedPrefsColors.border),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: SelectableText(
                   value?.toString() ?? 'null',
@@ -592,9 +601,11 @@ class _SharedprefsDataState extends State<SharedprefsData> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Close',
-              style: TextStyle(color: SharedPrefsColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           ElevatedButton.icon(
@@ -608,7 +619,7 @@ class _SharedprefsDataState extends State<SharedprefsData> {
             icon: const Icon(Iconsax.copy, size: 16),
             label: const Text("Copy Value"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: SharedPrefsColors.primary,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               elevation: 0,
             ),

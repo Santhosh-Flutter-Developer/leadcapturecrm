@@ -5,18 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import '/models/models.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import 'bloc/activity_log_bloc.dart';
 
-class LogColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color surface = Colors.white;
-}
+// LogColors removed in favor of Theme.of(context)
 
 class ActivityLogsListing extends StatefulWidget {
   final bool showAppbar;
@@ -99,16 +90,16 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
             ? AppBar(
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
-                leading: const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Back(color: AppColors.black),
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Back(color: Theme.of(context).colorScheme.onSurface),
                 ),
                 centerTitle: false,
-                title: const Text(
+                title: Text(
                   "Activity Logs",
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: LogColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                   ),
                 ),
@@ -195,27 +186,27 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
   Widget _buildHeaderSearch(bool isMobile) {
     return Column(
       children: [
-        Container(color: LogColors.border, height: 1),
+        Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Material(
             borderRadius: BorderRadius.circular(12),
-            color: LogColors.background,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixIcon: Icon(
                   Iconsax.search_normal,
                   size: 18,
-                  color: LogColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 hintText: 'Filter by activity, user or description...',
                 hintStyle: TextStyle(
                   fontSize: 14,
-                  color: LogColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
@@ -232,10 +223,10 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
           padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: LogColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.5,
             ),
           ),
@@ -249,9 +240,9 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: LogColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LogColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -271,18 +262,18 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                         item.userData.name.isNotEmpty
                             ? item.userData.name
                             : 'System User',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
-                          color: LogColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       if (item.userData.desc != null)
                         Text(
                           item.userData.desc!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: LogColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -295,23 +286,23 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: LogColors.background,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     _timeAgo(item.createdAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: LogColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
               ],
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: LogColors.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,13 +311,13 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                   margin: const EdgeInsets.only(top: 2),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: LogColors.primary.withValues(alpha: 0.1),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Iconsax.arrow_right_3,
                     size: 10,
-                    color: LogColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -336,10 +327,10 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                     children: [
                       Text(
                         item.activity,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          color: LogColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           height: 1.4,
                         ),
                       ),
@@ -348,9 +339,9 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                         const SizedBox(height: 4),
                         Text(
                           item.description!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: LogColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             height: 1.5,
                           ),
                         ),
@@ -358,18 +349,18 @@ class _ActivityLogsListingState extends State<ActivityLogsListing> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Iconsax.folder_2,
                             size: 12,
-                            color: LogColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             item.collection.toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: LogColors.textSecondary,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               letterSpacing: 0.5,
                             ),
                           ),

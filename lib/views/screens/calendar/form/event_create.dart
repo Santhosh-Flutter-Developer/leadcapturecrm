@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/constants/constants.dart';
-import '/theme/theme.dart';
 import '/views/views.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -87,7 +86,7 @@ class _EventCreateState extends State<EventCreate> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -97,9 +96,9 @@ class _EventCreateState extends State<EventCreate> {
               return Center(
                 child: Text(
                   'Error: ${snapshot.error}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               );
             }
@@ -142,10 +141,10 @@ class _EventCreateState extends State<EventCreate> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -156,11 +155,11 @@ class _EventCreateState extends State<EventCreate> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -267,7 +266,7 @@ class _EventCreateState extends State<EventCreate> {
               Text(
                 'Repeat',
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: AppColors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),

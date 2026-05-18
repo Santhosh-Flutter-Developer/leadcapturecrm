@@ -5,18 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import '/models/models.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import 'bloc/login_log_bloc.dart';
 
-class LoginLogColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color success = Color(0xFF10B981);
-}
+// LoginLogColors removed in favor of Theme.of(context)
 
 class LoginLogsListing extends StatefulWidget {
   final bool showAppbar;
@@ -94,16 +85,16 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
             ? AppBar(
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
-                leading: const Padding(
-                  padding: EdgeInsets.only(left: 8.0),
-                  child: Back(color: AppColors.black),
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Back(color: Theme.of(context).colorScheme.onSurface),
                 ),
                 centerTitle: false,
-                title: const Text(
+                title: Text(
                   "Access Logs",
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: LoginLogColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                   ),
                 ),
@@ -193,27 +184,27 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
   Widget _buildHeaderSearch() {
     return Column(
       children: [
-        Container(color: LoginLogColors.border, height: 1),
+        Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Material(
             borderRadius: BorderRadius.circular(12),
-            color: LoginLogColors.background,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixIcon: Icon(
                   Iconsax.search_normal,
                   size: 18,
-                  color: LoginLogColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 hintText: 'Filter by user, device, or IP address...',
                 hintStyle: TextStyle(
                   fontSize: 14,
-                  color: LoginLogColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
@@ -230,10 +221,10 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
           padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: LoginLogColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.5,
             ),
           ),
@@ -247,9 +238,9 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: LoginLogColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LoginLogColors.border),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -269,17 +260,17 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
                         item.user.name.isNotEmpty
                             ? item.user.name
                             : 'Unknown User',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
-                          color: LoginLogColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         item.user.desc ?? 'Active Session',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: LoginLogColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -292,23 +283,23 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: LoginLogColors.background,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     _timeAgo(item.loginTime),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: LoginLogColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
               ],
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: LoginLogColors.border),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
             ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,13 +308,13 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
                   margin: const EdgeInsets.only(top: 2),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: LoginLogColors.primary.withValues(alpha: 0.08),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     _getDeviceIcon(item.loginAlert.device),
                     size: 16,
-                    color: LoginLogColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -333,10 +324,10 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
                     children: [
                       Text(
                         item.loginAlert.device,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          color: LoginLogColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           height: 1.4,
                         ),
                       ),
@@ -358,14 +349,14 @@ class _LoginLogsListingState extends State<LoginLogsListing> {
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: LoginLogColors.textSecondary),
+        Icon(icon, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: LoginLogColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),

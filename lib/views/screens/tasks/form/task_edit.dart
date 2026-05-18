@@ -151,7 +151,7 @@ class _TaskEditState extends State<TaskEdit> {
         final bool isDesktop = constraints.maxWidth > 900;
 
         return Scaffold(
-          backgroundColor: AppColors.grey100,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: FormWidgets.buildHeader(context: context, title: "Edit Task"),
           body: FutureBuilder(
             future: _future,
@@ -355,11 +355,11 @@ class _TaskEditState extends State<TaskEdit> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -371,7 +371,7 @@ class _TaskEditState extends State<TaskEdit> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: AppColors.primary),
+              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -395,15 +395,15 @@ class _TaskEditState extends State<TaskEdit> {
       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: 'Enter Task Title...',
-        hintStyle: TextStyle(color: AppColors.grey400),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         border: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey200),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
       ),
       validator: (v) => Validation.commonValidation(
@@ -420,7 +420,7 @@ class _TaskEditState extends State<TaskEdit> {
       maxLines: 5,
       decoration: InputDecoration(
         hintText: 'Describe the requirements and objectives...',
-        fillColor: AppColors.grey100.withValues(alpha: 0.5),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -439,8 +439,8 @@ class _TaskEditState extends State<TaskEdit> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _highPriority
-                ? AppColors.danger.withValues(alpha: 0.15)
-                : Colors.grey.shade200,
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -448,7 +448,7 @@ class _TaskEditState extends State<TaskEdit> {
               Icon(
                 Icons.priority_high,
                 size: 16,
-                color: _highPriority ? AppColors.danger : Colors.grey,
+                color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
               Text(
@@ -456,7 +456,7 @@ class _TaskEditState extends State<TaskEdit> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _highPriority ? AppColors.danger : Colors.grey,
+                  color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -465,7 +465,7 @@ class _TaskEditState extends State<TaskEdit> {
         const SizedBox(width: 12),
         Switch.adaptive(
           value: _highPriority,
-          activeTrackColor: AppColors.danger.withValues(alpha: 0.4),
+          activeTrackColor: Theme.of(context).colorScheme.errorContainer,
           onChanged: (val) => setState(() => _highPriority = val),
         ),
       ],
@@ -634,12 +634,12 @@ class _TaskEditState extends State<TaskEdit> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  Icon(Iconsax.cloud_plus, color: AppColors.primary, size: 32),
+                  Icon(Iconsax.cloud_plus, color: Theme.of(context).colorScheme.primary, size: 32),
                   const SizedBox(height: 8),
                   const Text("Click to upload or drag and drop"),
                   Text(
@@ -656,7 +656,7 @@ class _TaskEditState extends State<TaskEdit> {
               "Existing Files",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.grey600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -684,7 +684,7 @@ class _TaskEditState extends State<TaskEdit> {
               "New Files",
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.grey600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -715,10 +715,10 @@ class _TaskEditState extends State<TaskEdit> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -734,8 +734,8 @@ class _TaskEditState extends State<TaskEdit> {
           const SizedBox(width: 16),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

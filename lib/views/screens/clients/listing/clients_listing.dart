@@ -157,7 +157,7 @@ class _ClientListingViewState extends State<ClientListingView> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.grey.withValues(alpha: 0.1),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -190,14 +190,14 @@ class _ClientListingViewState extends State<ClientListingView> {
                                       sortAscending:
                                           controllerWatch.sortAscending,
                                       headingRowColor: WidgetStateProperty.all(
-                                        AppColors.grey100,
+                                        Theme.of(context).colorScheme.surfaceContainerHighest,
                                       ),
                                       headingTextStyle: Theme.of(context)
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: AppColors.black,
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                       columns: _buildColumns(controllerRead),
                                       rows: controllerWatch.paginatedItems
@@ -342,11 +342,11 @@ class _ClientListingViewState extends State<ClientListingView> {
                 "Add $pageTitle",
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(width: 10),
@@ -417,8 +417,8 @@ class _ClientListingViewState extends State<ClientListingView> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.grey600,
-                foregroundColor: AppColors.white,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
               ),
             ),
             const SizedBox(width: 10),
@@ -549,8 +549,8 @@ class _ClientListingViewState extends State<ClientListingView> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ],
@@ -583,7 +583,7 @@ class _ClientListingViewState extends State<ClientListingView> {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 4),
-        Icon(Icons.arrow_upward, size: 14, color: AppColors.grey400),
+        Icon(Icons.arrow_upward, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ],
     );
   }
@@ -768,7 +768,7 @@ class _ClientListingViewState extends State<ClientListingView> {
       children: [
         IconButton(
           icon: const Icon(Iconsax.edit),
-          color: AppColors.info,
+          color: Theme.of(context).colorScheme.primary,
           splashRadius: 20,
           onPressed: () {
             final form = widget.section == ClientSection.contacts
@@ -784,7 +784,7 @@ class _ClientListingViewState extends State<ClientListingView> {
         ),
         IconButton(
           icon: const Icon(Iconsax.trash),
-          color: AppColors.danger,
+          color: Theme.of(context).colorScheme.error,
           splashRadius: 20,
           onPressed: () async {
             // ✅ STEP 0: check assignment

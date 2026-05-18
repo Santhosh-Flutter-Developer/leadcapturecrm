@@ -206,7 +206,7 @@ class _DealsListingViewState extends State<DealsListingView> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -234,12 +234,12 @@ class _DealsListingViewState extends State<DealsListingView> {
                       sortColumnIndex: controllerWatch.sortColumnIndex,
                       sortAscending: controllerWatch.sortAscending,
                       headingRowColor: WidgetStateProperty.all(
-                        AppColors.grey100,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       headingTextStyle: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       columns: [
                         DataColumn(
@@ -416,12 +416,12 @@ class _DealsListingViewState extends State<DealsListingView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.03),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -489,14 +489,10 @@ class _DealsListingViewState extends State<DealsListingView> {
         icon: const Icon(Icons.refresh, size: 18),
         label: const Text("Reset Filters"),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade50,
-          foregroundColor: Colors.redAccent,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          // shape: RoundedRectangleBorder(
-          //   borderRadius: BorderRadius.circular(12),
-          //   side: BorderSide(color: Colors.red.shade100),
-          // ),
         ),
       ),
     );
@@ -514,7 +510,11 @@ class _DealsListingViewState extends State<DealsListingView> {
         },
         decoration: InputDecoration(
           hintText: 'Search deals...',
-          prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+          prefixIcon: Icon(
+            Icons.search,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
 
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -529,26 +529,36 @@ class _DealsListingViewState extends State<DealsListingView> {
               : null,
 
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
 
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
 
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
 
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
 
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: AppColors.blue, width: 1.3),
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 1.3,
+            ),
           ),
 
-          hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 14,
+          ),
         ),
       ),
     );
@@ -566,7 +576,7 @@ class _DealsListingViewState extends State<DealsListingView> {
           Text(
             "Deal Value",
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -576,7 +586,7 @@ class _DealsListingViewState extends State<DealsListingView> {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade700),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -643,7 +653,7 @@ class _DealsListingViewState extends State<DealsListingView> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -654,7 +664,9 @@ class _DealsListingViewState extends State<DealsListingView> {
               height: 32,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade700),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
@@ -662,7 +674,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                   Icon(
                     Iconsax.calendar_1,
                     size: 18,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -676,9 +688,9 @@ class _DealsListingViewState extends State<DealsListingView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down,
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 18,
                   ),
                 ],
@@ -781,13 +793,13 @@ class _DealsListingViewState extends State<DealsListingView> {
                 icon: const Icon(Icons.add, size: 18),
                 label: Text(
                   "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
               const SizedBox(width: 10),
@@ -901,7 +913,9 @@ class _DealsListingViewState extends State<DealsListingView> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.grey300),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -922,10 +936,10 @@ class _DealsListingViewState extends State<DealsListingView> {
                 },
                 icon: const Icon(Iconsax.grid_3, size: 18),
                 color: _selectedView == 'Grid'
-                    ? AppColors.blue
-                    : AppColors.grey700,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: AppColors.grey300),
+              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
               IconButton(
                 onPressed: () {
                   _selectedView = 'List';
@@ -933,10 +947,10 @@ class _DealsListingViewState extends State<DealsListingView> {
                 },
                 icon: const Icon(Icons.list),
                 color: _selectedView == 'List'
-                    ? AppColors.blue
-                    : AppColors.grey700,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
               IconButton(
                 onPressed: () {
                   _selectedView = 'Calendar';
@@ -944,8 +958,8 @@ class _DealsListingViewState extends State<DealsListingView> {
                 },
                 icon: const Icon(Iconsax.calendar_1, size: 18),
                 color: _selectedView == 'Calendar'
-                    ? AppColors.blue
-                    : AppColors.grey700,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),

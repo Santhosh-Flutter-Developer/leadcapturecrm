@@ -90,16 +90,16 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
           ? AppBar(
               backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
-              leading: const Padding(
-                padding: EdgeInsets.only(left: 8.0),
-                child: Back(color: AppColors.black),
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Back(color: Theme.of(context).colorScheme.onSurface),
               ),
               centerTitle: false,
-              title: const Text(
+              title: Text(
                 "Calendar",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: LogColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                 ),
               ),
@@ -176,7 +176,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -198,7 +198,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
         child: Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected
+                ? Theme.of(context).colorScheme.surface
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
@@ -206,7 +208,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF5C59D4) : Colors.grey[600],
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -231,12 +235,16 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
               width: 60,
               margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF5C59D4) : Colors.white,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: const Color(0xFF5C59D4).withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -248,14 +256,18 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                   Text(
                     DateFormat('E').format(date),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isSelected ? Colors.white70 : Colors.grey[400],
+                      color: isSelected
+                          ? Colors.white70
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
                     '${date.day}',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black,
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -308,8 +320,8 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
           return EventCard(
             title: e.eventName,
             category: e.eventDescription,
-            categoryColor: const Color(0xFFE8E7FF),
-            textColor: const Color(0xFF5C59D4),
+            categoryColor: Theme.of(context).colorScheme.primaryContainer,
+            textColor: Theme.of(context).colorScheme.primary,
             time: _formatTimeRange(e.eventDateTime, e.eventEndDateTime),
             avatars: e.eventAttendes,
             onTap: () {
@@ -328,8 +340,8 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
           return EventCard(
             title: '#${e.taskNumber} ${e.taskName}',
             category: e.highPriority ? 'High Priority' : 'Low Priority',
-            categoryColor: const Color(0xFFE8E7FF),
-            textColor: const Color(0xFF5C59D4),
+            categoryColor: Theme.of(context).colorScheme.primaryContainer,
+            textColor: Theme.of(context).colorScheme.primary,
             time: (e.deadline ?? DateTime.now()).formatDateTime,
             avatars: [
               ...(e.assignees),
@@ -374,7 +386,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(15),
           ),
           child: InkWell(
@@ -434,9 +446,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                     ),
                     Text(
                       '${day.day}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -449,7 +461,10 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),
@@ -487,7 +502,10 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                 ],
               ),
               IconButton(
-                icon: const Icon(Iconsax.calendar_1, color: Colors.grey),
+                icon: Icon(
+                  Iconsax.calendar_1,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 onPressed: _openDatePicker,
               ),
             ],
@@ -573,9 +591,13 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isToday ? const Color(0xFF5C59D4) : Colors.white,
+                    color: isToday
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,7 +610,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                             '$dayNum',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: isToday ? Colors.white : Colors.black,
+                                  color: isToday
+                                      ? Colors.white
+                                      : Theme.of(context).colorScheme.onSurface,
                                   fontWeight: isToday
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -603,9 +627,8 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                               decoration: BoxDecoration(
                                 color: isToday
                                     ? Colors.white.withValues(alpha: 0.2)
-                                    : const Color(
-                                        0xFF5C59D4,
-                                      ).withValues(alpha: 0.1),
+                                    : Theme.of(context).colorScheme.primary
+                                          .withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -615,7 +638,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                                       fontWeight: FontWeight.bold,
                                       color: isToday
                                           ? Colors.white
-                                          : const Color(0xFF5C59D4),
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                     ),
                               ),
                             ),
@@ -646,7 +671,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                                                 ? Colors.white.withValues(
                                                     alpha: 0.9,
                                                   )
-                                                : Colors.black87,
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                           ),
                                     ),
                                   );
@@ -667,7 +694,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                                                 ? Colors.white.withValues(
                                                     alpha: 0.9,
                                                   )
-                                                : Colors.black87,
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                           ),
                                     ),
                                   );
@@ -711,7 +740,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
               height: MediaQuery.of(context).size.height * 0.7,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -730,9 +759,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
                   /// Description
                   Text(
                     description,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -874,7 +903,7 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
       barrierDismissible: true,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -918,11 +947,11 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.blue),
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 12),
             Text(label, style: const TextStyle(fontSize: 15)),
           ],

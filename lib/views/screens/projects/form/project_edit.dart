@@ -133,7 +133,7 @@ class _ProjectEditState extends State<ProjectEdit> {
         bottomLeft: Radius.circular(16),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -145,7 +145,7 @@ class _ProjectEditState extends State<ProjectEdit> {
                   'Error: ${snapshot.error}',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               );
             }
@@ -188,10 +188,10 @@ class _ProjectEditState extends State<ProjectEdit> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
-      color: AppColors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.grey300),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -202,11 +202,11 @@ class _ProjectEditState extends State<ProjectEdit> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
-            Divider(color: AppColors.grey300),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 16),
             child,
           ],
@@ -295,7 +295,7 @@ class _ProjectEditState extends State<ProjectEdit> {
               Text(
                 'Members',
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: AppColors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),

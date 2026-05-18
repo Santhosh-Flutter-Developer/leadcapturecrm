@@ -7,7 +7,6 @@ import 'package:shimmer/shimmer.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
-import '/theme/theme.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 
@@ -77,7 +76,7 @@ class _ContactUpdateState extends State<ContactUpdate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FutureBuilder(
         future: _future,
         builder: (_, snap) {
@@ -322,7 +321,7 @@ class _CompanyUpdateState extends State<CompanyUpdate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FutureBuilder(
         future: _future,
         builder: (_, snap) {
@@ -508,12 +507,14 @@ class ImagePickerWidget extends StatelessWidget {
                 ? CachedNetworkImage(
                     imageUrl: networkImage!,
                     placeholder: (_, _) => Shimmer.fromColors(
-                      baseColor: AppColors.grey300,
-                      highlightColor: AppColors.grey100,
+                      baseColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      highlightColor: Theme.of(context).colorScheme.surface,
                       child: Container(
                         height: 140,
                         width: 140,
-                        color: AppColors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                     errorWidget: (_, _, _) => const Icon(Icons.error),
@@ -534,15 +535,15 @@ class ImagePickerWidget extends StatelessWidget {
             child: GestureDetector(
               onTap: onRemove,
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 16,
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.onError,
                 ),
               ),
             ),
@@ -568,20 +569,23 @@ class ImagePickerWidget extends StatelessWidget {
         child: Container(
           height: 140,
           width: 140,
-          decoration: const BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.all(Radius.circular(10)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Iconsax.gallery, color: AppColors.grey700),
+              Icon(
+                Iconsax.gallery,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 8),
               Text(
                 label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.grey700),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),

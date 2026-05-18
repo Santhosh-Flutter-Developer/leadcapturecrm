@@ -209,9 +209,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool downloads =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Downloads')) != null;
-    bool backup =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Backup')) != null;
+    // bool backup =
+    //     widget.isAdmin ||
+    //     (await PermissionService.getPermissions('Backup')) != null;
     widget.isAdmin ||
         (await PermissionService.getPermissions('Developer Area')) != null;
     bool developerArea =
@@ -297,7 +297,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
       if (downloads) {'icon': Iconsax.document_download, 'title': 'Downloads'},
-      if (backup) {'icon': Iconsax.cloud, 'title': 'Backup'},
+      // if (backup) {'icon': Iconsax.cloud, 'title': 'Backup'},
       if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
       {
         'icon': Iconsax.info_circle,

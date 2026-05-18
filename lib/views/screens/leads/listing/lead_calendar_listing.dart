@@ -270,7 +270,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ],
             ),
           ),
@@ -363,9 +363,9 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: isToday ? const Color(0xFF5C59D4) : Colors.white,
+                    color: isToday ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +570,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                         if (item.companyName != null && item.companyName!.isNotEmpty)
                                           Row(
                                             children: [
-                                              const Icon(Iconsax.building, size: 12, color: Colors.grey),
+                                              Icon(Iconsax.building, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
@@ -589,7 +589,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                             padding: const EdgeInsets.only(top: 2),
                                             child: Row(
                                               children: [
-                                                const Icon(Iconsax.user, size: 12, color: Colors.grey),
+                                                Icon(Iconsax.user, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                                 const SizedBox(width: 4),
                                                 Expanded(
                                                   child: Text(
@@ -607,7 +607,7 @@ class _LeadCalendarListingState extends State<LeadCalendarListing> {
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            const Icon(Iconsax.user_edit, size: 12, color: Colors.grey),
+                                            Icon(Iconsax.user_edit, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                             const SizedBox(width: 4),
                                             Text(
                                               item.createdBy.name,
@@ -747,7 +747,7 @@ class LeadCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                Icon(Icons.access_time, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 5),
                 Text(
                   time,
@@ -789,7 +789,7 @@ class LeadCard extends StatelessWidget {
                 Icon(
                   Icons.check_circle_outline,
                   size: 24,
-                  color: completed ? AppColors.success : Colors.grey,
+                  color: completed ? AppColors.success : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),

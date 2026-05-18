@@ -166,7 +166,7 @@ class _TaskListingViewState extends State<TaskListingView> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -208,12 +208,12 @@ class _TaskListingViewState extends State<TaskListingView> {
                       sortColumnIndex: controllerWatch.sortColumnIndex,
                       sortAscending: controllerWatch.sortAscending,
                       headingRowColor: WidgetStateProperty.all(
-                        AppColors.grey100,
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                       headingTextStyle: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       columns: [
                         DataColumn(
@@ -295,22 +295,22 @@ class _TaskListingViewState extends State<TaskListingView> {
                 color: Colors.grey,
               ),
               filled: true,
-              fillColor: AppColors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
                 vertical: 12.0,
                 horizontal: 16.0,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.grey, width: 1),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: AppColors.blue, width: 1.5),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
               ),
               hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
       ],
@@ -420,13 +420,13 @@ class _TaskListingViewState extends State<TaskListingView> {
                   "Delete",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 icon: Icon(Iconsax.trash),
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.grey400,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -459,10 +459,10 @@ class _TaskListingViewState extends State<TaskListingView> {
                 },
                 icon: const Icon(Icons.list),
                 color: _selectedView == 'List'
-                    ? AppColors.blue
-                    : AppColors.grey700,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: Colors.grey.shade300),
+              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
               IconButton(
                 onPressed: () {
                   _selectedView = 'Calendar';
@@ -470,8 +470,8 @@ class _TaskListingViewState extends State<TaskListingView> {
                 },
                 icon: const Icon(Iconsax.calendar_1, size: 18),
                 color: _selectedView == 'Calendar'
-                    ? AppColors.blue
-                    : AppColors.grey700,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -504,7 +504,7 @@ class _TaskListingViewState extends State<TaskListingView> {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 4),
-        Icon(Icons.arrow_upward, size: 14, color: AppColors.grey400),
+        Icon(Icons.arrow_upward, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ],
     );
   }
@@ -659,12 +659,12 @@ class _TaskListingViewState extends State<TaskListingView> {
                       );
                     }
                   },
-                  color: AppColors.info,
+                  color: Theme.of(context).colorScheme.secondary,
                   splashRadius: 20,
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                  icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   onPressed: null,
                 ),
               ],
@@ -674,7 +674,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                       task.createdBy.contains(_currentUid ?? ''))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
-                  color: AppColors.danger,
+                  color: Theme.of(context).colorScheme.error,
                   splashRadius: 20,
                   tooltip: 'Delete $_pageTitle',
                   onPressed: () async {
@@ -718,7 +718,7 @@ class _TaskListingViewState extends State<TaskListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                  icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   onPressed: null,
                 ),
               ],

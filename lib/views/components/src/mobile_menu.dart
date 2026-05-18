@@ -123,7 +123,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       "Company",
                       style: Theme.of(
                         context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     _buildListTile(
                       icon: Iconsax.activity,
@@ -189,7 +189,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       Text(
                         "Creation",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       // if (_adminModel != null ||
@@ -298,7 +298,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       Text(
                         "CRM",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       if (_adminModel != null ||
@@ -397,7 +397,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       Text(
                         "System",
                         style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: AppColors.grey500,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       _buildListTile(
@@ -436,7 +436,7 @@ class _MobileMenuState extends State<MobileMenu> {
                     //   "Payroll",
                     //   style: Theme.of(
                     //     context,
-                    //   ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                    //   ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
                     // ),
                     // _buildListTile(
                     //   icon: Iconsax.timer_1,
@@ -476,7 +476,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       "Others",
                       style: Theme.of(
                         context,
-                      ).textTheme.bodyLarge!.copyWith(color: AppColors.grey500),
+                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
                     ),
                     _buildListTile(
                       icon: Iconsax.recovery_convert,
@@ -568,19 +568,19 @@ class _MobileMenuState extends State<MobileMenu> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isLogout ? AppColors.danger : AppColors.grey300,
+                color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outlineVariant,
               ),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: isLogout ? AppColors.danger : AppColors.black,
+              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           title: Text(
             title,
             style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-              color: isLogout ? AppColors.danger : AppColors.black,
+              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: subtitle != null
@@ -604,10 +604,10 @@ class _MobileMenuState extends State<MobileMenu> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: AppColors.grey100,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
               blurRadius: 10,
               spreadRadius: 1,
               offset: const Offset(0, 3),
@@ -628,7 +628,7 @@ class _MobileMenuState extends State<MobileMenu> {
                 Text(
                   employee?.name ?? admin?.name ?? 'User',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.black,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -642,7 +642,7 @@ class _MobileMenuState extends State<MobileMenu> {
                       : "Administartor",
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.grey500),
+                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),

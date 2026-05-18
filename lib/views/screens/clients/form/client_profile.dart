@@ -57,7 +57,7 @@ class _ClientProfileState extends State<ClientProfile> {
           context: context,
           title: "Client Details",
         ),
-        backgroundColor: AppColors.grey50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 10, left: 10, right: 10),
           child: Center(
@@ -105,9 +105,9 @@ class _ClientProfileState extends State<ClientProfile> {
                       ? widget.client.profilePictureUrl!
                       : AppStrings.emptyProfilePhotoUrl,
                   placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: AppColors.grey300,
-                    highlightColor: AppColors.grey100,
-                    child: Container(color: AppColors.white),
+                    baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    highlightColor: Theme.of(context).colorScheme.surface,
+                    child: Container(color: Theme.of(context).colorScheme.surface),
                   ),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   height: 45,
@@ -124,14 +124,14 @@ class _ClientProfileState extends State<ClientProfile> {
                       widget.client.clientName!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.black87,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       widget.client.companyName!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.blueGrey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -197,13 +197,13 @@ class _ClientProfileState extends State<ClientProfile> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.grey600),
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 6),
         Text(
           text,
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.black54),
+          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
       ],
     );
@@ -264,7 +264,7 @@ class _ClientProfileState extends State<ClientProfile> {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
         childrenPadding: const EdgeInsets.all(16),
-        leading: Icon(icon, color: AppColors.primary),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         initiallyExpanded: initiallyExpanded,
         title: Text(
           title,
@@ -391,9 +391,9 @@ class _ClientProfileState extends State<ClientProfile> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,7 +402,7 @@ class _ClientProfileState extends State<ClientProfile> {
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.grey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 5),
@@ -410,7 +410,7 @@ class _ClientProfileState extends State<ClientProfile> {
             value.isEmpty ? "-" : value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
-              color: AppColors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -420,11 +420,11 @@ class _ClientProfileState extends State<ClientProfile> {
 
   // Widget _sectionHeader(BuildContext context, String title, IconData icon) {
   BoxDecoration _cardDecoration() => BoxDecoration(
-    color: AppColors.white,
+    color: Theme.of(context).colorScheme.surface,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: AppColors.grey.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 3),
       ),

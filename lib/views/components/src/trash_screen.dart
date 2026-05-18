@@ -17,15 +17,7 @@ class TrashScreen extends StatefulWidget {
   State<TrashScreen> createState() => _TrashScreenState();
 }
 
-class TrashColors {
-  static const Color primary = Color(0xFFEF4444);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color restore = Color(0xFF10B981);
-}
+// TrashColors removed in favor of Theme.of(context)
 
 class _TrashScreenState extends State<TrashScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -214,7 +206,7 @@ class _TrashScreenState extends State<TrashScreen> {
               icon: const Icon(Icons.restore, size: 16),
               label: const Text("Restore"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: TrashColors.restore,
+                backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(context, true),
@@ -269,47 +261,43 @@ class _TrashScreenState extends State<TrashScreen> {
     }
 
     return Scaffold(
-      backgroundColor: TrashColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: TrashColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8.0),
-          child: Back(color: AppColors.black),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Back(color: Theme.of(context).colorScheme.onSurface),
         ),
         centerTitle: false,
-        title: const Text(
+        title: Text(
           "Trash",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: TrashColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
           ),
         ),
-        // bottom: PreferredSize(
-        //   preferredSize: const Size.fromHeight(70),
-        //   child: _buildHeaderSearch(),
-        // ),
         actions: [
           if (_selectionMode)
             IconButton(
               tooltip: 'Clear selection',
               icon: const Icon(Icons.close),
-              color: TrashColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               onPressed: _isProcessing ? null : _clearSelection,
             ),
           if (_selectionMode && _selectedIds.isNotEmpty)
             IconButton(
               tooltip: 'Restore selected',
               icon: const Icon(Icons.settings_backup_restore),
-              color: TrashColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               onPressed: _isProcessing ? null : _restoreSelected,
             ),
 
           IconButton(
             tooltip: "Refresh",
             icon: const Icon(Iconsax.refresh, size: 18),
-            color: TrashColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             onPressed: () => setState(() {}),
           ),
         ],
@@ -417,15 +405,17 @@ class _TrashScreenState extends State<TrashScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: TrashColors.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         "${_selectedIds.length} selected",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: TrashColors.primary,
+                          color: Theme.of(context).colorScheme.error,
                         ),
                       ),
                     ),
@@ -438,7 +428,7 @@ class _TrashScreenState extends State<TrashScreen> {
                         icon: const Icon(Icons.restore, size: 16),
                         label: const Text("Restore"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: TrashColors.restore,
+                          backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -472,10 +462,10 @@ class _TrashScreenState extends State<TrashScreen> {
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: TrashColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.5,
             ),
           ),
@@ -503,7 +493,6 @@ class _TrashScreenState extends State<TrashScreen> {
     final selected = _selectedIds.contains(id);
 
     return GestureDetector(
-      // onLongPress: () => _toggleSelectionMode(id),
       onTap: () {
         if (_selectionMode) {
           _toggleItem(id);
@@ -514,10 +503,12 @@ class _TrashScreenState extends State<TrashScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: TrashColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? TrashColors.primary : TrashColors.border,
+            color: selected
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.outlineVariant,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -537,18 +528,20 @@ class _TrashScreenState extends State<TrashScreen> {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: TrashColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           collection.capitalizeFirst,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: TrashColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -561,27 +554,13 @@ class _TrashScreenState extends State<TrashScreen> {
 
               const SizedBox(height: 10),
 
-              const Divider(height: 1, color: TrashColors.border),
+              Divider(
+                height: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
 
               const SizedBox(height: 10),
 
-              /// 🔹 PATH
-              // _infoRow(Iconsax.folder, trash.parentPath),
-
-              /// 🔹 ORIGINAL PATH
-              // if (trash.originalPath.isNotEmpty)
-              //   _infoRow(Iconsax.link, trash.originalPath),
-
-              // /// 🔹 REASON (NEW 🔥)
-              // if (trash.reason != null && trash.reason!.isNotEmpty)
-              //   _infoRow(Iconsax.warning_2, trash.reason!),
-
-              // /// 🔹 DOCUMENT ID (for debug / power users)
-              // _infoRow(Iconsax.code, trash.documentId),
-
-              // const SizedBox(height: 12),
-
-              /// 🔹 ACTIONS
               if (!_selectionMode)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -589,19 +568,23 @@ class _TrashScreenState extends State<TrashScreen> {
                     Expanded(
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Iconsax.folder,
                             size: 14,
-                            color: TrashColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 6),
 
                           Expanded(
                             child: Text(
                               trash.canRestoreTo,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: TrashColors.textSecondary,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -614,7 +597,7 @@ class _TrashScreenState extends State<TrashScreen> {
                       icon: const Icon(Icons.restore, size: 16),
                       label: const Text("Restore"),
                       style: TextButton.styleFrom(
-                        foregroundColor: TrashColors.restore,
+                        foregroundColor: AppColors.success,
                       ),
                       onPressed: _isProcessing
                           ? null
@@ -633,15 +616,15 @@ class _TrashScreenState extends State<TrashScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: TrashColors.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         time,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: TrashColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -667,10 +650,10 @@ class _TrashScreenState extends State<TrashScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: TrashColors.primary.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(icon, size: 16, color: TrashColors.primary),
+      child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.error),
     );
   }
 

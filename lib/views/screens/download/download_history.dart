@@ -10,15 +10,7 @@ import 'package:leadcapture/views/screens/download/bloc/download_event.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_state.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 
-class DownloadHistoryColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color background = Color(0xFFF8FAFC);
-  static const Color white = Colors.white;
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color surface = Colors.white;
-}
+// DownloadHistoryColors removed in favor of Theme.of(context)
 
 class DownloadHistory extends StatefulWidget {
   final bool showAppbar;
@@ -98,11 +90,11 @@ class _DownloadHistoryState extends State<DownloadHistory> {
             ? AppBar(
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
-                title: const Text(
+                title: Text(
                   "Download History",
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: DownloadHistoryColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                   ),
                 ),
@@ -142,28 +134,26 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                             Icon(
                               Icons.download_for_offline,
                               size: 80,
-                              color: DownloadHistoryColors.primary.withValues(alpha: 
-                                0.3,
-                              ),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
+                            Text(
                               "No Downloads Found",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: DownloadHistoryColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 40),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 40),
                               child: Text(
                                 "You haven't downloaded any files yet.",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: DownloadHistoryColors.textSecondary,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -242,27 +232,27 @@ class _DownloadHistoryState extends State<DownloadHistory> {
   Widget _buildHeaderSearch() {
     return Column(
       children: [
-        Container(color: DownloadHistoryColors.border, height: 1),
+        Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Material(
             borderRadius: BorderRadius.circular(12),
-            color: DownloadHistoryColors.background,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixIcon: Icon(
                   Icons.search,
                   size: 18,
-                  color: DownloadHistoryColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 hintText: 'Filter by filename or URL...',
                 hintStyle: TextStyle(
                   fontSize: 14,
-                  color: DownloadHistoryColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
@@ -279,10 +269,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
           padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: DownloadHistoryColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.5,
             ),
           ),
@@ -296,10 +286,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: DownloadHistoryColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+          BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 3)),
         ],
       ),
       child: Padding(
@@ -329,18 +319,18 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                 children: [
                   Text(
                     item.fileName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: DownloadHistoryColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     item.url,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: DownloadHistoryColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -352,24 +342,24 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: DownloadHistoryColors.background,
+                      color: Theme.of(context).scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           size: 12,
-                          color: DownloadHistoryColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _timeAgo(item.downloadedAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: DownloadHistoryColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -382,7 +372,7 @@ class _DownloadHistoryState extends State<DownloadHistory> {
               IconButton(
                 icon: Icon(
                   Icons.open_in_new,
-                  color: DownloadHistoryColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 onPressed: () => openfile(item.filePath, context),
               ),
