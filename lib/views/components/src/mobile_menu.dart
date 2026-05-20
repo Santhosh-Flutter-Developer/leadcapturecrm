@@ -121,9 +121,9 @@ class _MobileMenuState extends State<MobileMenu> {
                     SizedBox(height: 8),
                     Text(
                       "Company",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                     _buildListTile(
                       icon: Iconsax.activity,
@@ -432,51 +432,51 @@ class _MobileMenuState extends State<MobileMenu> {
                       SizedBox(height: 8),
                     ],
 
-                    // Text(
-                    //   "Payroll",
-                    //   style: Theme.of(
-                    //     context,
-                    //   ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
-                    // ),
-                    // _buildListTile(
-                    //   icon: Iconsax.timer_1,
-                    //   title: 'Work Time',
-                    //   onTap: () => Navigate.route(
-                    //     context,
-                    //     _adminModel != null
-                    //         ? const DashboardWorktime()
-                    //         : const WorktimeCreate(),
-                    //   ),
-                    // ),
+                    Text(
+                      "Payroll",
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    _buildListTile(
+                      icon: Iconsax.timer_1,
+                      title: 'Work Time',
+                      onTap: () => Navigate.route(
+                        context,
+                        _adminModel != null
+                            ? const DashboardWorktime()
+                            : const WorktimeCreate(),
+                      ),
+                    ),
 
-                    // _buildListTile(
-                    //   icon: Iconsax.clipboard_tick,
-                    //   title: 'Attendance Ledger',
-                    //   onTap: () => Navigate.route(context, Attendance()),
-                    // ),
+                    _buildListTile(
+                      icon: Iconsax.clipboard_tick,
+                      title: 'Attendance Ledger',
+                      onTap: () => Navigate.route(context, Attendance()),
+                    ),
 
-                    // _buildListTile(
-                    //   icon: Iconsax.security_user,
-                    //   title: 'Permissions',
-                    //   onTap: () => Navigate.route(
-                    //     context,
-                    //     _adminModel != null
-                    //         ? const PermissionRequestsListing()
-                    //         : const PermissionListing(),
-                    //   ),
-                    // ),
+                    _buildListTile(
+                      icon: Iconsax.security_user,
+                      title: 'Permissions',
+                      onTap: () => Navigate.route(
+                        context,
+                        _adminModel != null
+                            ? const PermissionRequestsListing()
+                            : const PermissionListing(),
+                      ),
+                    ),
 
-                    // _buildListTile(
-                    //   icon: Iconsax.wallet_3,
-                    //   title: 'Salary Ledger',
-                    //   onTap: () =>
-                    //       Navigate.route(context, const SalaryLedgerList()),
-                    // ),
+                    _buildListTile(
+                      icon: Iconsax.wallet_3,
+                      title: 'Salary Ledger',
+                      onTap: () =>
+                          Navigate.route(context, const SalaryLedgerList()),
+                    ),
                     Text(
                       "Others",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.outline),
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
                     ),
                     _buildListTile(
                       icon: Iconsax.recovery_convert,
@@ -568,19 +568,25 @@ class _MobileMenuState extends State<MobileMenu> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.outlineVariant,
+                color: isLogout
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.outlineVariant,
               ),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+              color: isLogout
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           title: Text(
             title,
             style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-              color: isLogout ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+              color: isLogout
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: subtitle != null
@@ -640,9 +646,9 @@ class _MobileMenuState extends State<MobileMenu> {
                             )?.name) ??
                             ''
                       : "Administartor",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

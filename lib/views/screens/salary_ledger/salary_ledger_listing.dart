@@ -5,6 +5,9 @@ import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/firebase.dart';
 import 'package:leadcapture/services/firebase/src/salary_service.dart';
 import 'package:leadcapture/utils/src/platform.dart';
+import 'package:leadcapture/utils/src/routes.dart';
+import 'package:leadcapture/utils/src/xls_export.dart';
+import 'package:leadcapture/views/screens/salary_ledger/payslip_detail_screen.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 
@@ -99,6 +102,30 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
     setState(() => isGenerating = false);
   }
 
+  Future<void> _downloadExcelReport(SalaryModel salary) async {
+    try {
+      final emp = await EmployeeService.getEmployee(uid: salary.employeeId);
+      await XlsExport.payslipReportExport(salary: salary, employee: emp);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Excel Payslip exported and downloaded successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to export Excel: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _downloadPayslip(SalaryModel salary) {
     showModalBottomSheet(
       context: context,
@@ -106,14 +133,20 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: Icon(Icons.picture_as_pdf),
-            title: Text("Download PDF"),
-            onTap: () {},
+            leading: const Icon(Iconsax.document_download, color: Colors.blue),
+            title: const Text("Download Excel Payslip"),
+            onTap: () {
+              Navigator.pop(context);
+              _downloadExcelReport(salary);
+            },
           ),
           ListTile(
-            leading: Icon(Icons.visibility),
-            title: Text("Preview"),
-            onTap: () {},
+            leading: const Icon(Icons.visibility, color: Colors.green),
+            title: const Text("Preview Payslip"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigate.route(context, PayslipDetailScreen(salary: salary));
+            },
           ),
         ],
       ),
@@ -704,7 +737,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor(getStatus(salary)),
+                    color: statusColor(getStatus(salary)).withValues(alpha: .15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

@@ -5,7 +5,7 @@ import '/app/app.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 import '/services/services.dart';
-// import 'company_location_settings.dart';
+import 'company_location_settings.dart';
 
 class SettingsColors {
   static const Color primary = Color(0xFF2563EB);
@@ -122,19 +122,19 @@ class _SettingsListingState extends State<SettingsListing> {
                           UpdateSettingsEvent("pushNotification", val),
                         ),
                       ),
-                      // _buildSwitchTile(
-                      //   icon: Iconsax.wallet,
-                      //   iconColor: Colors.green,
-                      //   title: "Payroll",
-                      //   subtitle: "Show payroll related modules",
-                      //   value: settings.payrollEnabled,
-                      //   onChanged: (val) async {
-                      //     context.read<SettingsBloc>().add(
-                      //       UpdateSettingsEvent("payrollEnabled", val),
-                      //     );
-                      //     await Spdb.savePayrollSettings(val);
-                      //   },
-                      // ),
+                      _buildSwitchTile(
+                        icon: Iconsax.wallet,
+                        iconColor: Colors.green,
+                        title: "Payroll",
+                        subtitle: "Show payroll related modules",
+                        value: settings.payrollEnabled,
+                        onChanged: (val) async {
+                          context.read<SettingsBloc>().add(
+                            UpdateSettingsEvent("payrollEnabled", val),
+                          );
+                          await Spdb.savePayrollSettings(val);
+                        },
+                      ),
                       _buildSwitchTile(
                         icon: Iconsax.message,
                         iconColor: Colors.greenAccent,
@@ -213,13 +213,13 @@ class _SettingsListingState extends State<SettingsListing> {
                             icon: Iconsax.location,
                             iconColor: Colors.teal,
                             title: "Company Location",
-                            // onTap: () => Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (_) =>
-                            //         const CompanyLocationSettings(),
-                            //   ),
-                            // ),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const CompanyLocationSettings(),
+                              ),
+                            ),
                             trailing: const Icon(
                               Iconsax.arrow_right_3,
                               size: 16,

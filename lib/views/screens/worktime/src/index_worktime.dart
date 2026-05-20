@@ -1,14 +1,15 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/svg.dart';
 import 'package:leadcapture/models/models.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/services/services.dart';
+import 'package:leadcapture/utils/src/date_picker.dart';
 import 'package:leadcapture/utils/src/route.dart';
 import 'package:leadcapture/views/screens/worktime/src/index_worktime_detail.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
@@ -147,6 +148,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildDateHeader() {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -158,15 +160,15 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
               "Today's Worktime Report",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: cs.primary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now()),
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: AppColors.grey),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -175,11 +177,12 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildTabButtons() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -215,7 +218,9 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                           height: 20,
                           width: 20,
                           colorFilter: ColorFilter.mode(
-                            _index == 1 ? AppColors.greenColor : Colors.grey,
+                            _index == 1
+                                ? AppColors.greenColor
+                                : cs.onSurfaceVariant,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -223,12 +228,13 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                       const SizedBox(width: 8),
                       Text(
                         "Active (${_groupList.length})",
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _index == 1
-                              ? AppColors.greenColor
-                              : Colors.grey,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: _index == 1
+                                  ? AppColors.greenColor
+                                  : cs.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -268,7 +274,9 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                           height: 20,
                           width: 20,
                           colorFilter: ColorFilter.mode(
-                            _index == 2 ? AppColors.redColor : Colors.grey,
+                            _index == 2
+                                ? AppColors.redColor
+                                : cs.onSurfaceVariant,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -276,10 +284,13 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                       const SizedBox(width: 8),
                       Text(
                         "Inactive (${_nonEnrollList.length})",
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _index == 2 ? AppColors.redColor : Colors.grey,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: _index == 2
+                                  ? AppColors.redColor
+                                  : cs.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -345,7 +356,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "${calculateTotalHours(group.first)} hrs",
+                   "${calculateTotalHoursForGroup(group)} hrs",
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppColors.greenColor,
                       fontWeight: FontWeight.bold,
@@ -384,26 +395,29 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildWorktimeTable(List<WorktimeModel> group, int groupIndex) {
+    final cs = Theme.of(context).colorScheme;
+    final shiftLabels = ['Morning', 'Afternoon', 'Evening', 'Night'];
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildShiftColumn("Morning", group[0])),
-            Container(
-              width: 1,
-              height: 60,
-              color: Colors.grey.shade300,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-            ),
-            if (group.length > 1)
-              Expanded(child: _buildShiftColumn("Evening", group[1]))
-            else
-              Expanded(child: _buildEmptyShiftColumn()),
+            for (int i = 0; i < group.length; i++) ...[
+              if (i > 0)
+                Divider(
+                  height: 20,
+                  color: cs.outline.withValues(alpha: 0.2),
+                ),
+              _buildShiftColumn(
+                shiftLabels.length > i ? shiftLabels[i] : 'Session ${i + 1}',
+                group[i],
+              ),
+            ],
           ],
         ),
       ),
@@ -411,55 +425,76 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildShiftColumn(String title, WorktimeModel shift) {
+    final cs = Theme.of(context).colorScheme;
+    final workedDuration = shift.clockOut != null
+        ? getOverallTimeDuration(shift.clockIn, shift.clockOut!, shift.breaks)
+        : null;
+    final workedLabel = workedDuration != null
+        ? '${workedDuration.inHours}h ${workedDuration.inMinutes.remainder(60)}m'
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.primaryColor,
-          ),
+        Row(
+          children: [
+            Icon(Iconsax.sun_1, size: 14, color: cs.primary),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.primary,
+              ),
+            ),
+            if (workedLabel != null) ...[
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.greenColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  workedLabel,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.greenColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildTimeRow("In", shift.clockIn.formatTime),
         _buildTimeRow("Break", "${calculateBreaks(shift.breaks)}h"),
         _buildTimeRow(
           "Out",
           shift.clockOut?.formatTime ?? "--",
-          shift.clockOut == null ? Colors.red : null,
+          shift.clockOut == null ? cs.error : null,
         ),
       ],
     );
   }
 
-  Widget _buildEmptyShiftColumn() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(Icons.schedule, color: Colors.grey.shade400, size: 32),
-        Text(
-          "No Evening Shift",
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
-        ),
-      ],
-    );
-  }
 
   Widget _buildTimeRow(String label, String value, [Color? valueColor]) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           SizedBox(
-            width: 40,
+            width: 44,
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
+                color: cs.onSurfaceVariant,
               ),
             ),
           ),
@@ -468,7 +503,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: valueColor ?? Colors.black87,
+                color: valueColor ?? cs.onSurface,
               ),
             ),
           ),
@@ -478,6 +513,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildInactiveWorkers() {
+    final cs = Theme.of(context).colorScheme;
     if (_nonEnrollList.isEmpty) {
       return _buildEmptyState("All staff are active!", Icons.celebration);
     }
@@ -490,7 +526,7 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
       itemBuilder: (context, index) {
         final staff = _nonEnrollList[index];
         return Card(
-          color: Colors.red.shade50,
+          color: cs.errorContainer.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -499,12 +535,12 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
               height: 40,
               width: 40,
               decoration: BoxDecoration(
-                color: Colors.red.shade100,
+                color: cs.errorContainer,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.person_off,
-                color: Colors.red.shade400,
+                color: cs.onErrorContainer,
                 size: 24,
               ),
             ),
@@ -515,15 +551,18 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(staff.mobileNumber),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: cs.onSurfaceVariant,
+            ),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     "${staff.name} is not enrolled for worktime",
-                    style: TextStyle(color: Colors.black),
                   ),
-                  backgroundColor: Colors.red.shade100,
+                  backgroundColor: cs.errorContainer,
                 ),
               );
             },
@@ -534,17 +573,18 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 64, color: Colors.grey.shade400),
+          Icon(icon, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             message,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -552,8 +592,33 @@ class _DashboardWorktimeState extends State<DashboardWorktime>
     );
   }
 
+  /// Computes total worked hours across all sessions for a user group.
+  String calculateTotalHoursForGroup(List<WorktimeModel> group) {
+    Duration total = Duration.zero;
+    for (final session in group) {
+      if (session.clockOut != null) {
+        total += getOverallTimeDuration(
+          session.clockIn,
+          session.clockOut!,
+          session.breaks,
+        );
+      } else {
+        // Still clocked in — count elapsed time so far
+        total += getOverallTimeDuration(
+          session.clockIn,
+          DateTime.now(),
+          session.breaks,
+        );
+      }
+    }
+    final hours = total.inHours;
+    final minutes = total.inMinutes.remainder(60);
+    return '$hours.${(minutes * 10 ~/ 6).toString().padLeft(1, '0')}';
+  }
+
+  // Kept for single-session call-sites
   String calculateTotalHours(WorktimeModel worktime) {
-    return "8.5";
+    return calculateTotalHoursForGroup([worktime]);
   }
 
   Future<void> _refresh() async {

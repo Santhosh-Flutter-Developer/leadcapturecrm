@@ -449,24 +449,11 @@ class AttendanceService {
         String status = AttendanceStatus.absent.name;
 
         if (work != null) {
-          final now = DateTime.now();
-          final endTime = work.clockOut ?? now;
-
-          workingMinutes = endTime.difference(work.clockIn).inMinutes;
-
-          if (workingMinutes >= 480) {
-            status = AttendanceStatus.present.name;
-          } else if (workingMinutes >= 240) {
-            status = AttendanceStatus.halfDay.name;
-          } else if (workingMinutes > 0) {
-            status = AttendanceStatus.absent.name;
-          }
-
-          if (workingMinutes > 480) {
-            otMinutes = workingMinutes - 480;
-          } else {
-            lessMinutes = 480 - workingMinutes;
-          }
+          final tempModel = attendanceWorktime(work);
+          workingMinutes = tempModel.workingHourMinutes;
+          lessMinutes = tempModel.lessHourMinutes;
+          otMinutes = tempModel.otHourMinutes;
+          status = tempModel.punchList.first.status;
         }
 
         if (permission != null) {
@@ -524,7 +511,12 @@ class AttendanceService {
               ),
             ],
             breakMinutes: 0,
-            present: status == AttendanceStatus.present.name ? "1" : "0",
+            present: (status == AttendanceStatus.present.name ||
+                    status == AttendanceStatus.late.name ||
+                    status == AttendanceStatus.earlyExit.name ||
+                    status == AttendanceStatus.wfh.name)
+                ? "1"
+                : "0",
             absent: status == AttendanceStatus.absent.name ? "1" : "0",
             holiday: "0",
             workingHourMinutes: workingMinutes,
@@ -659,6 +651,16 @@ class AttendanceService {
       // 🚨 6. NORMAL ATTENDANCE
       switch (punch.status.toLowerCase()) {
         case "present":
+          presentDays++;
+          break;
+
+        case "late":
+          lateDays++;
+          presentDays++;
+          break;
+
+        case "earlyexit":
+          earlyExitDays++;
           presentDays++;
           break;
 

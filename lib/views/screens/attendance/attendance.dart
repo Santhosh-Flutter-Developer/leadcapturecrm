@@ -162,8 +162,7 @@ class _AttendanceState extends State<Attendance>
     tempAList.clear();
     tempAList.addAll(aList);
 
-    filteredList = List.from(aList);
-    stats = calculateStats(filteredList, isAdmin: isAdmin, holidays: holidays);
+    applyFilters();
 
     aList.sort((a, b) {
       if (a.punchList.isEmpty || b.punchList.isEmpty) return 0;
@@ -321,43 +320,7 @@ class _AttendanceState extends State<Attendance>
   void applySummaryFilter(String label) {
     setState(() {
       selectedSummaryFilter = label;
-
-      if (label == "All") {
-        filteredList = List.from(tempAList);
-        return;
-      }
-
-      filteredList = tempAList.where((a) {
-        if (a.punchList.isEmpty) return false;
-
-        final status = getAttendanceStatus(a);
-
-        switch (label) {
-          case "Present":
-            return status == "Present";
-
-          case "Absent":
-            return status == "Absent";
-
-          case "Leave":
-            return status == "Leave";
-
-          case "WFH":
-            return status == "WFH";
-
-          case "Half Day":
-            return status == "HalfDay";
-
-          case "Late":
-            return status == "Late";
-
-          case "Early Exit":
-            return status == "EarlyExit";
-
-          default:
-            return true;
-        }
-      }).toList();
+      applyFilters();
     });
   }
 
@@ -567,10 +530,10 @@ class _AttendanceState extends State<Attendance>
   }
 
   void applyFilters() {
-    List<AttendanceModel> filtered = tempAList.where((a) {
+    // 1. Filter by base filters (Employee, Department, Date Range)
+    List<AttendanceModel> baseFilteredList = tempAList.where((a) {
       if (a.punchList.isEmpty) return false;
       final punch = a.punchList.first;
-      final status = getAttendanceStatus(a);
       final type = punch.permissionType?.name ?? "";
 
       bool matchesEmployee = selectedEmployee == "All"
@@ -588,9 +551,7 @@ class _AttendanceState extends State<Attendance>
         matchesDepartment =
             emp?.department?.contains(selectedDepartment) ?? false;
       }
-      bool matchesStatus = selectedStatus == "All"
-          ? true
-          : status.toLowerCase() == selectedStatus.toLowerCase();
+      
       bool matchesType = selectedType == "All" ? true : type == selectedType;
       bool matchesDate = true;
 
@@ -604,19 +565,67 @@ class _AttendanceState extends State<Attendance>
 
       return matchesEmployee &&
           matchesDepartment &&
-          matchesStatus &&
           matchesType &&
           matchesDate;
     }).toList();
 
-    setState(() {
-      filteredList = filtered;
+    // 2. Calculate stats from baseFilteredList (which respects Admin unique user counting)
+    stats = calculateStats(
+      baseFilteredList,
+      isAdmin: isAdmin,
+      holidays: holidays,
+    );
 
-      stats = calculateStats(
-        filteredList,
-        isAdmin: isAdmin,
-        holidays: holidays,
-      );
+    // 3. Further filter by selectedSummaryFilter for display list
+    List<AttendanceModel> finalFilteredList = baseFilteredList.where((a) {
+      if (selectedSummaryFilter == "All") return true;
+      if (a.punchList.isEmpty) {
+        return selectedSummaryFilter == "Absent";
+      }
+
+      final status = getAttendanceStatus(a);
+
+      switch (selectedSummaryFilter) {
+        case "Present":
+          return status == "Present" || status == "Late" || status == "EarlyExit";
+
+        case "Absent":
+          return status == "Absent";
+
+        case "Leave":
+          return status == "Leave";
+
+        case "WFH":
+          return status == "WFH";
+
+        case "Half Day":
+          return status == "HalfDay";
+
+        case "Late":
+          return status == "Late";
+
+        case "Early Exit":
+          return status == "EarlyExit";
+
+        case "Pending":
+          return status == "Pending";
+
+        case "Rejected":
+          return status == "Rejected";
+
+        case "Less Hours":
+          return status == "LessHours";
+
+        case "InProgress":
+          return status == "InProgress";
+
+        default:
+          return true;
+      }
+    }).toList();
+
+    setState(() {
+      filteredList = finalFilteredList;
     });
   }
 
@@ -1991,8 +2000,45 @@ class _AttendanceState extends State<Attendance>
               ),
             );
           }
+          // Find all records for this employee in the base list (before summary filter)
+          final baseEmployeeRecords = tempAList.where((a) {
+            // Check if matches the active dropdown filters
+            bool matchesEmployee = selectedEmployee == "All"
+                ? true
+                : a.employeeId == selectedEmployee;
+
+            bool matchesDepartment = true;
+            if (selectedDepartment != "All") {
+              EmployeeModel? emp;
+              try {
+                emp = employees.firstWhere((e) => e.uid == a.employeeId);
+              } catch (_) {
+                emp = null;
+              }
+              matchesDepartment =
+                  emp?.department?.contains(selectedDepartment) ?? false;
+            }
+
+            bool matchesDate = true;
+            if (selectedDateRange != null && a.punchList.isNotEmpty) {
+              final punchDate = parseDateTime(a.punchList.first.punchDate);
+              if (punchDate != null) {
+                matchesDate =
+                    !punchDate.isBefore(selectedDateRange!.start) &&
+                    !punchDate.isAfter(selectedDateRange!.end);
+              } else {
+                matchesDate = false;
+              }
+            }
+
+            return a.employeeId == empId &&
+                matchesEmployee &&
+                matchesDepartment &&
+                matchesDate;
+          }).toList();
+
           int present = 0, absent = 0, holiday = 0;
-          for (var a in list) {
+          for (var a in baseEmployeeRecords) {
             if (a.present == "1") present++;
             if (a.absent == "1") absent++;
             if (a.holiday == "1") holiday++;

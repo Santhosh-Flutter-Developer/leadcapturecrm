@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/views/views.dart';
-import '/theme/theme.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 
@@ -84,7 +83,7 @@ class _CreateChatState extends State<CreateChat>
         topRight: Radius.circular(30),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: FutureBuilder(
           future: _future,
           builder: (context, snapshot) {
@@ -102,9 +101,11 @@ class _CreateChatState extends State<CreateChat>
                       child: TabBar(
                         padding: EdgeInsets.zero,
                         controller: _tabController,
-                        labelColor: AppColors.black,
-                        indicatorColor: AppColors.primary,
-                        unselectedLabelColor: AppColors.grey600,
+                        labelColor: Theme.of(context).colorScheme.onSurface,
+                        indicatorColor: Theme.of(context).colorScheme.primary,
+                        unselectedLabelColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
                         tabs: [
                           Tab(
                             child: Text(
@@ -136,7 +137,9 @@ class _CreateChatState extends State<CreateChat>
                                 "Create Chat",
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: AppColors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
@@ -178,7 +181,9 @@ class _CreateChatState extends State<CreateChat>
                                           ? Icons.shield
                                           : Icons.person,
                                       size: 16,
-                                      color: AppColors.grey600,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -188,7 +193,11 @@ class _CreateChatState extends State<CreateChat>
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
-                                          ?.copyWith(color: AppColors.grey600),
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -220,7 +229,9 @@ class _CreateChatState extends State<CreateChat>
                               Center(
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 50,
                                       vertical: 14,
@@ -299,9 +310,11 @@ class _CreateChatState extends State<CreateChat>
                                       );
                                     }
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Iconsax.message,
-                                    color: AppColors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimary,
                                   ),
                                   label: Text(
                                     "Create Chat",
@@ -309,7 +322,9 @@ class _CreateChatState extends State<CreateChat>
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: AppColors.white,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
@@ -329,7 +344,9 @@ class _CreateChatState extends State<CreateChat>
                                 "Create Group",
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
-                                      color: AppColors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
@@ -340,7 +357,9 @@ class _CreateChatState extends State<CreateChat>
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                               ),
                               const SizedBox(height: 6),
@@ -357,7 +376,9 @@ class _CreateChatState extends State<CreateChat>
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                               ),
                               const SizedBox(height: 6),
@@ -375,7 +396,9 @@ class _CreateChatState extends State<CreateChat>
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.black,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                               ),
                               const SizedBox(height: 6),
@@ -405,7 +428,9 @@ class _CreateChatState extends State<CreateChat>
                               Center(
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 50,
                                       vertical: 14,
@@ -498,9 +523,11 @@ class _CreateChatState extends State<CreateChat>
                                       );
                                     }
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Iconsax.messages_2,
-                                    color: AppColors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimary,
                                   ),
                                   label: Text(
                                     "Create Group",
@@ -508,7 +535,9 @@ class _CreateChatState extends State<CreateChat>
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: AppColors.white,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),

@@ -39,11 +39,28 @@ AttendanceModel attendanceWorktime(WorktimeModel work) {
   });
 
   final actualWork = totalMinutes - breakMinutes;
-  final workMinutes = work.clockOut != null ? actualWork : 0;
+  final workMinutes = actualWork;
+
+  final inHour = work.clockIn.hour;
+  final inMin = work.clockIn.minute;
+  final isLate = inHour > 9 || (inHour == 9 && inMin > 15);
+
+  bool isEarly = false;
+  if (work.clockOut != null) {
+    final outHour = work.clockOut!.hour;
+    final outMin = work.clockOut!.minute;
+    isEarly = outHour < 17 || (outHour == 17 && outMin < 45);
+  }
 
   AttendanceStatus status;
   if (workMinutes >= 480) {
-    status = AttendanceStatus.present;
+    if (isLate) {
+      status = AttendanceStatus.late;
+    } else if (isEarly) {
+      status = AttendanceStatus.earlyExit;
+    } else {
+      status = AttendanceStatus.present;
+    }
   } else if (workMinutes >= 240) {
     status = AttendanceStatus.halfDay;
   } else {
@@ -78,7 +95,7 @@ AttendanceModel attendanceWorktime(WorktimeModel work) {
     punchList: [punch],
     breakMinutes: breakMinutes,
     status: status,
-    present: status == AttendanceStatus.present ? "1" : "0",
+    present: (status == AttendanceStatus.present || status == AttendanceStatus.late || status == AttendanceStatus.earlyExit) ? "1" : "0",
     absent: status == AttendanceStatus.absent ? "1" : "0",
     holiday: "0",
 
@@ -121,108 +138,264 @@ AttendanceStats calculateStats(
     );
   }
 
-  for (var a in list) {
-    if (a.punchList.isEmpty) {
-      absent++;
-      continue;
-    }
+  if (isAdmin) {
+    final empIdsPresent = <String>{};
+    final empIdsAbsent = <String>{};
+    final empIdsLeave = <String>{};
+    final empIdsHoliday = <String>{};
+    final empIdsWfh = <String>{};
+    final empIdsHalfDay = <String>{};
+    final empIdsLate = <String>{};
+    final empIdsEarlyExit = <String>{};
+    final empIdsPending = <String>{};
+    final empIdsRejected = <String>{};
+    final empIdsPermission = <String>{};
+    final empIdsInProgress = <String>{};
+    final empIdsLessHours = <String>{};
 
-    final punchDate = parseDateTime(a.punchList.first.punchDate);
-    if (punchDate == null) continue;
+    for (var a in list) {
+      final empId = a.employeeId;
 
-    final isHolidayDay = isHoliday(punchDate);
-
-    // ✅ 1. HOLIDAY PRIORITY (HIGHEST)
-    if (isHolidayDay) {
-      holidayCount++;
-      continue; // 🚨 stop further processing
-    }
-
-    final updated = a.applyPermissions(isAdmin: isAdmin);
-
-    // ✅ 2. PERMISSION HANDLING
-    if (a.permissions != null && a.permissions!.isNotEmpty) {
-      final approved = a.permissions!
-          .where((p) => p.status == PermissionsStatus.approved)
-          .toList();
-
-      final pendingList = a.permissions!
-          .where((p) => p.status == PermissionsStatus.pending)
-          .toList();
-
-      final rejectedList = a.permissions!
-          .where((p) => p.status == PermissionsStatus.rejected)
-          .toList();
-
-      if (pendingList.isNotEmpty) pending++;
-      if (rejectedList.isNotEmpty) rejected++;
-
-      bool skipAttendance = false;
-
-      for (var p in approved) {
-        switch (p.type) {
-          case PermissionType.leaveFullDay:
-            leave++;
-            skipAttendance = true;
-            break;
-
-          case PermissionType.leaveHalfDay:
-            halfDay++;
-            break;
-
-          case PermissionType.workFromHome:
-            wfh++;
-            skipAttendance = true;
-            break;
-
-          case PermissionType.lateEntry:
-            late++;
-            break;
-
-          case PermissionType.earlyExit:
-            earlyExit++;
-            break;
-
-          case PermissionType.permission:
-            permission++;
-            break;
-        }
+      if (a.punchList.isEmpty) {
+        empIdsAbsent.add(empId);
+        continue;
       }
 
-      if (skipAttendance) continue;
+      final punchDate = parseDateTime(a.punchList.first.punchDate);
+      if (punchDate == null) continue;
+
+      final isHolidayDay = isHoliday(punchDate);
+
+      // ✅ 1. HOLIDAY PRIORITY (HIGHEST)
+      if (isHolidayDay) {
+        empIdsHoliday.add(empId);
+        continue; // 🚨 stop further processing
+      }
+
+      final updated = a.applyPermissions(isAdmin: isAdmin);
+
+      // ✅ 2. PERMISSION HANDLING
+      if (a.permissions != null && a.permissions!.isNotEmpty) {
+        final approved = a.permissions!
+            .where((p) => p.status == PermissionsStatus.approved)
+            .toList();
+
+        final pendingList = a.permissions!
+            .where((p) => p.status == PermissionsStatus.pending)
+            .toList();
+
+        final rejectedList = a.permissions!
+            .where((p) => p.status == PermissionsStatus.rejected)
+            .toList();
+
+        if (pendingList.isNotEmpty) empIdsPending.add(empId);
+        if (rejectedList.isNotEmpty) empIdsRejected.add(empId);
+
+        bool skipAttendance = false;
+
+        for (var p in approved) {
+          switch (p.type) {
+            case PermissionType.leaveFullDay:
+              empIdsLeave.add(empId);
+              skipAttendance = true;
+              break;
+
+            case PermissionType.leaveHalfDay:
+              empIdsHalfDay.add(empId);
+              break;
+
+            case PermissionType.workFromHome:
+              empIdsWfh.add(empId);
+              skipAttendance = true;
+              break;
+
+            case PermissionType.lateEntry:
+              empIdsLate.add(empId);
+              break;
+
+            case PermissionType.earlyExit:
+              empIdsEarlyExit.add(empId);
+              break;
+
+            case PermissionType.permission:
+              empIdsPermission.add(empId);
+              break;
+          }
+        }
+
+        if (skipAttendance) continue;
+      }
+
+      // ✅ 3. NO PUNCH → ABSENT
+      if (updated.punchList.isEmpty) {
+        empIdsAbsent.add(empId);
+        continue;
+      }
+
+      // ✅ 4. ATTENDANCE STATUS
+      final status = getAttendanceStatus(updated);
+
+      switch (status) {
+        case "Present":
+          empIdsPresent.add(empId);
+          break;
+
+        case "Late":
+          empIdsLate.add(empId);
+          empIdsPresent.add(empId);
+          break;
+
+        case "EarlyExit":
+          empIdsEarlyExit.add(empId);
+          empIdsPresent.add(empId);
+          break;
+
+        case "Absent":
+          empIdsAbsent.add(empId);
+          break;
+
+        case "LessHours":
+          empIdsLessHours.add(empId);
+          break;
+
+        case "InProgress":
+          empIdsInProgress.add(empId);
+          break;
+      }
+
+      // ✅ 5. TIME CALCULATIONS
+      totalWorking += updated.workingHourMinutes;
+      totalLess += updated.lessHourMinutes;
+      totalOT += updated.otHourMinutes;
     }
 
-    // ✅ 3. NO PUNCH → ABSENT
-    if (updated.punchList.isEmpty) {
-      absent++;
-      continue;
-    }
-
-    // ✅ 4. ATTENDANCE STATUS
-    final status = getAttendanceStatus(updated);
-
-    switch (status) {
-      case "Present":
-        present++;
-        break;
-
-      case "Absent":
+    present = empIdsPresent.length;
+    absent = empIdsAbsent.length;
+    leave = empIdsLeave.length;
+    holidayCount = empIdsHoliday.length;
+    wfh = empIdsWfh.length;
+    halfDay = empIdsHalfDay.length;
+    late = empIdsLate.length;
+    earlyExit = empIdsEarlyExit.length;
+    pending = empIdsPending.length;
+    rejected = empIdsRejected.length;
+    permission = empIdsPermission.length;
+    inProgress = empIdsInProgress.length;
+    lessHours = empIdsLessHours.length;
+  } else {
+    for (var a in list) {
+      if (a.punchList.isEmpty) {
         absent++;
-        break;
+        continue;
+      }
 
-      case "LessHours":
-        lessHours++;
-        break;
+      final punchDate = parseDateTime(a.punchList.first.punchDate);
+      if (punchDate == null) continue;
 
-      case "InProgress":
-        inProgress++;
-        break;
+      final isHolidayDay = isHoliday(punchDate);
+
+      // ✅ 1. HOLIDAY PRIORITY (HIGHEST)
+      if (isHolidayDay) {
+        holidayCount++;
+        continue; // 🚨 stop further processing
+      }
+
+      final updated = a.applyPermissions(isAdmin: isAdmin);
+
+      // ✅ 2. PERMISSION HANDLING
+      if (a.permissions != null && a.permissions!.isNotEmpty) {
+        final approved = a.permissions!
+            .where((p) => p.status == PermissionsStatus.approved)
+            .toList();
+
+        final pendingList = a.permissions!
+            .where((p) => p.status == PermissionsStatus.pending)
+            .toList();
+
+        final rejectedList = a.permissions!
+            .where((p) => p.status == PermissionsStatus.rejected)
+            .toList();
+
+        if (pendingList.isNotEmpty) pending++;
+        if (rejectedList.isNotEmpty) rejected++;
+
+        bool skipAttendance = false;
+
+        for (var p in approved) {
+          switch (p.type) {
+            case PermissionType.leaveFullDay:
+              leave++;
+              skipAttendance = true;
+              break;
+
+            case PermissionType.leaveHalfDay:
+              halfDay++;
+              break;
+
+            case PermissionType.workFromHome:
+              wfh++;
+              skipAttendance = true;
+              break;
+
+            case PermissionType.lateEntry:
+              late++;
+              break;
+
+            case PermissionType.earlyExit:
+              earlyExit++;
+              break;
+
+            case PermissionType.permission:
+              permission++;
+              break;
+          }
+        }
+
+        if (skipAttendance) continue;
+      }
+
+      // ✅ 3. NO PUNCH → ABSENT
+      if (updated.punchList.isEmpty) {
+        absent++;
+        continue;
+      }
+
+      // ✅ 4. ATTENDANCE STATUS
+      final status = getAttendanceStatus(updated);
+
+      switch (status) {
+        case "Present":
+          present++;
+          break;
+
+        case "Late":
+          late++;
+          present++;
+          break;
+
+        case "EarlyExit":
+          earlyExit++;
+          present++;
+          break;
+
+        case "Absent":
+          absent++;
+          break;
+
+        case "LessHours":
+          lessHours++;
+          break;
+
+        case "InProgress":
+          inProgress++;
+          break;
+      }
+
+      // ✅ 5. TIME CALCULATIONS
+      totalWorking += updated.workingHourMinutes;
+      totalLess += updated.lessHourMinutes;
+      totalOT += updated.otHourMinutes;
     }
-
-    // ✅ 5. TIME CALCULATIONS
-    totalWorking += updated.workingHourMinutes;
-    totalLess += updated.lessHourMinutes;
-    totalOT += updated.otHourMinutes;
   }
 
   return AttendanceStats(
@@ -315,7 +488,24 @@ String _calculateWorkingStatus(AttendanceModel a) {
   final workedMinutes = a.workingHourMinutes;
 
   if (workedMinutes == 0) return "Absent";
-  if (workedMinutes >= 480) return "Present";
+  if (workedMinutes >= 480) {
+    final timeData = getAttendanceTime(a);
+    if (timeData.checkIn != null) {
+      final inHour = timeData.checkIn!.hour;
+      final inMin = timeData.checkIn!.minute;
+      if (inHour > 9 || (inHour == 9 && inMin > 15)) {
+        return "Late";
+      }
+    }
+    if (timeData.checkOut != null) {
+      final outHour = timeData.checkOut!.hour;
+      final outMin = timeData.checkOut!.minute;
+      if (outHour < 17 || (outHour == 17 && outMin < 45)) {
+        return "EarlyExit";
+      }
+    }
+    return "Present";
+  }
   if (workedMinutes >= 240) return "HalfDay";
   if (workedMinutes > 0 && workedMinutes < 240) return "LessHours";
   return "Absent";

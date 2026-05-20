@@ -130,8 +130,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Future<List<Map<String, dynamic>>> _getMenus() async {
-    // final settings = await SettingsService().fetchSettings();
-    // final bool payrollEnabled = settings.payrollEnabled;
+    final settings = await SettingsService().fetchSettings();
+    final bool payrollEnabled = settings.payrollEnabled;
     // bool admin =
     //     widget.isAdmin ||
     //     (await PermissionService.getPermissions('Admin')) != null;
@@ -189,23 +189,23 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool tasks =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Tasks')) != null;
-    // bool workTime =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Work Time')) != null);
-    // bool attendance =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Attendance Ledger')) !=
-    //             null);
-    // bool salaryLedger =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Salary Ledger')) != null);
-    // bool permissions =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Permissions')) != null);
+    bool workTime =
+        payrollEnabled &&
+        (widget.isAdmin ||
+            (await PermissionService.getPermissions('Work Time')) != null);
+    bool attendance =
+        payrollEnabled &&
+        (widget.isAdmin ||
+            (await PermissionService.getPermissions('Attendance Ledger')) !=
+                null);
+    bool salaryLedger =
+        payrollEnabled &&
+        (widget.isAdmin ||
+            (await PermissionService.getPermissions('Salary Ledger')) != null);
+    bool permissions =
+        payrollEnabled &&
+        (widget.isAdmin ||
+            (await PermissionService.getPermissions('Permissions')) != null);
     bool downloads =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Downloads')) != null;
@@ -283,16 +283,17 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       if (calendar) {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
       if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
       if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
-      // {
-      //   'icon': Iconsax.wallet,
-      //   'title': 'Payroll',
-      //   'children': [
-      //     if (payrollEnabled && workTime) 'Work Time',
-      //     if (payrollEnabled && permissions) 'Permissions',
-      //     if (payrollEnabled && attendance) 'Attendance Ledger',
-      //     if (payrollEnabled && salaryLedger) 'Salary Ledger',
-      //   ],
-      // },
+      if (payrollEnabled)
+        {
+          'icon': Iconsax.wallet,
+          'title': 'Payroll',
+          'children': [
+            if (workTime) 'Work Time',
+            if (permissions) 'Permissions',
+            if (attendance) 'Attendance Ledger',
+            if (salaryLedger) 'Salary Ledger',
+          ],
+        },
       {'icon': Iconsax.setting_2, 'title': 'Settings'},
       if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
       if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
@@ -307,7 +308,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     ];
 
     return menus.where((menu) {
-      if (menu['title'] == 'Users' && menu.containsKey('children')) {
+      if ((menu['title'] == 'Users' || menu['title'] == 'Payroll') &&
+          menu.containsKey('children')) {
         return (menu['children'] as List).isNotEmpty;
       }
       return true;
