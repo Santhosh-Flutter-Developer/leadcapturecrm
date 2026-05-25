@@ -551,7 +551,7 @@ class _AttendanceState extends State<Attendance>
         matchesDepartment =
             emp?.department?.contains(selectedDepartment) ?? false;
       }
-      
+
       bool matchesType = selectedType == "All" ? true : type == selectedType;
       bool matchesDate = true;
 
@@ -563,10 +563,7 @@ class _AttendanceState extends State<Attendance>
             !punchDate.isAfter(selectedDateRange!.end);
       }
 
-      return matchesEmployee &&
-          matchesDepartment &&
-          matchesType &&
-          matchesDate;
+      return matchesEmployee && matchesDepartment && matchesType && matchesDate;
     }).toList();
 
     // 2. Calculate stats from baseFilteredList (which respects Admin unique user counting)
@@ -587,7 +584,9 @@ class _AttendanceState extends State<Attendance>
 
       switch (selectedSummaryFilter) {
         case "Present":
-          return status == "Present" || status == "Late" || status == "EarlyExit";
+          return status == "Present" ||
+              status == "Late" ||
+              status == "EarlyExit";
 
         case "Absent":
           return status == "Absent";
@@ -970,7 +969,9 @@ class _AttendanceState extends State<Attendance>
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: .06),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withValues(alpha: .2)),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: .2),
+                  ),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -1112,7 +1113,7 @@ class _AttendanceState extends State<Attendance>
     final items = [
       ("Present", stats.presentDays.toString(), Colors.green),
       ("Absent", (stats.absentDays).toString(), Colors.red),
-      ("Holiday", stats.holidayDays.toString(), Colors.orange),
+      ("Holiday", stats.sundayHolidayCount.toString(), Colors.orange),
       ("WFH", stats.wfhDays.toString(), Colors.blue),
     ];
 
@@ -1675,7 +1676,10 @@ class _AttendanceState extends State<Attendance>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 6),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .05),
+                  blurRadius: 6,
+                ),
               ],
             ),
             child: Column(
@@ -2917,8 +2921,16 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                           duration: const Duration(milliseconds: 250),
                           margin: const EdgeInsets.all(6),
                           transform: Matrix4.diagonal3Values(
-                            isSelected ? 1.12 : isToday ? 1.04 : 1.0,
-                            isSelected ? 1.12 : isToday ? 1.04 : 1.0,
+                            isSelected
+                                ? 1.12
+                                : isToday
+                                ? 1.04
+                                : 1.0,
+                            isSelected
+                                ? 1.12
+                                : isToday
+                                ? 1.04
+                                : 1.0,
                             1.0,
                           ),
                           decoration: BoxDecoration(
@@ -2950,7 +2962,9 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                             boxShadow: [
                               if (isSelected)
                                 BoxShadow(
-                                  color: Colors.deepPurple.withValues(alpha: 0.45),
+                                  color: Colors.deepPurple.withValues(
+                                    alpha: 0.45,
+                                  ),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 )
@@ -2995,7 +3009,9 @@ class _AttendanceCalendarState extends State<_AttendanceCalendar> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Colors.blue.withValues(alpha: 0.3),
+                                          color: Colors.blue.withValues(
+                                            alpha: 0.3,
+                                          ),
                                           width: 2,
                                         ),
                                       ),

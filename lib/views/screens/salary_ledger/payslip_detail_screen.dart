@@ -90,13 +90,13 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
     final monthName = _getMonthName(widget.salary.salaryNumber);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackgroundColor,
+      backgroundColor: context.colors.bgColor,
       appBar: AppBar(
         leading: const Back(),
         title: Text("Payslip - $monthName"),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.text,
+        backgroundColor: context.colors.cardColor,
+        foregroundColor: context.colors.textPrimary,
       ),
       body: FutureBuilder<EmployeeModel?>(
         future: _employeeFuture,
@@ -264,15 +264,16 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
   }
 
   Widget _buildEmployeeBlock(EmployeeModel? employee) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.colors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -321,10 +322,10 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
                   children: [
                     Text(
                       employee?.name ?? "Employee Name N/A",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.text,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -332,7 +333,7 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
                       employee?.designation ?? "Designation N/A",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -379,17 +380,17 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade500,
+            color: context.colors.textSecondary,
             letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.text,
+            color: context.colors.textPrimary,
           ),
         ),
       ],
@@ -397,15 +398,16 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
   }
 
   Widget _buildEarningsCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.colors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -439,15 +441,16 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
   }
 
   Widget _buildDeductionsCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.colors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -492,7 +495,7 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? AppColors.text : Colors.grey.shade700,
+              color: isTotal ? context.colors.textPrimary : context.colors.textSecondary,
             ),
           ),
           Text(
@@ -500,7 +503,7 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? AppColors.text : AppColors.text,
+              color: isTotal ? context.colors.textPrimary : context.colors.textPrimary,
             ),
           ),
         ],
@@ -512,9 +515,9 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: context.colors.bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Row(
         children: [
@@ -522,9 +525,9 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "GROSS EARNINGS",
-                  style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 10, color: context.colors.textSecondary, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -538,14 +541,14 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
               ],
             ),
           ),
-          Container(height: 30, width: 1, color: Colors.grey.shade300),
+          Container(height: 30, width: 1, color: context.colors.divider),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "TOTAL DEDUCTIONS",
-                  style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 10, color: context.colors.textSecondary, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -568,31 +571,38 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
     final netPayVal = double.tryParse(widget.salary.netPay) ?? 0;
     final amountInWords = XlsExport.numberToWords(netPayVal.toInt());
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bannerBg = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFD1FAE5);
+    final bannerBorder = isDark ? const Color(0xFF059669).withValues(alpha: 0.4) : const Color(0xFFA7F3D0);
+    final bannerTitleColor = isDark ? const Color(0xFF34D399) : const Color(0xFF047857);
+    final bannerValueColor = isDark ? const Color(0xFF10B981) : const Color(0xFF065F46);
+    final bannerWordsColor = isDark ? const Color(0xFF34D399).withValues(alpha: 0.8) : const Color(0xFF065F46);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFD1FAE5), // Soft emerald background
-        border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
+        color: bannerBg,
+        border: Border.all(color: bannerBorder, width: 1.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             "NET TAKE-HOME SALARY",
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF047857), // Forest green
+              color: bannerTitleColor,
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             _formatCurrency(widget.salary.netPay),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF065F46),
+              color: bannerValueColor,
             ),
           ),
           if (amountInWords.isNotEmpty) ...[
@@ -600,10 +610,10 @@ class _PayslipDetailScreenState extends State<PayslipDetailScreen> {
             Text(
               "Rupees $amountInWords Only",
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
-                color: Color(0xFF065F46),
+                color: bannerWordsColor,
               ),
             ),
           ],

@@ -40,10 +40,6 @@ class CompanyLocationService {
     final lng = (data['companyLng'] as num?)?.toDouble();
     final radius = (data['companyRadius'] as num?)?.toDouble();
     if (lat == null || lng == null || radius == null) return null;
-    return CompanyGeofence(
-      latitude: lat,
-      longitude: lng,
-      radiusMeters: radius,
-    );
+    return CompanyGeofence(latitude: lat, longitude: lng, radiusMeters: radius);
   }
 }

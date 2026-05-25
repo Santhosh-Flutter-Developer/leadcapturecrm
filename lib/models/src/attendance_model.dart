@@ -523,15 +523,29 @@ class AttendanceStats {
   String toJson() => json.encode(toMap());
   factory AttendanceStats.fromJson(String source) =>
       AttendanceStats.fromMap(json.decode(source) as Map<String, dynamic>);
-}
 
+  int get sundayHolidayCount {
+    final Set<String> uniqueSundays = {};
+
+    for (final attendance in attendanceData) {
+      for (final punch in attendance.punchList) {
+        try {
+          final date = DateTime.parse(punch.punchDate);
+
+          if (date.weekday == DateTime.sunday) {
+            uniqueSundays.add("${date.year}-${date.month}-${date.day}");
+          }
+        } catch (_) {}
+      }
+    }
+
+    return uniqueSundays.length;
+  }
+}
 
 class HolidayModel {
   final DateTime date;
   final String name;
 
-  HolidayModel({
-    required this.date,
-    required this.name,
-  });
+  HolidayModel({required this.date, required this.name});
 }

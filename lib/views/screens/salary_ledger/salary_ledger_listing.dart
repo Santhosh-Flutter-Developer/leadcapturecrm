@@ -10,6 +10,7 @@ import 'package:leadcapture/utils/src/xls_export.dart';
 import 'package:leadcapture/views/screens/salary_ledger/payslip_detail_screen.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
+import 'package:leadcapture/theme/theme.dart';
 
 class SalaryLedgerList extends StatefulWidget {
   const SalaryLedgerList({super.key});
@@ -282,11 +283,11 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
 
             labelStyle: TextStyle(
               fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey.shade700,
+              color: isSelected ? Colors.white : context.colors.textSecondary,
             ),
 
-            selectedColor: Colors.blue,
-            backgroundColor: Colors.grey.shade100,
+            selectedColor: AppColors.primary,
+            backgroundColor: context.colors.cardColor,
 
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
 
@@ -315,19 +316,20 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
 
     return Text(
       "Salary for ${_selectedMonth.toString().padLeft(2, '0')}/$year",
-      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+      style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
     );
   }
 
   Widget _header() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : .04),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -345,12 +347,12 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: .1),
+                    color: AppColors.primary.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Iconsax.wallet_3,
-                    color: Colors.blue,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                 ),
@@ -363,9 +365,10 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   children: [
                     Text(
                       isAdmin ? "Employee Salaries" : "My Salary",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -375,7 +378,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                           : "Your monthly salary",
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade600,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -385,14 +388,14 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
           ),
 
           if (isAdmin) ...[
-            const SizedBox(width: 10),
+             const SizedBox(width: 10),
             Flexible(
               child: Container(
                 height: 30,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: context.colors.bgColor,
                   borderRadius: BorderRadius.circular(50),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: context.colors.divider),
                 ),
                 child: TextField(
                   controller: _searchController,
@@ -402,13 +405,13 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
 
                   textAlignVertical: TextAlignVertical.center,
 
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
 
                   decoration: InputDecoration(
                     hintText: "Search employee ID...",
                     hintStyle: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade500,
+                      color: context.colors.textSecondary,
                     ),
 
                     prefixIcon: Padding(
@@ -416,7 +419,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                       child: Icon(
                         Iconsax.search_normal,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                     prefixIconConstraints: const BoxConstraints(
@@ -460,8 +463,8 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.blue.withValues(alpha: .15),
-                        Colors.blue.withValues(alpha: .05),
+                        AppColors.primary.withValues(alpha: .25),
+                        AppColors.primary.withValues(alpha: .05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -475,7 +478,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                           )
                         : const Icon(
                             Icons.calculate,
-                            color: Colors.blue,
+                            color: AppColors.primary,
                             size: 20,
                           ),
                   ),
@@ -545,17 +548,18 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
         separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final item = items[i];
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return Container(
             width: kIsMobile ? 160 : 220,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.cardColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: context.colors.divider),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: .04),
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : .04),
                   blurRadius: 6,
                   offset: const Offset(0, 3),
                 ),
@@ -586,7 +590,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                         item.$1,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: context.colors.textPrimary,
                         ),
                       ),
 
@@ -596,7 +600,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                         item.$5 ? "This month" : "Count",
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.grey.shade500,
+                          color: context.colors.textSecondary,
                         ),
                       ),
 
@@ -652,20 +656,24 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
         children: [
           const SizedBox(height: 60),
 
-          Icon(Iconsax.empty_wallet, size: 60, color: Colors.grey),
+          Icon(Iconsax.empty_wallet, size: 60, color: context.colors.textSecondary),
 
           const SizedBox(height: 12),
 
-          const Text(
+          Text(
             "No Salary Records",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
           ),
 
           const SizedBox(height: 6),
 
           Text(
             "No salary found for selected month",
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
           ),
 
           const SizedBox(height: 16),
@@ -726,7 +734,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
                     if (isAdmin)
                       Text(
                         "Emp: ${salary.employeeId}",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
                       ),
                   ],
                 ),
@@ -767,9 +775,9 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     "Net Salary",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -903,7 +911,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
       children: [
         Text(
           title,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: context.colors.textSecondary),
         ),
 
         const SizedBox(height: 4),
@@ -913,7 +921,7 @@ class _SalaryLedgerListState extends State<SalaryLedgerList> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: color ?? Colors.black,
+            color: color ?? context.colors.textPrimary,
           ),
         ),
       ],
