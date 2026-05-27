@@ -9,6 +9,11 @@ class WorktimeModel {
   List<Map<String, dynamic>> screenshots;
   DateTime created;
   DateTime modified;
+  double? clockInLat;
+  double? clockInLng;
+  double? clockOutLat;
+  double? clockOutLng;
+
   WorktimeModel({
     this.uid,
     required this.userUid,
@@ -20,6 +25,10 @@ class WorktimeModel {
     required this.created,
     required this.modified,
     this.screenshots = const [],
+    this.clockInLat,
+    this.clockInLng,
+    this.clockOutLat,
+    this.clockOutLng,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +41,10 @@ class WorktimeModel {
       'created': created.millisecondsSinceEpoch,
       'modified': modified.millisecondsSinceEpoch,
       'screenshots': screenshots,
+      'clockInLat': clockInLat,
+      'clockInLng': clockInLng,
+      'clockOutLat': clockOutLat,
+      'clockOutLng': clockOutLng,
     };
   }
 
@@ -40,6 +53,8 @@ class WorktimeModel {
       'breaks': breaks,
       'clockOut': clockOut?.millisecondsSinceEpoch,
       'modified': modified.millisecondsSinceEpoch,
+      'clockOutLat': clockOutLat,
+      'clockOutLng': clockOutLng,
     };
   }
 
@@ -49,6 +64,8 @@ class WorktimeModel {
       'clockOut': clockOut?.millisecondsSinceEpoch,
       'reason': reason,
       'modified': modified.millisecondsSinceEpoch,
+      'clockOutLat': clockOutLat,
+      'clockOutLng': clockOutLng,
     };
   }
 
@@ -68,6 +85,10 @@ class WorktimeModel {
           : [],
       created: DateTime.fromMillisecondsSinceEpoch(map['created'] as int),
       modified: DateTime.fromMillisecondsSinceEpoch(map['modified'] as int),
+      clockInLat: (map['clockInLat'] as num?)?.toDouble(),
+      clockInLng: (map['clockInLng'] as num?)?.toDouble(),
+      clockOutLat: (map['clockOutLat'] as num?)?.toDouble(),
+      clockOutLng: (map['clockOutLng'] as num?)?.toDouble(),
     );
   }
 }

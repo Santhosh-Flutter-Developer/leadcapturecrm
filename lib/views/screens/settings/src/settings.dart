@@ -216,8 +216,7 @@ class _SettingsListingState extends State<SettingsListing> {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    const CompanyLocationSettings(),
+                                builder: (_) => const CompanyLocationSettings(),
                               ),
                             ),
                             trailing: const Icon(

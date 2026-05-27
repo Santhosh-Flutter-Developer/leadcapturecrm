@@ -54,12 +54,10 @@ class _MobileMenuState extends State<MobileMenu> {
 
       setState(() {});
     }
-
     if (_employeeModel != null && _employeeModel?.role != null) {
       _roleModel = await RoleService.getRole(uid: _employeeModel?.role ?? '');
     }
   }
-
   void _openClientSection(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -99,7 +97,6 @@ class _MobileMenuState extends State<MobileMenu> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,7 +145,7 @@ class _MobileMenuState extends State<MobileMenu> {
                           ),
                         ),
                       ),
-                    ),
+                    ),                    
                     _buildListTile(
                       icon: Iconsax.calendar_1,
                       title: 'Calendar',
@@ -157,7 +154,6 @@ class _MobileMenuState extends State<MobileMenu> {
                         const CalendarEventScreen(showAppbar: true),
                       ),
                     ),
-
                     SizedBox(height: 8),
                     if (_adminModel != null ||
                         (

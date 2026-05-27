@@ -47,8 +47,11 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isSelfChat = userUid == currentUserUid;
-    final dynamic user = CacheService.getUserByUid(userUid);
+    final bool isSelfChat =
+        userUid == currentUserUid ||
+        userUid.isEmpty ||
+        chat.participants.every((id) => id == currentUserUid);
+    final dynamic user = isSelfChat ? null : CacheService.getUserByUid(userUid);
 
     String? userName;
     String? userImage;
@@ -247,7 +250,11 @@ class ChatTopBar extends StatelessWidget implements PreferredSizeWidget {
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
-                builder: (_) => AboutChat(chat: chat, userUid: userUid),
+                builder: (_) => AboutChat(
+                  chat: chat,
+                  userUid: userUid,
+                  currentUserUid: currentUserUid,
+                ),
               );
             },
           ),
@@ -318,8 +325,11 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isSelfChat = userUid == currentUserUid;
-    final dynamic user = CacheService.getUserByUid(userUid);
+    final bool isSelfChat =
+        userUid == currentUserUid ||
+        userUid.isEmpty ||
+        chat.participants.every((id) => id == currentUserUid);
+    final dynamic user = isSelfChat ? null : CacheService.getUserByUid(userUid);
 
     String? userName;
     String? userImage;
@@ -387,7 +397,11 @@ class ChatTopBarDesktop extends StatelessWidget implements PreferredSizeWidget {
             onPressed: () {
               GeneralDialog.showRTLSheet(
                 context,
-                AboutChat(chat: chat, userUid: userUid),
+                AboutChat(
+                  chat: chat,
+                  userUid: userUid,
+                  currentUserUid: currentUserUid,
+                ),
               );
             },
           ),
