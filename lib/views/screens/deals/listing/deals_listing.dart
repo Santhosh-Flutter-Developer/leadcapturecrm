@@ -168,7 +168,9 @@ class _DealsListingViewState extends State<DealsListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-                    if (_selectedView == 'Grid') ...[
+                    if (controllerWatch.paginatedItems.isEmpty)
+                      const NoData(text: "No matching records found")
+                    else if (_selectedView == 'Grid') ...[
                       DealKanbanListing(dealList: _filteredDeals),
                     ] else if (_selectedView == 'Calendar') ...[
                       DealsCalendarListing(dealList: _filteredDeals),
@@ -939,7 +941,10 @@ class _DealsListingViewState extends State<DealsListingView> {
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               IconButton(
                 onPressed: () {
                   _selectedView = 'List';
@@ -950,7 +955,10 @@ class _DealsListingViewState extends State<DealsListingView> {
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               IconButton(
                 onPressed: () {
                   _selectedView = 'Calendar';

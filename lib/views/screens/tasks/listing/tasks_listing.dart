@@ -117,8 +117,6 @@ class _TaskListingViewState extends State<TaskListingView> {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
               }
-              // final tasks = state.tasks;
-
               return RefreshIndicator(
                 onRefresh: () => _refreshTasks(context),
                 child: ListView(
@@ -129,8 +127,9 @@ class _TaskListingViewState extends State<TaskListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-
-                    if (_selectedView == 'Calendar') ...[
+                    if (controllerWatch.paginatedItems.isEmpty)
+                      const NoData(text: "No matching records found")
+                    else if (_selectedView == 'Calendar') ...[
                       TaskCalendarListing(tasks: state.tasks),
                     ] else ...[
                       _buildMainBody(context, controllerWatch, controllerRead),
@@ -302,15 +301,24 @@ class _TaskListingViewState extends State<TaskListingView> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 1,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.0),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
               hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
-            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       ],
@@ -418,15 +426,19 @@ class _TaskListingViewState extends State<TaskListingView> {
               ElevatedButton.icon(
                 label: Text(
                   "Delete",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 icon: Icon(Iconsax.trash),
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -462,7 +474,10 @@ class _TaskListingViewState extends State<TaskListingView> {
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+              Container(
+                width: 1,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
               IconButton(
                 onPressed: () {
                   _selectedView = 'Calendar';
@@ -504,7 +519,11 @@ class _TaskListingViewState extends State<TaskListingView> {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 4),
-        Icon(Icons.arrow_upward, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          Icons.arrow_upward,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ],
     );
   }
@@ -664,7 +683,10 @@ class _TaskListingViewState extends State<TaskListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  icon: Icon(
+                    Iconsax.edit,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],
@@ -718,7 +740,10 @@ class _TaskListingViewState extends State<TaskListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  icon: Icon(
+                    Iconsax.trash,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],

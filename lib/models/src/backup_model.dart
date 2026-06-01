@@ -60,24 +60,41 @@ class BackupModel {
 
   factory BackupModel.fromMap(Map<String, dynamic> map) {
     return BackupModel(
-      uid: map['uid'] != null && map['uid'] is String
-          ? map['uid'] as String
-          : null,
+      uid: map['uid'] as String?,
       intiatedBy: map['intiatedBy'] is Map<String, dynamic>
           ? UserDataModel.fromMap(map['intiatedBy'] as Map<String, dynamic>)
           : UserDataModel.fromEmptyMap(),
-      parentCollectionId: map['parentCollectionId'] is String
-          ? map['parentCollectionId'] as String
-          : '',
-      path: map['path'] is String ? map['path'] as String : '',
-      type: map['type'] is String ? map['type'] as String : '',
-      size: map['size'] is int ? map['size'] as int : 0,
+      parentCollectionId: map['parentCollectionId'] as String? ?? '',
+      path: map['path'] as String? ?? '',
+      type: map['type'] as String? ?? '',
+      size: map['size'] as int? ?? 0,
       timestamp: map['timestamp'] is Timestamp
           ? (map['timestamp'] as Timestamp).toDate()
           : map['timestamp'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
           : DateTime.now(),
-      url: map['url'] is String ? map['url'] as String : '',
+      url: map['url'] as String? ?? '',
+    );
+  }
+
+  factory BackupModel.fromFirestore(DocumentSnapshot doc) {
+    final map = doc.data() as Map<String, dynamic>;
+
+    return BackupModel(
+      uid: doc.id,
+      intiatedBy: map['intiatedBy'] is Map<String, dynamic>
+          ? UserDataModel.fromMap(map['intiatedBy'] as Map<String, dynamic>)
+          : UserDataModel.fromEmptyMap(),
+      parentCollectionId: map['parentCollectionId'] as String? ?? '',
+      path: map['path'] as String? ?? '',
+      type: map['type'] as String? ?? '',
+      size: map['size'] as int? ?? 0,
+      timestamp: map['timestamp'] is Timestamp
+          ? (map['timestamp'] as Timestamp).toDate()
+          : map['timestamp'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int)
+          : DateTime.now(),
+      url: map['url'] as String? ?? '',
     );
   }
 

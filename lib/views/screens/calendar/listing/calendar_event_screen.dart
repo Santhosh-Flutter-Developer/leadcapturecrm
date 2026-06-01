@@ -152,8 +152,34 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
 
                         _buildViewSwitcher(),
 
-                        if (_currentView != Calendar.month)
+                        if (_currentView != Calendar.month) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  DateFormat('MMMM yyyy').format(_selectedDate),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Iconsax.calendar_1,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                  onPressed: _openDatePicker,
+                                ),
+                              ],
+                            ),
+                          ),
                           _buildHorizontalDatePicker(),
+                        ],
 
                         Expanded(child: _buildBody(state.events, state.tasks)),
                       ],
@@ -947,7 +973,9 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Row(
           children: [

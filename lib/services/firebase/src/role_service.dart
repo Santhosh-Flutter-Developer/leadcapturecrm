@@ -7,6 +7,37 @@ import '/services/services.dart';
 class RoleService {
   static final FirebaseConfig firebase = FirebaseConfig();
 
+  static Future<String?> checkRoleNameExists({
+    required String name,
+    String? excludeUid,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.roles.name)
+          .get();
+
+      if (name.toLowerCase().trim() ==
+          RoleModel.superAdminRoleName.toLowerCase()) {
+        return '${RoleModel.superAdminRoleName} is a reserved role name';
+      }
+
+      for (var doc in querySnapshot.docs) {
+        if (excludeUid != null && doc.id == excludeUid) continue;
+        final role = RoleModel.fromMap(doc.id, doc.data());
+        if (role.name.toLowerCase().trim() == name.toLowerCase().trim()) {
+          return 'Role name already exists';
+        }
+      }
+      return null;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint('${e.toString()}, ${st.toString()}');
+      throw 'Error checking role name: $e';
+    }
+  }
+
   static Future<void> createRole({required RoleModel role}) async {
     try {
       var cid = await Spdb.getCid();
@@ -23,11 +54,17 @@ class RoleService {
     }
   }
 
+
   static Future<void> editRole({
     required String uid,
     required RoleModel role,
   }) async {
     try {
+      final existing = await getRole(uid: uid);
+      if (existing.isSuperAdmin) {
+        throw 'Cannot edit the ${RoleModel.superAdminRoleName} role';
+      }
+
       var cid = await Spdb.getCid();
 
       await CommonService.update(
@@ -110,6 +147,10 @@ class RoleService {
           .doc(uid)
           .get();
       final data = docRef.data() as Map<String, dynamic>;
+      final roleModel = RoleModel.fromMap(docRef.id, data);
+      if (roleModel.isSuperAdmin) {
+        throw 'Cannot delete the ${RoleModel.superAdminRoleName} role';
+      }
       await TrashService.moveToTrash(
         docRef: docRef.reference,
         docData: data,

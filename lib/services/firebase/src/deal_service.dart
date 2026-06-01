@@ -409,7 +409,7 @@ class DealService {
       var snapshot = await firebase.users
           .doc(cid)
           .collection(Collections.deals.name)
-          .where('createdBy.uid', isEqualTo: userId)
+          .where('workFlow', arrayContains: userId)
           .get();
 
       return snapshot.docs.length;

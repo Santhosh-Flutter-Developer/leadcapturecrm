@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:leadcapture/theme/src/app_colors.dart';
-import '/utils/utils.dart';
+import 'package:leadcapture/utils/src/assets.dart';
+import 'package:leadcapture/utils/src/validation.dart';
 import 'package:leadcapture/views/screens/auth/src/login.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/form_fields.dart';
@@ -33,7 +34,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
   File? _logo;
   bool _passwordVisible = false;
-  bool _detectingLocation = false;
   @override
   void dispose() {
     _companyName.dispose();
@@ -74,35 +74,31 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     if (image != null) setState(() => _logo = File(image.path));
   }
 
-  Future<void> _detectLocation() async {
-    setState(() => _detectingLocation = true);
-    try {
-      final position = await LocationService.getCurrentPosition();
-      if (position == null) {
-        if (mounted) {
-          FlushBar.show(
-            context,
-            'Location permission denied or service unavailable.',
-            isSuccess: false,
-          );
-        }
-        return;
-      }
-      _latitude.text = position.latitude.toStringAsFixed(6);
-      _longitude.text = position.longitude.toStringAsFixed(6);
-      if (mounted) setState(() {});
-    } catch (e) {
-      if (mounted) {
-        FlushBar.show(
-          context,
-          'Failed to detect location: $e',
-          isSuccess: false,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _detectingLocation = false);
-    }
-  }
+  // Future<void> _detectLocation() async {
+  //   setState(() => _detectingLocation = true);
+  //   try {
+  //     final position = await LocationService.getCurrentPosition();
+  //     if (position == null) {
+  //       if (mounted) {
+  //         FlushBar.show(
+  //           context,
+  //           'Location permission denied or service unavailable.',
+  //           isSuccess: false,
+  //         );
+  //       }
+  //       return;
+  //     }
+  //     _latitude.text = position.latitude.toStringAsFixed(6);
+  //     _longitude.text = position.longitude.toStringAsFixed(6);
+  //     if (mounted) setState(() {});
+  //   } catch (e) {
+  //     if (mounted) {
+  //       FlushBar.show(context, 'Failed to detect location: $e', isSuccess: false);
+  //     }
+  //   } finally {
+  //     if (mounted) setState(() => _detectingLocation = false);
+  //   }
+  // }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
@@ -226,14 +222,14 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
                       const SizedBox(height: 10),
 
-                      // Company Location Section
-                      _sectionTitle("Company Location"),
+                      // // Company Location Section
+                      // _sectionTitle("Company Location (for Attendance)"),
 
-                      _locationFields(),
-                      const SizedBox(height: 10),
+                      // // _locationFields(),
+                      // const SizedBox(height: 10),
 
                       // Admin Setup Section
-                      _sectionTitle("Super Admin Setup"),
+                      _sectionTitle("Super Admin "),
                       _customField("Full Name", _adminName, Iconsax.user),
                       _customField(
                         "Admin Email",
@@ -273,88 +269,52 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     );
   }
 
-  Widget _locationFields() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _numericField("Latitude", _latitude, Iconsax.location),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _numericField("Longitude", _longitude, Iconsax.location),
-            ),
-          ],
-        ),
-        _numericField("Radius (metres)", _radius, Iconsax.radar),
-        if (kIsMobile) ...[
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _detectingLocation ? null : _detectLocation,
-              icon: _detectingLocation
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Iconsax.gps, size: 18),
-              label: Text(
-                _detectingLocation ? "Detecting..." : "Use Current Location",
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
-
-  Widget _numericField(
-    String label,
-    TextEditingController controller,
-    IconData icon,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.grey700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FormFields(
-            controller: controller,
-            hintText: "Enter $label",
-            prefixIcon: Icon(icon, size: 20),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            valid: (value) {
-              if (value == null || value.isEmpty) {
-                return "$label is required";
-              }
-              if (double.tryParse(value) == null) {
-                return "Enter a valid number";
-              }
-              return null;
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _locationFields() {
+  //   return Column(
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: _numericField("Latitude", _latitude, Iconsax.location),
+  //           ),
+  //           const SizedBox(width: 12),
+  //           Expanded(
+  //             child: _numericField("Longitude", _longitude, Iconsax.location),
+  //           ),
+  //         ],
+  //       ),
+  //       _numericField("Radius (metres)", _radius, Iconsax.radar),
+  //       if (kIsMobile) ...[
+  //         const SizedBox(height: 4),
+  //         SizedBox(
+  //           width: double.infinity,
+  //           child: OutlinedButton.icon(
+  //             onPressed: _detectingLocation ? null : _detectLocation,
+  //             icon: _detectingLocation
+  //                 ? const SizedBox(
+  //                     width: 16,
+  //                     height: 16,
+  //                     child: CircularProgressIndicator(strokeWidth: 2),
+  //                   )
+  //                 : const Icon(Iconsax.gps, size: 18),
+  //             label: Text(
+  //               _detectingLocation
+  //                   ? "Detecting..."
+  //                   : "Use Current Location",
+  //             ),
+  //             style: OutlinedButton.styleFrom(
+  //               padding: const EdgeInsets.symmetric(vertical: 12),
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(10),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 10),
+  //       ],
+  //     ],
+  //   );
+  // }
 
   Widget _sectionTitle(String title) {
     return Align(
@@ -401,7 +361,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                 return Validation.validEmail(input: value, isReq: true);
               }
               return Validation.commonValidation(
-                input: value ?? '',
+                input: value?.trim() ?? '',
                 isReq: true,
                 label: label,
               );

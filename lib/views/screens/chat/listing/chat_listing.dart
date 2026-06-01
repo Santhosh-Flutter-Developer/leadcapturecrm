@@ -151,12 +151,7 @@ class _ChatListingViewState extends State<ChatListingView> {
           } else if (state is ChatError) {
             return ErrorDisplay(error: state.message);
           }
-          return Center(
-            child: Text(
-              "No chat found",
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          );
+          return const NoData(text: "No chats available");
         },
       ),
       floatingActionButton: kIsMobile
@@ -385,7 +380,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                   if (_filteredChats.isEmpty) {
                     return SizedBox(
                       height: 300,
-                      child: Center(child: Text("No chats. Pull to refresh")),
+                      child: NoData(text: "No chats available"),
                     );
                   }
                   final chat = _filteredChats[index];

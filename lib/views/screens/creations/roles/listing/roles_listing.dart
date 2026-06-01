@@ -114,169 +114,174 @@ class _RolesListingViewState extends State<RolesListingView> {
                     const SizedBox(height: 20),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .shadow
-                                .withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Scrollbar(
-                                controller: _hScrollController,
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                thickness: 4,
-                                radius: const Radius.circular(6),
-                                scrollbarOrientation:
-                                    ScrollbarOrientation.bottom,
-                                child: SingleChildScrollView(
-
-                                  controller: _hScrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHighest,
-                                      ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface,
-                                          ),
-                                      columns: [
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text(
-                                                "Name",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text(
-                                                "Desc",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text(
-                                                "Created",
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Action",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (role) => _buildDataRow(
-                                              context,
-                                              role,
-                                              controllerWatch,
-                                              controllerRead,
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
+                    controllerWatch.paginatedItems.isEmpty
+                        ? NoData(
+                            text: state.roles.isEmpty
+                                ? "No roles available"
+                                : "No matching records found",
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.shadow.withValues(alpha: 0.1),
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 3),
                                 ),
-                              );
-                            },
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
+                              ],
                             ),
-                            child: PaginationControls<RoleModel>(),
+                            child: Column(
+                              children: [
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Scrollbar(
+                                      controller: _hScrollController,
+                                      thumbVisibility: true,
+                                      trackVisibility: true,
+                                      thickness: 4,
+                                      radius: const Radius.circular(6),
+                                      scrollbarOrientation:
+                                          ScrollbarOrientation.bottom,
+                                      child: SingleChildScrollView(
+                                        controller: _hScrollController,
+                                        scrollDirection: Axis.horizontal,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: constraints.maxWidth,
+                                          ),
+                                          child: DataTable(
+                                            showCheckboxColumn: true,
+                                            sortColumnIndex:
+                                                controllerWatch.sortColumnIndex,
+                                            sortAscending:
+                                                controllerWatch.sortAscending,
+                                            headingRowColor:
+                                                WidgetStateProperty.all(
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                            headingTextStyle: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
+                                                ),
+                                            columns: [
+                                              DataColumn(
+                                                label: Row(
+                                                  children: [
+                                                    Text(
+                                                      "Name",
+                                                      style: Theme.of(
+                                                        context,
+                                                      ).textTheme.bodySmall,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.arrow_upward,
+                                                      size: 14,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ],
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+                                              DataColumn(
+                                                label: Row(
+                                                  children: [
+                                                    Text(
+                                                      "Description",
+                                                      style: Theme.of(
+                                                        context,
+                                                      ).textTheme.bodySmall,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.arrow_upward,
+                                                      size: 14,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ],
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+                                              DataColumn(
+                                                label: Row(
+                                                  children: [
+                                                    Text(
+                                                      "Created",
+                                                      style: Theme.of(
+                                                        context,
+                                                      ).textTheme.bodySmall,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.arrow_upward,
+                                                      size: 14,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ],
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  "Created By",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  "Action",
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                              ),
+                                            ],
+                                            rows: controllerWatch.paginatedItems
+                                                .map(
+                                                  (role) => _buildDataRow(
+                                                    context,
+                                                    role,
+                                                    controllerWatch,
+                                                    controllerRead,
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 12.0,
+                                  ),
+                                  child: PaginationControls<RoleModel>(),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               );
@@ -324,8 +329,8 @@ class _RolesListingViewState extends State<RolesListingView> {
                     label: Text(
                       "Add $_pageTitle",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -355,8 +360,8 @@ class _RolesListingViewState extends State<RolesListingView> {
                       label: Text(
                         "Delete",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                       icon: const Icon(Iconsax.trash),
                       onPressed: () async {
@@ -385,6 +390,7 @@ class _RolesListingViewState extends State<RolesListingView> {
 
                           // ✅ STEP 3: DELETE
                           for (var role in deletedRoles) {
+                            if (role.isSuperAdmin) continue;
                             await RoleService.deleteRole(uid: role.uid ?? '');
                           }
 
@@ -465,18 +471,21 @@ class _RolesListingViewState extends State<RolesListingView> {
     PaginatedDataController<RoleModel> controllerWatch,
     PaginatedDataController<RoleModel> controllerRead,
   ) {
+    final isSuperAdmin = role.isSuperAdmin;
     bool isSelected = controllerWatch.selectedIds.contains(role.uid);
     return DataRow(
       selected: isSelected,
-      onSelectChanged: (selected) {
-        controllerRead.onSelected(role.uid ?? '', selected);
-        if (selected ?? false) {
-          _selectedRoles.add(role);
-        } else {
-          _selectedRoles.remove(role);
-        }
-        setState(() {});
-      },
+      onSelectChanged: isSuperAdmin
+          ? null
+          : (selected) {
+              controllerRead.onSelected(role.uid ?? '', selected);
+              if (selected ?? false) {
+                _selectedRoles.add(role);
+              } else {
+                _selectedRoles.remove(role);
+              }
+              setState(() {});
+            },
       cells: [
         DataCell(
           Text(
@@ -497,93 +506,95 @@ class _RolesListingViewState extends State<RolesListingView> {
         ),
         DataCell(CreatedByWidget(userData: role.createdBy)),
         DataCell(
-          Row(
-            children: [
-              (permissions?.canEdit ?? false)
-                  ? IconButton(
-                      icon: const Icon(Iconsax.edit),
-                      onPressed: () {
-                        if (kIsMobile) {
-                          Sheet.showSheet(
-                            context,
-                            widget: RoleEdit(uid: role.uid ?? ''),
-                          );
-                        } else {
-                          GeneralDialog.showRTLSheet(
-                            context,
-                            RoleEdit(uid: role.uid ?? ''),
-                          );
-                        }
-                      },
-                      color: AppColors.info,
-                      splashRadius: 20,
-                    )
-                  : IconButton(
-                      icon: Icon(Iconsax.edit, color: AppColors.grey400),
-                      onPressed: null,
-                    ),
-              (permissions?.canDelete ?? false)
-                  ? IconButton(
-                      icon: const Icon(Iconsax.trash),
-                      color: AppColors.danger,
-                      splashRadius: 20,
-                      onPressed: () async {
-                        final result = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => ConfirmDialog(
-                            title: 'Delete $_pageTitle',
-                            content:
-                                'Are you sure want to delete this $_pageTitle?',
-                          ),
-                        );
-
-                        if (result != true) return;
-
-                        try {
-                          // ✅ STEP 1: BACKUP (IMPORTANT)
-                          final deletedRole = role.copyWith();
-
-                          // ✅ STEP 2: DELETE
-                          await RoleService.deleteRole(uid: role.uid ?? '');
-
-                          if (!context.mounted) return;
-
-                          // ✅ STEP 3: UNDO
-                          FlushBar.show(
-                            context,
-                            '$_pageTitle deleted successfully',
-                            actionLabel: 'UNDO',
-                            onActionPressed: () async {
-                              if (deletedRole.uid == null) return;
-
-                              await RoleService.restoreRole(deletedRole);
-
-                              if (!context.mounted) return;
-
-                              // ✅ refresh UI
-                              context.read<RolesBloc>().add(StreamRoles());
+          isSuperAdmin
+              ? const SizedBox.shrink()
+              : Row(
+                  children: [
+                    (permissions?.canEdit ?? false)
+                        ? IconButton(
+                            icon: const Icon(Iconsax.edit),
+                            onPressed: () {
+                              if (kIsMobile) {
+                                Sheet.showSheet(
+                                  context,
+                                  widget: RoleEdit(uid: role.uid ?? ''),
+                                );
+                              } else {
+                                GeneralDialog.showRTLSheet(
+                                  context,
+                                  RoleEdit(uid: role.uid ?? ''),
+                                );
+                              }
                             },
-                          );
-                        } catch (e, st) {
-                          await ErrorService.recordError(e, st);
-                          debugPrint("${e.toString()}, ${st.toString()}");
+                            color: AppColors.info,
+                            splashRadius: 20,
+                          )
+                        : IconButton(
+                            icon: Icon(Iconsax.edit, color: AppColors.grey400),
+                            onPressed: null,
+                          ),
+                    (permissions?.canDelete ?? false)
+                        ? IconButton(
+                            icon: const Icon(Iconsax.trash),
+                            color: AppColors.danger,
+                            splashRadius: 20,
+                            onPressed: () async {
+                              final result = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => ConfirmDialog(
+                                  title: 'Delete $_pageTitle',
+                                  content:
+                                      'Are you sure want to delete this $_pageTitle?',
+                                ),
+                              );
 
-                          FlushBar.show(
-                            context,
-                            e.toString(),
-                            isSuccess: false,
-                            error: e,
-                            stackTrace: st,
-                          );
-                        }
-                      },
-                    )
-                  : IconButton(
-                      icon: Icon(Iconsax.trash, color: AppColors.grey400),
-                      onPressed: null,
-                    ),
-            ],
-          ),
+                              if (result != true) return;
+
+                              try {
+                                final deletedRole = role.copyWith();
+
+                                await RoleService.deleteRole(
+                                  uid: role.uid ?? '',
+                                );
+
+                                if (!context.mounted) return;
+
+                                FlushBar.show(
+                                  context,
+                                  '$_pageTitle deleted successfully',
+                                  actionLabel: 'UNDO',
+                                  onActionPressed: () async {
+                                    if (deletedRole.uid == null) return;
+
+                                    await RoleService.restoreRole(deletedRole);
+
+                                    if (!context.mounted) return;
+
+                                    context.read<RolesBloc>().add(
+                                      StreamRoles(),
+                                    );
+                                  },
+                                );
+                              } catch (e, st) {
+                                await ErrorService.recordError(e, st);
+                                debugPrint("${e.toString()}, ${st.toString()}");
+
+                                FlushBar.show(
+                                  context,
+                                  e.toString(),
+                                  isSuccess: false,
+                                  error: e,
+                                  stackTrace: st,
+                                );
+                              }
+                            },
+                          )
+                        : IconButton(
+                            icon: Icon(Iconsax.trash, color: AppColors.grey400),
+                            onPressed: null,
+                          ),
+                  ],
+                ),
         ),
       ],
     );

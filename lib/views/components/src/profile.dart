@@ -107,56 +107,100 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _changeProfileImage() async {
-    if (isAdmin || employee == null) return;
+    if (isAdmin) {
+      if (admin == null || admin!.uid == null || admin!.uid!.isEmpty) return;
 
-    final picker = ImagePicker();
-    final pickedImage = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 65,
-    );
-
-    if (pickedImage == null) return;
-    File imageFile = File(pickedImage.path);
-    FlushBar.show(context, "Uploading profile picture...");
-
-    try {
-      String uid = employee!.uid!;
-      String fileName = "profile_$uid.jpg";
-      final storageRef = FirebaseStorage.instance.ref().child(
-        "profile_images/$fileName",
+      final picker = ImagePicker();
+      final pickedImage = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 65,
       );
 
-      await storageRef.putFile(imageFile);
-      String downloadUrl = await storageRef.getDownloadURL();
+      if (pickedImage == null) return;
+      File imageFile = File(pickedImage.path);
+      FlushBar.show(context, "Uploading profile picture...");
 
-      final updatedEmployee = employee!.copyWith(
-        profileImageUrl: downloadUrl,
-        updatedAt: DateTime.now(),
-      );
-      await EmployeeService.editEmployee(
-        uid: updatedEmployee.uid!,
-        employee: updatedEmployee,
+      try {
+        String downloadUrl = await StorageService.uploadFile(
+          file: imageFile,
+          folder: StorageFolder.adminProfile,
+        );
+
+        final updatedAdmin = admin!.copyWith(profileImageUrl: downloadUrl);
+        await AdminService.updateAdmin(
+          id: updatedAdmin.uid!,
+          data: updatedAdmin,
+        );
+
+        String? cid = await Spdb.getCid();
+        await Spdb.setAdminLogin(model: updatedAdmin, cid: cid ?? '');
+
+        setState(() => admin = updatedAdmin);
+        FlushBar.show(
+          context,
+          "Profile picture updated successfully",
+          isSuccess: true,
+        );
+      } catch (e) {
+        FlushBar.show(
+          context,
+          "Failed to update profile picture: $e",
+          isSuccess: false,
+        );
+      }
+    } else {
+      if (employee == null || employee!.uid == null || employee!.uid!.isEmpty)
+        return;
+
+      final picker = ImagePicker();
+      final pickedImage = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 65,
       );
 
-      String? cid = await Spdb.getCid();
-      await Spdb.setEmployeeLogin(
-        model: updatedEmployee,
-        cid: cid ?? '',
-        logoUrl: downloadUrl,
-      );
+      if (pickedImage == null) return;
+      File imageFile = File(pickedImage.path);
+      FlushBar.show(context, "Uploading profile picture...");
 
-      setState(() => employee = updatedEmployee);
-      FlushBar.show(
-        context,
-        "Profile picture updated successfully",
-        isSuccess: true,
-      );
-    } catch (e) {
-      FlushBar.show(
-        context,
-        "Failed to update profile picture: $e",
-        isSuccess: false,
-      );
+      try {
+        String uid = employee!.uid!;
+        String fileName = "profile_$uid.jpg";
+        final storageRef = FirebaseStorage.instance.ref().child(
+          "profile_images/$fileName",
+        );
+
+        await storageRef.putFile(imageFile);
+        String downloadUrl = await storageRef.getDownloadURL();
+
+        final updatedEmployee = employee!.copyWith(
+          profileImageUrl: downloadUrl,
+          updatedAt: DateTime.now(),
+        );
+        await EmployeeService.editEmployee(
+          uid: updatedEmployee.uid!,
+          employee: updatedEmployee,
+        );
+
+        String? cid = await Spdb.getCid();
+        await Spdb.setEmployeeLogin(
+          model: updatedEmployee,
+          cid: cid ?? '',
+          logoUrl: downloadUrl,
+        );
+
+        setState(() => employee = updatedEmployee);
+        FlushBar.show(
+          context,
+          "Profile picture updated successfully",
+          isSuccess: true,
+        );
+      } catch (e) {
+        FlushBar.show(
+          context,
+          "Failed to update profile picture: $e",
+          isSuccess: false,
+        );
+      }
     }
   }
 

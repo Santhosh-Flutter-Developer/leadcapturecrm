@@ -104,18 +104,14 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            title: const Text(
-              "Confirm Upload",
-            ),
+            title: const Text("Confirm Upload"),
             content: Text(
               "Are you sure you want to upload these $count file${count > 1 ? 's' : ''}?",
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text(
-                  "Cancel",
-                ),
+                child: const Text("Cancel"),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -258,7 +254,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                         ),
                         child: Text(
                           "Submit",
@@ -298,7 +296,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: Text(
               "Delete",
               style: Theme.of(
@@ -362,7 +362,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -460,11 +462,12 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         centerTitle: false,
-        title: const Text(
+        title: Text(
           "Deal Management",
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 18,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         actions: [
@@ -535,7 +538,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
+          child: Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            height: 1,
+          ),
         ),
       ),
       body: Center(
@@ -623,7 +629,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             children: [
@@ -635,7 +643,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     width: isMobile ? 60 : 80,
                     height: isMobile ? 60 : 80,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -685,7 +695,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 15,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -710,7 +722,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               /// MOBILE LAYOUT
               if (isMobile) ...[
                 const SizedBox(height: 20),
-                Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 const SizedBox(height: 16),
 
                 Row(
@@ -738,12 +753,14 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-             Text(
+            Text(
               "Deal Value",
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -822,9 +839,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
       ),
       child: Text(
         text.toUpperCase(),
@@ -854,7 +869,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1059,7 +1076,11 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            child: Icon(
+              icon,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1100,7 +1121,11 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.outlineVariant),
+          Icon(
+            icon,
+            size: 48,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             message,
@@ -1155,7 +1180,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary,
@@ -1165,7 +1192,10 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                  child: Container(
+                    width: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
             ],
           ),
@@ -1357,7 +1387,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                         onTap: () {
                           showMenu(
                             context: context,
-                            color: Theme.of(context).colorScheme.surface, // popup background
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface, // popup background
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1428,7 +1460,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -1505,7 +1539,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: Text(
               state.comments.length.toString(),
@@ -1540,17 +1576,14 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             children: [
               const Text(
                 "Activities",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
               TextButton.icon(
                 onPressed: _scheduleActivity,
                 style: TextButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(
-                    alpha: 0.1,
-                  ),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
@@ -1810,7 +1843,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: ListTile(
                   dense: true,

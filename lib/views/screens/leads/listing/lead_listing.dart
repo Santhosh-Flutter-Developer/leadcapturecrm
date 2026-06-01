@@ -165,11 +165,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             if (state is LeadLoading) {
               return const WaitingLoading();
             }
-
             if (state is LeadLoaded) {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
-              }
+              }        
               return RefreshIndicator(
                 onRefresh: () => _refreshLeads(context),
                 child: ListView(
@@ -180,7 +179,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-                    if (_selectedView == 'Grid') ...[
+                    if (controllerWatch.paginatedItems.isEmpty)
+                      const NoData(text: "No matching records found")
+                    else if (_selectedView == 'Grid') ...[
                       LeadKanbanListing(
                         leadList: _filteredLeads,
                         onLeadDeleted: () =>
@@ -1030,58 +1031,60 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               ).colorScheme.surfaceContainerHighest,
               foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            onPressed: () async {
-              try {
-                List<List<String>> exportData = [];
-                exportData.add([
-                  'Lead Name',
-                  'Email',
-                  'Source',
-                  'Category',
-                  'Priority',
-                  'Value',
-                  'Status',
-                  'Company',
-                  'Mobile',
-                  'Country',
-                  'State',
-                  'City',
-                  'Address',
-                  'Notes',
-                  'Created At',
-                ]);
+            onPressed: _filteredLeads.isEmpty
+                ? null
+                : () async {
+                    try {
+                      List<List<String>> exportData = [];
+                      exportData.add([
+                        'Lead Name',
+                        'Email',
+                        'Source',
+                        'Category',
+                        'Priority',
+                        'Value',
+                        'Status',
+                        'Company',
+                        'Mobile',
+                        'Country',
+                        'State',
+                        'City',
+                        'Address',
+                        'Notes',
+                        'Created At',
+                      ]);
 
-                for (var lead in _leadsList) {
-                  exportData.add([
-                    lead.leadName,
-                    lead.leadEmail,
-                    lead.leadSource.name,
-                    lead.leadCategory,
-                    lead.leadPriority,
-                    lead.leadValue.toString(),
-                    lead.leadStatus,
-                    lead.companyName ?? '',
-                    lead.companyMobile ?? '',
-                    lead.companyCountry?.name ?? '',
-                    lead.companyState?.name ?? '',
-                    lead.companyCity?.name ?? '',
-                    lead.companyAddress ?? '',
-                    lead.notes,
-                    lead.createdAt.formatDateTime,
-                  ]);
-                }
+                      for (var lead in _filteredLeads) {
+                        exportData.add([
+                          lead.leadName,
+                          lead.leadEmail,
+                          lead.leadSource.name,
+                          lead.leadCategory,
+                          lead.leadPriority,
+                          lead.leadValue.toString(),
+                          lead.leadStatus,
+                          lead.companyName ?? '',
+                          lead.companyMobile ?? '',
+                          lead.companyCountry?.name ?? '',
+                          lead.companyState?.name ?? '',
+                          lead.companyCity?.name ?? '',
+                          lead.companyAddress ?? '',
+                          lead.notes,
+                          lead.createdAt.formatDateTime,
+                        ]);
+                      }
 
-                var fileBytes = await XlsxWriter().create(exportData);
-                var filePath = await saveFileToDownloads(
-                  fileBytes,
-                  fileName:
-                      'Leads_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx',
-                );
-                openfile(filePath, context);
-              } catch (e) {
-                FlushBar.show(context, e.toString(), isSuccess: false);
-              }
-            },
+                      var fileBytes = await XlsxWriter().create(exportData);
+                      var filePath = await saveFileToDownloads(
+                        fileBytes,
+                        fileName:
+                            'Leads_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+                      );
+                      openfile(filePath, context);
+                    } catch (e) {
+                      FlushBar.show(context, e.toString(), isSuccess: false);
+                    }
+                  },
           ),
         );
 

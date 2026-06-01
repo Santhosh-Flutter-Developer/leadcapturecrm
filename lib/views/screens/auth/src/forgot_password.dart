@@ -39,6 +39,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           email: _email.text.trim(),
         );
         if (emailData == null) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+
           FlushBar.show(
             context,
             "Email not found. Please check and try again.",

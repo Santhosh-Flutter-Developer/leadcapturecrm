@@ -523,7 +523,7 @@ class LeadService {
       var snapshot = await firebase.users
           .doc(cid)
           .collection(Collections.leads.name)
-          .where('createdBy.uid', isEqualTo: userId)
+          .where('workflow', arrayContains: userId)
           .get();
 
       return snapshot.docs.length;

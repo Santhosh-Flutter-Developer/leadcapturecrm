@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
+import 'package:leadcapture/constants/src/enum.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/views/views.dart';
@@ -116,7 +117,17 @@ class _HeaderState extends State<Header> {
                 color: AppColors.teal,
                 tooltip: "Profile",
                 onTap: () async {
-                  Navigate.route(context, const Profile());
+                  final user = await Spdb.getUser();
+
+                  if (user.userType == UserType.admin) {
+                    final admin = await Spdb.getAdmin();
+
+                    if (admin != null && context.mounted) {
+                      Navigate.route(context, AdminProfile(admin: admin));
+                    }
+                  } else {
+                    Navigate.route(context, const Profile());
+                  }
                 },
                 isDark: isDark,
               ),

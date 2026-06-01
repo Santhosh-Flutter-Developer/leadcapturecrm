@@ -124,127 +124,134 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Scrollbar(
-                                controller: _hScrollController,
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                thickness: 4,
-                                radius: const Radius.circular(6),
-                                scrollbarOrientation:
-                                    ScrollbarOrientation.bottom,
-                                child: SingleChildScrollView(
+                    if (controllerWatch.paginatedItems.isEmpty)
+                      const NoData(text: "No matching records found")
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withValues(alpha: 0.1),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Scrollbar(
                                   controller: _hScrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(6),
+                                  scrollbarOrientation:
+                                      ScrollbarOrientation.bottom,
+                                  child: SingleChildScrollView(
+                                    controller: _hScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                      columns: [
-                                        DataColumn(
-                                          label: Text(
-                                            "Project Name",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Project Code",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Lead",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Deadline",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Created By",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Text(
-                                            "Action",
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (project) => _buildDataRow(
-                                              context,
-                                              project,
-                                              controllerWatch,
-                                              controllerRead,
+                                      child: DataTable(
+                                        showCheckboxColumn: true,
+                                        sortColumnIndex:
+                                            controllerWatch.sortColumnIndex,
+                                        sortAscending:
+                                            controllerWatch.sortAscending,
+                                        headingRowColor:
+                                            WidgetStateProperty.all(
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
                                             ),
-                                          )
-                                          .toList(),
+                                        columns: [
+                                          DataColumn(
+                                            label: Text(
+                                              "Project Name",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Project Code",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Lead",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Deadline",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Created By",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              "Action",
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ],
+                                        rows: controllerWatch.paginatedItems
+                                            .map(
+                                              (project) => _buildDataRow(
+                                                context,
+                                                project,
+                                                controllerWatch,
+                                                controllerRead,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
+                                );
+                              },
                             ),
-                            child: PaginationControls<ProjectModel>(),
-                          ),
-                        ],
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 12.0,
+                              ),
+                              child: PaginationControls<ProjectModel>(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
@@ -303,16 +310,24 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
             ] else ...[
               ElevatedButton.icon(
                 onPressed: null,
-                icon: Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 label: Text(
                   "Add $_pageTitle",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -432,15 +447,19 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
               ElevatedButton.icon(
                 label: Text(
                   "Delete",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 icon: Icon(Iconsax.trash),
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -525,7 +544,10 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  icon: Icon(
+                    Iconsax.edit,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],
@@ -618,7 +640,10 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                 ),
               ] else ...[
                 IconButton(
-                  icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  icon: Icon(
+                    Iconsax.trash,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   onPressed: null,
                 ),
               ],

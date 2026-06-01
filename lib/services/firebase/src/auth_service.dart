@@ -135,11 +135,16 @@ class AuthService {
           .collection(Collections.roles.name)
           .doc();
 
-      await roleRef.set({
-        "name": "Super Admin",
-        "permissions": ["all"],
-        "createdAt": FieldValue.serverTimestamp(),
-      });
+      final superAdminRole = RoleModel(
+        name: RoleModel.superAdminRoleName,
+        description: 'System role with full access',
+        createdBy: UserDataModel(
+          uid: 'Admin',
+          name: 'Admin',
+          userType: UserType.admin,
+        ),
+      );
+      await roleRef.set(superAdminRole.toMap());
 
       DocumentReference adminRef = companyRef
           .collection(Collections.admins.name)
@@ -166,10 +171,7 @@ class AuthService {
         "loginAllowed": true,
       });
 
-      return {
-        "status": true,
-        "message": "Organization registered successfully",
-      };
+      return {"status": true, "message": "Company registered successfully"};
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);

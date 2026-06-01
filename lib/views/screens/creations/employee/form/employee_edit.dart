@@ -928,27 +928,37 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         } else {
           futureLoading(context);
 
-          var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
+          var duplicateError = await EmployeeService.checkEmployeeExists(
             employeeId: _employeeIdController.text,
+            email: _emailController.text.trim(),
+            mobileNumber: _mobileNumberController.text.trim(),
+            excludeUid: widget.uid,
           );
 
-          if (employeeIdExists) {
+          if (duplicateError != null) {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
             FlushBar.show(
               context,
-              'Employee ID already exists',
+              duplicateError,
               isSuccess: false,
             );
+            return;
           }
 
+          // Determine final profile image URL:
+          // - Use newly uploaded image if one was picked
+          // - Keep existing URL if the image was not removed
+          // - Use null if the image was explicitly removed
           String? profileImageUrl;
           if (_selectedProfileImage != null) {
             profileImageUrl = await StorageService.uploadFile(
               file: _selectedProfileImage!,
               folder: StorageFolder.userPhotos,
             );
+          } else if (!_oldProfileImageRemoved) {
+            profileImageUrl = _profileImageUrl;
           }
 
           if (_oldProfileImageRemoved) {
@@ -977,7 +987,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             isActive: _isActive,
             employeeType: _employeeType ?? '',
             profileImageUrl: profileImageUrl,
-            skills: '',
+            skills: _skillsController.text.trim(),
             reportingTo: _reportingTo,
             createdBy: await Spdb.getUser(),
           );

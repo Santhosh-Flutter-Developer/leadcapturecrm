@@ -117,129 +117,143 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Scrollbar(
-                                controller: _hScrollController,
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                thickness: 4,
-                                radius: const Radius.circular(6),
-                                scrollbarOrientation:
-                                    ScrollbarOrientation.bottom,
-                                child: SingleChildScrollView(
-
+                    controllerWatch.paginatedItems.isEmpty
+                        ? NoData(
+                            text: state.leadCategory.isEmpty
+                                ? "No lead categories available"
+                                : "No matching records found",
+                          )
+                        : Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withValues(alpha: 0.1),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Scrollbar(
                                   controller: _hScrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(6),
+                                  scrollbarOrientation:
+                                      ScrollbarOrientation.bottom,
+                                  child: SingleChildScrollView(
+                                    controller: _hScrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context).colorScheme.onSurface,
-                                          ),
-                                      columns: [
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Name"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Desc"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        DataColumn(
-                                          label: Row(
-                                            children: [
-                                              Text("Created"),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_upward,
-                                                size: 14,
-                                                color: AppColors.grey400,
-                                              ),
-                                            ],
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-                                        const DataColumn(
-                                          label: Text("Created By"),
-                                        ),
-                                        const DataColumn(label: Text("Action")),
-                                      ],
-                                      rows: controllerWatch.paginatedItems
-                                          .map(
-                                            (leadCategories) => _buildDataRow(
-                                              context,
-                                              leadCategories,
-                                              controllerWatch,
-                                              controllerRead,
+                                      child: DataTable(
+                                        showCheckboxColumn: true,
+                                        sortColumnIndex:
+                                            controllerWatch.sortColumnIndex,
+                                        sortAscending:
+                                            controllerWatch.sortAscending,
+                                        headingRowColor:
+                                            WidgetStateProperty.all(
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
                                             ),
-                                          )
-                                          .toList(),
+                                        headingTextStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                            ),
+                                        columns: [
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Name"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Desc"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          DataColumn(
+                                            label: Row(
+                                              children: [
+                                                Text("Created"),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.arrow_upward,
+                                                  size: 14,
+                                                  color: AppColors.grey400,
+                                                ),
+                                              ],
+                                            ),
+                                            onSort: controllerRead.setSort,
+                                          ),
+                                          const DataColumn(
+                                            label: Text("Created By"),
+                                          ),
+                                          const DataColumn(
+                                            label: Text("Action"),
+                                          ),
+                                        ],
+                                        rows: controllerWatch.paginatedItems
+                                            .map(
+                                              (leadCategories) => _buildDataRow(
+                                                context,
+                                                leadCategories,
+                                                controllerWatch,
+                                                controllerRead,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
+                                );
+                              },
                             ),
-                            child: PaginationControls<LeadCategoryModel>(),
-                          ),
-                        ],
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 12.0,
+                              ),
+                              child: PaginationControls<LeadCategoryModel>(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
@@ -287,8 +301,8 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     label: Text(
                       "Add $_pageTitle",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -301,12 +315,16 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                     label: Text(
                       "Add $_pageTitle",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ),
             const SizedBox(width: 10),
@@ -420,17 +438,24 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                       },
                     )
                   : ElevatedButton.icon(
-                        label: Text(
+                      label: Text(
                         "Delete",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      icon: Icon(
+                        Iconsax.trash,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
                       ),
                     ),
             ],
@@ -502,7 +527,10 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                       splashRadius: 20,
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      icon: Icon(
+                        Iconsax.edit,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: null,
                     ),
               (permissions?.canDelete ?? false)
@@ -596,7 +624,10 @@ class _LeadCategoryListingViewState extends State<LeadCategoryListingView> {
                       },
                     )
                   : IconButton(
-                      icon: Icon(Iconsax.trash, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      icon: Icon(
+                        Iconsax.trash,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       onPressed: null,
                     ),
             ],

@@ -8,6 +8,7 @@ import '/constants/constants.dart';
 import '/models/models.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
+import '/theme/theme.dart';
 import 'bloc/employee_bloc.dart';
 
 const String _pageTitle = "Employees";
@@ -90,6 +91,19 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     context.read<UsersBloc>().add(StreamUsers());
   }
 
+  TextStyle _primaryCellStyle(BuildContext context, {FontWeight? fontWeight}) {
+    return Theme.of(context).textTheme.bodySmall!.copyWith(
+      color: context.colors.textPrimary,
+      fontWeight: fontWeight,
+    );
+  }
+
+  TextStyle _secondaryCellStyle(BuildContext context) {
+    return Theme.of(
+      context,
+    ).textTheme.bodySmall!.copyWith(color: context.colors.textSecondary);
+  }
+
   @override
   Widget build(BuildContext context) {
     final controllerRead = context
@@ -106,6 +120,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         listener: (context, state) {
           if (state is UsersLoaded) {
             controllerRead.setData(state.users);
+            _employeesList.clear();
+            _employeesList.addAll(state.users);
           }
         },
 
@@ -130,278 +146,298 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
                     _buildActionRow(),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.shadow.withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Scrollbar(
-                                controller: _hScrollController,
-                                thumbVisibility: true,
-                                trackVisibility: true,
-                                thickness: 4,
-                                radius: const Radius.circular(6),
-                                scrollbarOrientation:
-                                    ScrollbarOrientation.bottom,
-                                child: SingleChildScrollView(
-                                  controller: _hScrollController,
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: constraints.maxWidth,
-                                    ),
-                                    child: DataTable(
-                                      showCheckboxColumn: true,
-                                      columnSpacing: 12,
-                                      horizontalMargin: 8,
-                                      // dataRowMinHeight: 40,
-                                      // dataRowMaxHeight: 40,
-                                      // headingRowHeight: 40,
-                                      sortColumnIndex:
-                                          controllerWatch.sortColumnIndex,
-                                      sortAscending:
-                                          controllerWatch.sortAscending,
-
-                                      headingRowColor: WidgetStateProperty.all(
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                      ),
-                                      headingTextStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
-
-                                      columns: [
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  "Employee ID",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  "Name",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  "Department",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Role",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  "Email",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Mobile app",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Desktop app",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  "Status",
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 14,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          onSort: controllerRead.setSort,
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Created By",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-
-                                        DataColumn(
-                                          label: IntrinsicWidth(
-                                            child: Text(
-                                              "Action",
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-
-                                      rows: controllerWatch.paginatedItems
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                            (entry) => _buildDataRow(
-                                              context,
-                                              entry.value, // user
-                                              entry.key, // 👈 index
-                                              controllerWatch,
-                                              controllerRead,
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ),
+                    controllerWatch.paginatedItems.isEmpty
+                        ? NoData(
+                            text: state.users.isEmpty
+                                ? "No employees available"
+                                : "No matching records found",
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.shadow.withValues(alpha: 0.1),
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 3),
                                 ),
-                              );
-                            },
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
+                              ],
                             ),
-                            child: PaginationControls<UserRowModel>(),
+                            child: Column(
+                              children: [
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Scrollbar(
+                                      controller: _hScrollController,
+                                      thumbVisibility: true,
+                                      trackVisibility: true,
+                                      thickness: 4,
+                                      radius: const Radius.circular(6),
+                                      scrollbarOrientation:
+                                          ScrollbarOrientation.bottom,
+                                      child: SingleChildScrollView(
+                                        controller: _hScrollController,
+                                        scrollDirection: Axis.horizontal,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: constraints.maxWidth,
+                                          ),
+                                          child: DataTable(
+                                            showCheckboxColumn: true,
+                                            columnSpacing: 12,
+                                            horizontalMargin: 8,
+                                            // dataRowMinHeight: 40,
+                                            // dataRowMaxHeight: 40,
+                                            // headingRowHeight: 40,
+                                            sortColumnIndex:
+                                                controllerWatch.sortColumnIndex,
+                                            sortAscending:
+                                                controllerWatch.sortAscending,
+
+                                            headingRowColor:
+                                                WidgetStateProperty.all(
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHighest,
+                                                ),
+                                            headingTextStyle: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: context
+                                                      .colors
+                                                      .textPrimary,
+                                                ),
+                                            dataTextStyle: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: context
+                                                      .colors
+                                                      .textPrimary,
+                                                ),
+
+                                            columns: [
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "Employee ID",
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_upward,
+                                                        size: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "Name",
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_upward,
+                                                        size: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "Department",
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_upward,
+                                                        size: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Text(
+                                                    "Role",
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "Email",
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_upward,
+                                                        size: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Text(
+                                                    "Mobile app",
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Text(
+                                                    "Desktop app",
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        "Status",
+                                                        style: Theme.of(
+                                                          context,
+                                                        ).textTheme.bodySmall,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_upward,
+                                                        size: 14,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                onSort: controllerRead.setSort,
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Text(
+                                                    "Created By",
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              DataColumn(
+                                                label: IntrinsicWidth(
+                                                  child: Text(
+                                                    "Action",
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+
+                                            rows: controllerWatch.paginatedItems
+                                                .asMap()
+                                                .entries
+                                                .map(
+                                                  (entry) => _buildDataRow(
+                                                    context,
+                                                    entry.value, // user
+                                                    entry.key, // 👈 index
+                                                    controllerWatch,
+                                                    controllerRead,
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.0,
+                                    vertical: 12.0,
+                                  ),
+                                  child: PaginationControls<UserRowModel>(),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               );
@@ -630,91 +666,100 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               ),
             ),
             icon: Icon(Iconsax.export_3),
-            onPressed: () async {
-              try {
-                List<List<String>> exportData = [];
-                exportData.add([
-                  'Employee Id',
-                  'Name',
-                  'Email',
-                  'Designation',
-                  'Department',
-                  'Sub Department',
-                  'Mobile Number',
-                  'Profile Image',
-                  'Gender',
-                  'Date Of Joining',
-                  'Date Of Birth',
-                  'Role',
-                  'Address',
-                  'About',
-                  'Login Allowed',
-                  'Receive Email Notifications',
-                  'Employee Type',
-                  'Reporting To',
-                  'Marital Status',
-                  'Is Active',
-                  'Created At',
-                ]);
-                for (var i in _employeesList) {
-                  List<String> row = [];
-                  row.addAll([
-                    i.employeeId ?? "",
-                    i.name,
-                    i.email,
-                    CacheService.designationByUid(i.designation ?? "")?.name ??
-                        '',
-                    i.department != null && i.department!.isNotEmpty
-                        ? i.department!
-                              .map(
-                                (uid) =>
-                                    CacheService.departmentByUid(uid)?.name ??
-                                    '',
-                              )
-                              .join(', ')
-                        : '',
-                    i.subDepartment != null
-                        ? CacheService.subDepartmentByUid(
-                                i.subDepartment!,
+            onPressed: _employeesList.isEmpty
+                ? null
+                : () async {
+                    try {
+                      List<List<String>> exportData = [];
+                      exportData.add([
+                        'Employee Id',
+                        'Name',
+                        'Email',
+                        'Designation',
+                        'Department',
+                        'Sub Department',
+                        'Mobile Number',
+                        'Profile Image',
+                        'Gender',
+                        'Date Of Joining',
+                        'Date Of Birth',
+                        'Role',
+                        'Address',
+                        'About',
+                        'Login Allowed',
+                        'Receive Email Notifications',
+                        'Employee Type',
+                        'Reporting To',
+                        'Marital Status',
+                        'Is Active',
+                        'Created At',
+                      ]);
+                      for (var i in _employeesList) {
+                        List<String> row = [];
+                        row.addAll([
+                          i.employeeId ?? "",
+                          i.name,
+                          i.email,
+                          CacheService.designationByUid(
+                                i.designation ?? "",
                               )?.name ??
-                              ''
-                        : '',
-                    i.mobileNumber,
-                    i.profileImageUrl ?? '',
-                    i.gender ?? "",
-                    i.dateOfJoining?.formatDate ?? '',
-                    i.dateOfBirth?.formatDate ?? '',
-                    CacheService.roleByUid(i.role ?? "")?.name ?? '',
-                    i.address ?? "",
-                    i.about ?? "",
-                    (i.loginAllowed ?? false) ? "Yes" : "No",
-                    (i.receiveEmailNotifications ?? false) ? "Yes" : "No",
-                    i.employeeType ?? '',
+                              '',
+                          i.department != null && i.department!.isNotEmpty
+                              ? i.department!
+                                    .map(
+                                      (uid) =>
+                                          CacheService.departmentByUid(
+                                            uid,
+                                          )?.name ??
+                                          '',
+                                    )
+                                    .join(', ')
+                              : '',
+                          i.subDepartment != null
+                              ? CacheService.subDepartmentByUid(
+                                      i.subDepartment!,
+                                    )?.name ??
+                                    ''
+                              : '',
+                          i.mobileNumber,
+                          i.profileImageUrl ?? '',
+                          i.gender ?? "",
+                          i.dateOfJoining?.formatDate ?? '',
+                          i.dateOfBirth?.formatDate ?? '',
+                          CacheService.roleByUid(i.role ?? "")?.name ?? '',
+                          i.address ?? "",
+                          i.about ?? "",
+                          (i.loginAllowed ?? false) ? "Yes" : "No",
+                          (i.receiveEmailNotifications ?? false) ? "Yes" : "No",
+                          i.employeeType ?? '',
 
-                    i.reportingTo != null && i.reportingTo!.isNotEmpty
-                        ? i.reportingTo!
-                              .map(
-                                (uid) =>
-                                    CacheService.getUserByUid(uid)?.name ?? '',
-                              )
-                              .join(', ')
-                        : '',
-                    i.maritalStatus ?? "",
-                    i.isActive ? "Yes" : "No",
-                    i.createdAt.formatDateTime,
-                  ]);
-                  exportData.add(row);
-                }
-                var fileBytes = await XlsxWriter().create(exportData);
-                var filePath = await saveFileToDownloads(
-                  fileBytes,
-                  fileName: '$_pageTitle List.xlsx',
-                );
-                openfile(filePath, context);
-              } catch (e) {
-                FlushBar.show(context, e.toString(), isSuccess: false);
-              }
-            },
+                          i.reportingTo != null && i.reportingTo!.isNotEmpty
+                              ? i.reportingTo!
+                                    .map(
+                                      (uid) =>
+                                          CacheService.getUserByUid(
+                                            uid,
+                                          )?.name ??
+                                          '',
+                                    )
+                                    .join(', ')
+                              : '',
+                          i.maritalStatus ?? "",
+                          i.isActive ? "Yes" : "No",
+                          i.createdAt.formatDateTime,
+                        ]);
+                        exportData.add(row);
+                      }
+                      var fileBytes = await XlsxWriter().create(exportData);
+                      var filePath = await saveFileToDownloads(
+                        fileBytes,
+                        fileName: '$_pageTitle List.xlsx',
+                      );
+                      openfile(filePath, context);
+                    } catch (e) {
+                      FlushBar.show(context, e.toString(), isSuccess: false);
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
               foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -918,8 +963,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                   );
                   return;
                 }
-
                 final bool isSingle = _selectedEmployees.length == 1;
+                final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
                 final bool? confirm = await showDialog<bool>(
                   context: context,
@@ -929,29 +974,33 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       isSingle ? "Create Chat" : "Create Group Chat",
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          isSingle
-                              ? "Do you want to start a chat with ${_selectedEmployees.first.name}?"
-                              : "Do you want to create a group chat with ${_selectedEmployees.length} employees?",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        FormFields(
-                          label: 'Enter chat message',
-                          controller: _chatMessage,
-                          hintText: 'Enter Description',
-                          maxLines: 3,
-                          isRequired: true,
-                          valid: (val) => val == null || val.isEmpty
-                              ? 'Chat message is required'
-                              : null,
-                        ),
-                      ],
+                    content: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isSingle
+                                ? "Do you want to start a chat with ${_selectedEmployees.first.name}?"
+                                : "Do you want to create a group chat with ${_selectedEmployees.length} employees?",
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          FormFields(
+                            label: 'Enter chat message',
+                            controller: _chatMessage,
+                            hintText: 'Enter Description',
+                            maxLines: 3,
+                            isRequired: true,
+                            valid: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Chat message is required';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     actions: [
                       TextButton(
@@ -962,26 +1011,22 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                        ),
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          Navigator.pop(context, true);
+                        },
                         child: Text(
                           "Confirm",
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
                     ],
                   ),
                 );
-
                 if (confirm != true) return;
-
                 try {
                   futureLoading(context);
 
@@ -999,14 +1044,14 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                       return;
                     }
 
-                    if (_chatMessage.text.isEmpty) {
-                      FlushBar.show(
-                        context,
-                        "Please enter the chat message.",
-                        isSuccess: false,
-                      );
-                      return;
-                    }
+                    // if (_chatMessage.text.isEmpty) {
+                    //   FlushBar.show(
+                    //     context,
+                    //     "Please enter the chat message.",
+                    //     isSuccess: false,
+                    //   );
+                    //   return;
+                    // }
 
                     var chatId = await ChatService.createIndividualChat(
                       userId: emp.uid,
@@ -1193,12 +1238,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
     required DateTime? lastLogin,
   }) {
     if (platformLabel == null && lastLogin == null) {
-      return Text(
-        'No activity',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      );
+      return Text('No activity', style: _secondaryCellStyle(context));
     }
 
     return Column(
@@ -1211,9 +1251,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             const SizedBox(width: 4),
             Text(
               platformLabel ?? 'Unknown device',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+              style: _primaryCellStyle(context, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1222,9 +1260,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
             padding: const EdgeInsets.only(left: 22),
             child: Text(
               DateFormat('dd MMM, hh:mm a').format(lastLogin),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: _secondaryCellStyle(context),
             ),
           ),
       ],
@@ -1373,9 +1409,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
           context,
           Text(
             user.employeeId ?? "",
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+            style: _primaryCellStyle(context, fontWeight: FontWeight.w500),
           ),
         ),
 
@@ -1395,34 +1429,38 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 ),
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
                       user.name,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: _primaryCellStyle(
+                        context,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Flexible(
-                    child: Flexible(
-                      child: Text(
+                    if ((CacheService.designationByUid(
+                              user.designation ?? '',
+                            )?.name ??
+                            '')
+                        .isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
                         CacheService.designationByUid(
-                              user.designation ?? "",
+                              user.designation ?? '',
                             )?.name ??
                             '',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        style: _secondaryCellStyle(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -1445,18 +1483,14 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                           .where((name) => name.isNotEmpty)
                           .join(', ')
                     : '',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                style: _primaryCellStyle(context, fontWeight: FontWeight.w500),
               ),
 
               if (user.subDepartment != null && user.subDepartment!.isNotEmpty)
                 Text(
                   CacheService.subDepartmentByUid(user.subDepartment!)?.name ??
                       '',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: _secondaryCellStyle(context),
                 ),
             ],
           ),
@@ -1466,16 +1500,13 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         dataCell(
           context,
           Text(
-            CacheService.roleByUid(user.role ?? "")?.name ?? '',
-            style: Theme.of(context).textTheme.bodySmall,
+            CacheService.roleByUid(user.role ?? '')?.name ?? '',
+            style: _primaryCellStyle(context),
           ),
         ),
 
         /// Email
-        dataCell(
-          context,
-          Text(user.email, style: Theme.of(context).textTheme.bodySmall),
-        ),
+        dataCell(context, Text(user.email, style: _primaryCellStyle(context))),
 
         /// Mobile Platform
         dataCell(
@@ -1500,22 +1531,27 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
         /// Status
         dataCell(
           context,
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: user.isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.error,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              user.isActive ? 'Active' : 'Inactive',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          controllerWatch.paginatedItems.isEmpty
+              ? const NoData(text: "No matching records found")
+              : Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: user.isActive
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.error,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    user.isActive ? 'Active' : 'Inactive',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
         ),
 
         /// Created By

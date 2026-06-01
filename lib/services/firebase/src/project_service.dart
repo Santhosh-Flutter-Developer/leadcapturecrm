@@ -201,7 +201,7 @@ class ProjectService {
       var snapshot = await firebase.users
           .doc(cid)
           .collection(Collections.projects.name)
-          .where('createdBy.uid', isEqualTo: userId)
+          .where('members', arrayContains: userId)
           .get();
 
       return snapshot.docs.length;

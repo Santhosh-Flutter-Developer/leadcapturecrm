@@ -66,18 +66,27 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
       }
     }
 
-    _taskCount = await TaskService.getUserTaskCount(
+    final taskCount = await TaskService.getUserTaskCount(
       userId: widget.employee.uid ?? '',
     );
-    _projectCount = await ProjectService.getUserProjectsCount(
+    final projectCount = await ProjectService.getUserProjectsCount(
       userId: widget.employee.uid ?? '',
     );
-    _leadsCount = await LeadService.getUserLeadsCount(
+    final leadsCount = await LeadService.getUserLeadsCount(
       userId: widget.employee.uid ?? '',
     );
-    _dealsCount = await DealService.getUserDealsCount(
+    final dealsCount = await DealService.getUserDealsCount(
       userId: widget.employee.uid ?? '',
     );
+
+    if (mounted) {
+      setState(() {
+        _taskCount = taskCount;
+        _projectCount = projectCount;
+        _leadsCount = leadsCount;
+        _dealsCount = dealsCount;
+      });
+    }
   }
 
   @override
@@ -306,7 +315,7 @@ class _EmployeeDetailsState extends State<EmployeeDetails> {
           _vDivider(),
           _statItem("Leads", _leadsCount, Colors.red),
           _vDivider(),
-          _statItem("Leads", _dealsCount, Colors.brown),
+          _statItem("Deals", _dealsCount, Colors.brown),
         ],
       ),
     );

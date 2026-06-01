@@ -196,6 +196,8 @@ class EmployeeModel {
 
   Map<String, dynamic> toUpdateMap({bool updatePassword = false}) {
     return {
+      'employeeId': employeeId,
+      'lowercaseEmployeeId': lowercaseEmployeeId,
       'name': name.encrypt,
       'email': email.encrypt,
       if (updatePassword) 'password': password.encrypt,

@@ -8,27 +8,94 @@ import '/utils/utils.dart';
 class EmployeeService {
   static final FirebaseConfig firebase = FirebaseConfig();
 
-  static Future<bool> checkEmployeeIdExists({
-    required String employeeId,
-  }) async {
+  static Future<String> generateEmployeeId() async {
     try {
-      var lowerCaseEmployeeId = employeeId.toLowerCase();
       var cid = await Spdb.getCid();
       var querySnapshot = await firebase.users
           .doc(cid)
           .collection(Collections.employees.name)
-          .where('lowerCaseEmployeeId', isEqualTo: lowerCaseEmployeeId)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        return true;
-      } else {
-        return false;
+      int maxId = 0;
+      final idRegExp = RegExp(r'\d+');
+
+      for (var doc in querySnapshot.docs) {
+        var empData = doc.data();
+        var empIdStr = empData['employeeId']?.toString() ?? '';
+        var match = idRegExp.firstMatch(empIdStr);
+        if (match != null) {
+          var idVal = int.tryParse(match.group(0) ?? '');
+          if (idVal != null && idVal > maxId) {
+            maxId = idVal;
+          }
+        }
       }
+
+      int nextId = maxId + 1;
+      return 'EMP${nextId.toString().padLeft(3, '0')}';
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("Error generating next employee ID: $e");
+      return 'EMP001';
+    }
+  }
+
+  static Future<String?> checkEmployeeExists({
+    required String employeeId,
+    required String email,
+    required String mobileNumber,
+    String? excludeUid,
+  }) async {
+    try {
+      var lowerCaseEmployeeId = employeeId.toLowerCase();
+      var cid = await Spdb.getCid();
+
+      var collection = firebase.users
+          .doc(cid)
+          .collection(Collections.employees.name);
+
+      var idQuery = collection.where(
+        'lowercaseEmployeeId',
+        isEqualTo: lowerCaseEmployeeId,
+      );
+      if (excludeUid != null) {
+        idQuery = idQuery.where(FieldPath.documentId, isNotEqualTo: excludeUid);
+      }
+      var idSnapshot = await idQuery.get();
+      if (idSnapshot.docs.isNotEmpty) return 'Employee ID already exists';
+
+      var emailQuery = collection.where('email', isEqualTo: email.encrypt);
+      if (excludeUid != null) {
+        emailQuery = emailQuery.where(
+          FieldPath.documentId,
+          isNotEqualTo: excludeUid,
+        );
+      }
+      var emailSnapshot = await emailQuery.get();
+      if (emailSnapshot.docs.isNotEmpty) return 'Email already exists';
+
+      if (mobileNumber.isNotEmpty) {
+        var mobileQuery = collection.where(
+          'mobileNumber',
+          isEqualTo: mobileNumber.encrypt,
+        );
+        if (excludeUid != null) {
+          mobileQuery = mobileQuery.where(
+            FieldPath.documentId,
+            isNotEqualTo: excludeUid,
+          );
+        }
+        var mobileSnapshot = await mobileQuery.get();
+        if (mobileSnapshot.docs.isNotEmpty) {
+          return 'Mobile number already exists';
+        }
+      }
+
+      return null;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       debugPrint("${e.toString()}, ${st.toString()}");
-      throw 'Error creating employee: $e';
+      throw 'Error checking employee: $e';
     }
   }
 

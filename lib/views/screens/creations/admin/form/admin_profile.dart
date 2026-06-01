@@ -79,16 +79,34 @@ class _AdminProfileState extends State<AdminProfile> {
 
         return Scaffold(
           backgroundColor: AppColors.grey50,
-          appBar: FormWidgets.buildHeader(
-            context: context,
-            title: 'Admin Profile',
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            elevation: 0,
+            leading: Back(color: Theme.of(context).colorScheme.onSurface),
+            title: Text(
+              "Admin Profile",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 18,
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                height: 1,
+              ),
+            ),
             actions: [
               IconButton(
                 onPressed: canEdit ? _openEdit : null,
                 tooltip: canEdit ? 'Edit Admin' : 'No edit permission',
                 icon: Icon(
                   Iconsax.edit,
-                  color: canEdit ? AppColors.primary : AppColors.grey400,
+                  color: canEdit
+                      ? Theme.of(context).colorScheme.onSurface
+                      : AppColors.grey400,
                 ),
               ),
             ],

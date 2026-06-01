@@ -359,6 +359,16 @@ class _RoleCreateState extends State<RoleCreate> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+
+        final duplicateError = await RoleService.checkRoleNameExists(
+          name: _roleNameController.text.trim(),
+        );
+        if (duplicateError != null) {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          FlushBar.show(context, duplicateError, isSuccess: false);
+          return;
+        }
+
         var reducedRows = _rows
             .where(
               (row) =>

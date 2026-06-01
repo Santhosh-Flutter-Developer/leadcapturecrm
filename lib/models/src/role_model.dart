@@ -5,6 +5,8 @@ import '/models/models.dart';
 import '/utils/utils.dart';
 
 class RoleModel {
+  static const String superAdminRoleName = 'Super Admin';
+
   final String? uid;
   final String name;
   final String lowercaseName;
@@ -13,6 +15,9 @@ class RoleModel {
   final UserDataModel createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  bool get isSuperAdmin =>
+      name.toLowerCase().trim() == superAdminRoleName.toLowerCase();
 
   RoleModel({
     this.uid,
@@ -74,19 +79,33 @@ class RoleModel {
     };
   }
 
+  static String _fieldFromMap(dynamic value) {
+    if (value == null) return '';
+    final raw = value.toString();
+    final decrypted = raw.decrypt;
+    if (decrypted.isNotEmpty) return decrypted;
+    return _isLikelyEncrypted(raw) ? '' : raw;
+  }
+
+  static bool _isLikelyEncrypted(String value) {
+    if (value.isEmpty) return false;
+    try {
+      final decoded = base64Decode(value);
+      return decoded.length >= 48;
+    } catch (_) {
+      return false;
+    }
+  }
+
   factory RoleModel.fromMap(String uid, Map<String, dynamic> map) {
     return RoleModel(
       uid: uid,
 
-      name: map['name'] != null ? (map['name'] as String).decrypt : '',
+      name: _fieldFromMap(map['name']),
 
-      lowercaseName: map['lowercaseName'] != null
-          ? (map['lowercaseName'] as String).decrypt
-          : '',
+      lowercaseName: _fieldFromMap(map['lowercaseName']),
 
-      description: map['description'] != null
-          ? (map['description'] as String).decrypt
-          : '',
+      description: _fieldFromMap(map['description']),
 
       permissions: (map['permissions'] is List)
           ? (map['permissions'] as List)

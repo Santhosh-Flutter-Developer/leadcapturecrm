@@ -20,18 +20,31 @@ class Validation {
     return null;
   }
 
-  static String? validEmail({required String? input, bool? isReq}) {
-    if (input != null) {
-      if (isReq ?? false) {
-        if (input.isEmpty) {
-          return 'Email is required';
-        }
-      }
-      if (input.isNotEmpty) {
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(input)) {
-          return 'Invalid email address';
-        }
-      }
+  static String? validEmail({required String? input, bool isReq = false}) {
+    final value = input?.trim() ?? '';
+
+    // Required validation
+    if (isReq && value.isEmpty) {
+      return 'Email is required';
+    }
+
+    // Skip further validation if empty & not required
+    if (value.isEmpty) {
+      return null;
+    }
+
+    // Space validation
+    if (value.contains(' ')) {
+      return 'Email should not contain spaces';
+    }
+
+    // Email format validation
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+
+    if (!emailRegex.hasMatch(value)) {
+      return 'Invalid email address';
     }
 
     return null;
@@ -102,18 +115,36 @@ class Validation {
     required String? input,
     bool isReq = false,
   }) {
-    if (isReq && (input == null || input.isEmpty)) {
+    final value = input?.trim() ?? '';
+
+    // Required validation
+    if (isReq && value.isEmpty) {
       return 'Mobile number is required';
     }
 
-    if (input != null && input.isNotEmpty) {
-      if (input.length != 10) {
-        return 'Mobile number must be 10 digits';
-      }
+    // Skip if empty & not required
+    if (value.isEmpty) {
+      return null;
+    }
 
-      if (!RegExp(r'^[0-9]+$').hasMatch(input)) {
-        return 'Mobile number must contain only digits';
-      }
+    // Space validation
+    if (value.contains(' ')) {
+      return 'Mobile number should not contain spaces';
+    }
+
+    // Digits only
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'Mobile number must contain only digits';
+    }
+
+    // Length validation
+    if (value.length != 10) {
+      return 'Mobile number must be 10 digits';
+    }
+
+    // Indian mobile validation
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value)) {
+      return 'Invalid mobile number';
     }
 
     return null;

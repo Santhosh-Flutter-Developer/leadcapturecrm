@@ -505,7 +505,7 @@ class TaskService {
       var snapshot = await firebase.users
           .doc(cid)
           .collection(Collections.tasks.name)
-          .where('createdBy', arrayContains: userId)
+          .where('assignees', arrayContains: userId)
           .get();
 
       return snapshot.docs.length;

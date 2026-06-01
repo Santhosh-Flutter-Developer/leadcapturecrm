@@ -8,6 +8,7 @@ import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_bloc.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_event.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_state.dart';
+import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
 
 // DownloadHistoryColors removed in favor of Theme.of(context)
@@ -90,6 +91,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
             ? AppBar(
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
+                leading: Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Back(color: Theme.of(context).colorScheme.onSurface),
+                ),
                 title: Text(
                   "Download History",
                   style: TextStyle(
@@ -134,7 +139,9 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                             Icon(
                               Icons.download_for_offline,
                               size: 80,
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 24),
                             Text(
@@ -147,13 +154,17 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                             ),
                             const SizedBox(height: 8),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                              ),
                               child: Text(
                                 "You haven't downloaded any files yet.",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -232,7 +243,10 @@ class _DownloadHistoryState extends State<DownloadHistory> {
   Widget _buildHeaderSearch() {
     return Column(
       children: [
-        Container(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
+        Container(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          height: 1,
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Material(
@@ -289,7 +303,11 @@ class _DownloadHistoryState extends State<DownloadHistory> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 3)),
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Padding(
@@ -359,7 +377,9 @@ class _DownloadHistoryState extends State<DownloadHistory> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],

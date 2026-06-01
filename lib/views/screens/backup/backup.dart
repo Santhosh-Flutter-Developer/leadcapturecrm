@@ -33,6 +33,7 @@ class _BackupListingState extends State<BackupListing> {
   String _search = '';
   bool _busy = false;
   BackupModel? _selectedBackup;
+  late BuildContext blocContext;
 
   final Map<String, List<String>> _exampleSubcollectionsMap = {
     'users': [
@@ -63,8 +64,8 @@ class _BackupListingState extends State<BackupListing> {
     'tasks': ['taskHistory', 'taskComments'],
   };
 
-  Future<void> _refresh(BuildContext context) async {
-    context.read<BackupBloc>().add(StreamBackup());
+  Future<void> _refresh() async {
+    blocContext.read<BackupBloc>().add(StreamBackup());
     await Future.delayed(const Duration(milliseconds: 350));
   }
 
@@ -134,26 +135,49 @@ class _BackupListingState extends State<BackupListing> {
 
   Future<void> exportBackup(BuildContext context) async {
     final List<String> paths = ['/users/KUsgiMjuGIdmQBMhFKNJ/'];
+
     try {
       setState(() => _busy = true);
+
       final url = await _trigger.backupPaths(
         paths,
         subcollectionsMap: _exampleSubcollectionsMap,
       );
+
+      if (!mounted) return;
+
       setState(() => _busy = false);
 
       if (url.isNotEmpty) {
+        // Refresh list first
+        blocContext.read<BackupBloc>().add(StreamBackup());
+
+        // Small delay helps after bloc rebuild
+        await Future.delayed(const Duration(milliseconds: 200));
+
         if (!mounted) return;
+
         await _showResultDialog(
           context,
           'Backup Success',
           'A new data snapshot has been created and uploaded to the secure vault.',
           url: url,
         );
-        context.read<BackupBloc>().add(StreamBackup());
+
+        // Optional snackbar
+        FlushBar.show(context, 'Backup created successfully', isSuccess: true);
+      } else {
+        FlushBar.show(
+          context,
+          'Backup completed but URL is empty',
+          isSuccess: false,
+        );
       }
     } catch (e) {
+      if (!mounted) return;
+
       setState(() => _busy = false);
+
       FlushBar.show(context, 'Export failed: $e', isSuccess: false);
     }
   }
@@ -161,79 +185,86 @@ class _BackupListingState extends State<BackupListing> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => BackupBloc()..add(StreamBackup()),
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-          leading: Back(color: Theme.of(context).colorScheme.onSurface),
-          centerTitle: false,
-          title: Text(
-            "Security Vault",
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 18,
-            ),
-          ),
-          actions: [
-            if (_busy)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else
-              IconButton(
-                onPressed: () => context.read<BackupBloc>().add(StreamBackup()),
-                icon: Icon(
-                  Iconsax.refresh,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
+      create: (_) => BackupBloc()..add(StreamBackup()),
+      child: Builder(
+        builder: (context) {
+          blocContext = context;
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: AppBar(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              elevation: 0,
+              leading: Back(color: Theme.of(context).colorScheme.onSurface),
+              centerTitle: false,
+              title: Text(
+                "Security Vault",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
                 ),
               ),
-            const SizedBox(width: 8),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              height: 1,
+              actions: [
+                if (_busy)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 16.0),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else
+                  IconButton(
+                    onPressed: () =>
+                        blocContext.read<BackupBloc>().add(StreamBackup()),
+                    icon: Icon(
+                      Iconsax.refresh,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  height: 1,
+                ),
+              ),
             ),
-          ),
-        ),
-        body: BlocBuilder<BackupBloc, BackupState>(
-          builder: (context, state) {
-            if (state is BackupLoading) {
-              return const Center(child: WaitingLoading());
-            }
-            if (state is BackupError) return _buildErrorState(state.message);
-            if (state is BackupLoaded) {
-              final items = state.backups.where((b) {
-                if (_search.isEmpty) return true;
-                final s = _search.toLowerCase();
-                return b.path.toLowerCase().contains(s) ||
-                    b.url.toLowerCase().contains(s);
-              }).toList();
+            body: BlocBuilder<BackupBloc, BackupState>(
+              builder: (context, state) {
+                if (state is BackupLoading) {
+                  return const Center(child: WaitingLoading());
+                }
+                if (state is BackupError)
+                  return _buildErrorState(state.message);
+                if (state is BackupLoaded) {
+                  final items = state.backups.where((b) {
+                    if (_search.isEmpty) return true;
+                    final s = _search.toLowerCase();
+                    return b.path.toLowerCase().contains(s) ||
+                        b.url.toLowerCase().contains(s);
+                  }).toList();
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool isDesktop = constraints.maxWidth > 1100;
-                  return isDesktop
-                      ? _buildDesktopLayout(items)
-                      : _buildMobileLayout(items);
-                },
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool isDesktop = constraints.maxWidth > 1100;
+                      return isDesktop
+                          ? _buildDesktopLayout(items)
+                          : _buildMobileLayout(items);
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -307,7 +338,7 @@ class _BackupListingState extends State<BackupListing> {
           child: backups.isEmpty
               ? _buildEmptyState()
               : RefreshIndicator(
-                  onRefresh: () => _refresh(context),
+                  onRefresh: () => _refresh(),
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -372,7 +403,7 @@ class _BackupListingState extends State<BackupListing> {
         ),
       ),
       child: ElevatedButton.icon(
-        onPressed: _busy ? null : () => exportBackup(context),
+        onPressed: _busy ? null : () => exportBackup(blocContext),
         icon: const Icon(Iconsax.export_3, size: 18),
         label: const Text("Create New Snapshot"),
         style: ElevatedButton.styleFrom(
@@ -788,7 +819,7 @@ class _BackupListingState extends State<BackupListing> {
       if (_selectedBackup?.uid == item.uid) {
         setState(() => _selectedBackup = null);
       }
-      context.read<BackupBloc>().add(StreamBackup());
+      blocContext.read<BackupBloc>().add(StreamBackup());
       FlushBar.show(context, 'Record removed successfully');
     }
   }

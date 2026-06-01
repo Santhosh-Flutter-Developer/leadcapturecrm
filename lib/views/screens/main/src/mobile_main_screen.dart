@@ -103,7 +103,19 @@ class _MobileMainScreenState extends State<MobileMainScreen> {
             centerTitle: false,
             leadingWidth: 50,
             leading: InkWell(
-              onTap: () => Navigate.route(context, const Profile()),
+              onTap: () async {
+                final user = await Spdb.getUser();
+
+                if (user.userType == UserType.admin) {
+                  final admin = await Spdb.getAdmin();
+
+                  if (admin != null && context.mounted) {
+                    Navigate.route(context, AdminProfile(admin: admin));
+                  }
+                } else {
+                  Navigate.route(context, const Profile());
+                }
+              },
               child: Padding(
                 padding: const EdgeInsets.only(left: 8.0),
                 child: Center(

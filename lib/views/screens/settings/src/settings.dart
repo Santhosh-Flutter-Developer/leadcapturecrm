@@ -64,9 +64,9 @@ class _SettingsListingState extends State<SettingsListing> {
               backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               centerTitle: false,
-              leading: const Padding(
+              leading: Padding(
                 padding: EdgeInsets.only(left: 8.0),
-                child: Back(),
+                child: Back(color: Theme.of(context).colorScheme.onSurface),
               ),
               title: Text(
                 "Preferences",
@@ -122,19 +122,19 @@ class _SettingsListingState extends State<SettingsListing> {
                           UpdateSettingsEvent("pushNotification", val),
                         ),
                       ),
-                      _buildSwitchTile(
-                        icon: Iconsax.wallet,
-                        iconColor: Colors.green,
-                        title: "Payroll",
-                        subtitle: "Show payroll related modules",
-                        value: settings.payrollEnabled,
-                        onChanged: (val) async {
-                          context.read<SettingsBloc>().add(
-                            UpdateSettingsEvent("payrollEnabled", val),
-                          );
-                          await Spdb.savePayrollSettings(val);
-                        },
-                      ),
+                      // _buildSwitchTile(
+                      //   icon: Iconsax.wallet,
+                      //   iconColor: Colors.green,
+                      //   title: "Payroll",
+                      //   subtitle: "Show payroll related modules",
+                      //   value: settings.payrollEnabled,
+                      //   onChanged: (val) async {
+                      //     context.read<SettingsBloc>().add(
+                      //       UpdateSettingsEvent("payrollEnabled", val),
+                      //     );
+                      //     await Spdb.savePayrollSettings(val);
+                      //   },
+                      // ),
                       _buildSwitchTile(
                         icon: Iconsax.message,
                         iconColor: Colors.greenAccent,
@@ -216,8 +216,7 @@ class _SettingsListingState extends State<SettingsListing> {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    const CompanyLocationSettings(),
+                                builder: (_) => const CompanyLocationSettings(),
                               ),
                             ),
                             trailing: const Icon(

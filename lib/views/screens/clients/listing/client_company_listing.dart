@@ -139,7 +139,9 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
               // if (!(permissions?.canView ?? false)) {
               //   return buildNoPermissionView(context);
               // }
-
+              if (state.clients.isEmpty) {
+                return const NoData(text: "No clients company available");
+              }
               return RefreshIndicator(
                 onRefresh: () => _refreshClients(context),
                 child: ListView(
@@ -150,71 +152,80 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minWidth: constraints.maxWidth,
-                                  ),
-                                  child: DataTable(
-                                    showCheckboxColumn: true,
-                                    sortColumnIndex:
-                                        controllerWatch.sortColumnIndex,
-                                    sortAscending:
-                                        controllerWatch.sortAscending,
-                                    headingRowColor: WidgetStateProperty.all(
-                                      Theme.of(context).colorScheme.surfaceContainerHighest,
-                                    ),
-                                    headingTextStyle: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                    columns: _buildColumns(controllerRead),
-                                    rows: controllerWatch.paginatedItems
-                                        .map(
-                                          (client) => _buildDataRow(
-                                            context,
-                                            client,
-                                            controllerWatch,
-                                            controllerRead,
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
+                    if (controllerWatch.paginatedItems.isEmpty)
+                      const NoData(text: "No matching records found")
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withValues(alpha: 0.1),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
                             ),
-                            child: PaginationControls<ClientModel>(),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: constraints.maxWidth,
+                                    ),
+                                    child: DataTable(
+                                      showCheckboxColumn: true,
+                                      sortColumnIndex:
+                                          controllerWatch.sortColumnIndex,
+                                      sortAscending:
+                                          controllerWatch.sortAscending,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                      ),
+                                      headingTextStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                      columns: _buildColumns(controllerRead),
+                                      rows: controllerWatch.paginatedItems
+                                          .map(
+                                            (client) => _buildDataRow(
+                                              context,
+                                              client,
+                                              controllerWatch,
+                                              controllerRead,
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 12.0,
+                              ),
+                              child: PaginationControls<ClientModel>(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               );
@@ -308,6 +319,8 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
   }
 
   Widget _buildActionRow(context) {
+    final controllerWatch = context
+        .watch<PaginatedDataController<ClientModel>>();
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -329,9 +342,9 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
               icon: const Icon(Icons.add, size: 18),
               label: Text(
                 "Add $pageTitle",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
@@ -342,69 +355,71 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             ElevatedButton.icon(
               label: Text("Export"),
               icon: const Icon(Iconsax.export_3),
-              onPressed: () async {
-                try {
-                  List<List<String>> exportData = [];
+              onPressed: controllerWatch.paginatedItems.isEmpty
+                  ? null
+                  : () async {
+                      try {
+                        List<List<String>> exportData = [];
 
-                  // Add header row
-                  if (widget.section == ClientSection.contacts) {
-                    exportData.add([
-                      'Name',
-                      'Email',
-                      'Mobile',
-                      'Status',
-                      'Created By',
-                    ]);
-                  } else {
-                    exportData.add([
-                      'Company',
-                      'Phone',
-                      'GST/VAT',
-                      'Status',
-                      'Created By',
-                    ]);
-                  }
+                        // Add header row
+                        if (widget.section == ClientSection.contacts) {
+                          exportData.add([
+                            'Name',
+                            'Email',
+                            'Mobile',
+                            'Status',
+                            'Created By',
+                          ]);
+                        } else {
+                          exportData.add([
+                            'Company',
+                            'Phone',
+                            'GST/VAT',
+                            'Status',
+                            'Created By',
+                          ]);
+                        }
 
-                  final controller =
-                      Provider.of<PaginatedDataController<ClientModel>>(
-                        context,
-                        listen: false,
-                      );
-                  for (var client in controller.paginatedItems) {
-                    if (widget.section == ClientSection.contacts) {
-                      exportData.add([
-                        client.clientName ?? '',
-                        client.email ?? '',
-                        client.mobileNumber ?? '',
-                        client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy.name,
-                      ]);
-                    } else {
-                      exportData.add([
-                        client.companyName ?? '',
-                        client.officePhoneNo ?? '',
-                        client.gstVatNumber ?? '',
-                        client.isActive ? 'Active' : 'Inactive',
-                        client.createdBy.name,
-                      ]);
-                    }
-                  }
+                        final controller =
+                            Provider.of<PaginatedDataController<ClientModel>>(
+                              context,
+                              listen: false,
+                            );
+                        for (var client in controller.paginatedItems) {
+                          if (widget.section == ClientSection.contacts) {
+                            exportData.add([
+                              client.clientName ?? '',
+                              client.email ?? '',
+                              client.mobileNumber ?? '',
+                              client.isActive ? 'Active' : 'Inactive',
+                              client.createdBy.name,
+                            ]);
+                          } else {
+                            exportData.add([
+                              client.companyName ?? '',
+                              client.officePhoneNo ?? '',
+                              client.gstVatNumber ?? '',
+                              client.isActive ? 'Active' : 'Inactive',
+                              client.createdBy.name,
+                            ]);
+                          }
+                        }
 
-                  // Generate Excel
-                  var fileBytes = await XlsxWriter().create(exportData);
+                        // Generate Excel
+                        var fileBytes = await XlsxWriter().create(exportData);
 
-                  // Save to downloads
-                  var filePath = await saveFileToDownloads(
-                    fileBytes,
-                    fileName: '$pageTitle List.xlsx',
-                  );
+                        // Save to downloads
+                        var filePath = await saveFileToDownloads(
+                          fileBytes,
+                          fileName: '$pageTitle List.xlsx',
+                        );
 
-                  // Open file
-                  openfile(filePath, context);
-                } catch (e) {
-                  FlushBar.show(context, e.toString(), isSuccess: false);
-                }
-              },
+                        // Open file
+                        openfile(filePath, context);
+                      } catch (e) {
+                        FlushBar.show(context, e.toString(), isSuccess: false);
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.secondary,
                 foregroundColor: Theme.of(context).colorScheme.onSecondary,
@@ -572,7 +587,11 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 4),
-        Icon(Icons.arrow_upward, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          Icons.arrow_upward,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ],
     );
   }

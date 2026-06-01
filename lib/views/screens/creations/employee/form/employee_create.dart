@@ -78,6 +78,9 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
       _designationList = await DesignationService.getAllDesignations();
       _departmentList = await DepartmentService.getAllDepartments();
 
+      final generatedId = await EmployeeService.generateEmployeeId();
+      _employeeIdController.text = generatedId;
+
       setState(() {});
     } catch (e, st) {
       await ErrorService.recordError(e, st);
@@ -124,9 +127,9 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               return Center(
                 child: Text(
                   'Error: ${snapshot.error}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               );
             }
@@ -205,8 +208,8 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 8),
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
@@ -294,13 +297,16 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Iconsax.gallery,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 SizedBox(height: 8),
                 Text(
                   "Upload Photo",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -609,7 +615,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               children: [
                 Switch(
                   value: _isActive,
-                  activeColor: Theme.of(context).colorScheme.primary,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (value) {
                     setState(() {
                       _isActive = value;
@@ -621,8 +627,8 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                   _isActive ? 'Active' : 'Inactive',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: _isActive 
-                        ? Theme.of(context).colorScheme.primary 
+                    color: _isActive
+                        ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.error,
                   ),
                 ),
@@ -801,19 +807,18 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         } else {
           futureLoading(context);
 
-          var employeeIdExists = await EmployeeService.checkEmployeeIdExists(
+          var duplicateError = await EmployeeService.checkEmployeeExists(
             employeeId: _employeeIdController.text,
+            email: _emailController.text.trim(),
+            mobileNumber: _mobileNumberController.text.trim(),
           );
 
-          if (employeeIdExists) {
+          if (duplicateError != null) {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
-            FlushBar.show(
-              context,
-              'Employee ID already exists',
-              isSuccess: false,
-            );
+            FlushBar.show(context, duplicateError, isSuccess: false);
+            return;
           }
 
           String? profileImageUrl;

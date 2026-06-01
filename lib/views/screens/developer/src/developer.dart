@@ -22,9 +22,9 @@ class _DeveloperState extends State<Developer> {
               backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 0,
               centerTitle: false,
-              leading: const Padding(
+              leading: Padding(
                 padding: EdgeInsets.only(left: 8.0),
-                child: Back(),
+                child: Back(color: Theme.of(context).colorScheme.onSurface),
               ),
               title: Text(
                 "Developer Console",
