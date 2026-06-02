@@ -6,11 +6,47 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
 
 const FIREBASE_API_KEY = "AIzaSyD1-qmYt3fwlA-TlHmxHOhd_DL3lmj5TF0";
+
+exports.sendEmail = functions.https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") return res.status(204).send("");
+
+    try {
+        const { smtp_host, smtp_user, smtp_pass, from, from_name, to, subject, message } = req.body;
+
+        if (!smtp_user || !smtp_pass || !to || !subject || !message) {
+            return res.status(400).json({ success: false, error: "Missing required fields" });
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: smtp_host || "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: { user: smtp_user, pass: smtp_pass },
+        });
+
+        await transporter.sendMail({
+            from: `"${from_name || "Lead Capture"}" <${from || smtp_user}>`,
+            to: to,
+            replyTo: from || smtp_user,
+            subject: subject,
+            html: message,
+        });
+
+        return res.status(200).json({ success: true, message: "Email sent successfully" });
+    } catch (error) {
+        console.error("sendEmail error:", error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 exports.verifyAuth = functions.https.onRequest(async (req, res) => {
     try {

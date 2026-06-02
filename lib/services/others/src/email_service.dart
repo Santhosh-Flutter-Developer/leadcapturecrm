@@ -13,15 +13,15 @@ class EmailService {
     try {
       var response = await http.post(
         Uri.parse(
-          "https://us-central1-core-db-51843.cloudfunctions.net/sendEmail",
+          "https://us-central1-leadcapture-79a43.cloudfunctions.net/sendEmail",
         ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           "smtp_host": "smtp.gmail.com",
           "smtp_user": "systemadmin@srisoftwarez.com",
-          "smtp_pass": "rvbv wzse zsku krzy",
+          "smtp_pass": "mxlfsavbqgrbhmrq",
           "from": "systemadmin@srisoftwarez.com",
-          "from_name": "Lead Capture System Admin",
+          "from_name": "Lead Capture",
           "to": to.map((e) => e.trim()).toList().join(','),
           "to_name": toName.map((e) => e.trim()).toList().join(','),
           "reply_to": "systemadmin@srisoftwarez.com",
