@@ -138,7 +138,7 @@ class _AdminProfileState extends State<AdminProfile> {
           children: [
             CircleAvatar(
               radius: 60,
-              backgroundColor: AppColors.grey300,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
               backgroundImage:
                   (_admin.profileImageUrl != null &&
                       _admin.profileImageUrl!.isNotEmpty)
@@ -224,7 +224,7 @@ class _AdminProfileState extends State<AdminProfile> {
       title,
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w700,
-        color: AppColors.primary,
+        color: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -240,7 +240,7 @@ class _AdminProfileState extends State<AdminProfile> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 22, color: AppColors.primary),
+          Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
 
           Expanded(
@@ -250,7 +250,7 @@ class _AdminProfileState extends State<AdminProfile> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.grey600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -272,7 +272,7 @@ class _AdminProfileState extends State<AdminProfile> {
   Widget _divider() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Divider(color: AppColors.grey300),
+      child: Divider(color: Theme.of(context).dividerColor),
     );
   }
 }

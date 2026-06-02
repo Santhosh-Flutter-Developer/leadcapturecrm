@@ -83,7 +83,7 @@ class _TaskStatusPieChartState extends State<TaskStatusPieChart> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 5),
                 SizedBox(
                   height: isDesktop ? 280 : 400,
                   child: isDesktop

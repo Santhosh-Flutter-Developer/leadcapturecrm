@@ -1150,20 +1150,19 @@ List<Widget> _adminActions(BuildContext context) => [
 ];
 
 List<Widget> _userActions(BuildContext context) => [
-  QuickActionCard(
-    icon: Icons.login,
-    label: "Worktime",
-    color: Colors.green,
-    onTap: () => _openSheet(context, const WorktimeCreate()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.login,
+  //   label: "Worktime",
+  //   color: Colors.green,
+  //   onTap: () => _openSheet(context, const WorktimeCreate()),
+  // ),
 
-  QuickActionCard(
-    icon: Icons.calendar_today,
-    label: "Attendance",
-    color: Colors.blue,
-    onTap: () => _openSheet(context, const Attendance()),
-  ),
-
+  // QuickActionCard(
+  //   icon: Icons.calendar_today,
+  //   label: "Attendance",
+  //   color: Colors.blue,
+  //   onTap: () => _openSheet(context, const Attendance()),
+  // ),
   QuickActionCard(
     icon: Icons.person_add_outlined,
     label: "Lead",
@@ -1436,7 +1435,7 @@ class QuickActionCard extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,

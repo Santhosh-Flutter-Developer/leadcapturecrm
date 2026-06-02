@@ -459,7 +459,7 @@ class CommentSheetState extends State<CommentSheet> {
           onTap: () => _openCommentAuthorProfile(comment.authorId),
           child: CircleAvatar(
             radius: 16,
-            backgroundColor: FeedAppColors.background,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
             backgroundImage: NetworkImage(
               authorAvatar.isNotEmpty
                   ? authorAvatar
@@ -527,18 +527,18 @@ class CommentSheetState extends State<CommentSheet> {
                       onTap: () => _openCommentAuthorProfile(comment.authorId),
                       child: Text(
                         authorName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
-                          color: FeedAppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       timeago.format(comment.createdAt, locale: 'en_short'),
-                      style: const TextStyle(
-                        color: FeedAppColors.textSecondary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
                       ),
                     ),
@@ -549,10 +549,10 @@ class CommentSheetState extends State<CommentSheet> {
                   _buildReplyPreview(comment),
                 Text(
                   comment.content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     height: 1.4,
-                    color: FeedAppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -565,7 +565,7 @@ class CommentSheetState extends State<CommentSheet> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: FeedAppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -577,7 +577,7 @@ class CommentSheetState extends State<CommentSheet> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: FeedAppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -611,9 +611,13 @@ class CommentSheetState extends State<CommentSheet> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: FeedAppColors.background,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainer,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: FeedAppColors.border),
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor,
+                              ),
                             ),
                             child: Text(
                               "${e.key} ${e.value.length}",
@@ -649,10 +653,13 @@ class CommentSheetState extends State<CommentSheet> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: FeedAppColors.background,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
         border: Border(
-          left: BorderSide(color: FeedAppColors.primary, width: 3),
+          left: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 3,
+          ),
         ),
       ),
       child: Column(
@@ -660,13 +667,18 @@ class CommentSheetState extends State<CommentSheet> {
         children: [
           Text(
             _commentAuthors[replied.authorId]?.name ?? replied.authorName,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
-              color: FeedAppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          Text(replied.content, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            replied.content,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
         ],
       ),
     );
@@ -681,8 +693,8 @@ class CommentSheetState extends State<CommentSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: BoxDecoration(
-        color: FeedAppColors.white,
-        border: const Border(top: BorderSide(color: FeedAppColors.border)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -692,11 +704,17 @@ class CommentSheetState extends State<CommentSheet> {
               controller: _commentController,
               maxLines: 4,
               minLines: 1,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: "Share your thoughts...",
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 filled: true,
-                fillColor: FeedAppColors.background,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,
@@ -713,8 +731,8 @@ class CommentSheetState extends State<CommentSheet> {
             onTap: _isPosting ? null : _addComment,
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: FeedAppColors.primary,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
                 shape: BoxShape.circle,
               ),
               child: _isPosting
@@ -739,12 +757,12 @@ class CommentSheetState extends State<CommentSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Iconsax.slash, size: 48, color: FeedAppColors.border),
+          Icon(Iconsax.slash, size: 48, color: Theme.of(context).dividerColor),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "No comments yet",
             style: TextStyle(
-              color: FeedAppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),

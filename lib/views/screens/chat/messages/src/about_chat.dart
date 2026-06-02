@@ -15,12 +15,14 @@ class AboutChat extends StatefulWidget {
   final ChatModel chat;
   final String userUid;
   final UserType? userType;
+  final String? currentUserUid;
 
   const AboutChat({
     super.key,
     required this.chat,
     required this.userUid,
     this.userType,
+    this.currentUserUid,
   });
 
   @override
@@ -33,11 +35,14 @@ class _AboutChatState extends State<AboutChat> {
   @override
   void initState() {
     super.initState();
+    currentUserUid = widget.currentUserUid ?? '';
     _init();
   }
 
   Future<void> _init() async {
-    currentUserUid = await Spdb.getUid() ?? '';
+    if (currentUserUid.isEmpty) {
+      currentUserUid = await Spdb.getUid() ?? '';
+    }
     _canEditGroup();
     setState(() {});
   }
@@ -63,17 +68,27 @@ class _AboutChatState extends State<AboutChat> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSelfChat =
+        widget.userUid == currentUserUid ||
+        widget.userUid.isEmpty ||
+        widget.chat.participants.every((id) => id == currentUserUid);
     final title = widget.chat.isGroupChat
         ? widget.chat.title ?? 'Group Chat'
-        : CacheService.getUserByUid(widget.userUid)?.name ?? 'User Details';
-    String opponentUid = widget.chat.participants.firstWhere(
-      (id) => id != currentUserUid,
-      orElse: () => '',
-    );
+        : isSelfChat
+        ? 'Saved Messages'
+        : CacheService.getUserByUid(widget.userUid)?.name ?? '';
+    String opponentUid = isSelfChat
+        ? currentUserUid
+        : widget.chat.participants.firstWhere(
+            (id) => id != currentUserUid,
+            orElse: () => '',
+          );
 
     var user = CacheService.getUserByUid(opponentUid);
 
-    final String imageUrl = user is EmployeeModel
+    final String imageUrl = isSelfChat
+        ? ''
+        : user is EmployeeModel
         ? (user.profileImageUrl ?? '')
         : user is AdminModel
         ? (user.profileImageUrl ?? '')
@@ -107,7 +122,12 @@ class _AboutChatState extends State<AboutChat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(context, title, imageUrl),
+                    _buildHeader(
+                      context,
+                      title,
+                      imageUrl,
+                      isSelfChat: isSelfChat,
+                    ),
                     const SizedBox(height: 32),
 
                     if (widget.chat.isGroupChat) ...[
@@ -130,7 +150,12 @@ class _AboutChatState extends State<AboutChat> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String title, String imageUrl) {
+  Widget _buildHeader(
+    BuildContext context,
+    String title,
+    String imageUrl, {
+    required bool isSelfChat,
+  }) {
     final bool avatarValid = imageUrl.isNotEmpty;
     return Center(
       child: Column(
@@ -147,7 +172,7 @@ class _AboutChatState extends State<AboutChat> {
               ),
             ),
             child: GestureDetector(
-              onTap: avatarValid
+              onTap: avatarValid && !isSelfChat
                   ? () {
                       showDialog(
                         context: context,
@@ -191,6 +216,12 @@ class _AboutChatState extends State<AboutChat> {
                 child: widget.chat.isGroupChat
                     ? Icon(
                         Iconsax.people,
+                        size: 40,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : isSelfChat
+                    ? Icon(
+                        Iconsax.save_2,
                         size: 40,
                         color: Theme.of(context).colorScheme.primary,
                       )

@@ -189,7 +189,6 @@ class _CalendarDisplayState extends State<CalendarDisplay> {
               ),
             );
           }
-
           return const SizedBox.shrink();
         },
       ),
@@ -1017,7 +1016,7 @@ class EventCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
@@ -1060,7 +1059,7 @@ class EventCard extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1C1E),
+                // color: Color(0xFF1A1C1E),
               ),
             ),
             const SizedBox(height: 10),

@@ -132,7 +132,7 @@ class WorktimeService {
     }
   }
 
-  static Future clockOut({required String id}) async {
+  static Future clockOut({required String id, double? lat, double? lng}) async {
     try {
       var cid = await Spdb.getCid();
 
@@ -141,7 +141,11 @@ class WorktimeService {
             .doc(cid)
             .collection(Collections.worktime.name)
             .doc(id)
-            .update({"clockOut": DateTime.now().millisecondsSinceEpoch});
+            .update({
+              "clockOut": DateTime.now().millisecondsSinceEpoch,
+              if (lat != null) "clockOutLat": lat,
+              if (lng != null) "clockOutLng": lng,
+            });
 
         await AttendanceService.generateTodayAttendance();
       }

@@ -65,37 +65,40 @@ class _FeedListingState extends State<FeedListing> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: kIsMobile
-            ? Back(color: Theme.of(context).colorScheme.onSurface)
-            : null,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        centerTitle: false,
-        title: Text(
-          "Community Feed",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Iconsax.refresh,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20,
-            ),
-            onPressed: _refreshFeed,
-          ),
-          const SizedBox(width: 8),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Theme.of(context).dividerColor, height: 1),
-        ),
-      ),
+      appBar: kIsMobile
+          ? AppBar(
+              leading: Back(color: Theme.of(context).colorScheme.onSurface),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              elevation: 0,
+              centerTitle: false,
+              title: Text(
+                "Community Feed",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 18,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    Iconsax.refresh,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  onPressed: _refreshFeed,
+                ),
+                const SizedBox(width: 8),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(
+                  color: Theme.of(context).dividerColor,
+                  height: 1,
+                ),
+              ),
+            )
+          : null,
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 4,
