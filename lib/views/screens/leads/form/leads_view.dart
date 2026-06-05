@@ -5,7 +5,10 @@ import 'package:iconsax/iconsax.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:mime/mime.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '/utils/utils.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -57,6 +60,7 @@ class LeadsView extends StatefulWidget {
 
 class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
+  late LeadModel _lead;
   late LeadCategoryModel widgetLeadCategory;
   late TabController _tabController;
   String? _currentUid;
@@ -65,10 +69,207 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    var leadCategory = CacheService.leadCategoryByUid(widget.lead.leadCategory);
-    widgetLeadCategory = leadCategory ?? LeadCategoryModel.fromEmptyMap();
+    _lead = widget.lead;
+    _syncLeadCategory();
     _tabController = TabController(length: 5, vsync: this);
     _loadOwnership();
+    _refreshLead();
+  }
+
+  void _syncLeadCategory() {
+    widgetLeadCategory =
+        CacheService.leadCategoryByUid(_lead.leadCategory) ??
+        LeadCategoryModel.fromEmptyMap();
+  }
+
+  Future<void> _refreshLead() async {
+    final id = _lead.uid;
+    if (id == null || id.isEmpty) return;
+    try {
+      final fresh = await LeadService.getLead(uid: id);
+      if (!mounted) return;
+      setState(() {
+        _lead = fresh;
+        _syncLeadCategory();
+      });
+    } catch (_) {}
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _downloadAndOpenAttachment(FileModel file) async {
+    if (file.url.isEmpty) {
+      FlushBar.show(context, 'File URL is unavailable', isSuccess: false);
+      return;
+    }
+    await Download.downloadFromUrl(context, file.url, file.name);
+  }
+
+  Future<void> _openAttachmentInBrowser(FileModel file) async {
+    if (file.url.isEmpty) {
+      FlushBar.show(context, 'File URL is unavailable', isSuccess: false);
+      return;
+    }
+    final uri = Uri.tryParse(file.url);
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        FlushBar.show(context, 'Could not open file', isSuccess: false);
+      }
+    }
+  }
+
+  void _previewAttachment(FileModel file) {
+    if (file.url.isEmpty) {
+      FlushBar.show(context, 'File URL is unavailable', isSuccess: false);
+      return;
+    }
+
+    final mime = file.mimeType.toLowerCase();
+    final ext = file.extension.toLowerCase();
+
+    final imageExtensions = [
+      "png",
+      "jpg",
+      "jpeg",
+      "webp",
+      "bmp",
+      "gif",
+      "tiff",
+    ];
+    final videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+    final audioExtensions = ['mp3', 'wav', 'aac'];
+
+    if (mime.startsWith('image/') || imageExtensions.contains(ext)) {
+      Navigate.route(context, GalleryScreen(images: [file], initialIndex: 0));
+    } else if (mime.startsWith('video/') || videoExtensions.contains(ext)) {
+      Navigate.route(context, VideoPlay(file: file));
+    } else if (mime.startsWith('audio/') || audioExtensions.contains(ext)) {
+      Navigate.route(context, AudioPlay(file: file));
+    } else if (ext == 'pdf') {
+      Navigate.route(context, PdfPreviewPage(file: file));
+    } else {
+      _openAttachmentInBrowser(file);
+    }
+  }
+
+  Future<void> _downloadNotes() async {
+    if (_lead.notes.isEmpty) {
+      FlushBar.show(context, 'No notes to download', isSuccess: false);
+      return;
+    }
+    try {
+      futureLoading(context);
+      final bytes = Uint8List.fromList(utf8.encode(_lead.notes));
+      final fileName = 'notes_${_lead.leadName.replaceAll(' ', '_')}.txt';
+      final savedPath = await saveFileToDownloads(bytes, fileName: fileName);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      FlushBar.show(context, 'Notes downloaded successfully', isSuccess: true);
+      openfile(savedPath, context);
+    } catch (e, st) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      await ErrorService.recordError(e, st);
+      FlushBar.show(context, 'Failed to download notes: $e', isSuccess: false);
+    }
+  }
+
+  void _previewNotes() {
+    if (_lead.notes.isEmpty) {
+      FlushBar.show(context, 'No notes to preview', isSuccess: false);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: 500,
+            constraints: const BoxConstraints(maxHeight: 600),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Notes Preview",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 20),
+                          tooltip: 'Copy to Clipboard',
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: _lead.notes));
+                            FlushBar.show(context, 'Notes copied to clipboard');
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _lead.notes,
+                      style: const TextStyle(fontSize: 14, height: 1.6),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _downloadNotes();
+                      },
+                      icon: const Icon(Iconsax.document_download, size: 18),
+                      label: const Text("Download"),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text("Close"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadOwnership() async {
@@ -91,7 +292,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
     context.read<LeadBloc>().add(
-      AddLeadComment(leadUid: widget.lead.uid!, commentText: text),
+      AddLeadComment(leadUid: _lead.uid!, commentText: text),
     );
     _commentController.clear();
   }
@@ -114,19 +315,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          if (_isAdmin || widget.lead.createdBy.uid == _currentUid) ...[
-            _appBarButton(Iconsax.edit, "Edit", () {
+          if (_isAdmin || _lead.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () async {
               if (kIsMobile) {
-                Sheet.showSheet(
+                await Sheet.showSheet(
                   context,
-                  widget: LeadEdit(uid: widget.lead.uid ?? ''),
+                  widget: LeadEdit(uid: _lead.uid ?? ''),
                 );
               } else {
-                GeneralDialog.showRTLSheet(
+                await GeneralDialog.showRTLSheet(
                   context,
-                  LeadEdit(uid: widget.lead.uid ?? ''),
+                  LeadEdit(uid: _lead.uid ?? ''),
                 );
               }
+              await _refreshLead();
             }),
             const SizedBox(width: 8),
             _appBarButton(Iconsax.trash, "Delete", () async {
@@ -143,7 +345,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               try {
                 final deletedLead = widget.lead;
                 final isUndoPressed = ValueNotifier(false);
-                await LeadService.deleteLead(uid: widget.lead.uid ?? '');
+                await LeadService.deleteLead(uid: _lead.uid ?? '');
 
                 if (!mounted) return;
 
@@ -258,7 +460,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   }
 
   Widget _buildProfessionalHeader() {
-    final status = CacheService.leadStatusByUid(widget.lead.leadStatus);
+    final status = CacheService.leadStatusByUid(_lead.leadStatus);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -291,7 +493,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                     ),
                     child: Center(
                       child: Text(
-                        widget.lead.leadName[0].toUpperCase(),
+                        _lead.leadName[0].toUpperCase(),
                         style: TextStyle(
                           fontSize: isMobile ? 24 : 32,
                           color: Theme.of(context).colorScheme.primary,
@@ -314,7 +516,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                           runSpacing: 4,
                           children: [
                             Text(
-                              widget.lead.leadName,
+                              _lead.leadName,
                               style: TextStyle(
                                 fontSize: isMobile ? 18 : 22,
                                 fontWeight: FontWeight.w800,
@@ -326,7 +528,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.lead.companyName ?? 'Unspecified Company',
+                          _lead.companyName ?? 'Unspecified Company',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -386,20 +588,20 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           Iconsax.call,
           "Call",
           () {
-            if (widget.lead.companyMobile?.isNotEmpty ?? false) {
-              launchUrl(Uri.parse("tel:${widget.lead.companyMobile}"));
+            if (_lead.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${_lead.companyMobile}"));
             }
           },
-          tooltip: widget.lead.companyMobile?.isNotEmpty ?? false
-              ? "Call ${widget.lead.companyMobile}"
+          tooltip: _lead.companyMobile?.isNotEmpty ?? false
+              ? "Call ${_lead.companyMobile}"
               : "No contact number available",
         ),
         _quickAction(
           Iconsax.sms,
           "Email",
           () {},
-          tooltip: widget.lead.leadEmail.isNotEmpty
-              ? "Mail ${widget.lead.leadEmail}"
+          tooltip: _lead.leadEmail.isNotEmpty
+              ? "Mail ${_lead.leadEmail}"
               : "No contact mail available",
         ),
         _quickAction(
@@ -442,7 +644,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                "${widget.lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.lead.leadValue)}",
+                "${_lead.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(_lead.leadValue)}",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
@@ -618,17 +820,13 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
     return Column(
       children: [
         _infoSection("Engagement Details", [
-          _dataPoint(Iconsax.sms, "Email Address", widget.lead.leadEmail),
+          _dataPoint(Iconsax.sms, "Email Address", _lead.leadEmail),
           _dataPoint(Iconsax.category, "Lead Segment", widgetLeadCategory.name),
-          _dataPoint(
-            Iconsax.user_add,
-            "Assigned Agent",
-            widget.lead.createdBy.name,
-          ),
+          _dataPoint(Iconsax.user_add, "Assigned Agent", _lead.createdBy.name),
           _dataPoint(
             Iconsax.calendar_1,
             "Capture Date",
-            DateFormat('MMM dd, yyyy').format(widget.lead.createdAt),
+            DateFormat('MMM dd, yyyy').format(_lead.createdAt),
           ),
         ]),
         const SizedBox(height: 16),
@@ -636,30 +834,30 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
           _dataPoint(
             Iconsax.buildings,
             "Company Name",
-            widget.lead.companyName ?? 'N/A',
+            _lead.companyName ?? 'N/A',
           ),
           _dataPoint(
             Iconsax.global,
             "Web Presence",
-            widget.lead.companyWebsite ?? 'N/A',
+            _lead.companyWebsite ?? 'N/A',
             isLink: true,
           ),
           _dataPoint(
             Iconsax.call,
             "Business Contact",
-            widget.lead.companyMobile ?? 'N/A',
+            _lead.companyMobile ?? 'N/A',
           ),
           _dataPoint(
             Iconsax.location,
             "Office Location",
-            "${widget.lead.companyCity?.name ?? 'Unknown'}, ${widget.lead.companyCountry?.name ?? 'Unknown'}",
+            "${_lead.companyCity?.name ?? 'Unknown'}, ${_lead.companyCountry?.name ?? 'Unknown'}",
           ),
         ]),
       ],
     );
   }
 
-  Widget _infoSection(String title, List<Widget> children) {
+  Widget _infoSection(String title, List<Widget> children, {Widget? trailing}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -671,13 +869,19 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              if (trailing != null) trailing,
+            ],
           ),
           const SizedBox(height: 20),
           Wrap(spacing: 40, runSpacing: 24, children: children),
@@ -1517,10 +1721,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
     if (confirmed == true) {
       context.read<LeadBloc>().add(
-        DeleteLeadActivity(
-          leadUid: widget.lead.uid!,
-          activityUid: activity.uid!,
-        ),
+        DeleteLeadActivity(leadUid: _lead.uid!, activityUid: activity.uid!),
       );
     }
   }
@@ -1556,25 +1757,45 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
   Widget _buildNotesTab() {
     return Column(
       children: [
-        _infoSection("Internal Documentation", [
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              widget.lead.notes.isEmpty
-                  ? "No internal notes provided."
-                  : widget.lead.notes,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.7,
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
+        _infoSection(
+          "Internal Documentation",
+          [
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _lead.notes.isEmpty
+                    ? "No internal notes provided."
+                    : _lead.notes,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.7,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-        ]),
+          ],
+          trailing: _lead.notes.isEmpty
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Iconsax.eye, size: 18),
+                      tooltip: 'Preview Note',
+                      onPressed: () => _previewNotes(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Iconsax.document_download, size: 18),
+                      tooltip: 'Download Note',
+                      onPressed: () => _downloadNotes(),
+                    ),
+                  ],
+                ),
+        ),
         const SizedBox(height: 16),
         _infoSection("Shared Attachments", [
-          if (widget.lead.attachments.isEmpty)
+          if (_lead.attachments.isEmpty)
             Text(
               "No documents found.",
               style: TextStyle(
@@ -1583,9 +1804,9 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
               ),
             )
           else
-            ...widget.lead.attachments.map(
+            ..._lead.attachments.map(
               (file) => Container(
-                margin: EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
@@ -1607,12 +1828,36 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
                       fontSize: 13,
                     ),
                   ),
-                  subtitle: const Text(
-                    "External Resource",
-                    style: TextStyle(fontSize: 11),
+                  subtitle: Text(
+                    file.url.isEmpty
+                        ? 'Unavailable'
+                        : '${file.extension.toUpperCase()} · ${_formatFileSize(file.size)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  trailing: const Icon(Iconsax.export_1, size: 16),
-                  onTap: () {},
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // IconButton(
+                      //   icon: const Icon(Iconsax.eye, size: 18),
+                      //   tooltip: 'Preview',
+                      //   onPressed: () => _previewAttachment(file),
+                      // ),
+                      IconButton(
+                        icon: const Icon(Iconsax.document_download, size: 18),
+                        tooltip: 'Download & Open',
+                        onPressed: () => _downloadAndOpenAttachment(file),
+                      ),
+                      // IconButton(
+                      //   icon: const Icon(Iconsax.export_1, size: 16),
+                      //   tooltip: 'Open in Browser',
+                      //   onPressed: () => _openAttachmentInBrowser(file),
+                      // ),
+                    ],
+                  ),
+                  onTap: () => _downloadAndOpenAttachment(file),
                 ),
               ),
             ),
@@ -1678,7 +1923,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
                           if (value.isNotEmpty) {
                             await LeadService.editLeadComment(
-                              leadUid: widget.lead.uid ?? '',
+                              leadUid: _lead.uid ?? '',
                               commentUid: comment.uid ?? '',
                               commentText: value,
                             );
@@ -1757,7 +2002,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
     if (confirm == true) {
       await LeadService.deleteLeadComment(
-        leadUid: widget.lead.uid ?? '',
+        leadUid: _lead.uid ?? '',
         commentUid: comment.uid ?? '',
       );
     }
@@ -1855,7 +2100,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       );
 
       await LeadService.addLeadComment(
-        leadUid: widget.lead.uid ?? '',
+        leadUid: _lead.uid ?? '',
         comment: leadCommentModel,
       );
       Navigator.pop(context);
@@ -1875,7 +2120,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<LeadBloc>(),
         child: ScheduleLeadActivityDialog(
-          leadUid: widget.lead.uid!,
+          leadUid: _lead.uid!,
           existing: existing,
         ),
       ),
@@ -2231,6 +2476,35 @@ class _ScheduleLeadActivityDialogState
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class PdfPreviewPage extends StatelessWidget {
+  final FileModel file;
+  const PdfPreviewPage({super.key, required this.file});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          file.name,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Iconsax.document_download),
+            onPressed: () =>
+                Download.downloadFromUrl(context, file.url, file.name),
+          ),
+        ],
+      ),
+      body: SfPdfViewer.network(
+        file.url,
+        canShowScrollHead: true,
+        canShowScrollStatus: true,
       ),
     );
   }

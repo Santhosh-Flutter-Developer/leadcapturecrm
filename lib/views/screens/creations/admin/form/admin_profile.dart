@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
 import '/constants/constants.dart';
@@ -70,6 +74,170 @@ class _AdminProfileState extends State<AdminProfile> {
     return _permissions?.canEdit ?? false;
   }
 
+  Future<void> _changeProfileImage() async {
+    final uid = _admin.uid;
+    if (uid == null || uid.isEmpty) return;
+
+    final picker = ImagePicker();
+    final pickedImage = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 65,
+    );
+
+    if (pickedImage == null) return;
+    File imageFile = File(pickedImage.path);
+    FlushBar.show(context, "Uploading profile picture...");
+
+    try {
+      String downloadUrl = await StorageService.uploadFile(
+        file: imageFile,
+        folder: StorageFolder.adminProfile,
+      );
+
+      final updatedAdmin = _admin.copyWith(profileImageUrl: downloadUrl);
+      await AdminService.updateAdmin(id: uid, data: updatedAdmin);
+
+      // Update local session if this is the logged-in admin
+      final currentUid = await Spdb.getUid();
+      final cid = await Spdb.getCid();
+      if (currentUid == uid && cid != null) {
+        await Spdb.setAdminLogin(model: updatedAdmin, cid: cid);
+      }
+
+      if (mounted) {
+        setState(() => _admin = updatedAdmin);
+        FlushBar.show(
+          context,
+          "Profile picture updated successfully",
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        FlushBar.show(
+          context,
+          "Failed to update profile picture: $e",
+          isSuccess: false,
+        );
+      }
+    }
+  }
+
+  Future<void> _removeProfileImage() async {
+    final uid = _admin.uid;
+    if (uid == null || uid.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Remove Profile Photo"),
+        content: const Text("Are you sure you want to remove this photo?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    FlushBar.show(context, "Removing profile picture...");
+
+    try {
+      await AdminService.deleteAdminProfileImage(uid: uid);
+
+      final updated = _admin.copyWith(profileImageUrl: '');
+
+      // Update local session if this is the logged-in admin
+      final currentUid = await Spdb.getUid();
+      final cid = await Spdb.getCid();
+      if (currentUid == uid && cid != null) {
+        await Spdb.setAdminLogin(model: updated, cid: cid);
+      }
+
+      if (mounted) {
+        setState(() => _admin = updated);
+        FlushBar.show(context, "Profile removed", isSuccess: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        FlushBar.show(context, "Remove failed: $e", isSuccess: false);
+      }
+    }
+  }
+
+  void _viewFullImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  color: Colors.black.withValues(alpha: 0.6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Iconsax.trash, color: Colors.red),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _removeProfileImage();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    "Profile Photo",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
@@ -115,7 +283,7 @@ class _AdminProfileState extends State<AdminProfile> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildProfileCard(context),
+                _buildProfileCard(context, canEdit),
                 const SizedBox(height: 22),
                 _buildDetailsCard(context),
               ],
@@ -126,7 +294,10 @@ class _AdminProfileState extends State<AdminProfile> {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context) {
+  Widget _buildProfileCard(BuildContext context, bool canEdit) {
+    final image = _admin.profileImageUrl;
+    final hasImage = image != null && image.isNotEmpty;
+
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
@@ -136,15 +307,52 @@ class _AdminProfileState extends State<AdminProfile> {
         padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-              backgroundImage:
-                  (_admin.profileImageUrl != null &&
-                      _admin.profileImageUrl!.isNotEmpty)
-                  ? NetworkImage(_admin.profileImageUrl!)
-                  : const NetworkImage(AppStrings.emptyProfilePhotoUrl)
-                        as ImageProvider,
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                GestureDetector(
+                  onTap: hasImage ? () => _viewFullImage(image) : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.1),
+                        width: 4,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainer,
+                      backgroundImage: hasImage
+                          ? NetworkImage(image)
+                          : const NetworkImage(AppStrings.emptyProfilePhotoUrl)
+                              as ImageProvider,
+                    ),
+                  ),
+                ),
+                if (canEdit)
+                  Material(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: _changeProfileImage,
+                      customBorder: const CircleBorder(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: Icon(
+                          Iconsax.camera,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
 
             const SizedBox(height: 20),

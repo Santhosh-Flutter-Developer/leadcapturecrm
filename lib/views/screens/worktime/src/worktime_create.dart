@@ -162,44 +162,53 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
     try {
       futureLoading(context);
 
-      // --- Geofence check (mobile only) ---
-      if (kIsMobile) {
+      // --- Geofence check (fresh GPS -> compare) ---
+      if (kIsMobile || kIsDesktop) {
         final geofence = await CompanyLocationService.getGeofence();
-        if (geofence != null) {
-          final position = await LocationService.getCurrentPosition();
-          if (position == null) {
-            Navigator.pop(context);
-            Snackbar.showSnackBarOption(
-              context,
-              content:
-                  "Location permission is required to clock in. Please enable it in your device settings.",
-              isSuccess: false,
-              actionText: "Try Again",
-              action: _clockIn,
-            );
-            return;
-          }
-
-          final isInside = LocationService.isWithinRadius(
-            currentLat: position.latitude,
-            currentLng: position.longitude,
-            centerLat: geofence.latitude,
-            centerLng: geofence.longitude,
-            radiusMeters: geofence.radiusMeters,
+        if (geofence == null) {
+          Navigator.pop(context);
+          Snackbar.showSnackBar(
+            context,
+            content:
+                "Company location is not configured. Ask your admin to set the attendance GPS geofence.",
+            isSuccess: false,
           );
+          return;
+        }
 
-          if (!isInside) {
-            Navigator.pop(context);
-            Snackbar.showSnackBarOption(
-              context,
-              content:
-                  "You are outside the company premises. Move closer and try again.",
-              isSuccess: false,
-              actionText: "Try Again",
-              action: _clockIn,
-            );
-            return;
-          }
+        final position = await LocationService.getCurrentPosition();
+        if (position == null) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "Location permission is required to clock in. Please enable it in your device settings.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockIn,
+          );
+          return;
+        }
+
+        final isInside = LocationService.isWithinRadius(
+          currentLat: position.latitude,
+          currentLng: position.longitude,
+          centerLat: geofence.latitude,
+          centerLng: geofence.longitude,
+          radiusMeters: geofence.radiusMeters,
+        );
+
+        if (!isInside) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "You are outside the company premises. Move closer and try again.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockIn,
+          );
+          return;
         }
       }
       // ------------------------------------
@@ -249,9 +258,72 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
     try {
       futureLoading(context);
 
+      // --- Geofence check (fresh GPS -> compare) ---
+      if (kIsMobile || kIsDesktop) {
+        final geofence = await CompanyLocationService.getGeofence();
+        if (geofence == null) {
+          Navigator.pop(context);
+          Snackbar.showSnackBar(
+            context,
+            content:
+                "Company location is not configured. Ask your admin to set the attendance GPS geofence.",
+            isSuccess: false,
+          );
+          return;
+        }
+
+        final position = await LocationService.getCurrentPosition();
+        if (position == null) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "Location permission is required to clock in. Please enable it in your device settings.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockInByFace,
+          );
+          return;
+        }
+
+        final isInside = LocationService.isWithinRadius(
+          currentLat: position.latitude,
+          currentLng: position.longitude,
+          centerLat: geofence.latitude,
+          centerLng: geofence.longitude,
+          radiusMeters: geofence.radiusMeters,
+        );
+
+        if (!isInside) {
+          Navigator.pop(context);
+          Snackbar.showSnackBarOption(
+            context,
+            content:
+                "You are outside the company premises. Move closer and try again.",
+            isSuccess: false,
+            actionText: "Try Again",
+            action: _clockInByFace,
+          );
+          return;
+        }
+      }
+      // ------------------------------------
+
+      var existing = await WorktimeService.checkTodayClockIn();
+      if (existing) {
+        Navigator.pop(context);
+        Snackbar.showSnackBar(
+          context,
+          content: "You already clocked in today",
+          isSuccess: false,
+        );
+        return;
+      }
+
       var uid = await Spdb.getUid();
       var user = await Spdb.getUser();
       var name = user.name;
+
       var id = await WorktimeService.createWorkTime(
         model: WorktimeModel(
           breaks: {},

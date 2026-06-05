@@ -1,13 +1,18 @@
 import 'dart:io';
-import 'package:dotted_border/dotted_border.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:iconsax/iconsax.dart';
-import '/theme/theme.dart';
+import 'package:image_picker/image_picker.dart';
 import '/views/views.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:facesdk_plugin/facesdk_plugin.dart';
+import '../face_capture.dart';
 
 class EmployeeCreate extends StatefulWidget {
   const EmployeeCreate({super.key});
@@ -33,6 +38,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
 
   bool _passwordVisible = false;
   File? _selectedProfileImage;
+  String _faceTemplate = '';
 
   List<RoleModel> _rolesList = [];
   List<DesignationModel> _designationList = [];
@@ -43,6 +49,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late Future _future;
+  int _currentStep = 0;
 
   String? _gender;
   String _loginAllowed = 'Yes';
@@ -56,6 +63,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   SubDepartmentModel? _subDepartmentModel;
   EmployeeModel? employee;
   bool _isActive = true;
+  final _facesdkPlugin = FacesdkPlugin();
 
   @override
   void initState() {
@@ -77,6 +85,16 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
       _rolesList = await RoleService.getAllRoles();
       _designationList = await DesignationService.getAllDesignations();
       _departmentList = await DepartmentService.getAllDepartments();
+
+      // FaceSDK plugin only supported on Android/iOS
+      if (kIsMobile) {
+        if (Platform.isAndroid) {
+          await _facesdkPlugin.setActivation(AppStrings.androidfacesdkLicence);
+        } else {
+          await _facesdkPlugin.setActivation(AppStrings.iosfacesdkLicence);
+        }
+        await _facesdkPlugin.init();
+      }
 
       final generatedId = await EmployeeService.generateEmployeeId();
       _employeeIdController.text = generatedId;
@@ -107,6 +125,270 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
     _addressController.dispose();
     _aboutController.dispose();
     super.dispose();
+  }
+
+  Future<void> captureFace() async {
+    _faceTemplate = '';
+
+    // On Windows: use file picker only (no camera/ImagePicker support)
+    if (kIsWindows) {
+      await _captureFaceFromFile();
+      return;
+    }
+
+    // Mobile: offer camera or gallery via bottom sheet
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      if (source == ImageSource.camera) {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => FaceCaptureView()),
+        );
+
+        if (result != null && result is Map) {
+          final faceJpg = result['face_URL'] as Uint8List?;
+          final templates = result['face_template'] as Uint8List?;
+
+          if (faceJpg != null && mounted) {
+            final tempDir = Directory.systemTemp;
+            final tempFile = File(
+              '${tempDir.path}/face_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+            await tempFile.writeAsBytes(faceJpg);
+
+            setState(() {
+              _selectedProfileImage = tempFile;
+              _faceTemplate = templates != null ? base64Encode(templates) : '';
+            });
+          }
+        }
+      } else {
+        final xFile = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+          maxWidth: 512,
+        );
+        if (xFile == null) return;
+        final rotated = await FlutterExifRotation.rotateImage(path: xFile.path);
+
+        if (mounted) {
+          futureLoading(context);
+          try {
+            var faceList = await _facesdkPlugin.extractFaces(rotated.path);
+            if (Navigator.canPop(context)) Navigator.pop(context);
+
+            if (faceList != null && faceList.isNotEmpty) {
+              var face = faceList[0];
+              setState(() {
+                _selectedProfileImage = rotated;
+                _faceTemplate = face['templates'] != null
+                    ? base64Encode(face['templates'])
+                    : '';
+              });
+            } else {
+              setState(() {
+                _selectedProfileImage = rotated;
+                _faceTemplate = '';
+              });
+              FlushBar.show(
+                context,
+                'No face detected in the selected image.',
+                isSuccess: false,
+              );
+            }
+          } catch (e) {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+            setState(() {
+              _selectedProfileImage = rotated;
+              _faceTemplate = '';
+            });
+          }
+        }
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (mounted) {
+        FlushBar.show(context, 'Failed to capture image: $e', isSuccess: false);
+      }
+    }
+  }
+
+  /// Windows-only: Pick an image file and detect a face in it.
+  Future<void> _captureFaceFromFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        dialogTitle: 'Select a photo for face enrollment',
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final pickedPath = result.files.single.path;
+      if (pickedPath == null) return;
+
+      final imageFile = File(pickedPath);
+
+      if (!mounted) return;
+      futureLoading(context);
+
+      try {
+        var faceList = await _facesdkPlugin.extractFaces(imageFile.path);
+        if (Navigator.canPop(context)) Navigator.pop(context);
+
+        if (faceList != null && faceList.isNotEmpty) {
+          var face = faceList[0];
+          setState(() {
+            _selectedProfileImage = imageFile;
+            _faceTemplate = face['templates'] != null
+                ? base64Encode(face['templates'])
+                : '';
+          });
+          if (_faceTemplate.isEmpty && mounted) {
+            FlushBar.show(
+              context,
+              'Image selected but no face template could be generated.',
+              isSuccess: false,
+            );
+          }
+        } else {
+          setState(() {
+            _selectedProfileImage = imageFile;
+            _faceTemplate = '';
+          });
+          if (mounted) {
+            FlushBar.show(
+              context,
+              'No face detected in the selected image. Please choose a clear front-facing photo.',
+              isSuccess: false,
+            );
+          }
+        }
+      } catch (e) {
+        if (Navigator.canPop(context)) Navigator.pop(context);
+        setState(() {
+          _selectedProfileImage = imageFile;
+          _faceTemplate = '';
+        });
+        if (mounted) {
+          FlushBar.show(context, 'Face detection failed: $e', isSuccess: false);
+        }
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (mounted) {
+        FlushBar.show(context, 'Failed to pick image: $e', isSuccess: false);
+      }
+    }
+  }
+
+  Widget _buildStepper() {
+    final steps = ["Personal", "Work", "Extra Info"];
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final outlineColor = Theme.of(context).colorScheme.outlineVariant;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(steps.length * 2 - 1, (i) {
+        // Odd indices = connector lines
+        if (i.isOdd) {
+          final stepIndex = i ~/ 2;
+          final isLineActive = stepIndex < _currentStep;
+          return Expanded(
+            child: Container(
+              height: 2,
+              margin: const EdgeInsets.only(top: 17, bottom: 24),
+              color: isLineActive ? primaryColor : outlineColor,
+            ),
+          );
+        }
+
+        final index = i ~/ 2;
+        final isCompleted = index < _currentStep;
+        final isActive = index == _currentStep;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCompleted || isActive
+                    ? primaryColor
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isCompleted || isActive ? primaryColor : outlineColor,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: isCompleted
+                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    : Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isActive ? Colors.white : onSurfaceVariant,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              steps[index],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted || isActive
+                    ? primaryColor
+                    : onSurfaceVariant,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
   }
 
   @override
@@ -146,34 +428,49 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
                         title: "Create Employee",
                       ),
                       const SizedBox(height: 20),
-                      _buildSectionCard(
-                        title: "Employee Details",
-                        child: LayoutBuilder(
-                          builder: (context, constraints) =>
-                              _buildFormFields(constraints, 4),
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildStepper(),
                       ),
                       const SizedBox(height: 24),
-                      _buildSectionCard(
-                        title: "Contact Information",
-                        child: LayoutBuilder(
-                          builder: (context, constraints) =>
-                              _buildContactFormFields(constraints, 2),
+                      if (_currentStep == 0) ...[
+                        _buildSectionCard(
+                          title: "Profile Photo",
+                          child: Center(child: _buildProfileUploader()),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionCard(
-                        title: "Other Details",
-                        child: LayoutBuilder(
-                          builder: (context, constraints) =>
-                              _buildOthersFormFields(constraints, 4),
+                        const SizedBox(height: 24),
+                        _buildSectionCard(
+                          title: "Personal Details",
+                          child: LayoutBuilder(
+                            builder: (context, constraints) =>
+                                _buildPersonalFormFields(constraints, 4),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionCard(
-                        title: "Profile Photo",
-                        child: Center(child: _buildProfileUploader()),
-                      ),
+                      ] else if (_currentStep == 1) ...[
+                        _buildSectionCard(
+                          title: "Work Details",
+                          child: LayoutBuilder(
+                            builder: (context, constraints) =>
+                                _buildWorkFormFields(constraints, 4),
+                          ),
+                        ),
+                      ] else if (_currentStep == 2) ...[
+                        _buildSectionCard(
+                          title: "Contact Information",
+                          child: LayoutBuilder(
+                            builder: (context, constraints) =>
+                                _buildContactFormFields(constraints, 2),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionCard(
+                          title: "Other Details",
+                          child: LayoutBuilder(
+                            builder: (context, constraints) =>
+                                _buildOthersFormFields(constraints, 4),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -182,10 +479,80 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             );
           },
         ),
-        bottomNavigationBar: FormWidgets.buildBottomBar(
-          context: context,
-          onSubmit: _submitForm,
-          isEdit: false,
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              if (_currentStep > 0) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentStep--;
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text("Back"),
+                  ),
+                ),
+                const SizedBox(width: 16),
+              ],
+              Expanded(
+                child: _currentStep < 2
+                    ? ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            setState(() {
+                              _currentStep++;
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text("Next"),
+                      )
+                    : ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text("Create Employee"),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -222,101 +589,121 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   }
 
   Widget _buildProfileUploader() {
-    if (_selectedProfileImage != null) {
-      return Stack(
-        alignment: Alignment.topRight,
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              _selectedProfileImage!,
-              height: 130,
-              width: 130,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () async {
-                File? result;
-                if (kIsMobile) {
-                  result = await PickImage.selectImage(context);
-                } else {
-                  result = await FilePick.pickFile(
-                    context,
-                    allowedExtensions: ['jpg', 'jpeg', 'png'],
-                  );
-                }
-
-                if (result != null) {
-                  _selectedProfileImage = result;
-                  setState(() {});
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onError,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return GestureDetector(
-      onTap: () async {
-        var result = await FilePick.pickFile(
-          context,
-          allowedExtensions: ['jpg', 'jpeg', 'png'],
-        );
-        if (result != null) {
-          setState(() => _selectedProfileImage = result);
-        }
-      },
-      child: DottedBorder(
-        options: RectDottedBorderOptions(),
-
-        child: Container(
-          height: 130,
-          width: 130,
-          decoration: const BoxDecoration(
-            color: AppColors.grey200,
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          GestureDetector(
+            onTap: captureFace,
+            child: Stack(
+              alignment: Alignment.bottomRight,
               children: [
-                Icon(
-                  Iconsax.gallery,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4),
+                      width: 2,
+                    ),
+                    image: _selectedProfileImage != null
+                        ? DecorationImage(
+                            image: FileImage(_selectedProfileImage!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _selectedProfileImage == null
+                      ? Icon(
+                          Icons.person_outline,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
                 ),
-                SizedBox(height: 8),
-                Text(
-                  "Upload Photo",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _faceTemplate.isNotEmpty
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _faceTemplate.isNotEmpty
+                        ? Icons.face_retouching_natural
+                        : (kIsWindows
+                              ? Icons.upload_file_rounded
+                              : Icons.camera_alt_rounded),
+                    size: 16,
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: captureFace,
+            child: Text(
+              kIsWindows
+                  ? (_selectedProfileImage != null
+                        ? (_faceTemplate.isNotEmpty
+                              ? 'Face Enrolled ✓  (tap to change)'
+                              : 'No face detected  (tap to change)')
+                        : 'Choose Image File')
+                  : (_selectedProfileImage != null
+                        ? 'Tap to change photo'
+                        : 'Tap to add photo'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _faceTemplate.isNotEmpty
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          if (_faceTemplate.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Face template enrolled',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildFormFields(BoxConstraints constraints, int gridCounts) {
+  Widget _buildPersonalFormFields(BoxConstraints constraints, int gridCounts) {
     final double currentWidth = constraints.maxWidth;
     const double horizontalSpacing = 16.0;
     const double verticalSpacing = 8.0;
@@ -400,6 +787,77 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             ),
           ),
         ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: 'Mobile Number',
+            controller: _mobileNumberController,
+            hintText: 'Enter Mobile Number',
+            valid: (input) =>
+                Validation.validMobileNumber(input: input, isReq: false),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            items: const ['Male', 'Female', 'Others'],
+            label: 'Gender',
+            isRequired: isAdmin ? false : true,
+            onChanged: (value) {
+              if (value != null) {
+                _gender = value.toString();
+              }
+            },
+            validator: isAdmin
+                ? null
+                : (value) {
+                    if (value == null) {
+                      return "* Required";
+                    }
+                    return null;
+                  },
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: FormFields(
+            label: 'Birth Date',
+            controller: _dateOfBirthController,
+            hintText: 'DD/MM/YYYY',
+            readOnly: true,
+            onTap: () async {
+              var result = await datePicker(context, lastDate: DateTime.now());
+              if (result != null) {
+                _dateOfBirthController.text = result.formatDate;
+                _selectedDateOfBirth = result;
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool isAdmin = false;
+
+  Widget _buildWorkFormFields(BoxConstraints constraints, int gridCounts) {
+    final double currentWidth = constraints.maxWidth;
+    const double horizontalSpacing = 16.0;
+    const double verticalSpacing = 8.0;
+    const double minColumnWidth = 220.0;
+
+    final bool canShowGrid =
+        currentWidth >=
+        (minColumnWidth * gridCounts + horizontalSpacing * (gridCounts - 1));
+
+    final double itemWidth = canShowGrid
+        ? (currentWidth - horizontalSpacing * (gridCounts - 1)) / gridCounts
+        : currentWidth;
+
+    return Wrap(
+      spacing: horizontalSpacing,
+      runSpacing: verticalSpacing,
+      children: [
         if (!isAdmin)
           SizedBox(
             width: itemWidth,
@@ -484,37 +942,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
         SizedBox(
           width: itemWidth,
           child: FormFields(
-            label: 'Mobile Number',
-            controller: _mobileNumberController,
-            hintText: 'Enter Mobile Number',
-            valid: (input) =>
-                Validation.validMobileNumber(input: input, isReq: false),
-          ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: FormDropdownSearch(
-            items: const ['Male', 'Female', 'Others'],
-            label: 'Gender',
-            isRequired: isAdmin ? false : true,
-            onChanged: (value) {
-              if (value != null) {
-                _gender = value.toString();
-              }
-            },
-            validator: isAdmin
-                ? null
-                : (value) {
-                    if (value == null) {
-                      return "* Required";
-                    }
-                    return null;
-                  },
-          ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: FormFields(
             label: 'Joining Date',
             controller: _dateOfJoiningController,
             hintText: 'DD/MM/YYYY',
@@ -530,22 +957,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
               if (result != null) {
                 _dateOfJoiningController.text = result.formatDate;
                 _selectedDateOfJoining = result;
-              }
-            },
-          ),
-        ),
-        SizedBox(
-          width: itemWidth,
-          child: FormFields(
-            label: 'Birth Date',
-            controller: _dateOfBirthController,
-            hintText: 'DD/MM/YYYY',
-            readOnly: true,
-            onTap: () async {
-              var result = await datePicker(context, lastDate: DateTime.now());
-              if (result != null) {
-                _dateOfBirthController.text = result.formatDate;
-                _selectedDateOfBirth = result;
               }
             },
           ),
@@ -639,8 +1050,6 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
       ],
     );
   }
-
-  bool isAdmin = false;
 
   Widget _buildContactFormFields(BoxConstraints constraints, int gridCounts) {
     final double currentWidth = constraints.maxWidth;
@@ -852,6 +1261,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             profileImageUrl: profileImageUrl,
             skills: '',
             reportingTo: _reportingTo,
+            faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
             createdBy: await Spdb.getUser(),
           );
 

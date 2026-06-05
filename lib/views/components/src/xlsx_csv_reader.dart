@@ -113,8 +113,10 @@ class XlsxReader {
 
     // Helper to read a file content as string (or null)
     String? readEntryContent(String path) {
+      final normalizedPath = path.replaceAll('\\', '/');
       for (final file in archive) {
-        if (file.name == path) {
+        final entryName = file.name.replaceAll('\\', '/');
+        if (entryName == normalizedPath) {
           final data = file.content as List<int>;
           return String.fromCharCodes(data);
         }
@@ -157,8 +159,9 @@ class XlsxReader {
             target = 'xl/worksheets/sheet$sheetId.xml';
           }
         } else {
+          target = target.replaceFirst(RegExp(r'^/'), '');
           if (!target.startsWith('xl/')) {
-            target = 'xl/${target.replaceFirst(RegExp(r'^/'), '')}';
+            target = 'xl/$target';
           }
         }
 

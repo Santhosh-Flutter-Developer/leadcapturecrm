@@ -1,3 +1,12 @@
+/// Parses numeric fields from Firestore (int, double, or string).
+int? parseFirestoreInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
 class FileModel {
   final String name;
   final String url;
@@ -30,9 +39,7 @@ class FileModel {
     return FileModel(
       name: map['name'] != null && map['name'] is String ? map['name'] : '',
       url: map['url'] != null && map['url'] is String ? map['url'] : '',
-      size: map['size'] is int
-          ? map['size']
-          : int.tryParse(map['size']?.toString() ?? '0') ?? 0,
+      size: parseFirestoreInt(map['size']) ?? 0,
       extension: map['extension'] != null && map['extension'] is String
           ? map['extension']
           : '',

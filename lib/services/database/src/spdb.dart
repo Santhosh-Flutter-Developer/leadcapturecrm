@@ -156,6 +156,43 @@ class Spdb {
     return null;
   }
 
+  static Future<void> saveLastLoginLocation({
+    required double latitude,
+    required double longitude,
+    DateTime? at,
+  }) async {
+    try {
+      final cn = await _connect();
+      await cn.setDouble('last_login_lat', latitude);
+      await cn.setDouble('last_login_lng', longitude);
+      await cn.setInt(
+        'last_login_at',
+        (at ?? DateTime.now()).millisecondsSinceEpoch,
+      );
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getLastLoginLocation() async {
+    try {
+      final cn = await _connect();
+      final lat = cn.getDouble('last_login_lat');
+      final lng = cn.getDouble('last_login_lng');
+      final atMs = cn.getInt('last_login_at');
+      if (lat == null || lng == null || atMs == null) return null;
+
+      return {
+        'latitude': lat,
+        'longitude': lng,
+        'at': DateTime.fromMillisecondsSinceEpoch(atMs),
+      };
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      return null;
+    }
+  }
+
   static Future<void> setAdminLogin({
     required AdminModel model,
     required String cid,

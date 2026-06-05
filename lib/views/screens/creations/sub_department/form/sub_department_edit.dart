@@ -216,6 +216,23 @@ class _SubDepartmentEditState extends State<SubDepartmentEdit> {
       try {
         futureLoading(context);
 
+        String? duplicateError = await SubDepartmentService.checkSubDepartmentExists(
+          name: _nameController.text.trim(),
+          excludeUid: widget.uid,
+        );
+
+        if (duplicateError != null) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          FlushBar.show(
+            context,
+            duplicateError,
+            isSuccess: false,
+          );
+          return;
+        }
+
         final subDepartmentModel = SubDepartmentModel(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),

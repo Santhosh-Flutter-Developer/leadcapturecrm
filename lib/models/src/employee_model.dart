@@ -54,6 +54,7 @@ class EmployeeModel {
   final DateTime? lastActive;
   final List<Map<String, dynamic>>? devices;
   final bool isInitialPasswordChanged;
+  final String? faceTemplate;
   final UserDataModel createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -85,6 +86,7 @@ class EmployeeModel {
     this.lastActive,
     this.devices,
     this.isInitialPasswordChanged = false,
+    this.faceTemplate,
     required this.createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -120,6 +122,7 @@ class EmployeeModel {
     DateTime? lastActive,
     List<Map<String, dynamic>>? devices,
     bool? isInitialPasswordChanged,
+    String? faceTemplate,
     UserDataModel? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -154,6 +157,7 @@ class EmployeeModel {
       devices: devices ?? this.devices,
       isInitialPasswordChanged:
           isInitialPasswordChanged ?? this.isInitialPasswordChanged,
+      faceTemplate: faceTemplate ?? this.faceTemplate,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -188,6 +192,7 @@ class EmployeeModel {
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
       'isInitialPasswordChanged': isInitialPasswordChanged,
+      'faceTemplate': faceTemplate,
       'createdBy': createdBy.toMap(),
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -221,6 +226,7 @@ class EmployeeModel {
       'isActive': isActive,
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
+      'faceTemplate': faceTemplate,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
@@ -272,6 +278,7 @@ class EmployeeModel {
       lastActive: parseDate(map['lastActive']),
       devices: parseDevices(map['devices']),
       isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
+      faceTemplate: map['faceTemplate'],
       createdBy: map['createdBy'] != null
           ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),

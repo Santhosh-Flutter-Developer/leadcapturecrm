@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shimmer/shimmer.dart';
@@ -10,6 +11,12 @@ import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:facesdk_plugin/facesdk_plugin.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
+import '../face_capture.dart';
 
 class EmployeeEdit extends StatefulWidget {
   final String uid;
@@ -57,6 +64,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   File? _selectedProfileImage;
   String? _profileImageUrl;
   bool _oldProfileImageRemoved = false;
+  String _faceTemplate = '';
+  final _facesdkPlugin = FacesdkPlugin();
 
   RoleModel? _roleModel;
   DesignationModel? _designationModel;
@@ -82,6 +91,16 @@ class _EmployeeEditState extends State<EmployeeEdit> {
       _departmentList.clear();
       _subDepartmentList.clear();
       _initialReportingTo.clear();
+
+      // FaceSDK plugin only supported on Android/iOS
+      if (kIsMobile) {
+        if (Platform.isAndroid) {
+          await _facesdkPlugin.setActivation(AppStrings.androidfacesdkLicence);
+        } else {
+          await _facesdkPlugin.setActivation(AppStrings.iosfacesdkLicence);
+        }
+        await _facesdkPlugin.init();
+      }
 
       if (widget.admin != null) {
         _employeeIdController.text = "";
@@ -119,6 +138,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         _isActive = employee!.isActive;
         _employeeType = employee!.employeeType;
         _profileImageUrl = employee!.profileImageUrl;
+        _faceTemplate = employee!.faceTemplate ?? '';
 
         _roleModel = await RoleService.getRole(uid: employee!.role);
         _designationModel = await DesignationService.getDesignation(
@@ -205,9 +225,9 @@ class _EmployeeEditState extends State<EmployeeEdit> {
               return Center(
                 child: Text(
                   'Error: ${snapshot.error}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               );
             }
@@ -286,8 +306,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
               title,
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 8),
             Divider(color: Theme.of(context).colorScheme.outlineVariant),
@@ -299,57 +319,303 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     );
   }
 
+  void _markProfileImageReplaced() {
+    if (_profileImageUrl != null) {
+      _profileImageUrl = null;
+      _oldProfileImageRemoved = true;
+    }
+  }
+
+  Future<void> captureFace() async {
+    // On Windows: use file picker only (no camera/ImagePicker support)
+    if (kIsWindows) {
+      await _captureFaceFromFile();
+      return;
+    }
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      if (source == ImageSource.camera) {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => FaceCaptureView()),
+        );
+
+        if (result != null && result is Map) {
+          final faceJpg = result['face_URL'] as Uint8List?;
+          final templates = result['face_template'] as Uint8List?;
+
+          if (faceJpg != null && mounted) {
+            final tempDir = Directory.systemTemp;
+            final tempFile = File(
+              '${tempDir.path}/face_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+            await tempFile.writeAsBytes(faceJpg);
+
+            setState(() {
+              _selectedProfileImage = tempFile;
+              _markProfileImageReplaced();
+              _faceTemplate = templates != null ? base64Encode(templates) : '';
+            });
+          }
+        }
+      } else {
+        final xFile = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+          maxWidth: 512,
+        );
+        if (xFile == null) return;
+        final rotated = await FlutterExifRotation.rotateImage(path: xFile.path);
+
+        if (mounted) {
+          futureLoading(context);
+          try {
+            var faceList = await _facesdkPlugin.extractFaces(rotated.path);
+            if (Navigator.canPop(context)) Navigator.pop(context);
+
+            if (faceList != null && faceList.isNotEmpty) {
+              var face = faceList[0];
+              setState(() {
+                _selectedProfileImage = rotated;
+                _markProfileImageReplaced();
+                _faceTemplate = face['templates'] != null
+                    ? base64Encode(face['templates'])
+                    : '';
+              });
+            } else {
+              setState(() {
+                _selectedProfileImage = rotated;
+                _markProfileImageReplaced();
+                _faceTemplate = '';
+              });
+              FlushBar.show(
+                context,
+                'No face detected in the selected image.',
+                isSuccess: false,
+              );
+            }
+          } catch (e) {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+            setState(() {
+              _selectedProfileImage = rotated;
+              _markProfileImageReplaced();
+              _faceTemplate = '';
+            });
+          }
+        }
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (mounted) {
+        FlushBar.show(context, 'Failed to capture image: $e', isSuccess: false);
+      }
+    }
+  }
+
+  /// Windows-only: Pick an image file and detect a face in it.
+  Future<void> _captureFaceFromFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        dialogTitle: 'Select a photo for face enrollment',
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final pickedPath = result.files.single.path;
+      if (pickedPath == null) return;
+
+      final imageFile = File(pickedPath);
+
+      if (!mounted) return;
+      futureLoading(context);
+
+      try {
+        var faceList = await _facesdkPlugin.extractFaces(imageFile.path);
+        if (Navigator.canPop(context)) Navigator.pop(context);
+
+        if (faceList != null && faceList.isNotEmpty) {
+          var face = faceList[0];
+          setState(() {
+            _selectedProfileImage = imageFile;
+            _markProfileImageReplaced();
+            _faceTemplate = face['templates'] != null
+                ? base64Encode(face['templates'])
+                : '';
+          });
+          if (_faceTemplate.isEmpty && mounted) {
+            FlushBar.show(
+              context,
+              'Image selected but no face template could be generated.',
+              isSuccess: false,
+            );
+          }
+        } else {
+          setState(() {
+            _selectedProfileImage = imageFile;
+            _markProfileImageReplaced();
+            _faceTemplate = '';
+          });
+          if (mounted) {
+            FlushBar.show(
+              context,
+              'No face detected in the selected image. Please choose a clear front-facing photo.',
+              isSuccess: false,
+            );
+          }
+        }
+      } catch (e) {
+        if (Navigator.canPop(context)) Navigator.pop(context);
+        setState(() {
+          _selectedProfileImage = imageFile;
+          _markProfileImageReplaced();
+          _faceTemplate = '';
+        });
+        if (mounted) {
+          FlushBar.show(context, 'Face detection failed: $e', isSuccess: false);
+        }
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      if (mounted) {
+        FlushBar.show(context, 'Failed to pick image: $e', isSuccess: false);
+      }
+    }
+  }
+
   Widget _buildProfileUploader() {
     if (_selectedProfileImage != null || _profileImageUrl != null) {
-      return Stack(
-        alignment: Alignment.topRight,
+      return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: _profileImageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: _profileImageUrl!,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: AppColors.grey300,
-                      highlightColor: AppColors.grey100,
-                      child: Container(color: AppColors.white),
+          GestureDetector(
+            onTap: captureFace,
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: _profileImageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: _profileImageUrl!,
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: AppColors.grey300,
+                            highlightColor: AppColors.grey100,
+                            child: Container(color: AppColors.white),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
+                          height: 130,
+                          width: 130,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.file(
+                          _selectedProfileImage!,
+                          height: 130,
+                          width: 130,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                Positioned(
+                  bottom: 4,
+                  left: 4,
+                  child: _faceTemplate.isNotEmpty
+                      ? Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(
+                            Icons.face_retouching_natural,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () {
+                      _selectedProfileImage = null;
+                      if (_profileImageUrl != null) {
+                        _profileImageUrl = null;
+                        _oldProfileImageRemoved = true;
+                      }
+                      _faceTemplate = '';
+                      setState(() {});
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onError,
+                      ),
                     ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                    height: 130,
-                    width: 130,
-                    fit: BoxFit.cover,
-                  )
-                : Image.file(
-                    _selectedProfileImage!,
-                    height: 130,
-                    width: 130,
-                    fit: BoxFit.cover,
                   ),
+                ),
+              ],
+            ),
           ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () {
-                _selectedProfileImage = null;
-                if (_profileImageUrl != null) {
-                  _profileImageUrl = null;
-                  _oldProfileImageRemoved = true;
-                }
-                setState(() {});
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onError,
-                ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: captureFace,
+            child: Text(
+              kIsWindows
+                  ? (_faceTemplate.isNotEmpty
+                        ? 'Face Enrolled ✓  (tap to change)'
+                        : 'No face detected  (tap to change)')
+                  : 'Tap to change photo',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _faceTemplate.isNotEmpty
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -358,25 +624,9 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     }
 
     return GestureDetector(
-      onTap: () async {
-        File? result;
-        if (kIsMobile) {
-          result = await PickImage.selectImage(context);
-        } else {
-          result = await FilePick.pickFile(
-            context,
-            allowedExtensions: ['jpg', 'jpeg', 'png'],
-          );
-        }
-
-        if (result != null) {
-          _selectedProfileImage = result;
-          setState(() {});
-        }
-      },
+      onTap: captureFace,
       child: DottedBorder(
         options: RectDottedBorderOptions(),
-
         child: Container(
           height: 130,
           width: 130,
@@ -388,13 +638,16 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.gallery, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                SizedBox(height: 8),
+                Icon(
+                  kIsWindows ? Icons.upload_file_rounded : Iconsax.gallery,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  "Upload Photo",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  kIsWindows ? 'Choose Image File' : 'Upload Photo',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -729,25 +982,25 @@ class _EmployeeEditState extends State<EmployeeEdit> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-                Switch(
-                  value: _isActive,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
+              Switch(
+                value: _isActive,
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+                onChanged: (value) {
+                  setState(() {
+                    _isActive = value;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _isActive ? 'Active' : 'Inactive',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: _isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  _isActive ? 'Active' : 'Inactive',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: _isActive 
-                        ? Theme.of(context).colorScheme.primary 
-                        : Theme.of(context).colorScheme.error,
-                  ),
-                ),
+              ),
             ],
           ),
         ),
@@ -939,11 +1192,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             }
-            FlushBar.show(
-              context,
-              duplicateError,
-              isSuccess: false,
-            );
+            FlushBar.show(context, duplicateError, isSuccess: false);
             return;
           }
 
@@ -989,6 +1238,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             profileImageUrl: profileImageUrl,
             skills: _skillsController.text.trim(),
             reportingTo: _reportingTo,
+            faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
             createdBy: await Spdb.getUser(),
           );
 

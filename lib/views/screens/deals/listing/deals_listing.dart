@@ -1046,7 +1046,7 @@ class _DealsListingViewState extends State<DealsListingView> {
         dataCell(
           context,
           Text(
-            deal.dealNumber.toString(),
+            deal.dealNumber?.toString() ?? '—',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),

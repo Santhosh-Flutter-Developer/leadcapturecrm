@@ -114,9 +114,14 @@ class _ClientListingViewState extends State<ClientListingView> {
 
   @override
   Widget build(BuildContext context) {
-    final controllerRead = context.read<PaginatedDataController<ClientModel>>();
-    final controllerWatch = context
-        .watch<PaginatedDataController<ClientModel>>();
+    final controllerRead = Provider.of<PaginatedDataController<ClientModel>>(
+      context,
+      listen: false,
+    );
+    final controllerWatch = Provider.of<PaginatedDataController<ClientModel>>(
+      context,
+      listen: true,
+    );
 
     return Scaffold(
       appBar: kIsMobile
@@ -331,8 +336,10 @@ class _ClientListingViewState extends State<ClientListingView> {
   }
 
   Widget _buildActionRow(context) {
-    final controllerWatch = context
-        .watch<PaginatedDataController<ClientModel>>();
+    final controllerWatch = Provider.of<PaginatedDataController<ClientModel>>(
+      context,
+      listen: true,
+    );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

@@ -57,6 +57,7 @@ class DealsView extends StatefulWidget {
 
 class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   final TextEditingController _commentController = TextEditingController();
+  late DealModel _deal;
   late TabController _tabController;
   String? _currentUid;
   bool _isAdmin = false;
@@ -64,8 +65,20 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _deal = widget.deal;
     _tabController = TabController(length: 5, vsync: this);
     _loadOwnership();
+    _refreshDeal();
+  }
+
+  Future<void> _refreshDeal() async {
+    final id = _deal.uid;
+    if (id == null || id.isEmpty) return;
+    try {
+      final fresh = await DealService.getDeal(uid: id);
+      if (!mounted) return;
+      setState(() => _deal = fresh);
+    } catch (_) {}
   }
 
   Future<void> _loadOwnership() async {
@@ -88,7 +101,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
     context.read<DealBloc>().add(
-      AddDealComment(dealUid: widget.deal.uid!, commentText: text),
+      AddDealComment(dealUid: _deal.uid!, commentText: text),
     );
     _commentController.clear();
   }
@@ -175,7 +188,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       );
 
       await DealService.addDealComment(
-        dealUid: widget.deal.uid ?? '',
+        dealUid: _deal.uid ?? '',
         commentText: dealCommentModel,
       );
       Navigator.pop(context);
@@ -246,7 +259,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
                           if (value.isNotEmpty) {
                             await DealService.editDealComment(
-                              dealUid: widget.deal.uid ?? '',
+                              dealUid: _deal.uid ?? '',
                               commentUid: comment.uid ?? '',
                               commentText: value,
                             );
@@ -312,7 +325,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
     if (confirm == true) {
       await DealService.deleteDealComment(
-        dealUid: widget.deal.uid ?? '',
+        dealUid: _deal.uid ?? '',
         commentUid: comment.uid ?? '',
       );
     }
@@ -324,7 +337,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<DealBloc>(),
         child: ScheduleDealActivityDialog(
-          dealUid: widget.deal.uid!,
+          dealUid: _deal.uid!,
           existing: existing,
         ),
       ),
@@ -446,7 +459,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     if (confirmed == true) {
       context.read<DealBloc>().add(
         DeleteDealActivity(
-          dealUid: widget.deal.uid!,
+          dealUid: _deal.uid!,
           activityUid: activity.uid!,
         ),
       );
@@ -471,19 +484,20 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          if (_isAdmin || widget.deal.createdBy.uid == _currentUid) ...[
-            _appBarButton(Iconsax.edit, "Edit", () {
+          if (_isAdmin || _deal.createdBy.uid == _currentUid) ...[
+            _appBarButton(Iconsax.edit, "Edit", () async {
               if (kIsMobile) {
-                Sheet.showSheet(
+                await Sheet.showSheet(
                   context,
-                  widget: DealEdit(uid: widget.deal.uid ?? ''),
+                  widget: DealEdit(uid: _deal.uid ?? ''),
                 );
               } else {
-                GeneralDialog.showRTLSheet(
+                await GeneralDialog.showRTLSheet(
                   context,
-                  DealEdit(uid: widget.deal.uid ?? ''),
+                  DealEdit(uid: _deal.uid ?? ''),
                 );
               }
+              await _refreshDeal();
             }),
             const SizedBox(width: 8),
             _appBarButton(Iconsax.trash, "Delete", () async {
@@ -501,7 +515,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                 final deletedDeal = widget.deal;
                 bool isUndoPressed = false;
 
-                await DealService.deleteDeal(uid: widget.deal.uid ?? '');
+                await DealService.deleteDeal(uid: _deal.uid ?? '');
 
                 if (!mounted) return;
 
@@ -618,7 +632,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
   }
 
   Widget _buildProfessionalHeader() {
-    final status = CacheService.dealStatusByUid(widget.deal.dealStatus ?? '');
+    final status = CacheService.dealStatusByUid(_deal.dealStatus ?? '');
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -650,7 +664,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                     ),
                     child: Center(
                       child: Text(
-                        widget.deal.dealName[0].toUpperCase(),
+                        _deal.dealName[0].toUpperCase(),
                         style: TextStyle(
                           fontSize: isMobile ? 24 : 32,
                           color: Theme.of(context).colorScheme.primary,
@@ -674,7 +688,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
                           runSpacing: 4,
                           children: [
                             Text(
-                              widget.deal.dealName,
+                              _deal.dealName,
                               style: TextStyle(
                                 fontSize: isMobile ? 18 : 22,
                                 fontWeight: FontWeight.w800,
@@ -690,7 +704,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
                         /// COMPANY
                         Text(
-                          widget.deal.companyName ?? 'Unspecified Company',
+                          _deal.companyName ?? 'Unspecified Company',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -775,7 +789,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                "${widget.deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(widget.deal.dealValue)}",
+                "${_deal.companyCountry?.currencySymbol ?? '₹'}${NumberFormat('#,##,###').format(_deal.dealValue)}",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
@@ -798,12 +812,12 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           Iconsax.call,
           "Call",
           () {
-            if (widget.deal.companyMobile?.isNotEmpty ?? false) {
-              launchUrl(Uri.parse("tel:${widget.deal.companyMobile}"));
+            if (_deal.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${_deal.companyMobile}"));
             }
           },
-          tooltip: widget.deal.companyMobile?.isNotEmpty ?? false
-              ? "Call ${widget.deal.companyMobile}"
+          tooltip: _deal.companyMobile?.isNotEmpty ?? false
+              ? "Call ${_deal.companyMobile}"
               : "No contact number available",
         ),
 
@@ -811,8 +825,8 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           Iconsax.sms,
           "Email",
           () {},
-          tooltip: widget.deal.dealEmail.isNotEmpty
-              ? "Mail ${widget.deal.dealEmail}"
+          tooltip: _deal.dealEmail.isNotEmpty
+              ? "Mail ${_deal.dealEmail}"
               : "No contact mail available",
         ),
 
@@ -820,13 +834,13 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           LineIcons.whatSApp,
           "WA",
           () {
-            if (widget.deal.companyMobile?.isNotEmpty ?? false) {
-              launchUrl(Uri.parse("tel:${widget.deal.companyMobile}"));
+            if (_deal.companyMobile?.isNotEmpty ?? false) {
+              launchUrl(Uri.parse("tel:${_deal.companyMobile}"));
             }
           },
           color: Colors.green,
-          tooltip: widget.deal.companyMobile?.isNotEmpty ?? false
-              ? "Message ${widget.deal.companyMobile}"
+          tooltip: _deal.companyMobile?.isNotEmpty ?? false
+              ? "Message ${_deal.companyMobile}"
               : "No contact number available",
         ),
       ],
@@ -992,16 +1006,16 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
     return Column(
       children: [
         _infoSection("Engagement Details", [
-          _dataPoint(Iconsax.sms, "Email Address", widget.deal.dealEmail),
+          _dataPoint(Iconsax.sms, "Email Address", _deal.dealEmail),
           _dataPoint(
             Iconsax.user_add,
             "Assigned Agent",
-            widget.deal.createdBy.name,
+            _deal.createdBy.name,
           ),
           _dataPoint(
             Iconsax.calendar_1,
             "Capture Date",
-            DateFormat('MMM dd, yyyy').format(widget.deal.createdAt),
+            DateFormat('MMM dd, yyyy').format(_deal.createdAt),
           ),
         ]),
         const SizedBox(height: 16),
@@ -1009,23 +1023,23 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           _dataPoint(
             Iconsax.buildings,
             "Company Name",
-            widget.deal.companyName ?? 'N/A',
+            _deal.companyName ?? 'N/A',
           ),
           _dataPoint(
             Iconsax.global,
             "Web Presence",
-            widget.deal.companyWebsite ?? 'N/A',
+            _deal.companyWebsite ?? 'N/A',
             isLink: true,
           ),
           _dataPoint(
             Iconsax.call,
             "Business Contact",
-            widget.deal.companyMobile ?? 'N/A',
+            _deal.companyMobile ?? 'N/A',
           ),
           _dataPoint(
             Iconsax.location,
             "Office Location",
-            "${widget.deal.companyCity?.name ?? 'Unknown'}, ${widget.deal.companyCountry?.name ?? 'Unknown'}",
+            "${_deal.companyCity?.name ?? 'Unknown'}, ${_deal.companyCountry?.name ?? 'Unknown'}",
           ),
         ]),
       ],
@@ -1814,9 +1828,9 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              widget.deal.notes.isEmpty
+              _deal.notes.isEmpty
                   ? "No internal notes provided."
-                  : widget.deal.notes,
+                  : _deal.notes,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.7,
@@ -1828,7 +1842,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         ]),
         const SizedBox(height: 16),
         _infoSection("Shared Attachments", [
-          if (widget.deal.attachments.isEmpty)
+          if (_deal.attachments.isEmpty)
             Text(
               "No documents found.",
               style: TextStyle(
@@ -1837,7 +1851,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
               ),
             )
           else
-            ...widget.deal.attachments.map(
+            ..._deal.attachments.map(
               (file) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(

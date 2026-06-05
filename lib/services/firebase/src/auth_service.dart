@@ -46,6 +46,42 @@ class AuthService {
       }
 
       if (email != null && email.isNotEmpty) {
+        // First check employee by email (which is stored encrypted)
+        var employeeQuery = await FirebaseFirestore.instance
+            .collectionGroup(Collections.employees.name)
+            .where('email', isEqualTo: email.trim().encrypt)
+            .get();
+
+        if (employeeQuery.docs.isEmpty) {
+          employeeQuery = await FirebaseFirestore.instance
+              .collectionGroup(Collections.employees.name)
+              .where('email', isEqualTo: email.trim().toLowerCase().encrypt)
+              .get();
+        }
+
+        if (employeeQuery.docs.isNotEmpty) {
+          var doc = employeeQuery.docs.first;
+          var userData = doc.data();
+          String cid = doc.reference.parent.parent!.id;
+          // Verify Password
+          if (userData['password'].toString().decrypt != password) {
+            return {"status": false, "error": "Invalid password"};
+          }
+
+          if (userData['loginAllowed'] == false) {
+            return {"status": false, "error": "Your login is disabled!"};
+          }
+
+          await _trackDevice(cid: cid, uid: doc.id, isAdmin: false);
+          return {
+            "status": true,
+            "collectionId": cid,
+            "uid": doc.id,
+            "userData": userData,
+          };
+        }
+
+        // Then check admin by email
         var adminQuery = await FirebaseFirestore.instance
             .collectionGroup(Collections.admins.name)
             .where('email', isEqualTo: email.trim().toLowerCase())
@@ -294,8 +330,15 @@ class AuthService {
           var user = await firebase.users
               .doc(i.id)
               .collection(Collections.employees.name)
-              .where('email', isEqualTo: email.trim().toLowerCase())
+              .where('email', isEqualTo: email.trim().encrypt)
               .get();
+          if (user.docs.isEmpty) {
+            user = await firebase.users
+                .doc(i.id)
+                .collection(Collections.employees.name)
+                .where('email', isEqualTo: email.trim().toLowerCase().encrypt)
+                .get();
+          }
           if (user.docs.isNotEmpty) {
             return true;
           }
@@ -389,6 +432,26 @@ class AuthService {
                 'companyId': company.id,
                 'adminId': i.id,
                 'name': data['name'].toString().decrypt,
+                'email': email,
+              };
+            }
+          }
+        }
+
+        var employeeQuery = await firebase.users
+            .doc(company.id)
+            .collection(Collections.employees.name)
+            .get();
+
+        if (employeeQuery.docs.isNotEmpty) {
+          for (var i in employeeQuery.docs) {
+            var data = i.data();
+            String decryptedEmail = (data['email'] ?? '').toString().decrypt;
+            if (decryptedEmail.trim().toLowerCase() == email.trim().toLowerCase()) {
+              return {
+                'companyId': company.id,
+                'employeeId': i.id,
+                'name': (data['name'] ?? '').toString().decrypt,
                 'email': email,
               };
             }

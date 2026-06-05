@@ -118,7 +118,7 @@ class _LeadCreateState extends State<LeadCreate> {
     _companyCityController.dispose();
     _companyAddressController.dispose();
     _companyZipController.dispose();
-     _clientName.dispose();
+    _clientName.dispose();
     _salutation.dispose();
     _email.dispose();
     _mobile.dispose();
@@ -172,7 +172,7 @@ class _LeadCreateState extends State<LeadCreate> {
                               ),
                               expandable: true,
                             ),
-                             const SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             _buildSectionCard(
                               "Contact Details",
                               LayoutBuilder(
@@ -547,7 +547,10 @@ class _LeadCreateState extends State<LeadCreate> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(5.0),
-                          child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
+                          child: Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                         ),
                       ),
                     ),
@@ -620,48 +623,50 @@ class _LeadCreateState extends State<LeadCreate> {
         // ),
         _companyrefresh == true
             ? SizedBox()
-            :
-        SizedBox(
-          width: itemWidth,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: FormDropdownSearch(
-                  label: 'Company Name',
-                  initialItem: _selectedclient?.companyName??"",
-                  items: _clients.map((e) => e.companyName).toList(),
-                  onChanged: (value) {
-                    _selectedclient = _clients.cast<ClientModel?>().firstWhere(
-                      (cat) => cat?.companyName == value,
-                      orElse: () => null,
-                    );
-                    _companyWebsiteController.text =
-                        _selectedclient?.officialWebsite ?? '';
-                    _companyMobileController.text =
-                        _selectedclient?.officePhoneNo ?? "";
-                    _regionModel = _selectedclient?.country;
-                    _stateModel = _selectedclient?.state;
-                    _cityModel = _selectedclient?.city;
-                    _companyZipController.text =
-                        _selectedclient?.postalCode ?? "";
-                    _companyAddressController.text =
-                        _selectedclient?.companyAddress ?? "";
-                  },
-                  validator: (value) => value == null ? "* Required" : null,
-                ),
-              ),
-              SizedBox(width: 8.0),
-              InkWell(
-                onTap: () async {
-                  final form = CompanyCreate();
+            : SizedBox(
+                width: itemWidth,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: FormDropdownSearch(
+                        label: 'Company Name',
+                        initialItem: _selectedclient?.companyName ?? "",
+                        items: _clients.map((e) => e.companyName).toList(),
+                        onChanged: (value) {
+                          _selectedclient = _clients
+                              .cast<ClientModel?>()
+                              .firstWhere(
+                                (cat) => cat?.companyName == value,
+                                orElse: () => null,
+                              );
+                          _companyWebsiteController.text =
+                              _selectedclient?.officialWebsite ?? '';
+                          _companyMobileController.text =
+                              _selectedclient?.officePhoneNo ?? "";
+                          _regionModel = _selectedclient?.country;
+                          _stateModel = _selectedclient?.state;
+                          _cityModel = _selectedclient?.city;
+                          _companyZipController.text =
+                              _selectedclient?.postalCode ?? "";
+                          _companyAddressController.text =
+                              _selectedclient?.companyAddress ?? "";
+                        },
+                        validator: (value) =>
+                            value == null ? "* Required" : null,
+                      ),
+                    ),
+                    SizedBox(width: 8.0),
+                    InkWell(
+                      onTap: () async {
+                        final form = CompanyCreate();
                         dynamic val;
                         if (kIsMobile) {
                           val = await Sheet.showSheet(context, widget: form);
                         } else {
                           val = await GeneralDialog.showRTLSheet(context, form);
                         }
-                       if (val is Map && val["status"] == true) {
+                        if (val is Map && val["status"] == true) {
                           setState(() {
                             _companyrefresh = true;
                           });
@@ -684,21 +689,24 @@ class _LeadCreateState extends State<LeadCreate> {
                             _companyrefresh = false;
                           });
                         }
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(5.0),
-                    child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
-                  ),
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5.0),
+                          child: Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
@@ -858,7 +866,9 @@ class _LeadCreateState extends State<LeadCreate> {
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text.trim(),
           attachments: attachments,
-          companyName: _selectedclient?.companyName ?? _companyNameController.text.trim(),
+          companyName:
+              _selectedclient?.companyName ??
+              _companyNameController.text.trim(),
           companyWebsite: _companyWebsiteController.text.trim(),
           companyMobile: _companyMobileController.text.trim(),
           companyZipCode: _companyZipController.text.trim(),

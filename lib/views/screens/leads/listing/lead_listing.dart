@@ -168,7 +168,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
             if (state is LeadLoaded) {
               if (!(permissions?.canView ?? false)) {
                 return buildNoPermissionView(context);
-              }        
+              }
               return RefreshIndicator(
                 onRefresh: () => _refreshLeads(context),
                 child: ListView(
@@ -1059,10 +1059,17 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                           lead.leadName,
                           lead.leadEmail,
                           lead.leadSource.name,
-                          lead.leadCategory,
-                          lead.leadPriority,
+                          CacheService.leadCategoryByUid(
+                                lead.leadCategory,
+                              )?.name ??
+                              lead.leadCategory,
+                          CacheService.leadPriorityByUid(
+                                lead.leadPriority,
+                              )?.name ??
+                              lead.leadPriority,
                           lead.leadValue.toString(),
-                          lead.leadStatus,
+                          CacheService.leadStatusByUid(lead.leadStatus)?.name ??
+                              lead.leadStatus,
                           lead.companyName ?? '',
                           lead.companyMobile ?? '',
                           lead.companyCountry?.name ?? '',
@@ -1281,7 +1288,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         dataCell(
           context,
           Text(
-            lead.leadNumber.toString(),
+            lead.leadNumber?.toString() ?? '—',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),

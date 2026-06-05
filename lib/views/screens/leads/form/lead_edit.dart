@@ -925,24 +925,23 @@ class _LeadEditState extends State<LeadEdit> {
         //   clientId = await ClientService.createClient(client: clientModel);
         // }
 
-        LeadModel leadModel = LeadModel(
-          // salutation: _salutation,
+        final leadModel = _leadModel.copyWith(
           leadName: _leadNameController.text,
           leadEmail: _leadEmailController.text,
           leadSource: _selectedLeadSource!,
           leadCategory: _leadCategory?.uid ?? '',
           leadPriority: _leadPriority?.uid ?? '',
           leadValue: double.parse(_leadValueController.text),
-          // allowFollowUp: _allowFollowUp,
           leadStatus: _leadStatusModel?.uid ?? '',
           notes: _notesController.text,
           attachments: attachments,
-          companyName: _selectedclient?.companyName ?? _companyNameController.text,
+          companyName:
+              _selectedclient?.companyName ?? _companyNameController.text,
           companyWebsite: _companyWebsiteController.text,
           companyMobile: _companyMobileController.text,
           companyZipCode: _companyZipController.text,
           companyAddress: _companyAddressController.text,
-           clientName: _clientName.text,
+          clientName: _clientName.text,
           clientEmail: _email.text,
           clientMobile: _mobile.text,
           clientGender: _gender.text,
@@ -952,7 +951,6 @@ class _LeadEditState extends State<LeadEdit> {
           companyCity: _cityModel,
           workflow: workflow,
           clientId: _selectedclient?.uid,
-          createdBy: await Spdb.getUser(),
         );
 
         await LeadService.updateLead(uid: widget.uid, lead: leadModel);

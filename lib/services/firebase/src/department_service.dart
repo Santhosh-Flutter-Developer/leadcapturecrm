@@ -202,4 +202,33 @@ class DepartmentService {
       throw e.toString();
     }
   }
+
+  static Future<String?> checkDepartmentExists({
+    required String name,
+    String? excludeUid,
+  }) async {
+    try {
+      var cid = await Spdb.getCid();
+      var querySnapshot = await firebase.users
+          .doc(cid)
+          .collection(Collections.departments.name)
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        if (excludeUid != null && doc.id == excludeUid) continue;
+        
+        var data = doc.data();
+        if (data['name'] != null && 
+            data['name'].toString().decrypt.trim().toLowerCase() ==
+                name.trim().toLowerCase()) {
+          return 'Department name already exists';
+        }
+      }
+      return null;
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      return 'Error checking department existence: $e';
+    }
+  }
 }

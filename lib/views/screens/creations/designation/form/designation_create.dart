@@ -145,6 +145,23 @@ class _DesignationCreateState extends State<DesignationCreate> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+
+        String? duplicateError = await DesignationService.checkDesignationExists(
+          name: _nameController.text.trim(),
+        );
+
+        if (duplicateError != null) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          FlushBar.show(
+            context,
+            duplicateError,
+            isSuccess: false,
+          );
+          return;
+        }
+
         DesignationModel designationModel = DesignationModel(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),

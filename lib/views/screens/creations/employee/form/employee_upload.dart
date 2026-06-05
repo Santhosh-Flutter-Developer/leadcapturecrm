@@ -615,12 +615,17 @@ class _EmployeeUploadPageState extends State<EmployeeUploadPage> {
             ),
             elevation: 0,
           ),
-          icon: const Icon(Icons.check, size: 18),
+          icon: Icon(
+            Icons.check,
+            size: 18,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
           label: Text(
             'Complete Import',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ),
       ],

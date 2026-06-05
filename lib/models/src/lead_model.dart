@@ -183,7 +183,7 @@ class LeadModel {
   }
 
   Map<String, dynamic> toUpdateMap() {
-    return {
+    final data = {
       'uid': uid,
       'leadNumber': leadNumber,
       'salutation': salutation,
@@ -216,14 +216,18 @@ class LeadModel {
       'leadsConverted': leadsConverted,
       'dealId': dealId,
     };
+    data.removeWhere(
+      (key, value) =>
+          value == null &&
+          (key == 'uid' || key == 'leadNumber' || key == 'dealId'),
+    );
+    return data;
   }
 
   factory LeadModel.fromMap(String uid, Map<String, dynamic> map) {
     return LeadModel(
       uid: uid,
-      leadNumber: map['leadNumber'] is int
-          ? map['leadNumber'] as int
-          : int.tryParse(map['leadNumber']?.toString() ?? ''),
+      leadNumber: parseFirestoreInt(map['leadNumber']),
       salutation: map['salutation'] != null && map['salutation'] is String
           ? map['salutation'] as String
           : null,
@@ -327,6 +331,9 @@ class LeadModel {
           map['leadsConverted'] != null && map['leadsConverted'] is bool
           ? map['leadsConverted'] as bool
           : false,
+      dealId: map['dealId'] != null && map['dealId'] is String
+          ? map['dealId'] as String
+          : null,
     );
   }
 

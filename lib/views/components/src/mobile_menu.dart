@@ -2,14 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:leadcapture/views/screens/attendance/attendance.dart';
 import 'package:leadcapture/views/screens/chat/listing/bloc/chat_bloc.dart';
 import 'package:leadcapture/views/screens/download/download_history.dart';
-import 'package:leadcapture/views/screens/permission/src/permission_listing.dart';
-import 'package:leadcapture/views/screens/permission/src/permission_requests/src/permission_requests_listing.dart';
-import 'package:leadcapture/views/screens/salary_ledger/salary_ledger_listing.dart';
-import 'package:leadcapture/views/screens/worktime/src/index_worktime.dart';
-import 'package:leadcapture/views/screens/worktime/src/worktime_create.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -58,6 +52,7 @@ class _MobileMenuState extends State<MobileMenu> {
       _roleModel = await RoleService.getRole(uid: _employeeModel?.role ?? '');
     }
   }
+
   void _openClientSection(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -97,6 +92,7 @@ class _MobileMenuState extends State<MobileMenu> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +141,7 @@ class _MobileMenuState extends State<MobileMenu> {
                           ),
                         ),
                       ),
-                    ),                    
+                    ),
                     _buildListTile(
                       icon: Iconsax.calendar_1,
                       title: 'Calendar',
@@ -288,6 +284,10 @@ class _MobileMenuState extends State<MobileMenu> {
                                     .isNotEmpty ??
                                 false) ||
                             (_roleModel?.permissions
+                                    .where((e) => e.page == "Lead Priority")
+                                    .isNotEmpty ??
+                                false) ||
+                            (_roleModel?.permissions
                                     .where((e) => e.page == "Deal Status")
                                     .isNotEmpty ??
                                 false))) ...[
@@ -299,11 +299,22 @@ class _MobileMenuState extends State<MobileMenu> {
                       ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Category")
+                                  .where((e) => e.page == "Leads")
                                   .isNotEmpty ??
                               false))
                         _buildListTile(
                           icon: Iconsax.graph,
+                          title: 'Leads',
+                          onTap: () =>
+                              Navigate.route(context, const LeadsListing()),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Lead Category")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.category,
                           title: 'Lead Category',
                           onTap: () => Navigate.route(
                             context,
@@ -335,6 +346,30 @@ class _MobileMenuState extends State<MobileMenu> {
                             context,
                             const LeadSourceListing(),
                           ),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Lead Priority")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.flag,
+                          title: 'Lead Priority',
+                          onTap: () => Navigate.route(
+                            context,
+                            const LeadPriorityListing(),
+                          ),
+                        ),
+                      if (_adminModel != null ||
+                          (_roleModel?.permissions
+                                  .where((e) => e.page == "Deals")
+                                  .isNotEmpty ??
+                              false))
+                        _buildListTile(
+                          icon: Iconsax.grid_lock,
+                          title: 'Deals',
+                          onTap: () =>
+                              Navigate.route(context, const DealsListing()),
                         ),
                       if (_adminModel != null ||
                           (_roleModel?.permissions

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:leadcapture/theme/src/app_colors.dart';
@@ -21,7 +22,7 @@ class CompanyRegistration extends StatefulWidget {
 
 class _CompanyRegistrationState extends State<CompanyRegistration> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
+  int _currentStep = 0;
   // Controllers
   final TextEditingController _companyName = TextEditingController();
   final TextEditingController _companyEmail = TextEditingController();
@@ -34,6 +35,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
   File? _logo;
   bool _passwordVisible = false;
+  bool _detectingLocation = false;
   @override
   void dispose() {
     _companyName.dispose();
@@ -62,6 +64,8 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     setState(() {
       _logo = null;
       _passwordVisible = false;
+      _detectingLocation = false;
+      _currentStep = 0;
     });
 
     _formKey.currentState?.reset();
@@ -74,31 +78,35 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     if (image != null) setState(() => _logo = File(image.path));
   }
 
-  // Future<void> _detectLocation() async {
-  //   setState(() => _detectingLocation = true);
-  //   try {
-  //     final position = await LocationService.getCurrentPosition();
-  //     if (position == null) {
-  //       if (mounted) {
-  //         FlushBar.show(
-  //           context,
-  //           'Location permission denied or service unavailable.',
-  //           isSuccess: false,
-  //         );
-  //       }
-  //       return;
-  //     }
-  //     _latitude.text = position.latitude.toStringAsFixed(6);
-  //     _longitude.text = position.longitude.toStringAsFixed(6);
-  //     if (mounted) setState(() {});
-  //   } catch (e) {
-  //     if (mounted) {
-  //       FlushBar.show(context, 'Failed to detect location: $e', isSuccess: false);
-  //     }
-  //   } finally {
-  //     if (mounted) setState(() => _detectingLocation = false);
-  //   }
-  // }
+  Future<void> _detectLocation() async {
+    setState(() => _detectingLocation = true);
+    try {
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) {
+        if (mounted) {
+          FlushBar.show(
+            context,
+            'Location permission denied or service unavailable.',
+            isSuccess: false,
+          );
+        }
+        return;
+      }
+      _latitude.text = position.latitude.toStringAsFixed(6);
+      _longitude.text = position.longitude.toStringAsFixed(6);
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        FlushBar.show(
+          context,
+          'Failed to detect location: $e',
+          isSuccess: false,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _detectingLocation = false);
+    }
+  }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
@@ -189,60 +197,60 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildHeader(),
+                      const SizedBox(height: 20),
+                      _buildStepper(),
                       const SizedBox(height: 25),
 
-                      // Logo Picker
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: CircleAvatar(
-                          radius: 45,
-                          backgroundColor: Colors.grey[100],
-                          backgroundImage: _logo != null
-                              ? FileImage(_logo!)
-                              : null,
-                          child: _logo == null
-                              ? const Icon(
-                                  Iconsax.camera,
-                                  color: Colors.blueAccent,
-                                )
-                              : null,
+                      if (_currentStep == 0) ...[
+                        // Logo Picker
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: CircleAvatar(
+                            radius: 45,
+                            backgroundColor: Colors.grey[100],
+                            backgroundImage: _logo != null
+                                ? FileImage(_logo!)
+                                : null,
+                            child: _logo == null
+                                ? const Icon(
+                                    Iconsax.camera,
+                                    color: Colors.blueAccent,
+                                  )
+                                : null,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // Company Details Section
-                      _sectionTitle("Company Details"),
-                      _customField("Company Name", _companyName, Iconsax.box),
-                      _customField(
-                        "Business Email",
-                        _companyEmail,
-                        Iconsax.sms,
-                        isEmail: true,
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // // Company Location Section
-                      // _sectionTitle("Company Location (for Attendance)"),
-
-                      // // _locationFields(),
-                      // const SizedBox(height: 10),
-
-                      // Admin Setup Section
-                      _sectionTitle("Super Admin "),
-                      _customField("Full Name", _adminName, Iconsax.user),
-                      _customField(
-                        "Admin Email",
-                        _adminEmail,
-                        Iconsax.sms,
-                        isEmail: true,
-                      ),
-                      _passwordField(),
+                        // Company Details Section
+                        _sectionTitle("Company Details"),
+                        _customField("Company Name", _companyName, Iconsax.box),
+                        _customField(
+                          "Business Email",
+                          _companyEmail,
+                          Iconsax.sms,
+                          isEmail: true,
+                        ),
+                      ] else if (_currentStep == 1) ...[
+                        // Company Location Section
+                        _sectionTitle("Company Location"),
+                        _locationFields(),
+                      ] else if (_currentStep == 2) ...[
+                        // Admin Setup Section
+                        _sectionTitle("Super Admin Setup"),
+                        _customField("Full Name", _adminName, Iconsax.user),
+                        _customField(
+                          "Admin Email",
+                          _adminEmail,
+                          Iconsax.sms,
+                          isEmail: true,
+                        ),
+                        _passwordField(),
+                      ],
 
                       const SizedBox(height: 35),
 
-                      // Submit Button
-                      _buildSubmitButton(),
+                      // Navigation Buttons
+                      _buildNavigationButtons(),
                       const SizedBox(height: 20),
                       Center(
                         child: TextButton.icon(
@@ -269,52 +277,203 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     );
   }
 
-  // Widget _locationFields() {
-  //   return Column(
-  //     children: [
-  //       Row(
-  //         children: [
-  //           Expanded(
-  //             child: _numericField("Latitude", _latitude, Iconsax.location),
-  //           ),
-  //           const SizedBox(width: 12),
-  //           Expanded(
-  //             child: _numericField("Longitude", _longitude, Iconsax.location),
-  //           ),
-  //         ],
-  //       ),
-  //       _numericField("Radius (metres)", _radius, Iconsax.radar),
-  //       if (kIsMobile) ...[
-  //         const SizedBox(height: 4),
-  //         SizedBox(
-  //           width: double.infinity,
-  //           child: OutlinedButton.icon(
-  //             onPressed: _detectingLocation ? null : _detectLocation,
-  //             icon: _detectingLocation
-  //                 ? const SizedBox(
-  //                     width: 16,
-  //                     height: 16,
-  //                     child: CircularProgressIndicator(strokeWidth: 2),
-  //                   )
-  //                 : const Icon(Iconsax.gps, size: 18),
-  //             label: Text(
-  //               _detectingLocation
-  //                   ? "Detecting..."
-  //                   : "Use Current Location",
-  //             ),
-  //             style: OutlinedButton.styleFrom(
-  //               padding: const EdgeInsets.symmetric(vertical: 12),
-  //               shape: RoundedRectangleBorder(
-  //                 borderRadius: BorderRadius.circular(10),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //         const SizedBox(height: 10),
-  //       ],
-  //     ],
-  //   );
-  // }
+
+  Widget _buildStepper() {
+    final steps = ["Company", "Location", "Admin"];
+
+    return Row(
+      children: List.generate(steps.length * 2 - 1, (i) {
+        // Even indices = step nodes, odd indices = connector lines
+        if (i.isOdd) {
+          final stepIndex = i ~/ 2;
+          final isCompleted = stepIndex < _currentStep;
+          final isActive = stepIndex == _currentStep - 1 || stepIndex == _currentStep;
+          return Expanded(
+            child: Container(
+              height: 2,
+              margin: const EdgeInsets.only(bottom: 24),
+              color: isCompleted || isActive
+                  ? Colors.blue
+                  : Colors.grey.shade300,
+            ),
+          );
+        }
+
+        final index = i ~/ 2;
+        final isCompleted = index < _currentStep;
+        final isActive = index == _currentStep;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCompleted || isActive
+                    ? Colors.blue
+                    : Colors.white,
+                border: Border.all(
+                  color: isCompleted || isActive
+                      ? Colors.blue
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: isCompleted
+                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    : Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isActive
+                              ? Colors.white
+                              : Colors.grey.shade400,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              steps[index],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isCompleted || isActive
+                    ? Colors.blue
+                    : Colors.grey.shade400,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+
+  Widget _locationFields() {
+    final canDetectLocation = Platform.isAndroid || Platform.isIOS;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _numericField(
+                "Latitude",
+                _latitude,
+                Iconsax.location,
+                min: -90,
+                max: 90,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _numericField(
+                "Longitude",
+                _longitude,
+                Iconsax.location,
+                min: -180,
+                max: 180,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _numericField(
+          "Radius (metres)",
+          _radius,
+          Iconsax.radar,
+          min: 1,
+          positiveOnly: true,
+        ),
+        if (canDetectLocation) ...[
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _detectingLocation ? null : _detectLocation,
+              icon: _detectingLocation
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Iconsax.gps, size: 18),
+              label: Text(
+                _detectingLocation ? "Detecting..." : "Use Current Location",
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
+  Widget _numericField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    double? min,
+    double? max,
+    bool positiveOnly = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.grey700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          FormFields(
+            controller: controller,
+            prefixIcon: Icon(icon, size: 20),
+            hintText: "Enter $label",
+            keyboardType: const TextInputType.numberWithOptions(
+              signed: true,
+              decimal: true,
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                RegExp(positiveOnly ? r'[0-9.]' : r'[-0-9.]'),
+              ),
+            ],
+            valid: (value) {
+              final raw = value?.trim() ?? '';
+              if (raw.isEmpty) return '$label is required';
+              final parsed = double.tryParse(raw);
+              if (parsed == null) return 'Invalid $label';
+              if (positiveOnly && parsed <= 0) return 'Must be > 0';
+              if (min != null && parsed < min) {
+                return '$label must be >= $min';
+              }
+              if (max != null && parsed > max) {
+                return '$label must be <= $max';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _sectionTitle(String title) {
     return Align(
@@ -423,6 +582,72 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
               color: const Color(0xFF1C1F23),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Row(
+      children: [
+        if (_currentStep > 0) ...[
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  _currentStep--;
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text("Back"),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: _currentStep < 2
+              ? Container(
+                  height: 45,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF0052D4),
+                        Color(0xFF4364F7),
+                        Color(0xFF6FB1FC),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        setState(() {
+                          _currentStep++;
+                        });
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      "Next",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                )
+              : _buildSubmitButton(),
         ),
       ],
     );

@@ -642,7 +642,7 @@ class _DealEditState extends State<DealEdit> {
           clientId = await ClientService.createClient(client: clientModel);
         }
 
-        final DealModel dealModel = DealModel(
+        final dealModel = _dealModel.copyWith(
           dealName: _dealNameController.text.trim(),
           dealEmail: _dealEmailController.text.trim(),
           dealValue: double.tryParse(_dealValueController.text) ?? 0.0,
@@ -665,7 +665,6 @@ class _DealEditState extends State<DealEdit> {
           companyCity: _cityModel,
           workFlow: workflow,
           clientId: clientId,
-          createdBy: await Spdb.getUser(),
         );
 
         await DealService.updateDeal(uid: widget.uid, deal: dealModel);

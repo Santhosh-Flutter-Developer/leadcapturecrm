@@ -156,7 +156,7 @@ class DealModel {
   }
 
   Map<String, dynamic> toUpdateMap() {
-    return <String, dynamic>{
+    final data = <String, dynamic>{
       'uid': uid,
       'dealNumber': dealNumber,
       'salutation': salutation,
@@ -184,14 +184,16 @@ class DealModel {
       'createdBy': createdBy.toMap(),
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
+    data.removeWhere(
+      (key, value) => value == null && (key == 'uid' || key == 'dealNumber'),
+    );
+    return data;
   }
 
   factory DealModel.fromMap(String uid, Map<String, dynamic> map) {
     return DealModel(
       uid: uid,
-      dealNumber: map['dealNumber'] is int
-          ? map['dealNumber'] as int
-          : int.tryParse(map['dealNumber']?.toString() ?? '0') ?? 0,
+      dealNumber: parseFirestoreInt(map['dealNumber']),
       salutation: map['salutation'] != null && map['salutation'] is String
           ? map['salutation'] as String
           : null,

@@ -21,15 +21,30 @@ class _LoginState extends State<Login> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  Future<void> _storeDeviceLocationOnLogin() async {
+    // Request GPS only on platforms where geolocation is expected to work.
+    if (!kIsMobile && !kIsDesktop) return;
+
+    try {
+      final position = await LocationService.getCurrentPosition();
+      if (position == null) return;
+
+      await Spdb.saveLastLoginLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+    } catch (_) {
+      // Location is optional for login itself; don't block successful auth.
+    }
+  }
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
         String input = _email.text.trim();
-        bool isAdminLogin = input.contains("@");
         var result = await AuthService.checkLogin(
-          email: isAdminLogin ? input : null,
-          employeeId: isAdminLogin ? null : input,
+          email: input,
           password: _password.text.trim(),
         );
 
@@ -43,7 +58,8 @@ class _LoginState extends State<Login> {
         String? companyLogo = result["companyLogo"];
         FlushBar.show(context, "Login Successful");
 
-        if (!isAdminLogin) {
+        bool isEmployee = result.containsKey("userData");
+        if (isEmployee) {
           var data = result["userData"];
           var uid = result["uid"];
           EmployeeModel emp = EmployeeModel.fromMap(uid, data);
@@ -76,6 +92,7 @@ class _LoginState extends State<Login> {
             cid: result["collectionId"],
             logoUrl: companyLogo,
           );
+          await _storeDeviceLocationOnLogin();
           RoleModel role = await RoleService.getRole(uid: emp.role);
           await PermissionService.savePermissions(role.permissions);
           await CacheService.syncAllCollections();
@@ -94,6 +111,7 @@ class _LoginState extends State<Login> {
           cid: result["collectionId"],
           logoUrl: companyLogo,
         );
+        await _storeDeviceLocationOnLogin();
         await PermissionService.savePermissions(AppStrings.permissionsTrueMap);
 
         await AuthService.saveLoginLogs(
@@ -204,7 +222,7 @@ class _LoginState extends State<Login> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Employee Id or Email",
+                            "Email ID",
                             style: Theme.of(context).textTheme.bodySmall!
                                 .copyWith(
                                   fontWeight: FontWeight.w600,
@@ -216,26 +234,12 @@ class _LoginState extends State<Login> {
                           const SizedBox(height: 8),
                           FormFields(
                             controller: _email,
-                            valid: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Employee Id or Email is required";
-                              }
-
-                              if (value.contains("@")) {
-                                return Validation.validEmail(
-                                  input: value,
-                                  isReq: true,
-                                );
-                              }
-
-                              return Validation.commonValidation(
-                                input: value,
-                                isReq: true,
-                                label: "Employee Id or Email",
-                              );
-                            },
-                            keyboardType: TextInputType.text,
-                            hintText: "Enter Employee Id or Email",
+                            valid: (value) => Validation.validEmail(
+                              input: value ?? '',
+                              isReq: true,
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            hintText: "Enter Email ID",
                             prefixIcon: const Icon(Iconsax.user, size: 20),
                           ),
                         ],

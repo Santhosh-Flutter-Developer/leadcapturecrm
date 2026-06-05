@@ -28,6 +28,7 @@ class AppColors {
   static const Color white = Color(0xFFFFFFFF);
   static const Color black = Color(0xFF000000);
   static const Color blueGrey = Color(0xFF607D8B);
+  static const surface = Color(0xFFFFFFFF);
 
   static const Color grey = Color(0xFF6B7785);
   static const Color grey50 = Color(0xFFF9FAFB);

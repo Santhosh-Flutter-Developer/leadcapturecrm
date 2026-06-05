@@ -182,6 +182,24 @@ class _DepartmentEditState extends State<DepartmentEdit> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+
+        String? duplicateError = await DepartmentService.checkDepartmentExists(
+          name: _nameController.text.trim(),
+          excludeUid: widget.uid,
+        );
+
+        if (duplicateError != null) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          FlushBar.show(
+            context,
+            duplicateError,
+            isSuccess: false,
+          );
+          return;
+        }
+
         DepartmentModel departmentModel = DepartmentModel(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),

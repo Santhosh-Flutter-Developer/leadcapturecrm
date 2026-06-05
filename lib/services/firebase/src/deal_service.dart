@@ -34,6 +34,7 @@ class DealService {
 
       var dealData = deal.toMap();
       dealData['dealNumber'] = dealNumber;
+      dealData.remove('uid');
       var dealDoc = await dealsRef.add(dealData);
 
       await addDealHistory(dealUid: dealDoc.id, action: 'Deal Created');

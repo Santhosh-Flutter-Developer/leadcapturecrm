@@ -170,6 +170,23 @@ class _SubDepartmentCreateState extends State<SubDepartmentCreate> {
     if (_formKey.currentState!.validate()) {
       try {
         futureLoading(context);
+
+        String? duplicateError = await SubDepartmentService.checkSubDepartmentExists(
+          name: _nameController.text.trim(),
+        );
+
+        if (duplicateError != null) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          FlushBar.show(
+            context,
+            duplicateError,
+            isSuccess: false,
+          );
+          return;
+        }
+
         SubDepartmentModel subDepartmentModel = SubDepartmentModel(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),

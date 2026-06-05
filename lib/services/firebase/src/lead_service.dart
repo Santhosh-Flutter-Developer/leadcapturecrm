@@ -42,6 +42,7 @@ class LeadService {
 
       var leadData = lead.toMap();
       leadData['leadNumber'] = leadNumber;
+      leadData.remove('uid');
 
       var leadDoc = await leadsRef.add(leadData);
 
