@@ -77,6 +77,18 @@ class _RouteScreenState extends State<RouteScreen> {
         'color': Colors.redAccent,
       },
       {
+        'icon': Iconsax.building,
+        'title': 'Companies',
+        'route': 'Companies',
+        'color': Colors.indigoAccent,
+      },
+      {
+        'icon': Iconsax.calendar_2,
+        'title': 'Holidays',
+        'route': 'Holidays',
+        'color': Colors.purpleAccent,
+      },
+      {
         'icon': Iconsax.setting,
         'title': 'Settings',
         'route': 'Settings',

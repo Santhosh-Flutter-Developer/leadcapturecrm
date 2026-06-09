@@ -72,6 +72,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
   final List<UserRowModel> _selectedEmployees = [];
   final List<UserRowModel> _employeesList = [];
   PermissionModel? permissions;
+  PermissionModel? tasksPermissions;
   final ScrollController _hScrollController = ScrollController();
 
   final TextEditingController _chatMessage = TextEditingController();
@@ -84,6 +85,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
 
   Future<void> _loadPermissions() async {
     permissions = await PermissionService.getPermissions(_pageTitle);
+    tasksPermissions = await PermissionService.getPermissions('Tasks');
     setState(() {});
   }
 
@@ -592,70 +594,104 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
       builder: (context, constraints) {
         // final bool isMobile = constraints.maxWidth < 600;
 
-        final buttons = <Widget>[
-          (permissions?.canCreate ?? false)
-              ? ElevatedButton.icon(
-                  onPressed: () {
-                    if (kIsMobile) {
-                      Sheet.showSheet(context, widget: const EmployeeCreate());
-                    } else {
-                      GeneralDialog.showRTLSheet(
-                        context,
-                        const EmployeeCreate(),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(
-                    "Add $_pageTitle",
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                )
-              : ElevatedButton.icon(
-                  onPressed: null,
-                  icon: Icon(Icons.add, size: 18, color: Colors.grey.shade600),
-                  label: Text(
-                    "Add $_pageTitle",
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainer,
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-          ElevatedButton.icon(
-            onPressed: () {
-              if (kIsMobile) {
-                Sheet.showSheet(context, widget: const EmployeeUploadPage());
-              } else {
-                GeneralDialog.showRTLSheet(context, const EmployeeUploadPage());
-              }
-            },
-            icon: const Icon(Iconsax.cloud_plus, size: 18),
-            label: Text(
-              "Upload",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
+        final buttons = <Widget>[];
+
+        // Add Employee Button
+        if (permissions?.canCreate ?? false) {
+          buttons.add(
+            ElevatedButton.icon(
+              onPressed: () {
+                if (kIsMobile) {
+                  Sheet.showSheet(context, widget: const EmployeeCreate());
+                } else {
+                  GeneralDialog.showRTLSheet(context, const EmployeeCreate());
+                }
+              },
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(
+                "Add $_pageTitle",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: AppColors.white,
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          );
+        } else {
+          buttons.add(
+            ElevatedButton.icon(
+              onPressed: null,
+              icon: Icon(
+                Icons.add,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: Text(
+                "Add $_pageTitle",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ];
+          );
+        }
+
+        // Upload Button (Gated by canImport)
+        if (permissions?.canImport ?? false) {
+          buttons.add(
+            ElevatedButton.icon(
+              onPressed: () {
+                if (kIsMobile) {
+                  Sheet.showSheet(context, widget: const EmployeeUploadPage());
+                } else {
+                  GeneralDialog.showRTLSheet(
+                    context,
+                    const EmployeeUploadPage(),
+                  );
+                }
+              },
+              icon: const Icon(Iconsax.cloud_plus, size: 18),
+              label: Text(
+                "Upload",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          );
+        } else {
+          buttons.add(
+            ElevatedButton.icon(
+              onPressed: null,
+              icon: Icon(
+                Iconsax.cloud_plus,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: Text(
+                "Upload",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
 
         buttons.add(
           ElevatedButton.icon(
@@ -666,7 +702,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
               ),
             ),
             icon: Icon(Iconsax.export_3),
-            onPressed: _employeesList.isEmpty
+            onPressed: (permissions?.canExport ?? false) == false || _employeesList.isEmpty
                 ? null
                 : () async {
                     try {
@@ -826,9 +862,9 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                 ? ElevatedButton.icon(
                     label: Text(
                       "Delete",
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onError,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                     ),
                     icon: const Icon(Iconsax.trash),
                     onPressed: () async {
@@ -926,8 +962,8 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     },
 
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
+                      backgroundColor: AppColors.danger,
+                      foregroundColor: AppColors.white,
                     ),
                   )
                 : ElevatedButton.icon(
@@ -1163,43 +1199,70 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                     ? 'Chat with ${_selectedEmployees.first.name}'
                     : 'Group Chat (${_selectedEmployees.length})',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.tertiaryContainer,
+                foregroundColor: Theme.of(
+                  context,
+                ).colorScheme.onTertiaryContainer,
               ),
             ),
           );
 
           buttons.add(
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TaskCreate(
-                      employees: _selectedEmployees
-                          .where((e) => e.isEmployee)
-                          .map((e) => e.toEmployeeModel())
-                          .toList(),
+            (tasksPermissions?.canCreate ?? false)
+                ? ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TaskCreate(
+                            employees: _selectedEmployees
+                                .where((e) => e.isEmployee)
+                                .map((e) => e.toEmployeeModel())
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.task, size: 18),
+                    label: Text(
+                      "Create Task",
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: AppColors.white,
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: null,
+                    icon: Icon(
+                      Icons.task,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    label: Text(
+                      "Create Task",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.task, size: 18),
-              label: Text(
-                "Create Task",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-            ),
           );
         }
 

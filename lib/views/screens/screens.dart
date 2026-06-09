@@ -16,3 +16,4 @@ export 'loginlogs/login_logs.dart';
 export 'activitylogs/activity_logs.dart';
 export 'backup/backup.dart';
 export 'calendar/calendar.dart';
+export 'holidays/holidays.dart';

@@ -1,6 +1,7 @@
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/models/src/filter_model.dart';
+import 'package:leadcapture/models/src/holiday_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';
 import 'package:leadcapture/services/firebase/src/firebase_config.dart';

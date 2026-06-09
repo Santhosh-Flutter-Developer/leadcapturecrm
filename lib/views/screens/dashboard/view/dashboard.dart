@@ -33,6 +33,28 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   String _selectedFilter = "Today";
+  final Map<String, PermissionModel?> _permissions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final pages = [
+      'Leads',
+      'Deals',
+      'Tasks',
+      'Employees',
+      'Contacts',
+      'Company',
+    ];
+    for (var page in pages) {
+      _permissions[page] = await PermissionService.getPermissions(page);
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +92,12 @@ class _DashboardState extends State<Dashboard> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildKpiGrid(context, widget.isAdmin, data),
+                              _buildKpiGrid(
+                                context,
+                                widget.isAdmin,
+                                data,
+                                _permissions,
+                              ),
                               // const SizedBox(height: 20),
                               // _buildPayroll(context, widget.isAdmin, data),
                               const SizedBox(height: 20),
@@ -83,12 +110,18 @@ class _DashboardState extends State<Dashboard> {
                                 const SizedBox(height: 20),
                               ],
                               _buildActivitySection(
+                                // This one does not need permissions
                                 context,
                                 widget.isAdmin,
                                 data,
                               ),
                               const SizedBox(height: 20),
-                              _buildRightPanel(context, widget.isAdmin, data),
+                              _buildRightPanel(
+                                context,
+                                widget.isAdmin,
+                                data,
+                                _permissions,
+                              ),
                             ],
                           );
                         }
@@ -102,7 +135,12 @@ class _DashboardState extends State<Dashboard> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildKpiGrid(context, widget.isAdmin, data),
+                                  _buildKpiGrid(
+                                    context,
+                                    widget.isAdmin,
+                                    data,
+                                    _permissions,
+                                  ),
                                   // const SizedBox(height: 20),
                                   // _buildPayroll(context, widget.isAdmin, data),
                                   const SizedBox(height: 20),
@@ -129,6 +167,7 @@ class _DashboardState extends State<Dashboard> {
                                 context,
                                 widget.isAdmin,
                                 data,
+                                _permissions,
                               ),
                             ),
                           ],
@@ -820,7 +859,12 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
-Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
+Widget _buildKpiGrid(
+  BuildContext context,
+  bool isAdmin,
+  DashboardModel data,
+  Map<String, PermissionModel?> permissions,
+) {
   // Define distinct colors for visual separation
   final blueGradient = [const Color(0xFF4285F4), const Color(0xFF6A88E5)];
   final purpleGradient = [const Color(0xFF8E2DE2), const Color(0xFF4A00E0)];
@@ -843,6 +887,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     progress: _calculateProgress(data.totalLeads, 200),
                     gradientColors: blueGradient,
                     trend: 12.5,
+                    enabled: permissions['Leads']?.canView ?? true,
                     onTap: () => _openSheet(context, const LeadsListing()),
                   ),
                 ),
@@ -859,6 +904,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     ),
                     gradientColors: greenGradient,
                     trend: 5.2,
+                    enabled: permissions['Deals']?.canView ?? true,
                     onTap: () => _openSheet(context, const DealsListing()),
                   ),
                 ),
@@ -872,6 +918,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     progress: _calculateProgress(data.ongoingDeals, 50),
                     gradientColors: orangeGradient,
                     trend: -2.4,
+                    enabled: permissions['Deals']?.canView ?? true,
                     onTap: () => _openSheet(context, const DealsListing()),
                   ),
                 ),
@@ -884,6 +931,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     icon: Icons.people_outline_rounded,
                     progress: _calculateProgress(data.activeEmployees, 50),
                     gradientColors: purpleGradient,
+                    enabled: permissions['Employees']?.canView ?? true,
                     onTap: () => _openSheet(context, const EmployeeListing()),
                   ),
                 ),
@@ -897,6 +945,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     icon: Icons.task,
                     progress: _calculateProgress(data.assignedTasks, 20),
                     gradientColors: blueGradient,
+                    enabled: permissions['Tasks']?.canView ?? true,
                     onTap: () => _openSheet(context, const TasksListing()),
                   ),
                 ),
@@ -909,6 +958,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     icon: Icons.history,
                     progress: _calculateProgress(data.pendingFollowUps, 20),
                     gradientColors: greenGradient,
+                    enabled: permissions['Leads']?.canView ?? true,
                     onTap: () => _openSheet(context, const LeadsListing()),
                   ),
                 ),
@@ -921,6 +971,7 @@ Widget _buildKpiGrid(BuildContext context, bool isAdmin, DashboardModel data) {
                     icon: Icons.person_search,
                     progress: _calculateProgress(data.leadsAssigned, 30),
                     gradientColors: purpleGradient,
+                    enabled: permissions['Leads']?.canView ?? true,
                     onTap: () => _openSheet(context, const LeadsListing()),
                   ),
                 ),
@@ -1007,6 +1058,7 @@ Widget _buildRightPanel(
   BuildContext context,
   bool isAdmin,
   DashboardModel data,
+  Map<String, PermissionModel?> permissions,
 ) {
   final notifications = data.notifications;
   final upcomingTasks = data.upcomingTasks;
@@ -1022,7 +1074,9 @@ Widget _buildRightPanel(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children:
-                    (isAdmin ? _adminActions(context) : _userActions(context))
+                    (isAdmin
+                            ? _adminActions(context, permissions)
+                            : _userActions(context, permissions))
                         .map(
                           (card) => Padding(
                             padding: const EdgeInsets.only(right: 15),
@@ -1107,23 +1161,29 @@ Widget _emptyText(BuildContext context, String text) {
   );
 }
 
-List<Widget> _adminActions(BuildContext context) => [
+List<Widget> _adminActions(
+  BuildContext context,
+  Map<String, PermissionModel?> permissions,
+) => [
   QuickActionCard(
     icon: Icons.add_circle_outline,
     label: "Add Lead",
     color: Colors.blue,
+    enabled: permissions['Leads']?.canCreate ?? true,
     onTap: () => _openSheet(context, const LeadCreate()),
   ),
   QuickActionCard(
     icon: Icons.work_outline,
     label: "Add Deal",
     color: Colors.purple,
+    enabled: permissions['Deals']?.canCreate ?? true,
     onTap: () => _openSheet(context, const DealCreate()),
   ),
   QuickActionCard(
     icon: Icons.check_circle_outline,
     label: "Add Task",
     color: Colors.orange,
+    enabled: permissions['Tasks']?.canCreate ?? true,
     onTap: () => _openSheet(context, const TaskCreate(employees: [])),
   ),
 
@@ -1149,7 +1209,10 @@ List<Widget> _adminActions(BuildContext context) => [
   // ),
 ];
 
-List<Widget> _userActions(BuildContext context) => [
+List<Widget> _userActions(
+  BuildContext context,
+  Map<String, PermissionModel?> permissions,
+) => [
   // QuickActionCard(
   //   icon: Icons.login,
   //   label: "Worktime",
@@ -1163,16 +1226,18 @@ List<Widget> _userActions(BuildContext context) => [
   //   color: Colors.blue,
   //   onTap: () => _openSheet(context, const Attendance()),
   // ),
-  QuickActionCard(
-    icon: Icons.person_add_outlined,
-    label: "Lead",
-    color: Colors.blue,
-    onTap: () => _openSheet(context, const LeadCreate()),
-  ),
+  // QuickActionCard(
+  //   icon: Icons.person_add_outlined,
+  //   label: "Lead",
+  //   color: Colors.blue,
+  //   enabled: permissions['Leads']?.canCreate ?? true,
+  //   onTap: () => _openSheet(context, const LeadCreate()),
+  // ),
   QuickActionCard(
     icon: Icons.update,
     label: "Tasks",
     color: Colors.orange,
+    enabled: permissions['Tasks']?.canView ?? true,
     onTap: () => _openSheet(context, const TasksListing()),
   ),
   QuickActionCard(
@@ -1206,6 +1271,7 @@ class KpiCard extends StatelessWidget {
   final List<Color> gradientColors;
   final double? trend;
   final VoidCallback onTap;
+  final bool enabled;
 
   const KpiCard({
     super.key,
@@ -1216,6 +1282,7 @@ class KpiCard extends StatelessWidget {
     required this.gradientColors,
     this.trend,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
@@ -1223,137 +1290,144 @@ class KpiCard extends StatelessWidget {
     final isPositive = (trend ?? 0) >= 0;
 
     return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 200,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: Container(
+          height: 200,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// ─── HEADER ───────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: gradientColors),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 22),
-                ),
-
-                if (trend != null)
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// ─── HEADER ───────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isPositive
-                          ? Colors.green.withValues(alpha: 0.12)
-                          : Colors.red.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(30),
+                      gradient: LinearGradient(colors: gradientColors),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isPositive ? Icons.trending_up : Icons.trending_down,
-                          size: 16,
-                          color: isPositive ? Colors.green : Colors.red,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${trend!.abs()}%",
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: isPositive ? Colors.green : Colors.red,
-                              ),
-                        ),
-                      ],
+                    child: Icon(icon, color: Colors.white, size: 22),
+                  ),
+
+                  if (trend != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isPositive
+                            ? Colors.green.withValues(alpha: 0.12)
+                            : Colors.red.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isPositive
+                                ? Icons.trending_up
+                                : Icons.trending_down,
+                            size: 16,
+                            color: isPositive ? Colors.green : Colors.red,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${trend!.abs()}%",
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: isPositive ? Colors.green : Colors.red,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            /// ─── VALUE ───────────────────────────────
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
 
-            const Spacer(),
+              const SizedBox(height: 14),
 
-            /// ─── PROGRESS ────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Target",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              /// ─── VALUE ───────────────────────────────
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                Text(
-                  "${(progress * 100).toInt()}%",
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: gradientColors.first,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: progress),
-                duration: const Duration(milliseconds: 800),
-                builder: (context, value, _) {
-                  return LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      gradientColors.first,
-                    ),
-                  );
-                },
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+
+              const Spacer(),
+
+              /// ─── PROGRESS ────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Target",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    "${(progress * 100).toInt()}%",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: gradientColors.first,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progress),
+                  duration: const Duration(milliseconds: 800),
+                  builder: (context, value, _) {
+                    return LinearProgressIndicator(
+                      value: value,
+                      minHeight: 6,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        gradientColors.first,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1365,6 +1439,7 @@ class QuickActionCard extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final Color color;
+  final bool enabled;
 
   const QuickActionCard({
     super.key,
@@ -1372,6 +1447,7 @@ class QuickActionCard extends StatelessWidget {
     required this.label,
     this.onTap,
     this.color = Colors.blue,
+    this.enabled = true,
   });
 
   @override
@@ -1379,71 +1455,78 @@ class QuickActionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(18),
-        splashColor: color.withValues(alpha: 0.15),
-        highlightColor: color.withValues(alpha: 0.08),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+        splashColor: enabled
+            ? color.withValues(alpha: 0.15)
+            : Colors.transparent,
+        highlightColor: enabled
+            ? color.withValues(alpha: 0.08)
+            : Colors.transparent,
+        child: Opacity(
+          opacity: enabled ? 1.0 : 0.5,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.surface,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
               ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                /// ICON
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        color.withValues(alpha: 0.9),
-                        color.withValues(alpha: 0.6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  /// ICON
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withValues(alpha: 0.9),
+                          color.withValues(alpha: 0.6),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
                       ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    child: Icon(icon, size: 16, color: Colors.white),
                   ),
-                  child: Icon(icon, size: 16, color: Colors.white),
-                ),
 
-                const SizedBox(height: 6),
+                  const SizedBox(height: 6),
 
-                /// LABEL
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.25,
+                  /// LABEL
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      height: 1.25,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

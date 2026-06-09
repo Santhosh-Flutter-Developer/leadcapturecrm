@@ -484,7 +484,7 @@ class _AdminListingViewState extends State<AdminListingView> {
             ).textTheme.bodySmall?.copyWith(color: AppColors.white),
           ),
           icon: Icon(Iconsax.export_3),
-          onPressed: () async {
+          onPressed: (permissions?.canExport ?? false) == false ? null : () async {
             List<List<String>> exportData = [];
             exportData.add([
               'Name',

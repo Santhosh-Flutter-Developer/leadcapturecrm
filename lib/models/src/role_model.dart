@@ -178,6 +178,8 @@ class PermissionModel {
   bool canEdit;
   bool canDelete;
   bool canView;
+  bool canExport;
+  bool canImport;
 
   PermissionModel({
     required this.page,
@@ -186,6 +188,8 @@ class PermissionModel {
     this.canEdit = false,
     this.canDelete = false,
     this.canView = false,
+    this.canExport = false,
+    this.canImport = false,
   });
 
   PermissionModel copyWith({
@@ -195,6 +199,8 @@ class PermissionModel {
     bool? canEdit,
     bool? canDelete,
     bool? canView,
+    bool? canExport,
+    bool? canImport,
   }) {
     return PermissionModel(
       page: page ?? this.page,
@@ -203,6 +209,8 @@ class PermissionModel {
       canEdit: canEdit ?? this.canEdit,
       canDelete: canDelete ?? this.canDelete,
       canView: canView ?? this.canView,
+      canExport: canExport ?? this.canExport,
+      canImport: canImport ?? this.canImport,
     );
   }
 
@@ -214,17 +222,21 @@ class PermissionModel {
       'canEdit': canEdit,
       'canDelete': canDelete,
       'canView': canView,
+      'canExport': canExport,
+      'canImport': canImport,
     };
   }
 
   factory PermissionModel.fromMap(Map<String, dynamic> map) {
     return PermissionModel(
-      page: map['page'] as String,
-      selectAll: map['selectAll'] as bool,
-      canCreate: map['canCreate'] as bool,
-      canEdit: map['canEdit'] as bool,
-      canDelete: map['canDelete'] as bool,
-      canView: map['canView'] as bool,
+      page: map['page']?.toString() ?? '',
+      selectAll: map['selectAll'] ?? false,
+      canCreate: map['canCreate'] ?? false,
+      canEdit: map['canEdit'] ?? false,
+      canDelete: map['canDelete'] ?? false,
+      canView: map['canView'] ?? false,
+      canExport: map['canExport'] ?? false,
+      canImport: map['canImport'] ?? false,
     );
   }
 
@@ -235,7 +247,7 @@ class PermissionModel {
 
   @override
   String toString() {
-    return 'PermissionModel(page: $page, selectAll: $selectAll, canCreate: $canCreate, canEdit: $canEdit, canDelete: $canDelete, canView: $canView)';
+    return 'PermissionModel(page: $page, selectAll: $selectAll, canCreate: $canCreate, canEdit: $canEdit, canDelete: $canDelete, canView: $canView, canExport: $canExport, canImport: $canImport)';
   }
 
   @override
@@ -247,7 +259,9 @@ class PermissionModel {
         other.canCreate == canCreate &&
         other.canEdit == canEdit &&
         other.canDelete == canDelete &&
-        other.canView == canView;
+        other.canView == canView &&
+        other.canExport == canExport &&
+        other.canImport == canImport;
   }
 
   @override
@@ -257,6 +271,8 @@ class PermissionModel {
         canCreate.hashCode ^
         canEdit.hashCode ^
         canDelete.hashCode ^
-        canView.hashCode;
+        canView.hashCode ^
+        canExport.hashCode ^
+        canImport.hashCode;
   }
 }

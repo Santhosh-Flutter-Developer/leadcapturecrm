@@ -108,7 +108,7 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
   }
 
   Future<void> _refreshClients(BuildContext context) async {
-    context.read<ClientBloc>().add(StreamClients());
+    context.read<ClientCompanyBloc>().add(StreamClientCompany());
   }
 
   @override
@@ -141,9 +141,9 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             }
 
             if (state is ClientCompanyLoaded) {
-              // if (!(permissions?.canView ?? false)) {
-              //   return buildNoPermissionView(context);
-              // }
+              if (!(permissions?.canView ?? false)) {
+                return buildNoPermissionView(context);
+              }
               if (state.clients.isEmpty) {
                 return const NoData(text: "No clients company available");
               }
@@ -333,36 +333,60 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
       children: [
         Row(
           children: [
-            // if (permissions?.canCreate ?? false) ...[
-            ElevatedButton.icon(
-              onPressed: () {
-                final form = widget.section == ClientSection.contacts
-                    ? const ContactCreate()
-                    : const CompanyCreate();
+            if (permissions?.canCreate ?? false) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  final form = widget.section == ClientSection.contacts
+                      ? const ContactCreate()
+                      : const CompanyCreate();
 
-                if (kIsMobile) {
-                  Sheet.showSheet(context, widget: form);
-                } else {
-                  GeneralDialog.showRTLSheet(context, form);
-                }
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(
-                "Add $pageTitle",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  if (kIsMobile) {
+                    Sheet.showSheet(context, widget: form);
+                  } else {
+                    GeneralDialog.showRTLSheet(context, form);
+                  }
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(
+                  "Add $pageTitle",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: null,
+                icon: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  "Add $pageTitle",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 10),
             ElevatedButton.icon(
               label: Text("Export"),
               icon: const Icon(Iconsax.export_3),
-              onPressed: controllerWatch.paginatedItems.isEmpty
+              onPressed: (permissions?.canExport ?? false) == false || controllerWatch.paginatedItems.isEmpty
                   ? null
                   : () async {
                       try {
@@ -449,133 +473,135 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
             //     foregroundColor: AppColors.grey600,
             //   ),
             // ),
-            // ],
-            // if (permissions?.canDelete ?? false) ...[
-            if (_selectedClientCompany.isNotEmpty) ...[
-              ElevatedButton.icon(
-                label: Text(
-                  "Delete",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.white),
-                ),
-                icon: const Icon(Iconsax.trash),
-                onPressed: () async {
-                  if (_selectedClientCompany.isEmpty) return;
+            if (permissions?.canDelete ?? false) ...[
+              if (_selectedClientCompany.isNotEmpty) ...[
+                ElevatedButton.icon(
+                  label: Text(
+                    "Delete",
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ),
+                  icon: const Icon(Iconsax.trash),
+                  onPressed: () async {
+                    if (_selectedClientCompany.isEmpty) return;
 
-                  // ✅ STEP 0: check assignment
-                  for (var client in _selectedClientCompany) {
-                    final isAssigned = await ClientService.isClientAssigned(
-                      client.uid ?? '',
-                    );
-
-                    if (isAssigned) {
-                      await showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: Text(
-                            'Cannot Delete',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          content: Text(
-                            'One or more selected clients are associated with leads and cannot be deleted.',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(
-                                'OK',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
-                        ),
+                    // ✅ STEP 0: check assignment
+                    for (var client in _selectedClientCompany) {
+                      final isAssigned = await ClientService.isClientAssigned(
+                        client.uid ?? '',
                       );
-                      return;
-                    }
-                  }
 
-                  // ✅ STEP 1: confirm
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => ConfirmDialog(
-                      title: 'Delete',
-                      content: 'Are you sure want to delete this $pageTitle?',
-                    ),
-                    barrierDismissible: false,
-                  );
-
-                  if (confirm != true) return;
-
-                  try {
-                    // ✅ STEP 2: BACKUP
-                    final deletedClients = _selectedClientCompany
-                        .map((e) => e.copyWith())
-                        .toList();
-
-                    // ✅ STEP 3: loader
-                    futureLoading(context);
-
-                    // ✅ STEP 4: DELETE (use service)
-                    for (var client in deletedClients) {
-                      await ClientService.deleteClient(uid: client.uid ?? '');
+                      if (isAssigned) {
+                        await showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: Text(
+                              'Cannot Delete',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            content: Text(
+                              'One or more selected clients are associated with leads and cannot be deleted.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  'OK',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
                     }
 
-                    // ✅ STEP 5: close loader
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-
-                    // ✅ STEP 6: clear selection
-                    _selectedClientCompany.clear();
-                    setState(() {});
-
-                    // ✅ STEP 7: UNDO
-                    FlushBar.show(
-                      context,
-                      'Clients deleted successfully',
-                      actionLabel: 'UNDO',
-                      onActionPressed: () async {
-                        for (var client in deletedClients) {
-                          if (client.uid == null) continue;
-
-                          await ClientService.restoreClient(client);
-                        }
-
-                        if (!context.mounted) return;
-
-                        // ✅ refresh UI
-                        context.read<ClientBloc>().add(StreamClients());
-                      },
+                    // ✅ STEP 1: confirm
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => ConfirmDialog(
+                        title: 'Delete',
+                        content: 'Are you sure want to delete this $pageTitle?',
+                      ),
+                      barrierDismissible: false,
                     );
-                  } catch (e, st) {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
 
-                    await ErrorService.recordError(e, st);
+                    if (confirm != true) return;
 
-                    FlushBar.show(
-                      context,
-                      'Failed to delete clients: $e',
-                      isSuccess: false,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
+                    try {
+                      // ✅ STEP 2: BACKUP
+                      final deletedClients = _selectedClientCompany
+                          .map((e) => e.copyWith())
+                          .toList();
+
+                      // ✅ STEP 3: loader
+                      futureLoading(context);
+
+                      // ✅ STEP 4: DELETE (use service)
+                      for (var client in deletedClients) {
+                        await ClientService.deleteClient(uid: client.uid ?? '');
+                      }
+
+                      // ✅ STEP 5: close loader
+                      if (Navigator.canPop(context)) Navigator.pop(context);
+
+                      // ✅ STEP 6: clear selection
+                      _selectedClientCompany.clear();
+                      setState(() {});
+
+                      // ✅ STEP 7: UNDO
+                      FlushBar.show(
+                        context,
+                        'Clients deleted successfully',
+                        actionLabel: 'UNDO',
+                        onActionPressed: () async {
+                          for (var client in deletedClients) {
+                            if (client.uid == null) continue;
+
+                            await ClientService.restoreClient(client);
+                          }
+
+                          if (!context.mounted) return;
+
+                          // ✅ refresh UI
+                          context.read<ClientCompanyBloc>().add(
+                            StreamClientCompany(),
+                          );
+                        },
+                      );
+                    } catch (e, st) {
+                      if (Navigator.canPop(context)) Navigator.pop(context);
+
+                      await ErrorService.recordError(e, st);
+
+                      FlushBar.show(
+                        context,
+                        'Failed to delete clients: $e',
+                        isSuccess: false,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
                 ),
-              ),
+              ],
+              // ] else ...[
+              //   ElevatedButton.icon(
+              //     label: Text("Delete"),
+              //     icon: Icon(Iconsax.trash),
+              //     onPressed: () {},
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: AppColors.grey400,
+              //       foregroundColor: AppColors.white,
+              //     ),
+              //   ),
+              // ],
             ],
-            // ] else ...[
-            //   ElevatedButton.icon(
-            //     label: Text("Delete"),
-            //     icon: Icon(Iconsax.trash),
-            //     onPressed: () {},
-            //     style: ElevatedButton.styleFrom(
-            //       backgroundColor: AppColors.grey400,
-            //       foregroundColor: AppColors.white,
-            //     ),
-            //   ),
-            // ],
           ],
         ),
         if (kIsDesktop)
@@ -781,105 +807,119 @@ class _ClientCompanyListingViewState extends State<ClientCompanyListingView> {
   Widget _actionButtons(BuildContext context, ClientModel client) {
     return Row(
       children: [
-        IconButton(
-          icon: const Icon(Iconsax.edit),
-          color: Theme.of(context).colorScheme.primary,
-          splashRadius: 20,
-          onPressed: () {
-            final form = widget.section == ClientSection.contacts
-                ? ContactUpdate(uid: client.uid!)
-                : CompanyUpdate(uid: client.uid!);
+        if (permissions?.canEdit ?? false) ...[
+          IconButton(
+            icon: const Icon(Iconsax.edit),
+            color: Theme.of(context).colorScheme.primary,
+            splashRadius: 20,
+            onPressed: () {
+              final form = widget.section == ClientSection.contacts
+                  ? ContactUpdate(uid: client.uid!)
+                  : CompanyUpdate(uid: client.uid!);
 
-            if (kIsMobile) {
-              Sheet.showSheet(context, widget: form);
-            } else {
-              GeneralDialog.showRTLSheet(context, form);
-            }
-          },
-        ),
-        IconButton(
-          icon: const Icon(Iconsax.trash),
-          color: Theme.of(context).colorScheme.error,
-          splashRadius: 20,
-          onPressed: () async {
-            // ✅ STEP 0: check assignment
-            final isAssigned = await ClientService.isClientAssigned(
-              client.uid ?? '',
-            );
+              if (kIsMobile) {
+                Sheet.showSheet(context, widget: form);
+              } else {
+                GeneralDialog.showRTLSheet(context, form);
+              }
+            },
+          ),
+        ] else ...[
+          IconButton(
+            icon: Icon(
+              Iconsax.edit,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onPressed: null,
+          ),
+        ],
+        if (permissions?.canDelete ?? false) ...[
+          IconButton(
+            icon: const Icon(Iconsax.trash),
+            color: Theme.of(context).colorScheme.error,
+            splashRadius: 20,
+            onPressed: () async {
+              // ✅ STEP 0: check assignment
+              final isAssigned = await ClientService.isClientAssigned(
+                client.uid ?? '',
+              );
 
-            if (isAssigned) {
-              await showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: Text(
-                    'Cannot Delete',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  content: Text(
-                    'This client is associated with leads.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'OK',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+              if (isAssigned) {
+                await showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: Text(
+                      'Cannot Delete',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ],
+                    content: Text(
+                      'This client is associated with leads.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'OK',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
+
+              // ✅ STEP 1: confirm
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => ConfirmDialog(
+                  title: 'Delete $pageTitle',
+                  content: 'Are you sure you want to delete this $pageTitle?',
                 ),
               );
-              return;
-            }
 
-            // ✅ STEP 1: confirm
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (_) => ConfirmDialog(
-                title: 'Delete $pageTitle',
-                content: 'Are you sure you want to delete this $pageTitle?',
-              ),
-            );
+              if (confirm != true) return;
 
-            if (confirm != true) return;
+              try {
+                // ✅ STEP 2: BACKUP
+                final deletedClient = client.copyWith();
 
-            try {
-              // ✅ STEP 2: BACKUP
-              final deletedClient = client.copyWith();
+                // ✅ STEP 3: DELETE (use service, NOT bloc)
+                await ClientService.deleteClient(uid: client.uid ?? '');
 
-              // ✅ STEP 3: DELETE (use service, NOT bloc)
-              await ClientService.deleteClient(uid: client.uid ?? '');
+                if (!context.mounted) return;
 
-              if (!context.mounted) return;
+                // ✅ STEP 4: UNDO
+                FlushBar.show(
+                  context,
+                  '$pageTitle deleted successfully',
+                  actionLabel: 'UNDO',
+                  onActionPressed: () async {
+                    if (deletedClient.uid == null) return;
 
-              // ✅ STEP 4: UNDO
-              FlushBar.show(
-                context,
-                '$pageTitle deleted successfully',
-                actionLabel: 'UNDO',
-                onActionPressed: () async {
-                  if (deletedClient.uid == null) return;
+                    await ClientService.restoreClient(deletedClient);
 
-                  await ClientService.restoreClient(deletedClient);
+                    if (!context.mounted) return;
 
-                  if (!context.mounted) return;
+                    // ✅ refresh UI
+                    context.read<ClientCompanyBloc>().add(
+                      StreamClientCompany(),
+                    );
+                  },
+                );
+              } catch (e, st) {
+                await ErrorService.recordError(e, st);
 
-                  // ✅ refresh UI
-                  context.read<ClientCompanyBloc>().add(StreamClientCompany());
-                },
-              );
-            } catch (e, st) {
-              await ErrorService.recordError(e, st);
-
-              FlushBar.show(
-                context,
-                'Failed to delete $pageTitle: $e',
-                isSuccess: false,
-              );
-            }
-          },
-        ),
+                FlushBar.show(
+                  context,
+                  'Failed to delete $pageTitle: $e',
+                  isSuccess: false,
+                );
+              }
+            },
+          ),
+        ],
       ],
     );
   }

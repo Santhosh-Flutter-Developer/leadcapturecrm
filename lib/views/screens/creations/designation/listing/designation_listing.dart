@@ -349,7 +349,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                     onPressed: null,
                     icon: Icon(Icons.add, size: 18, color: AppColors.grey600),
                     label: Text(
-                      "Add Role",
+                      "Add Designation",
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: AppColors.grey600),

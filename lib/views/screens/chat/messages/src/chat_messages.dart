@@ -297,7 +297,9 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                   "Pinned messages",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -332,7 +334,9 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -387,7 +391,9 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
             child: Center(
               child: TextButton.icon(
                 style: TextButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.9),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer.withValues(alpha: 0.9),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -400,7 +406,7 @@ class _BuildSliverChatState extends State<BuildSliverChat> {
                     curve: Curves.easeOut,
                   );
                 },
-                icon:  Icon(
+                icon: Icon(
                   Icons.arrow_downward,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),

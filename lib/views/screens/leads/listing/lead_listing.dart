@@ -979,23 +979,25 @@ class _LeadsListingViewState extends State<LeadsListingView> {
 
         actionButtons.add(const SizedBox(width: 10));
 
-        actionButtons.add(
-          ElevatedButton.icon(
-            onPressed: () {
-              if (kIsMobile) {
-                Sheet.showSheet(context, widget: const LeadUpload());
-              } else {
-                GeneralDialog.showRTLSheet(context, const LeadUpload());
-              }
-            },
-            icon: const Icon(Iconsax.cloud_plus, size: 18),
-            label: const Text("Upload"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Theme.of(context).colorScheme.onSecondary,
+        if (permissions?.canImport ?? false) {
+          actionButtons.add(
+            ElevatedButton.icon(
+              onPressed: () {
+                if (kIsMobile) {
+                  Sheet.showSheet(context, widget: const LeadUpload());
+                } else {
+                  GeneralDialog.showRTLSheet(context, const LeadUpload());
+                }
+              },
+              icon: const Icon(Iconsax.cloud_plus, size: 18),
+              label: const Text("Upload"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
+              ),
             ),
-          ),
-        );
+          );
+        }
 
         actionButtons.add(const SizedBox(width: 10));
 
@@ -1031,7 +1033,9 @@ class _LeadsListingViewState extends State<LeadsListingView> {
               ).colorScheme.surfaceContainerHighest,
               foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            onPressed: _filteredLeads.isEmpty
+            onPressed:
+                (permissions?.canExport ?? false) == false ||
+                    _filteredLeads.isEmpty
                 ? null
                 : () async {
                     try {

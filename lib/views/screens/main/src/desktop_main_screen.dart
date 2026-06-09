@@ -158,6 +158,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const ClientsListing(section: ClientSection.contacts);
       case 'Company':
         return const ClientCompanyListing(section: ClientSection.company);
+      case 'Companies':
+        return const CompaniesListing();
       case 'Projects':
         return const ProjectsListing();
       case 'Tasks':
@@ -198,6 +200,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
           create: (context) => FeedBloc(),
           child: const FeedListing(),
         );
+      case 'Holidays':
+        return const HolidaysListing();
       default:
         return Center(
           child: Text(

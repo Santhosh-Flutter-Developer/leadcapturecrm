@@ -137,13 +137,12 @@ class AppStrings {
     "Chats",
     "Leads",
     "Deals",
-    "Clients",
+    "Company",
+    "Contact",
+    "Companies",
     "Projects",
     "Tasks",
-    "Work Time",
-    "Attendance Ledger",
-    "Salary Ledger",
-    "Permissions",
+    "Downloads",
     "Developer Area",
   ];
 

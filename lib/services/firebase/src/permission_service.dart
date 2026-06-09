@@ -7,6 +7,8 @@ class PermissionService {
   static const _editKey = 'perm_edit';
   static const _deleteKey = 'perm_delete';
   static const _viewKey = 'perm_view';
+  static const _exportKey = 'perm_export';
+  static const _importKey = 'perm_import';
 
   /// Save Permissions
   static Future<void> savePermissions(List<PermissionModel> permissions) async {
@@ -17,6 +19,8 @@ class PermissionService {
       await prefs.setBool('${_editKey}_${i.page}', i.canEdit);
       await prefs.setBool('${_deleteKey}_${i.page}', i.canDelete);
       await prefs.setBool('${_viewKey}_${i.page}', i.canView);
+      await prefs.setBool('${_exportKey}_${i.page}', i.canExport);
+      await prefs.setBool('${_importKey}_${i.page}', i.canImport);
     }
   }
 
@@ -29,6 +33,8 @@ class PermissionService {
         canDelete: true,
         canEdit: true,
         canView: true,
+        canExport: true,
+        canImport: true,
       );
     }
 
@@ -38,6 +44,8 @@ class PermissionService {
     final canEdit = prefs.getBool('${_editKey}_$page') ?? false;
     final canDelete = prefs.getBool('${_deleteKey}_$page') ?? false;
     final canView = prefs.getBool('${_viewKey}_$page') ?? false;
+    final canExport = prefs.getBool('${_exportKey}_$page') ?? true;
+    final canImport = prefs.getBool('${_importKey}_$page') ?? true;
 
     if (canCreate || canEdit || canDelete || canView) {
       return PermissionModel(
@@ -46,6 +54,8 @@ class PermissionService {
         canDelete: canDelete,
         canEdit: canEdit,
         canView: canView,
+        canExport: canExport,
+        canImport: canImport,
       );
     }
 

@@ -543,9 +543,9 @@ class AttendanceStats {
   }
 }
 
-class HolidayModel {
-  final DateTime date;
-  final String name;
+// class HolidayModel {
+//   final DateTime date;
+//   final String name;
 
-  HolidayModel({required this.date, required this.name});
-}
+//   HolidayModel({required this.date, required this.name});
+// }

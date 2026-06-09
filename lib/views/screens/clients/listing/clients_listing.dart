@@ -142,11 +142,8 @@ class _ClientListingViewState extends State<ClientListingView> {
             }
 
             if (state is ClientLoaded) {
-              // if (!(permissions?.canView ?? false)) {
-              //   return buildNoPermissionView(context);
-              // }
-              if (state.clients.isEmpty) {
-                return const NoData(text: "No clients available");
+              if (!(permissions?.canView ?? false)) {
+                return buildNoPermissionView(context);
               }
               return RefreshIndicator(
                 onRefresh: () => _refreshClients(context),
@@ -345,36 +342,56 @@ class _ClientListingViewState extends State<ClientListingView> {
       children: [
         Row(
           children: [
-            // if (permissions?.canCreate ?? false) ...[
-            ElevatedButton.icon(
-              onPressed: () {
-                final form = widget.section == ClientSection.contacts
-                    ? const ContactCreate()
-                    : const CompanyCreate();
+            if (permissions?.canCreate ?? false) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  final form = widget.section == ClientSection.contacts
+                      ? const ContactCreate()
+                      : const CompanyCreate();
 
-                if (kIsMobile) {
-                  Sheet.showSheet(context, widget: form);
-                } else {
-                  GeneralDialog.showRTLSheet(context, form);
-                }
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(
-                "Add $pageTitle",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  if (kIsMobile) {
+                    Sheet.showSheet(context, widget: form);
+                  } else {
+                    GeneralDialog.showRTLSheet(context, form);
+                  }
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(
+                  "Add $pageTitle",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: null,
+                icon: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  "Add $pageTitle",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 10),
             ElevatedButton.icon(
               label: Text("Export"),
               icon: const Icon(Iconsax.export_3),
-              onPressed: controllerWatch.paginatedItems.isEmpty
+              onPressed: (permissions?.canExport ?? false) == false || controllerWatch.paginatedItems.isEmpty
                   ? null
                   : () async {
                       try {
@@ -461,9 +478,8 @@ class _ClientListingViewState extends State<ClientListingView> {
             //     foregroundColor: AppColors.grey600,
             //   ),
             // ),
-            // ],
-            // if (permissions?.canDelete ?? false) ...[
-            if (_selectedClients.isNotEmpty) ...[
+            if (permissions?.canDelete ?? false) ...[
+              if (_selectedClients.isNotEmpty) ...[
               ElevatedButton.icon(
                 label: Text(
                   "Delete",
@@ -588,6 +604,7 @@ class _ClientListingViewState extends State<ClientListingView> {
             //     ),
             //   ),
             // ],
+            ]
           ],
         ),
         if (kIsDesktop)
@@ -793,27 +810,38 @@ class _ClientListingViewState extends State<ClientListingView> {
   Widget _actionButtons(BuildContext context, ClientModel client) {
     return Row(
       children: [
-        IconButton(
-          icon: const Icon(Iconsax.edit),
-          color: Theme.of(context).colorScheme.primary,
-          splashRadius: 20,
-          onPressed: () {
-            final form = widget.section == ClientSection.contacts
-                ? ContactUpdate(uid: client.uid!)
-                : CompanyUpdate(uid: client.uid!);
+        if (permissions?.canEdit ?? false) ...[
+          IconButton(
+            icon: const Icon(Iconsax.edit),
+            color: Theme.of(context).colorScheme.primary,
+            splashRadius: 20,
+            onPressed: () {
+              final form = widget.section == ClientSection.contacts
+                  ? ContactUpdate(uid: client.uid!)
+                  : CompanyUpdate(uid: client.uid!);
 
-            if (kIsMobile) {
-              Sheet.showSheet(context, widget: form);
-            } else {
-              GeneralDialog.showRTLSheet(context, form);
-            }
-          },
-        ),
-        IconButton(
-          icon: const Icon(Iconsax.trash),
-          color: Theme.of(context).colorScheme.error,
-          splashRadius: 20,
-          onPressed: () async {
+              if (kIsMobile) {
+                Sheet.showSheet(context, widget: form);
+              } else {
+                GeneralDialog.showRTLSheet(context, form);
+              }
+            },
+          ),
+        ] else ...[
+          IconButton(
+            icon: Icon(
+              Iconsax.edit,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onPressed: null,
+          ),
+        ],
+        if (permissions?.canDelete ?? false) ...[
+          IconButton(
+            icon: const Icon(Iconsax.trash),
+            color: Theme.of(context).colorScheme.error,
+            splashRadius: 20,
+            onPressed: () async {
             // ✅ STEP 0: check assignment
             final isAssigned = await ClientService.isClientAssigned(
               client.uid ?? '',
@@ -891,7 +919,16 @@ class _ClientListingViewState extends State<ClientListingView> {
               );
             }
           },
-        ),
+          ),
+        ] else ...[
+          IconButton(
+            icon: Icon(
+              Iconsax.trash,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onPressed: null,
+          ),
+        ],
       ],
     );
   }

@@ -63,7 +63,9 @@ class _RoleCreateState extends State<RoleCreate> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -78,7 +80,9 @@ class _RoleCreateState extends State<RoleCreate> {
                               style: Theme.of(context).textTheme.titleMedium!
                                   .copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                             ),
                             const SizedBox(height: 10),
@@ -108,7 +112,9 @@ class _RoleCreateState extends State<RoleCreate> {
                       elevation: 0, // No elevation for the main card now
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
@@ -120,7 +126,9 @@ class _RoleCreateState extends State<RoleCreate> {
                               style: Theme.of(context).textTheme.titleMedium!
                                   .copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                             ),
                             const SizedBox(height: 10),
@@ -182,6 +190,22 @@ class _RoleCreateState extends State<RoleCreate> {
                                       ).textTheme.bodySmall,
                                     ),
                                   ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Export',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'Import',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
                                 ],
                                 rows: List.generate(_rows.length, (index) {
                                   final row = _rows[index];
@@ -206,6 +230,8 @@ class _RoleCreateState extends State<RoleCreate> {
                                               row.canEdit = val;
                                               row.canView = val;
                                               row.canDelete = val;
+                                              row.canExport = val;
+                                              row.canImport = val;
                                             });
                                           },
                                         ),
@@ -220,7 +246,9 @@ class _RoleCreateState extends State<RoleCreate> {
                                               if (row.canEdit &&
                                                   row.canDelete &&
                                                   row.canCreate &&
-                                                  row.canView) {
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
                                                 row.selectAll = true;
                                               } else {
                                                 row.selectAll = false;
@@ -239,7 +267,9 @@ class _RoleCreateState extends State<RoleCreate> {
                                               if (row.canEdit &&
                                                   row.canDelete &&
                                                   row.canCreate &&
-                                                  row.canView) {
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
                                                 row.selectAll = true;
                                               } else {
                                                 row.selectAll = false;
@@ -258,7 +288,9 @@ class _RoleCreateState extends State<RoleCreate> {
                                               if (row.canEdit &&
                                                   row.canDelete &&
                                                   row.canCreate &&
-                                                  row.canView) {
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
                                                 row.selectAll = true;
                                               } else {
                                                 row.selectAll = false;
@@ -277,7 +309,51 @@ class _RoleCreateState extends State<RoleCreate> {
                                               if (row.canEdit &&
                                                   row.canDelete &&
                                                   row.canCreate &&
-                                                  row.canView) {
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canExport,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canExport = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
+                                                row.selectAll = true;
+                                              } else {
+                                                row.selectAll = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Checkbox(
+                                          value: row.canImport,
+                                          onChanged: (val) {
+                                            if (val == null) return;
+                                            setState(() {
+                                              row.canImport = val;
+                                              if (row.canEdit &&
+                                                  row.canDelete &&
+                                                  row.canCreate &&
+                                                  row.canView &&
+                                                  row.canExport &&
+                                                  row.canImport) {
                                                 row.selectAll = true;
                                               } else {
                                                 row.selectAll = false;
@@ -372,7 +448,12 @@ class _RoleCreateState extends State<RoleCreate> {
         var reducedRows = _rows
             .where(
               (row) =>
-                  row.canView || row.canCreate || row.canEdit || row.canDelete,
+                  row.canView ||
+                  row.canCreate ||
+                  row.canEdit ||
+                  row.canDelete ||
+                  row.canExport ||
+                  row.canImport,
             )
             .toList();
         RoleModel roleModel = RoleModel(

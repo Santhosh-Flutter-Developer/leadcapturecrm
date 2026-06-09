@@ -344,7 +344,6 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                   onPressed: () async {
                     if (_selectedProjects.isEmpty) return;
 
-                    // ✅ STEP 0: CHECK ASSIGNMENT
                     for (var project in _selectedProjects) {
                       final isAssigned = await ProjectService.isProjectAssigned(
                         project.uid ?? '',
@@ -444,24 +443,26 @@ class _ProjectsListingViewState extends State<ProjectsListingView> {
                 ),
               ],
             ] else ...[
-              ElevatedButton.icon(
-                label: Text(
-                  "Delete",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+              if (_selectedProjects.isNotEmpty) ...[
+                ElevatedButton.icon(
+                  label: Text(
+                    "Delete",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  icon: Icon(Iconsax.trash),
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainer,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                icon: Icon(Iconsax.trash),
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant,
-                ),
-              ),
+              ],
             ],
           ],
         ),

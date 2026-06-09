@@ -3,12 +3,16 @@ class PermissionModel {
   final bool canEdit;
   final bool canDelete;
   final bool canView;
+  final bool canExport;
+  final bool canImport;
 
   PermissionModel({
     required this.canCreate,
     required this.canEdit,
     required this.canDelete,
     required this.canView,
+    this.canExport = false,
+    this.canImport = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +21,8 @@ class PermissionModel {
       'canEdit': canEdit,
       'canDelete': canDelete,
       'canView': canView,
+      'canExport': canExport,
+      'canImport': canImport,
     };
   }
 }

@@ -16,7 +16,9 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
   }
 
   Future<void> _streamRoless(
-      StreamRoles event, Emitter<RolesState> emit) async {
+    StreamRoles event,
+    Emitter<RolesState> emit,
+  ) async {
     emit(RolesLoading());
     var cid = await Spdb.getCid();
 
@@ -27,14 +29,16 @@ class RolesBloc extends Bloc<RolesEvent, RolesState> {
           .collection(Collections.roles.name)
           .snapshots()
           .map((snapshot) {
-        allRoles = snapshot.docs
-            .map((doc) => RoleModel.fromMap(doc.id, doc.data()))
-            .toList();
+            allRoles = snapshot.docs
+                .map((doc) => RoleModel.fromMap(doc.id, doc.data()))
+                .toList();
 
-        return allRoles;
-      }),
+            return allRoles;
+          }),
       onData: (roles) => RolesLoaded(roles),
       onError: (error, stackTrace) {
+        print("Firestore Error: $error");
+        print(stackTrace);
         return RolesError("Failed to load role, $error");
       },
     );

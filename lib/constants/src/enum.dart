@@ -39,6 +39,8 @@ enum Collections {
   permission,
   worktimeFromHome,
   salaryLedger,
+  companies,
+  holidays,
 }
 
 enum StorageFolder {

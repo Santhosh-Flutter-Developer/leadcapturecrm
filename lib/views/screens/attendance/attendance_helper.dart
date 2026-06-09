@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
+import 'package:leadcapture/models/src/holiday_model.dart';
 import 'package:leadcapture/models/src/workpermission_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 
@@ -95,7 +96,12 @@ AttendanceModel attendanceWorktime(WorktimeModel work) {
     punchList: [punch],
     breakMinutes: breakMinutes,
     status: status,
-    present: (status == AttendanceStatus.present || status == AttendanceStatus.late || status == AttendanceStatus.earlyExit) ? "1" : "0",
+    present:
+        (status == AttendanceStatus.present ||
+            status == AttendanceStatus.late ||
+            status == AttendanceStatus.earlyExit)
+        ? "1"
+        : "0",
     absent: status == AttendanceStatus.absent ? "1" : "0",
     holiday: "0",
 

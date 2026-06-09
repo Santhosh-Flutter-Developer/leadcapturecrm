@@ -7,6 +7,7 @@ import 'package:leadcapture/constants/src/enum.dart';
 import 'package:leadcapture/models/src/attendance_model.dart';
 import 'package:leadcapture/models/src/department_model.dart';
 import 'package:leadcapture/models/src/employee_model.dart';
+import 'package:leadcapture/models/src/holiday_model.dart';
 import 'package:leadcapture/models/src/user_data_model.dart';
 import 'package:leadcapture/models/src/worktime_model.dart';
 import 'package:leadcapture/services/database/src/spdb.dart';

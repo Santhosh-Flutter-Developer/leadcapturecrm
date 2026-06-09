@@ -150,9 +150,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool employees =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Employees')) != null;
-    bool dealCategory =
+    bool leadCategory =
         widget.isAdmin ||
-        (await PermissionService.getPermissions('Deal Category')) != null;
+        (await PermissionService.getPermissions('Lead Category')) != null;
     bool leadStatus =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Lead Status')) != null;
@@ -180,6 +180,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     bool clientsContact =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Contact')) != null;
+    bool company =
+        widget.isAdmin ||
+        (await PermissionService.getPermissions('Company')) != null;
     bool projects =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Projects')) != null;
@@ -212,8 +215,6 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     // bool backup =
     //     widget.isAdmin ||
     //     (await PermissionService.getPermissions('Backup')) != null;
-    widget.isAdmin ||
-        (await PermissionService.getPermissions('Developer Area')) != null;
     bool developerArea =
         widget.isAdmin ||
         (await PermissionService.getPermissions('Developer Area')) != null;
@@ -225,7 +226,6 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         'icon': Iconsax.element_plus,
         'title': 'Creation',
         'children': [
-          // if (admin) 'Admin',
           if (role) 'Role',
           if (designation) 'Designation',
           if (department) 'Department',
@@ -266,7 +266,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         'icon': Iconsax.activity,
         'title': 'CRM',
         'children': [
-          if (dealCategory) 'Lead Category',
+          if (leadCategory) 'Lead Category',
           if (leadSource) 'Lead Source',
           if (leadPriority) 'Lead Priority',
           if (leadStatus) 'Lead Status',
@@ -280,7 +280,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
             },
         ],
       },
-      if (calendar) {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
+      if (company) {'icon': Iconsax.building, 'title': 'Companies'},
+      {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
       if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
       if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
       // {
@@ -307,7 +308,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     ];
 
     return menus.where((menu) {
-      if (menu['title'] == 'Users' && menu.containsKey('children')) {
+      if (menu.containsKey('children')) {
         return (menu['children'] as List).isNotEmpty;
       }
       return true;

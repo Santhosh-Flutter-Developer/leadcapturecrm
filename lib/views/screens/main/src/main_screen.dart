@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/views/screens/attendance/attendance.dart';
+import 'package:leadcapture/views/screens/companies/listing/companies_listing.dart';
 import 'package:leadcapture/views/screens/download/bloc/download_bloc.dart';
 import 'package:leadcapture/views/screens/download/download_history.dart';
 import 'package:leadcapture/views/screens/permission/src/permission_listing.dart';

@@ -333,26 +333,52 @@ class _TaskListingViewState extends State<TaskListingView> {
         final addDeleteButtons = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ElevatedButton.icon(
-              onPressed: () {
-                if (kIsMobile) {
-                  Sheet.showSheet(context, widget: const TaskCreate());
-                } else {
-                  GeneralDialog.showRTLSheet(context, const TaskCreate());
-                }
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(
-                "Add $_pageTitle",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+            if (permissions?.canCreate ?? false) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (kIsMobile) {
+                    Sheet.showSheet(context, widget: const TaskCreate());
+                  } else {
+                    GeneralDialog.showRTLSheet(context, const TaskCreate());
+                  }
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(
+                  "Add $_pageTitle",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: AppColors.white,
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
+              const SizedBox(width: 10),
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: null,
+                icon: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  "Add $_pageTitle",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 10),
             if (permissions?.canDelete ?? false) ...[
               if (_selectedTasks.isNotEmpty)
@@ -423,24 +449,26 @@ class _TaskListingViewState extends State<TaskListingView> {
                   ),
                 ),
             ] else ...[
-              ElevatedButton.icon(
-                label: Text(
-                  "Delete",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+              if (_selectedTasks.isNotEmpty) ...[
+                ElevatedButton.icon(
+                  label: Text(
+                    "Delete",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  icon: Icon(Iconsax.trash),
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainer,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                icon: Icon(Iconsax.trash),
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant,
-                ),
-              ),
+              ],
             ],
           ],
         );
@@ -659,10 +687,11 @@ class _TaskListingViewState extends State<TaskListingView> {
         DataCell(
           Row(
             children: [
-              if (_isAdmin ||
-                  task.taskCreatedBy.uid == _currentUid ||
-                  (task.taskCreatedBy.uid.isEmpty &&
-                      task.createdBy.contains(_currentUid ?? ''))) ...[
+              if ((permissions?.canEdit ?? false) &&
+                  (_isAdmin ||
+                      task.taskCreatedBy.uid == _currentUid ||
+                      (task.taskCreatedBy.uid.isEmpty &&
+                          task.createdBy.contains(_currentUid ?? '')))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.edit),
                   onPressed: () {
@@ -690,10 +719,11 @@ class _TaskListingViewState extends State<TaskListingView> {
                   onPressed: null,
                 ),
               ],
-              if (_isAdmin ||
-                  task.taskCreatedBy.uid == _currentUid ||
-                  (task.taskCreatedBy.uid.isEmpty &&
-                      task.createdBy.contains(_currentUid ?? ''))) ...[
+              if ((permissions?.canDelete ?? false) &&
+                  (_isAdmin ||
+                      task.taskCreatedBy.uid == _currentUid ||
+                      (task.taskCreatedBy.uid.isEmpty &&
+                          task.createdBy.contains(_currentUid ?? '')))) ...[
                 IconButton(
                   icon: const Icon(Iconsax.trash),
                   color: Theme.of(context).colorScheme.error,

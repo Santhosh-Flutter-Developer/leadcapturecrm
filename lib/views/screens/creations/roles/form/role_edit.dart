@@ -47,10 +47,14 @@ class _RoleEditState extends State<RoleEdit> {
           element.canDelete = permission.canDelete;
           element.canEdit = permission.canEdit;
           element.canView = permission.canView;
+          element.canExport = permission.canExport;
+          element.canImport = permission.canImport;
           if (permission.canCreate &&
               permission.canDelete &&
               permission.canEdit &&
-              permission.canView) {
+              permission.canView &&
+              permission.canExport &&
+              permission.canImport) {
             element.selectAll = true;
           }
         }
@@ -223,6 +227,22 @@ class _RoleEditState extends State<RoleEdit> {
                                           ).textTheme.bodySmall,
                                         ),
                                       ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Export',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Import',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ),
                                     ],
                                     rows: List.generate(_rows.length, (index) {
                                       final row = _rows[index];
@@ -247,6 +267,8 @@ class _RoleEditState extends State<RoleEdit> {
                                                   row.canEdit = val;
                                                   row.canView = val;
                                                   row.canDelete = val;
+                                                  row.canExport = val;
+                                                  row.canImport = val;
                                                 });
                                               },
                                             ),
@@ -261,7 +283,9 @@ class _RoleEditState extends State<RoleEdit> {
                                                   if (row.canEdit &&
                                                       row.canDelete &&
                                                       row.canCreate &&
-                                                      row.canView) {
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
                                                     row.selectAll = true;
                                                   } else {
                                                     row.selectAll = false;
@@ -280,7 +304,9 @@ class _RoleEditState extends State<RoleEdit> {
                                                   if (row.canEdit &&
                                                       row.canDelete &&
                                                       row.canCreate &&
-                                                      row.canView) {
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
                                                     row.selectAll = true;
                                                   } else {
                                                     row.selectAll = false;
@@ -299,7 +325,9 @@ class _RoleEditState extends State<RoleEdit> {
                                                   if (row.canEdit &&
                                                       row.canDelete &&
                                                       row.canCreate &&
-                                                      row.canView) {
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
                                                     row.selectAll = true;
                                                   } else {
                                                     row.selectAll = false;
@@ -318,7 +346,51 @@ class _RoleEditState extends State<RoleEdit> {
                                                   if (row.canEdit &&
                                                       row.canDelete &&
                                                       row.canCreate &&
-                                                      row.canView) {
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
+                                                    row.selectAll = true;
+                                                  } else {
+                                                    row.selectAll = false;
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Checkbox(
+                                              value: row.canExport,
+                                              onChanged: (val) {
+                                                if (val == null) return;
+                                                setState(() {
+                                                  row.canExport = val;
+                                                  if (row.canEdit &&
+                                                      row.canDelete &&
+                                                      row.canCreate &&
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
+                                                    row.selectAll = true;
+                                                  } else {
+                                                    row.selectAll = false;
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Checkbox(
+                                              value: row.canImport,
+                                              onChanged: (val) {
+                                                if (val == null) return;
+                                                setState(() {
+                                                  row.canImport = val;
+                                                  if (row.canEdit &&
+                                                      row.canDelete &&
+                                                      row.canCreate &&
+                                                      row.canView &&
+                                                      row.canExport &&
+                                                      row.canImport) {
                                                     row.selectAll = true;
                                                   } else {
                                                     row.selectAll = false;

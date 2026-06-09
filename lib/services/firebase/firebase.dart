@@ -36,3 +36,5 @@ export 'src/event_service.dart';
 export 'src/lead_priority_service.dart';
 export 'src/reminder_service.dart';
 export 'src/company_location_service.dart';
+export 'src/company_service.dart';
+export 'src/holiday_service.dart';
