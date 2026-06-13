@@ -240,6 +240,9 @@ class PunchModel {
   PermissionsStatus? permissionStatus;
   int? clockIn;
   int? clockOut;
+  double? latitude;
+  double? longitude;
+  bool? isWithinGeofence;
 
   PunchModel({
     this.uid,
@@ -255,6 +258,9 @@ class PunchModel {
     this.permissionStatus,
     this.clockIn,
     this.clockOut,
+    this.latitude,
+    this.longitude,
+    this.isWithinGeofence,
   });
 
   PunchModel copyWith({
@@ -271,6 +277,9 @@ class PunchModel {
     PermissionsStatus? permissionStatus,
     int? clockIn,
     int? clockOut,
+    double? latitude,
+    double? longitude,
+    bool? isWithinGeofence,
   }) {
     return PunchModel(
       uid: uid ?? this.uid,
@@ -286,6 +295,9 @@ class PunchModel {
       permissionStatus: permissionStatus ?? this.permissionStatus,
       clockIn: clockIn ?? this.clockIn,
       clockOut: clockOut ?? this.clockOut,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      isWithinGeofence: isWithinGeofence ?? this.isWithinGeofence,
     );
   }
 
@@ -304,6 +316,9 @@ class PunchModel {
       'permissionStatus': permissionStatus?.toString().split('.').last,
       'clockIn': clockIn,
       'clockOut': clockOut,
+      'latitude': latitude,
+      'longitude': longitude,
+      'isWithinGeofence': isWithinGeofence,
     };
   }
 
@@ -362,6 +377,9 @@ class PunchModel {
       clockOut: map['clockOut'] is int
           ? map['clockOut']
           : int.tryParse(map['clockOut']?.toString() ?? ''),
+      latitude: map['latitude']?.toDouble(),
+      longitude: map['longitude']?.toDouble(),
+      isWithinGeofence: map['isWithinGeofence'] as bool?,
     );
   }
   DateTime? get clockInDate =>
@@ -391,7 +409,10 @@ class PunchModel {
         other.day == day &&
         other.otHours == otHours &&
         other.otApproval == otApproval &&
-        other.permissionType == permissionType;
+        other.permissionType == permissionType &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.isWithinGeofence == isWithinGeofence;
   }
 
   @override
@@ -404,7 +425,10 @@ class PunchModel {
         day.hashCode ^
         otHours.hashCode ^
         otApproval.hashCode ^
-        permissionType.hashCode;
+        permissionType.hashCode ^
+        latitude.hashCode ^
+        longitude.hashCode ^
+        isWithinGeofence.hashCode;
   }
 }
 

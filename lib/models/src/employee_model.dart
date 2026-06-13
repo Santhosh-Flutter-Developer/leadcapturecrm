@@ -55,9 +55,15 @@ class EmployeeModel {
   final List<Map<String, dynamic>>? devices;
   final bool isInitialPasswordChanged;
   final String? faceTemplate;
+  final String? salaryTypeId;
+  final String? statusId;
+  final int casualLeave;
+  final bool outsideOffice;
+  final bool mobileLogin;
   final UserDataModel createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
+
   EmployeeModel({
     this.uid,
     String? lowercaseEmployeeId,
@@ -87,6 +93,11 @@ class EmployeeModel {
     this.devices,
     this.isInitialPasswordChanged = false,
     this.faceTemplate,
+    this.salaryTypeId,
+    this.statusId,
+    this.casualLeave = 12,
+    this.outsideOffice = false,
+    this.mobileLogin = true,
     required this.createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -123,6 +134,11 @@ class EmployeeModel {
     List<Map<String, dynamic>>? devices,
     bool? isInitialPasswordChanged,
     String? faceTemplate,
+    String? salaryTypeId,
+    String? statusId,
+    int? casualLeave,
+    bool? outsideOffice,
+    bool? mobileLogin,
     UserDataModel? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -158,6 +174,11 @@ class EmployeeModel {
       isInitialPasswordChanged:
           isInitialPasswordChanged ?? this.isInitialPasswordChanged,
       faceTemplate: faceTemplate ?? this.faceTemplate,
+      salaryTypeId: salaryTypeId ?? this.salaryTypeId,
+      statusId: statusId ?? this.statusId,
+      casualLeave: casualLeave ?? this.casualLeave,
+      outsideOffice: outsideOffice ?? this.outsideOffice,
+      mobileLogin: mobileLogin ?? this.mobileLogin,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -193,6 +214,11 @@ class EmployeeModel {
       'lastActive': lastActive?.millisecondsSinceEpoch,
       'isInitialPasswordChanged': isInitialPasswordChanged,
       'faceTemplate': faceTemplate,
+      'salaryTypeId': salaryTypeId,
+      'statusId': statusId,
+      'casualLeave': casualLeave,
+      'outsideOffice': outsideOffice,
+      'mobileLogin': mobileLogin,
       'createdBy': createdBy.toMap(),
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -227,6 +253,11 @@ class EmployeeModel {
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
       'faceTemplate': faceTemplate,
+      'salaryTypeId': salaryTypeId,
+      'statusId': statusId,
+      'casualLeave': casualLeave,
+      'outsideOffice': outsideOffice,
+      'mobileLogin': mobileLogin,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
@@ -279,6 +310,11 @@ class EmployeeModel {
       devices: parseDevices(map['devices']),
       isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
       faceTemplate: map['faceTemplate'],
+      salaryTypeId: map['salaryTypeId'],
+      statusId: map['statusId'],
+      casualLeave: map['casualLeave'] ?? 12,
+      outsideOffice: map['outsideOffice'] ?? false,
+      mobileLogin: map['mobileLogin'] ?? true,
       createdBy: map['createdBy'] != null
           ? UserDataModel.fromMap(Map<String, dynamic>.from(map['createdBy']))
           : UserDataModel.fromEmptyMap(),
@@ -331,6 +367,12 @@ class UserRowModel {
   final String? maritalStatus;
   final DateTime? lastActive;
   final bool? isInitialPasswordChanged;
+  final String? faceTemplate;
+  final String? salaryTypeId;
+  final String? statusId;
+  final int? casualLeave;
+  final bool? outsideOffice;
+  final bool? mobileLogin;
 
   /// Admin-only
   final String? adminPassword;
@@ -367,6 +409,12 @@ class UserRowModel {
     this.maritalStatus,
     this.lastActive,
     this.isInitialPasswordChanged,
+    this.faceTemplate,
+    this.salaryTypeId,
+    this.statusId,
+    this.casualLeave,
+    this.outsideOffice,
+    this.mobileLogin,
 
     // admin
     this.adminPassword,
@@ -404,6 +452,12 @@ class UserRowModel {
     String? maritalStatus,
     DateTime? lastActive,
     bool? isInitialPasswordChanged,
+    String? faceTemplate,
+    String? salaryTypeId,
+    String? statusId,
+    int? casualLeave,
+    bool? outsideOffice,
+    bool? mobileLogin,
 
     // admin
     String? adminPassword,
@@ -442,6 +496,12 @@ class UserRowModel {
       lastActive: lastActive ?? this.lastActive,
       isInitialPasswordChanged:
           isInitialPasswordChanged ?? this.isInitialPasswordChanged,
+      faceTemplate: faceTemplate ?? this.faceTemplate,
+      salaryTypeId: salaryTypeId ?? this.salaryTypeId,
+      statusId: statusId ?? this.statusId,
+      casualLeave: casualLeave ?? this.casualLeave,
+      outsideOffice: outsideOffice ?? this.outsideOffice,
+      mobileLogin: mobileLogin ?? this.mobileLogin,
 
       // admin
       adminPassword: adminPassword ?? this.adminPassword,
@@ -481,6 +541,12 @@ class UserRowModel {
       "maritalStatus": maritalStatus,
       "lastActive": lastActive,
       "isInitialPasswordChanged": isInitialPasswordChanged,
+      "faceTemplate": faceTemplate,
+      "salaryTypeId": salaryTypeId,
+      "statusId": statusId,
+      "casualLeave": casualLeave,
+      "outsideOffice": outsideOffice,
+      "mobileLogin": mobileLogin,
 
       // Admin
       "adminPassword": adminPassword,
@@ -522,6 +588,12 @@ extension EmployeeToRow on EmployeeModel {
       lastActive: lastActive,
       devices: devices,
       isInitialPasswordChanged: isInitialPasswordChanged,
+      faceTemplate: faceTemplate,
+      salaryTypeId: salaryTypeId,
+      statusId: statusId,
+      casualLeave: casualLeave,
+      outsideOffice: outsideOffice,
+      mobileLogin: mobileLogin,
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -579,6 +651,12 @@ extension UserRowToEmployee on UserRowModel {
       lastActive: lastActive,
       devices: devices,
       isInitialPasswordChanged: isInitialPasswordChanged ?? false,
+      faceTemplate: faceTemplate,
+      salaryTypeId: salaryTypeId,
+      statusId: statusId,
+      casualLeave: casualLeave ?? 12,
+      outsideOffice: outsideOffice ?? false,
+      mobileLogin: mobileLogin ?? true,
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,

@@ -89,9 +89,9 @@ class _RoleEditState extends State<RoleEdit> {
               return Center(
                 child: Text(
                   'Error: ${snapshot.error}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               );
             }
@@ -114,7 +114,11 @@ class _RoleEditState extends State<RoleEdit> {
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -131,7 +135,9 @@ class _RoleEditState extends State<RoleEdit> {
                                       .titleMedium!
                                       .copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                       ),
                                 ),
                                 const SizedBox(height: 10),
@@ -151,7 +157,11 @@ class _RoleEditState extends State<RoleEdit> {
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(20.0),
@@ -165,7 +175,9 @@ class _RoleEditState extends State<RoleEdit> {
                                       .titleMedium!
                                       .copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                       ),
                                 ),
                                 const SizedBox(height: 10),

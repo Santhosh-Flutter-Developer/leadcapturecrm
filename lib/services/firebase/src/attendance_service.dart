@@ -512,7 +512,8 @@ class AttendanceService {
               ),
             ],
             breakMinutes: 0,
-            present: (status == AttendanceStatus.present.name ||
+            present:
+                (status == AttendanceStatus.present.name ||
                     status == AttendanceStatus.late.name ||
                     status == AttendanceStatus.earlyExit.name ||
                     status == AttendanceStatus.wfh.name)
@@ -1008,8 +1009,6 @@ class AttendanceService {
         "permissionStatus": status.name,
         "modified": DateTime.now().millisecondsSinceEpoch,
       });
-
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 }

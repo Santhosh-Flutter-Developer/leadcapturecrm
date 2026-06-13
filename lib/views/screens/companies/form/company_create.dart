@@ -24,6 +24,9 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
   final _stateController = TextEditingController();
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
+  final _radiusController = TextEditingController(text: '100');
 
   Uint8List? _logoBytes;
   String? _logoUrl;
@@ -42,6 +45,9 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
     _stateController.dispose();
     _cityController.dispose();
     _pincodeController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _radiusController.dispose();
     super.dispose();
   }
 
@@ -54,6 +60,23 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
       setState(() {
         _logoBytes = bytes;
       });
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      final position = await LocationService.getCurrentPosition();
+      if (position != null) {
+        setState(() {
+          _latitudeController.text = position.latitude.toStringAsFixed(6);
+          _longitudeController.text = position.longitude.toStringAsFixed(6);
+        });
+        FlushBar.show(context, 'Location captured successfully');
+      } else {
+        FlushBar.show(context, 'Unable to get current location', isSuccess: false);
+      }
+    } catch (e) {
+      FlushBar.show(context, 'Error getting location: $e', isSuccess: false);
     }
   }
 
@@ -105,6 +128,9 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
         pincode: _pincodeController.text.trim().isEmpty
             ? null
             : _pincodeController.text.trim(),
+        latitude: double.tryParse(_latitudeController.text.trim()),
+        longitude: double.tryParse(_longitudeController.text.trim()),
+        radius: int.tryParse(_radiusController.text.trim()) ?? 100,
         createdBy: user,
       );
 
@@ -144,6 +170,8 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
               _buildContactInfoSection(),
               const SizedBox(height: 24),
               _buildAddressSection(),
+              const SizedBox(height: 24),
+              _buildGeofenceSection(),
               const SizedBox(height: 32),
               _buildSubmitButton(),
             ],
@@ -246,6 +274,59 @@ class _CompaniesCreateState extends State<CompaniesCreate> {
         controller: _pincodeController,
         label: "Pincode",
         keyboardType: TextInputType.number,
+      ),
+    ]);
+  }
+
+  Widget _buildGeofenceSection() {
+    return _buildSection("Geo-fencing Settings", Icons.radar, [
+      Row(
+        children: [
+          Expanded(
+            child: FormFields(
+              controller: _latitudeController,
+              label: "Latitude",
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              hintText: "e.g., 13.0827",
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.my_location),
+            onPressed: _getCurrentLocation,
+            tooltip: 'Get Current Location',
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      FormFields(
+        controller: _longitudeController,
+        label: "Longitude",
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        hintText: "e.g., 80.2707",
+      ),
+      const SizedBox(height: 16),
+      FormFields(
+        controller: _radiusController,
+        label: "Radius (meters)",
+        keyboardType: TextInputType.number,
+        hintText: "e.g., 100",
+        valid: (value) {
+          if (value != null && value.trim().isNotEmpty) {
+            final radius = int.tryParse(value.trim());
+            if (radius == null || radius <= 0) {
+              return 'Please enter a valid radius';
+            }
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 8),
+      Text(
+        "Leave GPS fields empty to disable geofencing for this branch",
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     ]);
   }

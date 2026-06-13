@@ -56,6 +56,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
   String _receiveEmailNotifications = 'Yes';
   String _maritalStatus = 'Single';
   String? _employeeType;
+  String _outsideOffice = 'No';
 
   RoleModel? _roleModel;
   DesignationModel? _designationModel;
@@ -1175,6 +1176,19 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             },
           ),
         ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            items: const ['Yes', 'No'],
+            initialItem: 'No',
+            label: 'Allow Outside Office Punch',
+            onChanged: (value) {
+              if (value != null) {
+                _outsideOffice = value.toString();
+              }
+            },
+          ),
+        ),
       ],
     );
   }
@@ -1262,6 +1276,7 @@ class _EmployeeCreateState extends State<EmployeeCreate> {
             skills: '',
             reportingTo: _reportingTo,
             faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
+            outsideOffice: _outsideOffice == 'Yes',
             createdBy: await Spdb.getUser(),
           );
 

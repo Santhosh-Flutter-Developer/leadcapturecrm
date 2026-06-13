@@ -15,15 +15,22 @@ class FlushBar {
     /// ADD THESE
     String? actionLabel,
     VoidCallback? onActionPressed,
+    IconData? icon,
+    Color? backgroundColor,
+    Color? textColor,
   }) {
     Flushbar(
       message: message,
-      icon: Icon(
-        isSuccess ? Icons.check_circle : Icons.error,
-        color: AppColors.white,
-      ),
+      messageColor: textColor,
+      icon: icon != null
+          ? Icon(icon, color: textColor ?? AppColors.white)
+          : Icon(
+              isSuccess ? Icons.check_circle : Icons.error,
+              color: AppColors.white,
+            ),
       duration: const Duration(seconds: 5),
-      backgroundColor: isSuccess ? AppColors.success : AppColors.danger,
+      backgroundColor:
+          backgroundColor ?? (isSuccess ? AppColors.success : AppColors.danger),
       margin: const EdgeInsets.all(12),
       borderRadius: BorderRadius.circular(10),
       flushbarPosition: FlushbarPosition.BOTTOM,

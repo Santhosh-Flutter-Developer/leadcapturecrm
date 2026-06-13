@@ -164,18 +164,6 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const ProjectsListing();
       case 'Tasks':
         return const TasksListing();
-      case 'Work Time':
-        return widget.isAdmin
-            ? const DashboardWorktime()
-            : const WorktimeCreate();
-      case 'Attendance Ledger':
-        return Attendance();
-      case 'Permissions':
-        return widget.isAdmin
-            ? const PermissionRequestsListing()
-            : const PermissionListing();
-      case 'Salary Ledger':
-        return const SalaryLedgerList();
       case 'Chats':
         return ChatListing(currentUserUid: _currentUserUid);
       case 'Calendar':
@@ -193,15 +181,13 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
           create: (context) => DownloadHistoryBloc(),
           child: const DownloadHistory(showAppbar: false),
         );
-      // case 'Backup':
-      //   return const BackupListing();
+
       case 'Feed':
         return BlocProvider(
           create: (context) => FeedBloc(),
           child: const FeedListing(),
         );
-      case 'Holidays':
-        return const HolidaysListing();
+
       default:
         return Center(
           child: Text(

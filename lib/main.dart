@@ -58,6 +58,7 @@ void main() async {
   await CacheService().init();
   await VersionService.init();
   await Spdb.loadPanelSettings();
+  await Spdb.loadPayrollSettings();
 
   final uid = await Spdb.getUid();
   if (uid != null && uid.isNotEmpty) {

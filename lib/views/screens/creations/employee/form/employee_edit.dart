@@ -60,6 +60,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   String _receiveEmailNotifications = 'Yes';
   String _maritalStatus = 'Single';
   String? _employeeType;
+  String _outsideOffice = 'No';
 
   File? _selectedProfileImage;
   String? _profileImageUrl;
@@ -137,6 +138,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         _maritalStatus = employee!.maritalStatus;
         _isActive = employee!.isActive;
         _employeeType = employee!.employeeType;
+        _outsideOffice = employee!.outsideOffice ? 'Yes' : 'No';
         _profileImageUrl = employee!.profileImageUrl;
         _faceTemplate = employee!.faceTemplate ?? '';
 
@@ -1143,6 +1145,19 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             },
           ),
         ),
+        SizedBox(
+          width: itemWidth,
+          child: FormDropdownSearch(
+            items: const ['Yes', 'No'],
+            initialItem: _outsideOffice,
+            label: 'Allow Outside Office Punch',
+            onChanged: (value) {
+              if (value != null) {
+                _outsideOffice = value.toString();
+              }
+            },
+          ),
+        ),
       ],
     );
   }
@@ -1239,6 +1254,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             skills: _skillsController.text.trim(),
             reportingTo: _reportingTo,
             faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
+            outsideOffice: _outsideOffice == 'Yes',
             createdBy: await Spdb.getUser(),
           );
 

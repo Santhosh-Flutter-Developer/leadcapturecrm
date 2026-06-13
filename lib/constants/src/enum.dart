@@ -41,6 +41,10 @@ enum Collections {
   salaryLedger,
   companies,
   holidays,
+  salaryTypes,
+  employeeStatuses,
+  leaveRequests,
+  permissionRequests,
 }
 
 enum StorageFolder {

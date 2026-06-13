@@ -8,7 +8,6 @@ import 'package:leadcapture/views/screens/download/bloc/download_bloc.dart';
 import 'package:leadcapture/views/screens/download/download_history.dart';
 import 'package:leadcapture/views/screens/permission/src/permission_listing.dart';
 import 'package:leadcapture/views/screens/permission/src/permission_requests/src/permission_requests_listing.dart';
-import 'package:leadcapture/views/screens/salary_ledger/salary_ledger_listing.dart';
 import 'package:leadcapture/views/screens/worktime/src/index_worktime.dart';
 import 'package:leadcapture/views/screens/worktime/src/worktime_create.dart';
 import '/constants/constants.dart';

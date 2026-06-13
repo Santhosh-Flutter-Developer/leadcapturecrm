@@ -98,9 +98,19 @@ class _DashboardState extends State<Dashboard> {
                                 data,
                                 _permissions,
                               ),
-                              // const SizedBox(height: 20),
-                              // _buildPayroll(context, widget.isAdmin, data),
-                              const SizedBox(height: 20),
+                              ValueListenableBuilder<bool>(
+                                valueListenable: AppSettingsNotifier.payrollEnabled,
+                                builder: (context, payrollEnabled, _) {
+                                  if (!payrollEnabled) return const SizedBox.shrink();
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 20),
+                                      _buildPayroll(context, widget.isAdmin, data),
+                                    ],
+                                  );
+                                },
+                              ),
                               if (widget.isAdmin) ...[
                                 LeadsSourcePieChart(leads: data.allLeads),
                                 const SizedBox(height: 20),
@@ -141,9 +151,19 @@ class _DashboardState extends State<Dashboard> {
                                     data,
                                     _permissions,
                                   ),
-                                  // const SizedBox(height: 20),
-                                  // _buildPayroll(context, widget.isAdmin, data),
-                                  const SizedBox(height: 20),
+                                  ValueListenableBuilder<bool>(
+                                    valueListenable: AppSettingsNotifier.payrollEnabled,
+                                    builder: (context, payrollEnabled, _) {
+                                      if (!payrollEnabled) return const SizedBox.shrink();
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 20),
+                                          _buildPayroll(context, widget.isAdmin, data),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                   if (widget.isAdmin) ...[
                                     LeadsSourcePieChart(leads: data.allLeads),
                                     const SizedBox(height: 20),

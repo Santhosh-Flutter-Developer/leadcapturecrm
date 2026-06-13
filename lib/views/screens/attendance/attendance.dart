@@ -20,6 +20,7 @@ import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/components/src/xlsx_writer.dart';
 import 'package:leadcapture/views/screens/attendance/attendance_helper.dart';
 import 'package:leadcapture/views/screens/attendance/employee_report.dart';
+import 'package:leadcapture/views/screens/attendance/widgets/attendance_fab.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/flush_bar.dart';
 import 'package:leadcapture/views/ui/src/loading.dart';
@@ -641,7 +642,7 @@ class _AttendanceState extends State<Attendance>
           parsedDate.day == date.day;
     }).toList();
 
-    if (aListForDay.isNotEmpty) {
+  if (aListForDay.isNotEmpty) {
       showAttendanceDetails(aListForDay.first);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -673,6 +674,7 @@ class _AttendanceState extends State<Attendance>
       appBar: kIsMobile
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
+      floatingActionButton: isEmployee ? const AttendanceFAB() : null,
       body: RefreshIndicator(
         onRefresh: () async {
           aHandler = init();

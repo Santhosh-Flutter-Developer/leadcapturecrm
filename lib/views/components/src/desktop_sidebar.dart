@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '/theme/theme.dart';
 import '/services/services.dart';
+import '/services/others/src/menu_service.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 
@@ -132,112 +133,45 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   Future<List<Map<String, dynamic>>> _getMenus() async {
     final settings = await SettingsService().fetchSettings();
     final bool payrollEnabled = settings.payrollEnabled;
-    // bool admin =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Admin')) != null;
-    bool role =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Role')) != null;
-    bool designation =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Designation')) != null;
-    bool department =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Department')) != null;
-    bool subDepartment =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Sub Department')) != null;
-    bool employees =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Employees')) != null;
-    bool leadCategory =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Lead Category')) != null;
-    bool leadStatus =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Lead Status')) != null;
-    bool leadSource =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Lead Source')) != null;
-    bool leadPriority =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Lead Priority')) != null;
-    bool dealStatus =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Deal Status')) != null;
-    bool chats =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Chats')) != null;
-    bool leads =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Leads')) != null;
-    bool deals =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Deals')) != null;
-    bool clientsCompany =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Company')) != null;
-    bool clientsContact =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Contact')) != null;
-    bool company =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Company')) != null;
-    bool projects =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Projects')) != null;
-    bool calendar =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Calendar')) != null;
-    bool tasks =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Tasks')) != null;
-    // bool workTime =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Work Time')) != null);
-    // bool attendance =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Attendance Ledger')) !=
-    //             null);
-    // bool salaryLedger =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Salary Ledger')) != null);
-    // bool permissions =
-    //     payrollEnabled &&
-    //     (widget.isAdmin ||
-    //         (await PermissionService.getPermissions('Permissions')) != null);
-    bool downloads =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Downloads')) != null;
-    // bool backup =
-    //     widget.isAdmin ||
-    //     (await PermissionService.getPermissions('Backup')) != null;
-    bool developerArea =
-        widget.isAdmin ||
-        (await PermissionService.getPermissions('Developer Area')) != null;
+    final userPermissions = await MenuService.getUserPermissions();
 
-    List<Map<String, dynamic>> menus = [
-      {'icon': Iconsax.home_2, 'title': 'Dashboard'},
-      {'icon': Iconsax.activity, 'title': 'Feed'},
-      {
-        'icon': Iconsax.element_plus,
-        'title': 'Creation',
-        'children': [
-          if (role) 'Role',
-          if (designation) 'Designation',
-          if (department) 'Department',
-          if (subDepartment) 'Sub Department',
-          if (employees) 'Employees',
-        ],
-      },
-      if (chats)
-        {
-          'icon': Iconsax.message,
-          'title': 'Chats',
-          'trailing': ValueListenableBuilder<int>(
+    // Get filtered menu items using MenuService
+    final menuItems = await MenuService.filterMenuItems(
+      isAdmin: widget.isAdmin,
+      payrollEnabled: payrollEnabled,
+      userPermissions: userPermissions,
+    );
+
+    // Convert MenuItem to Map format for existing UI
+    List<Map<String, dynamic>> menus = [];
+
+    for (final item in menuItems) {
+      if (item.isStatic) {
+        menus.add({
+          'icon': item.icon,
+          'title': 'App Version : ${AppPackageInfo.version}',
+          'onTap': false,
+        });
+        continue;
+      }
+
+      if (item.children != null && item.children!.isNotEmpty) {
+        // Handle expandable menu
+        final children = <dynamic>[];
+        for (final child in item.children!) {
+          if (child.children != null && child.children!.isNotEmpty) {
+            // Handle nested expandable menu
+            final nestedChildren = child.children!.map((c) => c.title).toList();
+            children.add({'title': child.title, 'children': nestedChildren});
+          } else {
+            children.add(child.title);
+          }
+        }
+
+        // Add trailing widget for Chats
+        Widget? trailing;
+        if (item.id == 'chats') {
+          trailing = ValueListenableBuilder<int>(
             valueListenable: ChatService.unviewedCount(),
             builder: (context, count, _) {
               if (count == 0 || widget.isCollapsed) {
@@ -260,59 +194,22 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                 ),
               );
             },
-          ),
-        },
-      {
-        'icon': Iconsax.activity,
-        'title': 'CRM',
-        'children': [
-          if (leadCategory) 'Lead Category',
-          if (leadSource) 'Lead Source',
-          if (leadPriority) 'Lead Priority',
-          if (leadStatus) 'Lead Status',
-          if (dealStatus) 'Deal Status',
-          if (leads) 'Leads',
-          if (deals) 'Deals',
-          if (clientsCompany || clientsContact)
-            {
-              'title': 'Clients',
-              'children': ['Company', 'Contact'],
-            },
-        ],
-      },
-      if (company) {'icon': Iconsax.building, 'title': 'Companies'},
-      {'icon': Iconsax.calendar_1, 'title': 'Calendar'},
-      if (projects) {'icon': Iconsax.airdrop, 'title': 'Projects'},
-      if (tasks) {'icon': Iconsax.check, 'title': 'Tasks'},
-      // {
-      //   'icon': Iconsax.wallet,
-      //   'title': 'Payroll',
-      //   'children': [
-      //     if (payrollEnabled && workTime) 'Work Time',
-      //     if (payrollEnabled && permissions) 'Permissions',
-      //     if (payrollEnabled && attendance) 'Attendance Ledger',
-      //     if (payrollEnabled && salaryLedger) 'Salary Ledger',
-      //   ],
-      // },
-      {'icon': Iconsax.setting_2, 'title': 'Settings'},
-      if (widget.isAdmin) {'icon': Iconsax.login, 'title': 'Login Logs'},
-      if (widget.isAdmin) {'icon': Iconsax.activity, 'title': 'Activity Logs'},
-      if (downloads) {'icon': Iconsax.document_download, 'title': 'Downloads'},
-      // if (backup) {'icon': Iconsax.cloud, 'title': 'Backup'},
-      if (developerArea) {'icon': Iconsax.command, 'title': 'Developer Area'},
-      {
-        'icon': Iconsax.info_circle,
-        'title': 'App Version : ${AppPackageInfo.version}',
-        'onTap': false,
-      },
-    ];
+          );
+        }
 
-    return menus.where((menu) {
-      if (menu.containsKey('children')) {
-        return (menu['children'] as List).isNotEmpty;
+        menus.add({
+          'icon': item.icon,
+          'title': item.title,
+          'children': children,
+          if (trailing != null) 'trailing': trailing,
+        });
+      } else {
+        // Handle simple menu item
+        menus.add({'icon': item.icon, 'title': item.title});
       }
-      return true;
-    }).toList();
+    }
+
+    return menus;
   }
 
   @override

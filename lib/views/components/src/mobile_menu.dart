@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:leadcapture/views/screens/chat/listing/bloc/chat_bloc.dart';
+import 'package:leadcapture/views/screens/companies/listing/companies_listing.dart';
 import 'package:leadcapture/views/screens/download/download_history.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/models/models.dart';
 import '/services/services.dart';
+import '/services/others/src/menu_service.dart';
 import '/utils/utils.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
@@ -26,6 +28,8 @@ class _MobileMenuState extends State<MobileMenu> {
   UserDataModel? _userDataModel;
   late Future _future;
   VersionModel? _versionModel;
+  List<MenuItem> _menuItems = [];
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -45,12 +49,23 @@ class _MobileMenuState extends State<MobileMenu> {
       }
 
       _userDataModel = user;
+      _isAdmin = await Spdb.isAdminLoggedIn();
 
       setState(() {});
     }
-    if (_employeeModel != null && _employeeModel?.role != null) {
-      _roleModel = await RoleService.getRole(uid: _employeeModel?.role ?? '');
-    }
+
+    // Load menu items using MenuService
+    final settings = await SettingsService().fetchSettings();
+    final payrollEnabled = settings.payrollEnabled;
+    final userPermissions = await MenuService.getUserPermissions();
+
+    _menuItems = await MenuService.filterMenuItems(
+      isAdmin: _isAdmin,
+      payrollEnabled: payrollEnabled,
+      userPermissions: userPermissions,
+    );
+
+    if (mounted) setState(() {});
   }
 
   void _openClientSection(BuildContext context) {
@@ -112,466 +127,7 @@ class _MobileMenuState extends State<MobileMenu> {
                   children: [
                     _buildHeader(),
                     SizedBox(height: 8),
-                    Text(
-                      "Company",
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.activity,
-                      title: 'Feed',
-                      onTap: () => Navigate.route(
-                        context,
-                        BlocProvider(
-                          create: (context) => FeedBloc(),
-                          child: FeedListing(),
-                        ),
-                      ),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.message,
-                      title: 'Chat',
-                      onTap: () => Navigate.route(
-                        context,
-                        BlocProvider(
-                          create: (context) => ChatBloc(),
-                          child: ChatListing(
-                            currentUserUid: _userDataModel?.uid ?? '',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.calendar_1,
-                      title: 'Calendar',
-                      onTap: () => Navigate.route(
-                        context,
-                        const CalendarEventScreen(showAppbar: true),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    if (_adminModel != null ||
-                        (
-                        // (_roleModel?.permissions
-                        //           .where((e) => e.page == "Admin")
-                        //           .isNotEmpty ??
-                        //       false) ||
-                        //   _adminModel != null ||
-                        (_roleModel?.permissions
-                                    .where((e) => e.page == "Role")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Designation")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Department")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Sub Department")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Employees")
-                                    .isNotEmpty ??
-                                false))) ...[
-                      Text(
-                        "Creation",
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                      // if (_adminModel != null ||
-                      //     (_roleModel?.permissions
-                      //             .where((e) => e.page == "Admin")
-                      //             .isNotEmpty ??
-                      //         false))
-                      //   _buildListTile(
-                      //     icon: Iconsax.user,
-                      //     title: 'Admin',
-                      //     onTap: () =>
-                      //         Navigate.route(context, const AdminListing()),
-                      //   ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Role")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.user_square,
-                          title: 'Role',
-                          onTap: () =>
-                              Navigate.route(context, const RolesListing()),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Designation")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.tick_circle,
-                          title: 'Designation',
-                          onTap: () => Navigate.route(
-                            context,
-                            const DesignationListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Department")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.building,
-                          title: 'Department',
-                          onTap: () => Navigate.route(
-                            context,
-                            const DepartmentListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Sub Department")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.building_3,
-                          title: 'Sub Department',
-                          onTap: () => Navigate.route(
-                            context,
-                            const SubDepartmentListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Employees")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.security_user,
-                          title: 'Employees',
-                          onTap: () =>
-                              Navigate.route(context, const EmployeeListing()),
-                        ),
-                    ],
-                    SizedBox(height: 8),
-                    if (_adminModel != null ||
-                        ((_roleModel?.permissions
-                                    .where((e) => e.page == "Clients")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Projects")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Tasks")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Category")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Status")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Source")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Lead Priority")
-                                    .isNotEmpty ??
-                                false) ||
-                            (_roleModel?.permissions
-                                    .where((e) => e.page == "Deal Status")
-                                    .isNotEmpty ??
-                                false))) ...[
-                      Text(
-                        "CRM",
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Leads")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.graph,
-                          title: 'Leads',
-                          onTap: () =>
-                              Navigate.route(context, const LeadsListing()),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Category")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.category,
-                          title: 'Lead Category',
-                          onTap: () => Navigate.route(
-                            context,
-                            const LeadCategoryListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Status")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.link_circle,
-                          title: 'Lead Status',
-                          onTap: () => Navigate.route(
-                            context,
-                            const LeadStatusListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Source")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.share,
-                          title: 'Lead Source',
-                          onTap: () => Navigate.route(
-                            context,
-                            const LeadSourceListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Lead Priority")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.flag,
-                          title: 'Lead Priority',
-                          onTap: () => Navigate.route(
-                            context,
-                            const LeadPriorityListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Deals")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.grid_lock,
-                          title: 'Deals',
-                          onTap: () =>
-                              Navigate.route(context, const DealsListing()),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Deal Status")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.activity,
-                          title: 'Deal Status',
-                          onTap: () => Navigate.route(
-                            context,
-                            const DealStatusListing(),
-                          ),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Tasks")
-                                  .isNotEmpty ??
-                              false))
-                        SizedBox(height: 8),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Clients")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.people,
-                          title: 'Clients',
-                          onTap: () => _openClientSection(context),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Projects")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.airdrop,
-                          title: 'Projects',
-                          onTap: () =>
-                              Navigate.route(context, const ProjectsListing()),
-                        ),
-                      if (_adminModel != null ||
-                          (_roleModel?.permissions
-                                  .where((e) => e.page == "Tasks")
-                                  .isNotEmpty ??
-                              false))
-                        _buildListTile(
-                          icon: Iconsax.check,
-                          title: 'Tasks',
-                          onTap: () =>
-                              Navigate.route(context, const TasksListing()),
-                        ),
-                      SizedBox(height: 8),
-                    ],
-                    if (_adminModel != null) ...[
-                      Text(
-                        "System",
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                      _buildListTile(
-                        icon: Iconsax.login,
-                        title: 'Login Logs',
-                        onTap: () => Navigate.route(
-                          context,
-                          LoginLogsListing(showAppbar: true),
-                        ),
-                      ),
-                      _buildListTile(
-                        icon: Iconsax.activity,
-                        title: 'Activity Logs',
-                        onTap: () => Navigate.route(
-                          context,
-                          ActivityLogsListing(showAppbar: true),
-                        ),
-                      ),
-                      _buildListTile(
-                        icon: Iconsax.cloud,
-                        title: 'Backups',
-                        onTap: () => Navigate.route(context, BackupListing()),
-                      ),
-                      SizedBox(height: 8),
-                    ],
-                    _buildListTile(
-                      icon: Iconsax.document_download,
-                      title: 'Download history',
-                      onTap: () => Navigate.route(
-                        context,
-                        DownloadHistory(showAppbar: true),
-                      ),
-                    ),
-
-                    // Text(
-                    //   "Payroll",
-                    //   style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                    //     color: Theme.of(context).colorScheme.outline,
-                    //   ),
-                    // ),
-                    // _buildListTile(
-                    //   icon: Iconsax.timer_1,
-                    //   title: 'Work Time',
-                    //   onTap: () => Navigate.route(
-                    //     context,
-                    //     _adminModel != null
-                    //         ? const DashboardWorktime()
-                    //         : const WorktimeCreate(),
-                    //   ),
-                    // ),
-
-                    // _buildListTile(
-                    //   icon: Iconsax.clipboard_tick,
-                    //   title: 'Attendance Ledger',
-                    //   onTap: () => Navigate.route(context, Attendance()),
-                    // ),
-
-                    // _buildListTile(
-                    //   icon: Iconsax.security_user,
-                    //   title: 'Permissions',
-                    //   onTap: () => Navigate.route(
-                    //     context,
-                    //     _adminModel != null
-                    //         ? const PermissionRequestsListing()
-                    //         : const PermissionListing(),
-                    //   ),
-                    // ),
-
-                    // _buildListTile(
-                    //   icon: Iconsax.wallet_3,
-                    //   title: 'Salary Ledger',
-                    //   onTap: () =>
-                    //       Navigate.route(context, const SalaryLedgerList()),
-                    // ),
-                    Text(
-                      "Others",
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.recovery_convert,
-                      title: 'Sync',
-                      onTap: () async {
-                        await CacheService.syncAllCollections();
-                        var result = await AuthService.refreshLogin();
-                        if (result['userData'] != null) {
-                          var data = result["userData"];
-                          var uid = result["uid"];
-
-                          EmployeeModel emp = EmployeeModel.fromMap(uid, data);
-                          await Spdb.setEmployeeLogin(
-                            model: emp,
-                            cid: result["collectionId"],
-                            logoUrl: result["companyLogo"],
-                          );
-
-                          RoleModel role = await RoleService.getRole(
-                            uid: emp.role,
-                          );
-                          await PermissionService.savePermissions(
-                            role.permissions,
-                          );
-                        }
-                        FlushBar.show(context, 'Synced Successfully');
-                      },
-                      showTrailing: false,
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.trash,
-                      title: 'Trash',
-                      onTap: () => Navigate.route(context, const TrashScreen()),
-                      showTrailing: false,
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.setting_2,
-                      title: 'Settings',
-                      onTap: () => Navigate.route(context, const Settings()),
-                      showTrailing: false,
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.command,
-                      title: 'Developer Area',
-                      onTap: () => Navigate.route(context, const Developer()),
-                      showTrailing: false,
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.logout,
-                      title: 'Logout',
-                      onTap: () => logout(context),
-                      showTrailing: false,
-                      isLogout: true,
-                    ),
-                    _buildListTile(
-                      icon: Iconsax.mobile,
-                      title: 'App Version',
-                      subtitle: AppPackageInfo.version,
-                      onTap: () {},
-                      showTrailing: false,
-                    ),
-                    if (_versionModel != null &&
-                        (_versionModel?.isUpdateNeed ?? false))
-                      _buildAppUpdateContainer(),
+                    ..._buildMenuItems(),
                   ],
                 ),
               ),
@@ -580,6 +136,244 @@ class _MobileMenuState extends State<MobileMenu> {
         },
       ),
     );
+  }
+
+  List<Widget> _buildMenuItems() {
+    final widgets = <Widget>[];
+
+    for (final item in _menuItems) {
+      if (item.isStatic) {
+        widgets.add(
+          _buildListTile(
+            icon: item.icon,
+            title: 'App Version',
+            subtitle: AppPackageInfo.version,
+            onTap: () {},
+            showTrailing: false,
+          ),
+        );
+        continue;
+      }
+
+      if (item.children != null && item.children!.isNotEmpty) {
+        // Add section header
+        widgets.add(SizedBox(height: 8));
+        widgets.add(
+          Text(
+            item.title,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+        );
+
+        // Add children
+        for (final child in item.children!) {
+          if (child.children != null && child.children!.isNotEmpty) {
+            // Handle nested menu (like Clients)
+            widgets.add(
+              _buildListTile(
+                icon: child.icon,
+                title: child.title,
+                onTap: () => _handleNestedMenu(child),
+              ),
+            );
+          } else {
+            widgets.add(
+              _buildListTile(
+                icon: child.icon,
+                title: child.title,
+                onTap: () => _handleMenuTap(child),
+              ),
+            );
+          }
+        }
+      } else {
+        // Simple menu item
+        widgets.add(
+          _buildListTile(
+            icon: item.icon,
+            title: item.title,
+            onTap: () => _handleMenuTap(item),
+          ),
+        );
+      }
+    }
+
+    // Add system items at the end
+    widgets.add(SizedBox(height: 8));
+    widgets.add(
+      Text(
+        "Others",
+        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+    );
+    widgets.add(
+      _buildListTile(
+        icon: Iconsax.recovery_convert,
+        title: 'Sync',
+        onTap: () async {
+          await CacheService.syncAllCollections();
+          var result = await AuthService.refreshLogin();
+          if (result['userData'] != null) {
+            var data = result["userData"];
+            var uid = result["uid"];
+
+            EmployeeModel emp = EmployeeModel.fromMap(uid, data);
+            await Spdb.setEmployeeLogin(
+              model: emp,
+              cid: result["collectionId"],
+              logoUrl: result["companyLogo"],
+            );
+
+            RoleModel role = await RoleService.getRole(uid: emp.role);
+            await PermissionService.savePermissions(role.permissions);
+          }
+          FlushBar.show(context, 'Synced Successfully');
+        },
+        showTrailing: false,
+      ),
+    );
+    widgets.add(
+      _buildListTile(
+        icon: Iconsax.trash,
+        title: 'Trash',
+        onTap: () => Navigate.route(context, const TrashScreen()),
+        showTrailing: false,
+      ),
+    );
+    widgets.add(
+      _buildListTile(
+        icon: Iconsax.logout,
+        title: 'Logout',
+        onTap: () => logout(context),
+        showTrailing: false,
+        isLogout: true,
+      ),
+    );
+
+    if (_versionModel != null && (_versionModel?.isUpdateNeed ?? false)) {
+      widgets.add(_buildAppUpdateContainer());
+    }
+
+    return widgets;
+  }
+
+  void _handleMenuTap(MenuItem item) {
+    switch (item.id) {
+      case 'dashboard':
+        Navigate.routeReplace(context, RouteScreen());
+        break;
+      case 'feed':
+        Navigate.route(
+          context,
+          BlocProvider(create: (context) => FeedBloc(), child: FeedListing()),
+        );
+        break;
+      case 'chats':
+        Navigate.route(
+          context,
+          BlocProvider(
+            create: (context) => ChatBloc(),
+            child: ChatListing(currentUserUid: _userDataModel?.uid ?? ''),
+          ),
+        );
+        break;
+      case 'calendar':
+        Navigate.route(context, const CalendarEventScreen(showAppbar: true));
+        break;
+      case 'downloads':
+        Navigate.route(context, DownloadHistory(showAppbar: true));
+        break;
+      case 'settings':
+        Navigate.route(context, const Settings());
+        break;
+      case 'developer_area':
+        Navigate.route(context, const Developer());
+        break;
+      // Creation section
+      case 'role':
+        Navigate.route(context, const RolesListing());
+        break;
+      case 'designation':
+        Navigate.route(context, const DesignationListing());
+        break;
+      case 'department':
+        Navigate.route(context, const DepartmentListing());
+        break;
+      case 'sub_department':
+        Navigate.route(context, const SubDepartmentListing());
+        break;
+      case 'employee_status':
+        FlushBar.show(context, '${item.title} - Coming soon', isSuccess: false);
+        break;
+      case 'employees':
+        Navigate.route(context, const EmployeeListing());
+        break;
+      // CRM section
+      case 'lead_category':
+        Navigate.route(context, const LeadCategoryListing());
+        break;
+      case 'lead_source':
+        Navigate.route(context, const LeadSourceListing());
+        break;
+      case 'lead_priority':
+        Navigate.route(context, const LeadPriorityListing());
+        break;
+      case 'lead_status':
+        Navigate.route(context, const LeadStatusListing());
+        break;
+      case 'deal_status':
+        Navigate.route(context, const DealStatusListing());
+        break;
+      case 'leads':
+        Navigate.route(context, const LeadsListing());
+        break;
+      case 'deals':
+        Navigate.route(context, const DealsListing());
+        break;
+      case 'client_company':
+        Navigate.route(
+          context,
+          const ClientCompanyListing(section: ClientSection.company),
+        );
+        break;
+      case 'client_contact':
+        Navigate.route(
+          context,
+          const ClientsListing(section: ClientSection.contacts),
+        );
+        break;
+      case 'companies':
+        Navigate.route(context, const CompaniesListing());
+        break;
+      case 'projects':
+        Navigate.route(context, const ProjectsListing());
+        break;
+      case 'tasks':
+        Navigate.route(context, const TasksListing());
+        break;
+      case 'login_logs':
+        Navigate.route(context, LoginLogsListing(showAppbar: true));
+        break;
+      case 'activity_logs':
+        Navigate.route(context, ActivityLogsListing(showAppbar: true));
+        break;
+      case 'backup':
+        Navigate.route(context, BackupListing());
+        break;
+      default:
+        // For now, just show a placeholder
+        FlushBar.show(context, '${item.title} - Coming soon', isSuccess: false);
+    }
+  }
+
+  void _handleNestedMenu(MenuItem item) {
+    if (item.id == 'clients') {
+      _openClientSection(context);
+    }
   }
 
   Widget _buildListTile({
