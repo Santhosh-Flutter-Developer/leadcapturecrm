@@ -30,6 +30,7 @@ class _MobileMenuState extends State<MobileMenu> {
   VersionModel? _versionModel;
   List<MenuItem> _menuItems = [];
   bool _isAdmin = false;
+  String? _companyLogo;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _MobileMenuState extends State<MobileMenu> {
 
       _userDataModel = user;
       _isAdmin = await Spdb.isAdminLoggedIn();
+      _companyLogo = await Spdb.getCompanyLogo();
 
       setState(() {});
     }
@@ -430,7 +432,30 @@ class _MobileMenuState extends State<MobileMenu> {
     final employee = _employeeModel;
     final admin = _adminModel;
 
-    return InkWell(
+    return
+    // Column(
+    // children: [
+    //   // Company Logo
+    //   if (_companyLogo != null)
+    //     Padding(
+    //       padding: const EdgeInsets.only(bottom: 16),
+    //       child: SizedBox(
+    //         height: 60,
+    //         child: Image.network(
+    //           _companyLogo!,
+    //           fit: BoxFit.contain,
+    //           errorBuilder: (context, error, stackTrace) =>
+    //               _buildDefaultLogo(),
+    //         ),
+    //       ),
+    //     )
+    //   else
+    //     Padding(
+    //       padding: const EdgeInsets.only(bottom: 16),
+    //       child: _buildDefaultLogo(),
+    //     ),
+    // User profile
+    InkWell(
       onTap: () => Navigate.route(context, const Profile()),
       child: Container(
         decoration: BoxDecoration(
@@ -452,34 +477,45 @@ class _MobileMenuState extends State<MobileMenu> {
             if (_userDataModel != null)
               UserAvatar(userData: _userDataModel!, size: 40),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  employee?.name ?? admin?.name ?? 'User',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    employee?.name ?? admin?.name ?? 'User',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  employee != null
-                      ? (CacheService.designationByUid(
-                              employee.designation,
-                            )?.name) ??
-                            ''
-                      : "Administartor",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    employee != null
+                        ? (CacheService.designationByUid(
+                                employee.designation,
+                              )?.name) ??
+                              ''
+                        : "Administartor",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
       ),
+    );
+    //   ],
+    // );
+  }
+
+  Widget _buildDefaultLogo() {
+    return SizedBox(
+      height: 60,
+      child: Image.asset(ImageAssets.logoTransparent, fit: BoxFit.contain),
     );
   }
 

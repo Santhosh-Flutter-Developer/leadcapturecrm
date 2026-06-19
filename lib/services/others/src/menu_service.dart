@@ -104,14 +104,14 @@ class MenuService {
             route: '/sub-department',
             requiredPermissions: ['Sub Department'],
           ),
-          MenuItem(
-            id: 'employee_status',
-            title: 'Employee Status',
-            icon: Iconsax.tag,
-            route: '/employee-status',
-            requiredPermissions: ['Employee Status'],
-          ),
 
+          // MenuItem(
+          //   id: 'employee_status',
+          //   title: 'Employee Status',
+          //   icon: Iconsax.tag,
+          //   route: '/employee-status',
+          //   requiredPermissions: ['Employee Status'],
+          // ),
           MenuItem(
             id: 'employees',
             title: 'Employees',
@@ -211,13 +211,13 @@ class MenuService {
       ),
 
       // Companies
-      MenuItem(
-        id: 'companies',
-        title: 'Companies',
-        icon: Iconsax.building,
-        route: '/companies',
-        requiredPermissions: ['Company'],
-      ),
+      // MenuItem(
+      //   id: 'companies',
+      //   title: 'Companies',
+      //   icon: Iconsax.building,
+      //   route: '/companies',
+      //   requiredPermissions: ['Company'],
+      // ),
 
       // Calendar
       MenuItem(

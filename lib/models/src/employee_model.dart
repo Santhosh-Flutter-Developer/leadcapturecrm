@@ -54,7 +54,6 @@ class EmployeeModel {
   final DateTime? lastActive;
   final List<Map<String, dynamic>>? devices;
   final bool isInitialPasswordChanged;
-  final String? faceTemplate;
   final String? salaryTypeId;
   final String? statusId;
   final int casualLeave;
@@ -92,7 +91,6 @@ class EmployeeModel {
     this.lastActive,
     this.devices,
     this.isInitialPasswordChanged = false,
-    this.faceTemplate,
     this.salaryTypeId,
     this.statusId,
     this.casualLeave = 12,
@@ -133,7 +131,6 @@ class EmployeeModel {
     DateTime? lastActive,
     List<Map<String, dynamic>>? devices,
     bool? isInitialPasswordChanged,
-    String? faceTemplate,
     String? salaryTypeId,
     String? statusId,
     int? casualLeave,
@@ -173,7 +170,6 @@ class EmployeeModel {
       devices: devices ?? this.devices,
       isInitialPasswordChanged:
           isInitialPasswordChanged ?? this.isInitialPasswordChanged,
-      faceTemplate: faceTemplate ?? this.faceTemplate,
       salaryTypeId: salaryTypeId ?? this.salaryTypeId,
       statusId: statusId ?? this.statusId,
       casualLeave: casualLeave ?? this.casualLeave,
@@ -213,7 +209,6 @@ class EmployeeModel {
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
       'isInitialPasswordChanged': isInitialPasswordChanged,
-      'faceTemplate': faceTemplate,
       'salaryTypeId': salaryTypeId,
       'statusId': statusId,
       'casualLeave': casualLeave,
@@ -252,7 +247,6 @@ class EmployeeModel {
       'isActive': isActive,
       'devices': devices,
       'lastActive': lastActive?.millisecondsSinceEpoch,
-      'faceTemplate': faceTemplate,
       'salaryTypeId': salaryTypeId,
       'statusId': statusId,
       'casualLeave': casualLeave,
@@ -309,7 +303,6 @@ class EmployeeModel {
       lastActive: parseDate(map['lastActive']),
       devices: parseDevices(map['devices']),
       isInitialPasswordChanged: map['isInitialPasswordChanged'] ?? false,
-      faceTemplate: map['faceTemplate'],
       salaryTypeId: map['salaryTypeId'],
       statusId: map['statusId'],
       casualLeave: map['casualLeave'] ?? 12,
@@ -588,7 +581,6 @@ extension EmployeeToRow on EmployeeModel {
       lastActive: lastActive,
       devices: devices,
       isInitialPasswordChanged: isInitialPasswordChanged,
-      faceTemplate: faceTemplate,
       salaryTypeId: salaryTypeId,
       statusId: statusId,
       casualLeave: casualLeave,
@@ -651,7 +643,6 @@ extension UserRowToEmployee on UserRowModel {
       lastActive: lastActive,
       devices: devices,
       isInitialPasswordChanged: isInitialPasswordChanged ?? false,
-      faceTemplate: faceTemplate,
       salaryTypeId: salaryTypeId,
       statusId: statusId,
       casualLeave: casualLeave ?? 12,

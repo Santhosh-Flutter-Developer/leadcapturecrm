@@ -22,9 +22,6 @@ import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/utils/src/time_format.dart';
 import 'package:leadcapture/views/components/src/sheet.dart';
 import 'package:leadcapture/views/screens/worktime/src/clockout_dialog.dart';
-import 'package:leadcapture/views/screens/worktime/src/face_scan.dart';
-import 'package:leadcapture/views/screens/worktime/src/geofence_status_card.dart';
-import 'package:leadcapture/views/screens/worktime/src/outside_office_sheet.dart';
 import 'package:leadcapture/views/ui/src/back.dart';
 import 'package:leadcapture/views/ui/src/button.dart';
 import 'package:leadcapture/views/ui/src/error_display.dart';
@@ -58,14 +55,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   Duration _elapsedBreakTime = Duration.zero;
   late Future<void> _workTimeHandler;
 
-  // ── Geofence ──────────────────────────────────────────────
-  bool _isInsideGeofence = false;
-  bool _outsideOffice = false;
-  double? _geofenceDistanceMeters;
-  double? _geofenceRadiusMeters;
-  final GlobalKey<GeofenceStatusCardState> _geofenceCardKey =
-      GlobalKey<GeofenceStatusCardState>();
-
   @override
   void initState() {
     _workTimeHandler = _init();
@@ -73,12 +62,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   Future<void> _init() async {
-    final currentUid = await Spdb.getUid();
-    if (currentUid != null) {
-      final emp = await EmployeeService.getEmployee(uid: currentUid);
-      _outsideOffice = emp?.outsideOffice ?? false;
-    }
-
     _dayEnd = await WorktimeService.checkDayEnd();
 
     // ✅ If day ended → reset everything
@@ -175,68 +158,8 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   void _clockIn() async {
-    // Pre-flight geofence guard (card already computed latest state)
-    if ((kIsMobile || kIsDesktop) && !_isInsideGeofence && !_outsideOffice) {
-      OutsideOfficeSheet.show(
-        context,
-        distanceMeters: _geofenceDistanceMeters,
-        radiusMeters: _geofenceRadiusMeters,
-        onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-      );
-      return;
-    }
-
     try {
       futureLoading(context);
-
-      // --- Geofence re-check with fresh GPS (safety net) ---
-      if ((kIsMobile || kIsDesktop) && !_outsideOffice) {
-        final geofence = await CompanyLocationService.getGeofence();
-        if (geofence == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBar(
-            context,
-            content:
-                "Company location is not configured. Ask your admin to set the attendance GPS geofence.",
-            isSuccess: false,
-          );
-          return;
-        }
-
-        final position = await LocationService.getCurrentPosition();
-        if (position == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBarOption(
-            context,
-            content:
-                "Location permission is required to clock in. Please enable it in your device settings.",
-            isSuccess: false,
-            actionText: "Try Again",
-            action: _clockIn,
-          );
-          return;
-        }
-
-        final isInside = LocationService.isWithinRadius(
-          currentLat: position.latitude,
-          currentLng: position.longitude,
-          centerLat: geofence.latitude,
-          centerLng: geofence.longitude,
-          radiusMeters: geofence.radiusMeters,
-        );
-
-        if (!isInside) {
-          Navigator.pop(context);
-          OutsideOfficeSheet.show(
-            context,
-            distanceMeters: _geofenceDistanceMeters,
-            radiusMeters: geofence.radiusMeters,
-            onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-          );
-          return;
-        }
-      }
-      // ------------------------------------
 
       var uid = await Spdb.getUid();
       var user = await Spdb.getUser();
@@ -275,109 +198,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
       Navigator.pop(context);
       debugPrint("❌ ClockIn Error: $e");
       debugPrint("📍 StackTrace: $stackTrace");
-      Snackbar.showSnackBar(context, content: e.toString(), isSuccess: false);
-    }
-  }
-
-  void _clockInByFace() async {
-    // Pre-flight geofence guard
-    if ((kIsMobile || kIsDesktop) && !_isInsideGeofence && !_outsideOffice) {
-      OutsideOfficeSheet.show(
-        context,
-        distanceMeters: _geofenceDistanceMeters,
-        radiusMeters: _geofenceRadiusMeters,
-        onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-      );
-      return;
-    }
-
-    try {
-      futureLoading(context);
-
-      // --- Geofence re-check with fresh GPS (safety net) ---
-      if ((kIsMobile || kIsDesktop) && !_outsideOffice) {
-        final geofence = await CompanyLocationService.getGeofence();
-        if (geofence == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBar(
-            context,
-            content:
-                "Company location is not configured. Ask your admin to set the attendance GPS geofence.",
-            isSuccess: false,
-          );
-          return;
-        }
-
-        final position = await LocationService.getCurrentPosition();
-        if (position == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBarOption(
-            context,
-            content:
-                "Location permission is required to clock in. Please enable it in your device settings.",
-            isSuccess: false,
-            actionText: "Try Again",
-            action: _clockInByFace,
-          );
-          return;
-        }
-
-        final isInside = LocationService.isWithinRadius(
-          currentLat: position.latitude,
-          currentLng: position.longitude,
-          centerLat: geofence.latitude,
-          centerLng: geofence.longitude,
-          radiusMeters: geofence.radiusMeters,
-        );
-
-        if (!isInside) {
-          Navigator.pop(context);
-          OutsideOfficeSheet.show(
-            context,
-            distanceMeters: _geofenceDistanceMeters,
-            radiusMeters: geofence.radiusMeters,
-            onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-          );
-          return;
-        }
-      }
-      // ------------------------------------
-
-      var existing = await WorktimeService.checkTodayClockIn();
-      if (existing) {
-        Navigator.pop(context);
-        Snackbar.showSnackBar(
-          context,
-          content: "You already clocked in today",
-          isSuccess: false,
-        );
-        return;
-      }
-
-      var uid = await Spdb.getUid();
-      var user = await Spdb.getUser();
-      var name = user.name;
-
-      var id = await WorktimeService.createWorkTime(
-        model: WorktimeModel(
-          breaks: {},
-          clockIn: DateTime.now(),
-          userUid: uid ?? '',
-          userName: name,
-          created: DateTime.now(),
-          modified: DateTime.now(),
-        ),
-      );
-      Db.setClockIn(id);
-      _worktimeModel = await WorktimeService.getClockIn(id: id);
-      _alreadyClockIned = true;
-      _elapsedWorkTime = Duration.zero;
-      _startTimer();
-      Navigator.pop(context);
-
-      setState(() {});
-    } catch (e) {
-      Navigator.pop(context);
       Snackbar.showSnackBar(context, content: e.toString(), isSuccess: false);
     }
   }
@@ -468,68 +288,8 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
   }
 
   void _clockOut() async {
-    // Pre-flight geofence guard
-    if ((kIsMobile || kIsDesktop) && !_isInsideGeofence && !_outsideOffice) {
-      OutsideOfficeSheet.show(
-        context,
-        distanceMeters: _geofenceDistanceMeters,
-        radiusMeters: _geofenceRadiusMeters,
-        onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-      );
-      return;
-    }
-
     try {
       futureLoading(context);
-
-      // --- Geofence re-check with fresh GPS (safety net) ---
-      if ((kIsMobile || kIsDesktop) && !_outsideOffice) {
-        final geofence = await CompanyLocationService.getGeofence();
-        if (geofence == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBar(
-            context,
-            content:
-                "Company location is not configured. Ask your admin to set the attendance GPS geofence.",
-            isSuccess: false,
-          );
-          return;
-        }
-
-        final position = await LocationService.getCurrentPosition();
-        if (position == null) {
-          Navigator.pop(context);
-          Snackbar.showSnackBarOption(
-            context,
-            content:
-                "Location permission is required to clock out. Please enable it in your device settings.",
-            isSuccess: false,
-            actionText: "Try Again",
-            action: _clockOut,
-          );
-          return;
-        }
-
-        final isInside = LocationService.isWithinRadius(
-          currentLat: position.latitude,
-          currentLng: position.longitude,
-          centerLat: geofence.latitude,
-          centerLng: geofence.longitude,
-          radiusMeters: geofence.radiusMeters,
-        );
-
-        if (!isInside) {
-          Navigator.pop(context);
-          OutsideOfficeSheet.show(
-            context,
-            distanceMeters: _geofenceDistanceMeters,
-            radiusMeters: geofence.radiusMeters,
-            onRefreshLocation: () => _geofenceCardKey.currentState?.refresh(),
-          );
-          return;
-        }
-      }
-      // ------------------------------------
 
       var workTimeId = await Db.getClockIn();
 
@@ -635,8 +395,8 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
                     Text(
                       "Day Ended",
                       style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                        color: AppColors.primary,
-                      ),
+                            color: AppColors.primary,
+                          ),
                     ),
                   if (!_dayEnd && !_previousDayNotFinished)
                     if (_alreadyClockIned)
@@ -665,24 +425,6 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
                                   ),
                             ),
                           const SizedBox(height: 10),
-                          // ── Geofence status card (always visible on mobile) ──
-                          if (kIsMobile)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: GeofenceStatusCard(
-                                key: _geofenceCardKey,
-                                onStatusChanged: (inside, {distanceMeters, radiusMeters}) {
-                                  if (mounted) {
-                                    setState(() {
-                                      _isInsideGeofence = inside;
-                                      _geofenceDistanceMeters = distanceMeters;
-                                      _geofenceRadiusMeters = radiusMeters;
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
-                          const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -708,60 +450,13 @@ class _WorktimeCreateState extends State<WorktimeCreate> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // ── Geofence status card (always visible on mobile) ──
-                          if (kIsMobile)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: GeofenceStatusCard(
-                                key: _geofenceCardKey,
-                                onStatusChanged: (inside, {distanceMeters, radiusMeters}) {
-                                  if (mounted) {
-                                    setState(() {
-                                      _isInsideGeofence = inside;
-                                      _geofenceDistanceMeters = distanceMeters;
-                                      _geofenceRadiusMeters = radiusMeters;
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
                           const SizedBox(height: 10),
-                          Opacity(
-                            opacity: (!kIsMobile || _isInsideGeofence) ? 1.0 : 0.5,
-                            child: Button(
-                              event: () {
-                                _clockIn();
-                              },
-                              text: "Clock in",
-                              icon: Iconsax.clock,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text("Or"),
-                          const SizedBox(height: 10),
-                          Opacity(
-                            opacity: (!kIsMobile || _isInsideGeofence) ? 1.0 : 0.5,
-                            child: Button(
-                              event: () async {
-                                var result = await Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (context) {
-                                      return const FaceScan();
-                                    },
-                                  ),
-                                );
-
-                                if (result != null) {
-                                  if (result) {
-                                    _clockInByFace();
-                                  }
-                                }
-                              },
-                              text: "Clock in by face",
-                              icon: CupertinoIcons
-                                  .person_crop_circle_badge_checkmark,
-                            ),
+                          Button(
+                            event: () {
+                              _clockIn();
+                            },
+                            text: "Clock in",
+                            icon: Iconsax.clock,
                           ),
                         ],
                       ),

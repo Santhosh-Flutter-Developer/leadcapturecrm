@@ -205,28 +205,6 @@ class _SettingsListingState extends State<SettingsListing> {
                     _buildSectionHeader("System & Data", Iconsax.status),
                     const SizedBox(height: 12),
                     _buildSettingsCard([
-                      FutureBuilder<bool>(
-                        future: Spdb.isAdminLoggedIn(),
-                        builder: (context, snap) {
-                          if (snap.data != true) return const SizedBox.shrink();
-                          return _buildInteractiveTile(
-                            icon: Iconsax.location,
-                            iconColor: Colors.teal,
-                            title: "Company Location",
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const CompanyLocationSettings(),
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Iconsax.arrow_right_3,
-                              size: 16,
-                              color: SettingsColors.border,
-                            ),
-                          );
-                        },
-                      ),
                       _buildInteractiveTile(
                         icon: Iconsax.mobile_programming,
                         iconColor: Colors.purpleAccent,

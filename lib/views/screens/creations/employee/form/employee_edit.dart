@@ -11,12 +11,8 @@ import '/models/models.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:facesdk_plugin/facesdk_plugin.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
-import '../face_capture.dart';
 
 class EmployeeEdit extends StatefulWidget {
   final String uid;
@@ -65,8 +61,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   File? _selectedProfileImage;
   String? _profileImageUrl;
   bool _oldProfileImageRemoved = false;
-  String _faceTemplate = '';
-  final _facesdkPlugin = FacesdkPlugin();
 
   RoleModel? _roleModel;
   DesignationModel? _designationModel;
@@ -92,16 +86,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
       _departmentList.clear();
       _subDepartmentList.clear();
       _initialReportingTo.clear();
-
-      // FaceSDK plugin only supported on Android/iOS
-      if (kIsMobile) {
-        if (Platform.isAndroid) {
-          await _facesdkPlugin.setActivation(AppStrings.androidfacesdkLicence);
-        } else {
-          await _facesdkPlugin.setActivation(AppStrings.iosfacesdkLicence);
-        }
-        await _facesdkPlugin.init();
-      }
 
       if (widget.admin != null) {
         _employeeIdController.text = "";
@@ -140,7 +124,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         _employeeType = employee!.employeeType;
         _outsideOffice = employee!.outsideOffice ? 'Yes' : 'No';
         _profileImageUrl = employee!.profileImageUrl;
-        _faceTemplate = employee!.faceTemplate ?? '';
 
         _roleModel = await RoleService.getRole(uid: employee!.role);
         _designationModel = await DesignationService.getDesignation(
@@ -328,10 +311,10 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     }
   }
 
-  Future<void> captureFace() async {
-    // On Windows: use file picker only (no camera/ImagePicker support)
+  Future<void> pickImage() async {
+    // On Windows: use file picker only
     if (kIsWindows) {
-      await _captureFaceFromFile();
+      await _pickImageFromFile();
       return;
     }
 
@@ -373,91 +356,35 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     if (source == null) return;
 
     try {
-      if (source == ImageSource.camera) {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => FaceCaptureView()),
-        );
+      final xFile = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 512,
+      );
+      if (xFile == null) return;
+      final rotated = await FlutterExifRotation.rotateImage(path: xFile.path);
 
-        if (result != null && result is Map) {
-          final faceJpg = result['face_URL'] as Uint8List?;
-          final templates = result['face_template'] as Uint8List?;
-
-          if (faceJpg != null && mounted) {
-            final tempDir = Directory.systemTemp;
-            final tempFile = File(
-              '${tempDir.path}/face_${DateTime.now().millisecondsSinceEpoch}.jpg',
-            );
-            await tempFile.writeAsBytes(faceJpg);
-
-            setState(() {
-              _selectedProfileImage = tempFile;
-              _markProfileImageReplaced();
-              _faceTemplate = templates != null ? base64Encode(templates) : '';
-            });
-          }
-        }
-      } else {
-        final xFile = await ImagePicker().pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 85,
-          maxWidth: 512,
-        );
-        if (xFile == null) return;
-        final rotated = await FlutterExifRotation.rotateImage(path: xFile.path);
-
-        if (mounted) {
-          futureLoading(context);
-          try {
-            var faceList = await _facesdkPlugin.extractFaces(rotated.path);
-            if (Navigator.canPop(context)) Navigator.pop(context);
-
-            if (faceList != null && faceList.isNotEmpty) {
-              var face = faceList[0];
-              setState(() {
-                _selectedProfileImage = rotated;
-                _markProfileImageReplaced();
-                _faceTemplate = face['templates'] != null
-                    ? base64Encode(face['templates'])
-                    : '';
-              });
-            } else {
-              setState(() {
-                _selectedProfileImage = rotated;
-                _markProfileImageReplaced();
-                _faceTemplate = '';
-              });
-              FlushBar.show(
-                context,
-                'No face detected in the selected image.',
-                isSuccess: false,
-              );
-            }
-          } catch (e) {
-            if (Navigator.canPop(context)) Navigator.pop(context);
-            setState(() {
-              _selectedProfileImage = rotated;
-              _markProfileImageReplaced();
-              _faceTemplate = '';
-            });
-          }
-        }
+      if (mounted) {
+        setState(() {
+          _selectedProfileImage = rotated;
+          _markProfileImageReplaced();
+        });
       }
     } catch (e, st) {
       await ErrorService.recordError(e, st);
       if (mounted) {
-        FlushBar.show(context, 'Failed to capture image: $e', isSuccess: false);
+        FlushBar.show(context, 'Failed to pick image: $e', isSuccess: false);
       }
     }
   }
 
-  /// Windows-only: Pick an image file and detect a face in it.
-  Future<void> _captureFaceFromFile() async {
+  /// Windows-only: Pick an image file.
+  Future<void> _pickImageFromFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: false,
-        dialogTitle: 'Select a photo for face enrollment',
+        dialogTitle: 'Select a profile photo',
       );
 
       if (result == null || result.files.isEmpty) return;
@@ -467,53 +394,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
 
       final imageFile = File(pickedPath);
 
-      if (!mounted) return;
-      futureLoading(context);
-
-      try {
-        var faceList = await _facesdkPlugin.extractFaces(imageFile.path);
-        if (Navigator.canPop(context)) Navigator.pop(context);
-
-        if (faceList != null && faceList.isNotEmpty) {
-          var face = faceList[0];
-          setState(() {
-            _selectedProfileImage = imageFile;
-            _markProfileImageReplaced();
-            _faceTemplate = face['templates'] != null
-                ? base64Encode(face['templates'])
-                : '';
-          });
-          if (_faceTemplate.isEmpty && mounted) {
-            FlushBar.show(
-              context,
-              'Image selected but no face template could be generated.',
-              isSuccess: false,
-            );
-          }
-        } else {
-          setState(() {
-            _selectedProfileImage = imageFile;
-            _markProfileImageReplaced();
-            _faceTemplate = '';
-          });
-          if (mounted) {
-            FlushBar.show(
-              context,
-              'No face detected in the selected image. Please choose a clear front-facing photo.',
-              isSuccess: false,
-            );
-          }
-        }
-      } catch (e) {
-        if (Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) {
         setState(() {
           _selectedProfileImage = imageFile;
           _markProfileImageReplaced();
-          _faceTemplate = '';
         });
-        if (mounted) {
-          FlushBar.show(context, 'Face detection failed: $e', isSuccess: false);
-        }
       }
     } catch (e, st) {
       await ErrorService.recordError(e, st);
@@ -529,7 +414,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: captureFace,
+            onTap: pickImage,
             child: Stack(
               alignment: Alignment.topRight,
               children: [
@@ -557,24 +442,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                         ),
                 ),
                 Positioned(
-                  bottom: 4,
-                  left: 4,
-                  child: _faceTemplate.isNotEmpty
-                      ? Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(
-                            Icons.face_retouching_natural,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                Positioned(
                   top: 4,
                   right: 4,
                   child: GestureDetector(
@@ -584,7 +451,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                         _profileImageUrl = null;
                         _oldProfileImageRemoved = true;
                       }
-                      _faceTemplate = '';
                       setState(() {});
                     },
                     child: Container(
@@ -606,17 +472,11 @@ class _EmployeeEditState extends State<EmployeeEdit> {
           ),
           const SizedBox(height: 8),
           GestureDetector(
-            onTap: captureFace,
+            onTap: pickImage,
             child: Text(
-              kIsWindows
-                  ? (_faceTemplate.isNotEmpty
-                        ? 'Face Enrolled ✓  (tap to change)'
-                        : 'No face detected  (tap to change)')
-                  : 'Tap to change photo',
+              kIsWindows ? 'Tap to change photo' : 'Tap to change photo',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _faceTemplate.isNotEmpty
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -626,7 +486,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     }
 
     return GestureDetector(
-      onTap: captureFace,
+      onTap: pickImage,
       child: DottedBorder(
         options: RectDottedBorderOptions(),
         child: Container(
@@ -1253,7 +1113,6 @@ class _EmployeeEditState extends State<EmployeeEdit> {
             profileImageUrl: profileImageUrl,
             skills: _skillsController.text.trim(),
             reportingTo: _reportingTo,
-            faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
             outsideOffice: _outsideOffice == 'Yes',
             createdBy: await Spdb.getUser(),
           );

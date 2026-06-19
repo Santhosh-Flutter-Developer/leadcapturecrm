@@ -27,9 +27,6 @@ class _CompanyEditState extends State<CompanyEdit> {
   final _stateController = TextEditingController();
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
-  final _latitudeController = TextEditingController();
-  final _longitudeController = TextEditingController();
-  final _radiusController = TextEditingController();
 
   Uint8List? _logoBytes;
   String? _logoUrl;
@@ -64,9 +61,6 @@ final _kioskPasswordController = TextEditingController();
         _stateController.text = company.state ?? '';
         _cityController.text = company.city ?? '';
         _pincodeController.text = company.pincode ?? '';
-        _latitudeController.text = company.latitude?.toString() ?? '';
-        _longitudeController.text = company.longitude?.toString() ?? '';
-        _radiusController.text = company.radius.toString();
         _logoUrl = company.logoUrl;
         _withoutLoginEnabled = company.withoutLoginEnabled;
         _notificationLanguage = company.notificationLanguage;
@@ -131,9 +125,6 @@ final _kioskPasswordController = TextEditingController();
     _stateController.dispose();
     _cityController.dispose();
     _pincodeController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
-    _radiusController.dispose();
     _kioskUsernameController.dispose();
     _kioskPasswordController.dispose();
     super.dispose();
@@ -214,9 +205,6 @@ final _kioskPasswordController = TextEditingController();
         pincode: _pincodeController.text.trim().isEmpty
             ? null
             : _pincodeController.text.trim(),
-        latitude: double.tryParse(_latitudeController.text.trim()),
-        longitude: double.tryParse(_longitudeController.text.trim()),
-        radius: int.tryParse(_radiusController.text.trim()) ?? 100,
         createdBy: user,
         withoutLoginEnabled: _withoutLoginEnabled,
         notificationLanguage: _notificationLanguage,
@@ -266,8 +254,6 @@ final _kioskPasswordController = TextEditingController();
               _buildContactInfoSection(),
               const SizedBox(height: 24),
               _buildAddressSection(),
-              const SizedBox(height: 24),
-              _buildGeofenceSection(),
               const SizedBox(height: 24),
               _buildKioskSection(),
               const SizedBox(height: 32),
@@ -394,28 +380,6 @@ final _kioskPasswordController = TextEditingController();
       FormFields(
         controller: _pincodeController,
         label: "Pincode",
-        keyboardType: TextInputType.number,
-      ),
-    ]);
-  }
-
-  Widget _buildGeofenceSection() {
-    return _buildSection("Geo-fencing Settings", Icons.radar, [
-      FormFields(
-        controller: _latitudeController,
-        label: "Latitude",
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ),
-      const SizedBox(height: 16),
-      FormFields(
-        controller: _longitudeController,
-        label: "Longitude",
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ),
-      const SizedBox(height: 16),
-      FormFields(
-        controller: _radiusController,
-        label: "Radius (meters)",
         keyboardType: TextInputType.number,
       ),
     ]);

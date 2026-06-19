@@ -15,9 +15,7 @@ class CompanyModel {
   final String? state;
   final String? city;
   final String? pincode;
-  final double? latitude;
-  final double? longitude;
-  final int radius;
+
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -39,9 +37,7 @@ class CompanyModel {
     this.state,
     this.city,
     this.pincode,
-    this.latitude,
-    this.longitude,
-    this.radius = 100,
+
     this.isActive = true,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -65,9 +61,7 @@ class CompanyModel {
     String? state,
     String? city,
     String? pincode,
-    double? latitude,
-    double? longitude,
-    int? radius,
+
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -89,9 +83,7 @@ class CompanyModel {
       state: state ?? this.state,
       city: city ?? this.city,
       pincode: pincode ?? this.pincode,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      radius: radius ?? this.radius,
+
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -115,9 +107,7 @@ class CompanyModel {
       'state': state,
       'city': city,
       'pincode': pincode,
-      'latitude': latitude,
-      'longitude': longitude,
-      'radius': radius,
+
       'isActive': isActive,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -141,9 +131,7 @@ class CompanyModel {
       'state': state,
       'city': city,
       'pincode': pincode,
-      'latitude': latitude,
-      'longitude': longitude,
-      'radius': radius,
+
       'isActive': isActive,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
       'createdBy': createdBy.toMap(),
@@ -175,9 +163,7 @@ class CompanyModel {
       state: map['state'] as String?,
       city: map['city'] as String?,
       pincode: map['pincode'] as String?,
-      latitude: map['latitude']?.toDouble(),
-      longitude: map['longitude']?.toDouble(),
-      radius: map['radius'] is int ? map['radius'] as int : 100,
+
       isActive: map['isActive'] is bool ? map['isActive'] as bool : true,
       createdAt: map['createdAt'] is int
           ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int)
@@ -205,7 +191,7 @@ class CompanyModel {
 
   @override
   String toString() {
-    return 'CompanyModel(uid: $uid, name: $name, branchCode: $branchCode, logoUrl: $logoUrl, gstin: $gstin, phone: $phone, email: $email, address: $address, country: $country, state: $state, city: $city, pincode: $pincode, latitude: $latitude, longitude: $longitude, radius: $radius, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, createdBy: $createdBy, withoutLoginEnabled: $withoutLoginEnabled, notificationLanguage: $notificationLanguage, kioskUsername: $kioskUsername)';
+    return 'CompanyModel(uid: $uid, name: $name, branchCode: $branchCode, logoUrl: $logoUrl, gstin: $gstin, phone: $phone, email: $email, address: $address, country: $country, state: $state, city: $city, pincode: $pincode, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, createdBy: $createdBy, withoutLoginEnabled: $withoutLoginEnabled, notificationLanguage: $notificationLanguage, kioskUsername: $kioskUsername)';
   }
 
   @override
@@ -224,9 +210,6 @@ class CompanyModel {
         other.state == state &&
         other.city == city &&
         other.pincode == pincode &&
-        other.latitude == latitude &&
-        other.longitude == longitude &&
-        other.radius == radius &&
         other.isActive == isActive &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
@@ -250,9 +233,6 @@ class CompanyModel {
         state.hashCode ^
         city.hashCode ^
         pincode.hashCode ^
-        latitude.hashCode ^
-        longitude.hashCode ^
-        radius.hashCode ^
         isActive.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode ^

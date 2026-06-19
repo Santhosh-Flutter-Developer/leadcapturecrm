@@ -8,10 +8,7 @@ import '/views/views.dart';
 class CompanyProfile extends StatefulWidget {
   final CompanyModel company;
 
-  const CompanyProfile({
-    super.key,
-    required this.company,
-  });
+  const CompanyProfile({super.key, required this.company});
 
   @override
   State<CompanyProfile> createState() => _CompanyProfileState();
@@ -46,8 +43,6 @@ class _CompanyProfileState extends State<CompanyProfile> {
                   const SizedBox(height: 20),
                   _buildAddressInfo(context),
                   const SizedBox(height: 20),
-                  _buildGeofenceInfo(context),
-                  const SizedBox(height: 20),
                   _buildKioskInfo(context),
                 ],
               ),
@@ -71,16 +66,23 @@ class _CompanyProfileState extends State<CompanyProfile> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(100),
                 child: CachedNetworkImage(
-                  imageUrl: widget.company.logoUrl ?? AppStrings.emptyProfilePhotoUrl,
+                  imageUrl:
+                      widget.company.logoUrl ?? AppStrings.emptyProfilePhotoUrl,
                   placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    baseColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     highlightColor: Theme.of(context).colorScheme.surface,
-                    child: Container(color: Theme.of(context).colorScheme.surface),
+                    child: Container(
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
                   ),
                   errorWidget: (context, url, error) => Container(
                     height: 45,
                     width: 45,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     child: Icon(
                       Icons.business,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -117,11 +119,23 @@ class _CompanyProfileState extends State<CompanyProfile> {
                       runSpacing: 6,
                       children: [
                         if (widget.company.email != null)
-                          _iconText(context, Icons.email, widget.company.email!),
+                          _iconText(
+                            context,
+                            Icons.email,
+                            widget.company.email!,
+                          ),
                         if (widget.company.phone != null)
-                          _iconText(context, Icons.phone, widget.company.phone!),
+                          _iconText(
+                            context,
+                            Icons.phone,
+                            widget.company.phone!,
+                          ),
                         if (widget.company.gstin != null)
-                          _iconText(context, Icons.numbers, widget.company.gstin!),
+                          _iconText(
+                            context,
+                            Icons.numbers,
+                            widget.company.gstin!,
+                          ),
                       ],
                     ),
                   ],
@@ -138,13 +152,17 @@ class _CompanyProfileState extends State<CompanyProfile> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 6),
         Text(
           text,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ],
     );
@@ -155,7 +173,10 @@ class _CompanyProfileState extends State<CompanyProfile> {
       {"label": "Company Name", "value": widget.company.name},
       {"label": "Branch Code", "value": widget.company.branchCode ?? "-"},
       {"label": "GSTIN", "value": widget.company.gstin ?? "-"},
-      {"label": "Status", "value": widget.company.isActive ? "Active" : "Inactive"},
+      {
+        "label": "Status",
+        "value": widget.company.isActive ? "Active" : "Inactive",
+      },
     ];
 
     return expandableSection(
@@ -200,26 +221,18 @@ class _CompanyProfileState extends State<CompanyProfile> {
     );
   }
 
-  Widget _buildGeofenceInfo(BuildContext context) {
-    final items = [
-      {"label": "Latitude", "value": widget.company.latitude?.toString() ?? "-"},
-      {"label": "Longitude", "value": widget.company.longitude?.toString() ?? "-"},
-      {"label": "Radius (meters)", "value": widget.company.radius.toString()},
-    ];
-
-    return expandableSection(
-      context: context,
-      title: "Geo-fencing Settings",
-      icon: Icons.radar,
-      initiallyExpanded: false,
-      child: _infoGrid(context, items),
-    );
-  }
-
   Widget _buildKioskInfo(BuildContext context) {
     final items = [
-      {"label": "Without Login", "value": widget.company.withoutLoginEnabled ? "Enabled" : "Disabled"},
-      {"label": "Notification Language", "value": widget.company.notificationLanguage == 'en' ? "English" : "Tamil"},
+      {
+        "label": "Without Login",
+        "value": widget.company.withoutLoginEnabled ? "Enabled" : "Disabled",
+      },
+      {
+        "label": "Notification Language",
+        "value": widget.company.notificationLanguage == 'en'
+            ? "English"
+            : "Tamil",
+      },
       {"label": "Kiosk Username", "value": widget.company.kioskUsername ?? "-"},
     ];
 

@@ -21,6 +21,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
 
   late Future _future;
   late String _currentUserUid;
+  String? _companyLogo;
   final List<UserDataModel> _users = [];
 
   final List<Map<String, dynamic>> items = [
@@ -71,6 +72,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
     try {
       _users.clear();
       _currentUserUid = await Spdb.getUid() ?? '';
+      _companyLogo = await Spdb.getCompanyLogo();
 
       var employees = await EmployeeService.getAllEmployees(
         excludeCurrentUser: true,
@@ -158,8 +160,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const ClientsListing(section: ClientSection.contacts);
       case 'Company':
         return const ClientCompanyListing(section: ClientSection.company);
-      case 'Companies':
-        return const CompaniesListing();
+      // case 'Companies':
+      //   return const CompaniesListing();
       case 'Projects':
         return const ProjectsListing();
       case 'Tasks':
@@ -279,6 +281,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                     selectedMenu: _selectedMenu,
                     onMenuSelected: _onMenuItemSelected,
                     isAdmin: widget.isAdmin,
+                    companyLogo: _companyLogo,
                   ),
                   Expanded(
                     child: Column(

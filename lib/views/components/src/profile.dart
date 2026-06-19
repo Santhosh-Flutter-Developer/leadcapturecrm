@@ -1,7 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:facesdk_plugin/facesdk_plugin.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 import '/models/models.dart';
@@ -10,8 +15,6 @@ import '/views/views.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
 import '/theme/theme.dart';
-
-// ProfileColors removed in favor of Theme.of(context)
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -26,12 +29,39 @@ class _ProfileState extends State<Profile> {
   bool isAdmin = false;
   bool isLoading = true;
   String? editingField;
+  String _faceTemplate = '';
+  File? _selectedFile;
+  final _facesdkPlugin = FacesdkPlugin();
   final Map<String, TextEditingController> controllers = {};
 
   @override
   void initState() {
     super.initState();
+    _init();
     _loadProfile();
+  }
+
+  Future<void> _init() async {
+    try {
+      if (kIsMobile) {
+        if (Platform.isAndroid) {
+          await _facesdkPlugin.setActivation(AppStrings.androidfacesdkLicence);
+        } else {
+          await _facesdkPlugin.setActivation(AppStrings.iosfacesdkLicence);
+        }
+        await _facesdkPlugin.init();
+      }
+    } catch (e, st) {
+      await ErrorService.recordError(e, st);
+      debugPrint("${e.toString()}, ${st.toString()}");
+      FlushBar.show(
+        context,
+        e.toString(),
+        isSuccess: false,
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -107,6 +137,7 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _changeProfileImage() async {
+    // ── Admin: simple gallery pick, no face enrollment ──────────────────
     if (isAdmin) {
       if (admin == null || admin!.uid == null || admin!.uid!.isEmpty) return;
 
@@ -115,8 +146,8 @@ class _ProfileState extends State<Profile> {
         source: ImageSource.gallery,
         imageQuality: 65,
       );
-
       if (pickedImage == null) return;
+
       File imageFile = File(pickedImage.path);
       FlushBar.show(context, "Uploading profile picture...");
 
@@ -125,7 +156,6 @@ class _ProfileState extends State<Profile> {
           file: imageFile,
           folder: StorageFolder.adminProfile,
         );
-
         final updatedAdmin = admin!.copyWith(profileImageUrl: downloadUrl);
         await AdminService.updateAdmin(
           id: updatedAdmin.uid!,
@@ -148,59 +178,262 @@ class _ProfileState extends State<Profile> {
           isSuccess: false,
         );
       }
-    } else {
-      if (employee == null || employee!.uid == null || employee!.uid!.isEmpty)
-        return;
+      return;
+    }
 
-      final picker = ImagePicker();
-      final pickedImage = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 65,
+    // ── Employee: face enrollment ────────────────────────────────────────
+    if (employee == null || employee!.uid == null || employee!.uid!.isEmpty) {
+      return;
+    }
+
+    _faceTemplate = '';
+    File? capturedFile;
+
+    // Windows: file picker only (no camera/ImagePicker support)
+    if (kIsWindows) {
+      try {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          dialogTitle: 'Select a photo for face enrollment',
+        );
+        if (result == null || result.files.isEmpty) return;
+        final pickedPath = result.files.single.path;
+        if (pickedPath == null) return;
+
+        capturedFile = File(pickedPath);
+
+        if (!mounted) return;
+        futureLoading(context);
+
+        try {
+          final faceList = await _facesdkPlugin.extractFaces(capturedFile.path);
+          if (Navigator.canPop(context)) Navigator.pop(context);
+
+          if (faceList != null && faceList.isNotEmpty) {
+            final face = faceList[0];
+            setState(() {
+              _selectedFile = capturedFile;
+              _faceTemplate = face['templates'] != null
+                  ? base64Encode(face['templates'])
+                  : '';
+            });
+            if (_faceTemplate.isEmpty && mounted) {
+              FlushBar.show(
+                context,
+                'Image selected but no face template could be generated.',
+                isSuccess: false,
+              );
+            }
+          } else {
+            setState(() => _selectedFile = capturedFile);
+            if (mounted) {
+              FlushBar.show(
+                context,
+                'No face detected. Please choose a clear front-facing photo.',
+                isSuccess: false,
+              );
+            }
+          }
+        } catch (e) {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          setState(() => _selectedFile = capturedFile);
+          if (mounted) {
+            FlushBar.show(
+              context,
+              'Face detection failed: $e',
+              isSuccess: false,
+            );
+          }
+        }
+      } catch (e, st) {
+        await ErrorService.recordError(e, st);
+        if (mounted) {
+          FlushBar.show(context, 'Failed to pick image: $e', isSuccess: false);
+        }
+        return;
+      }
+    } else {
+      // Mobile: bottom sheet → camera or gallery
+      final source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take Photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       );
 
-      if (pickedImage == null) return;
-      File imageFile = File(pickedImage.path);
-      FlushBar.show(context, "Uploading profile picture...");
+      if (source == null) return;
 
       try {
-        String uid = employee!.uid!;
-        String fileName = "profile_$uid.jpg";
-        final storageRef = FirebaseStorage.instance.ref().child(
-          "profile_images/$fileName",
-        );
+        if (source == ImageSource.camera) {
+          // Use FaceCaptureView for camera (same as EmployeeCreate)
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => FaceCaptureView()),
+          );
 
-        await storageRef.putFile(imageFile);
-        String downloadUrl = await storageRef.getDownloadURL();
+          if (result != null && result is Map) {
+            final faceJpg = result['face_URL'] as Uint8List?;
+            final templates = result['face_template'] as Uint8List?;
 
-        final updatedEmployee = employee!.copyWith(
-          profileImageUrl: downloadUrl,
-          updatedAt: DateTime.now(),
-        );
-        await EmployeeService.editEmployee(
-          uid: updatedEmployee.uid!,
-          employee: updatedEmployee,
-        );
+            if (faceJpg != null && mounted) {
+              final tempFile = File(
+                '${Directory.systemTemp.path}/face_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              );
+              await tempFile.writeAsBytes(faceJpg);
+              capturedFile = tempFile;
 
-        String? cid = await Spdb.getCid();
-        await Spdb.setEmployeeLogin(
-          model: updatedEmployee,
-          cid: cid ?? '',
-          logoUrl: downloadUrl,
-        );
+              setState(() {
+                _selectedFile = capturedFile;
+                _faceTemplate = templates != null
+                    ? base64Encode(templates)
+                    : '';
+              });
+            }
+          }
+        } else {
+          // Gallery pick with EXIF rotation + face extraction
+          final xFile = await ImagePicker().pickImage(
+            source: ImageSource.gallery,
+            imageQuality: 85,
+            maxWidth: 512,
+          );
+          if (xFile == null) return;
 
-        setState(() => employee = updatedEmployee);
-        FlushBar.show(
-          context,
-          "Profile picture updated successfully",
-          isSuccess: true,
-        );
-      } catch (e) {
-        FlushBar.show(
-          context,
-          "Failed to update profile picture: $e",
-          isSuccess: false,
-        );
+          final rotated = await FlutterExifRotation.rotateImage(
+            path: xFile.path,
+          );
+          capturedFile = rotated;
+
+          if (mounted) {
+            futureLoading(context);
+            try {
+              final faceList = await _facesdkPlugin.extractFaces(rotated.path);
+              if (Navigator.canPop(context)) Navigator.pop(context);
+
+              if (faceList != null && faceList.isNotEmpty) {
+                final face = faceList[0];
+                setState(() {
+                  _selectedFile = capturedFile;
+                  _faceTemplate = face['templates'] != null
+                      ? base64Encode(face['templates'])
+                      : '';
+                });
+                if (_faceTemplate.isEmpty && mounted) {
+                  FlushBar.show(
+                    context,
+                    'No face template generated from this image.',
+                    isSuccess: false,
+                  );
+                }
+              } else {
+                setState(() {
+                  _selectedFile = capturedFile;
+                  _faceTemplate = '';
+                });
+                if (mounted) {
+                  FlushBar.show(
+                    context,
+                    'No face detected in the selected image.',
+                    isSuccess: false,
+                  );
+                }
+              }
+            } catch (e) {
+              if (Navigator.canPop(context)) Navigator.pop(context);
+              setState(() {
+                _selectedFile = capturedFile;
+                _faceTemplate = '';
+              });
+            }
+          }
+        }
+      } catch (e, st) {
+        await ErrorService.recordError(e, st);
+        if (mounted) {
+          FlushBar.show(
+            context,
+            'Failed to capture image: $e',
+            isSuccess: false,
+          );
+        }
+        return;
       }
+    }
+
+    // ── Upload & save to Firestore ───────────────────────────────────────
+    if (capturedFile == null) return;
+
+    FlushBar.show(context, "Uploading profile picture...");
+
+    try {
+      String uid = employee!.uid!;
+      final storageRef = FirebaseStorage.instance.ref().child(
+        "profile_images/profile_$uid.jpg",
+      );
+      await storageRef.putFile(capturedFile);
+      final downloadUrl = await storageRef.getDownloadURL();
+      final updatedEmployee = employee!.copyWith(
+        profileImageUrl: downloadUrl,
+        // faceTemplate: _faceTemplate.isNotEmpty ? _faceTemplate : null,
+        updatedAt: DateTime.now(),
+      );
+
+      await EmployeeService.editEmployee(
+        uid: updatedEmployee.uid!,
+        employee: updatedEmployee,
+      );
+
+      String? cid = await Spdb.getCid();
+      await Spdb.setEmployeeLogin(
+        model: updatedEmployee,
+        cid: cid ?? '',
+        logoUrl: downloadUrl,
+      );
+
+      setState(() => employee = updatedEmployee);
+
+      FlushBar.show(
+        context,
+        _faceTemplate.isNotEmpty
+            ? "Profile picture updated and face enrolled ✓"
+            : "Profile picture updated successfully",
+        isSuccess: true,
+      );
+    } catch (e) {
+      FlushBar.show(
+        context,
+        "Failed to save profile picture: $e",
+        isSuccess: false,
+      );
     }
   }
 
@@ -265,18 +498,18 @@ class _ProfileState extends State<Profile> {
     try {
       if (!isAdmin) {
         await EmployeeService.deleteEmployeeImage(uid: employee!.uid!);
-
         final updated = employee!.copyWith(profileImageUrl: '');
-
         await Spdb.setEmployeeLogin(
           model: updated,
           cid: await Spdb.getCid() ?? '',
         );
-
-        setState(() => employee = updated);
+        setState(() {
+          employee = updated;
+          _selectedFile = null;
+          _faceTemplate = '';
+        });
       } else {
         await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
-
         final updated = admin!.copyWith(profileImageUrl: '');
         setState(() => admin = updated);
       }
@@ -343,12 +576,10 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  /// DESKTOP LAYOUT: Sticky Side Card + Main Content
   Widget _buildDesktopLayout() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left Column: Profile Card
         SizedBox(
           width: 350,
           child: Column(
@@ -360,11 +591,10 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         const SizedBox(width: 32),
-        // Right Column: Information Sections
         Expanded(
           child: Column(
             children: [
-              _buildEmployeeGrid(2), // 2 columns for sections on desktop
+              _buildEmployeeGrid(2),
               const SizedBox(height: 40),
               _buildFooter(),
             ],
@@ -374,7 +604,6 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  /// MOBILE LAYOUT: Vertical Stack
   Widget _buildMobileLayout() {
     return Column(
       children: [
@@ -394,6 +623,15 @@ class _ProfileState extends State<Profile> {
         : (CacheService.designationByUid(employee?.designation ?? '')?.name ??
               "Employee");
     final image = isAdmin ? admin?.profileImageUrl : employee?.profileImageUrl;
+
+    // Use locally captured file if available (shows immediately after capture)
+    final ImageProvider? localImageProvider = _selectedFile != null
+        ? FileImage(_selectedFile!)
+        : null;
+    final ImageProvider? networkImageProvider =
+        (image != null && image.isNotEmpty) ? NetworkImage(image) : null;
+    final ImageProvider? displayImage =
+        localImageProvider ?? networkImageProvider;
 
     return Container(
       padding: const EdgeInsets.all(32),
@@ -433,7 +671,6 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                   ),
-
                                   Positioned(
                                     top: 0,
                                     left: 0,
@@ -458,23 +695,9 @@ class _ProfileState extends State<Profile> {
                                             onPressed: () =>
                                                 Navigator.pop(context),
                                           ),
-
                                           Row(
                                             children: [
                                               if (image.isNotEmpty)
-                                                // IconButton(
-                                                //   icon: const Icon(
-                                                //     Icons.crop,
-                                                //     color: Colors.white,
-                                                //   ),
-                                                //   onPressed: () async {
-                                                //     if (image.isEmpty) return;
-                                                //     Navigator.pop(context);
-                                                //     await _cropExistingImage(
-                                                //       image,
-                                                //     );
-                                                //   },
-                                                // ),
                                                 IconButton(
                                                   icon: const Icon(
                                                     Iconsax.trash,
@@ -491,7 +714,6 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                   ),
-
                                   Positioned(
                                     bottom: 20,
                                     left: 0,
@@ -515,7 +737,6 @@ class _ProfileState extends State<Profile> {
                         );
                       }
                     : null,
-
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -530,10 +751,8 @@ class _ProfileState extends State<Profile> {
                   child: CircleAvatar(
                     radius: 70,
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    backgroundImage: (image != null && image.isNotEmpty)
-                        ? NetworkImage(image)
-                        : null,
-                    child: (image == null || image.isEmpty)
+                    backgroundImage: displayImage,
+                    child: displayImage == null
                         ? Text(
                             name.trim().isNotEmpty
                                 ? name.trim()[0].toUpperCase()
@@ -548,23 +767,89 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
               ),
-
-              // if (!isAdmin)
               Material(
-                color: Theme.of(context).colorScheme.primary,
+                color: _faceTemplate.isNotEmpty
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.secondary,
                 shape: const CircleBorder(),
                 child: InkWell(
                   onTap: _changeProfileImage,
                   customBorder: const CircleBorder(),
-                  child: const Padding(
-                    padding: EdgeInsets.all(10.0),
-                    child: Icon(Iconsax.camera, color: Colors.white, size: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Icon(
+                      _faceTemplate.isNotEmpty
+                          ? Icons.face_retouching_natural
+                          : (kIsWindows
+                                ? Icons.upload_file_rounded
+                                : Iconsax.camera),
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+          // Face enrollment status badge
+          if (!isAdmin) ...[
+            GestureDetector(
+              onTap: _changeProfileImage,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _faceTemplate.isNotEmpty
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _faceTemplate.isNotEmpty
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.4)
+                        : Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _faceTemplate.isNotEmpty
+                          ? Icons.face_retouching_natural
+                          : Icons.face_outlined,
+                      size: 14,
+                      color: _faceTemplate.isNotEmpty
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _faceTemplate.isNotEmpty
+                          ? 'Face enrolled'
+                          : 'Tap to enroll face',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: _faceTemplate.isNotEmpty
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          const SizedBox(height: 12),
           Text(
             name,
             textAlign: TextAlign.center,
@@ -692,7 +977,6 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  // Mobile fallback header
   Widget _buildProfileHeader() {
     return _buildStickyProfileCard();
   }

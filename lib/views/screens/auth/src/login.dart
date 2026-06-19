@@ -21,23 +21,6 @@ class _LoginState extends State<Login> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  Future<void> _storeDeviceLocationOnLogin() async {
-    // Request GPS only on platforms where geolocation is expected to work.
-    if (!kIsMobile && !kIsDesktop) return;
-
-    try {
-      final position = await LocationService.getCurrentPosition();
-      if (position == null) return;
-
-      await Spdb.saveLastLoginLocation(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-    } catch (_) {
-      // Location is optional for login itself; don't block successful auth.
-    }
-  }
-
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -92,7 +75,6 @@ class _LoginState extends State<Login> {
             cid: result["collectionId"],
             logoUrl: companyLogo,
           );
-          await _storeDeviceLocationOnLogin();
           RoleModel role = await RoleService.getRole(uid: emp.role);
           await PermissionService.savePermissions(role.permissions);
           await CacheService.syncAllCollections();
@@ -111,7 +93,7 @@ class _LoginState extends State<Login> {
           cid: result["collectionId"],
           logoUrl: companyLogo,
         );
-        await _storeDeviceLocationOnLogin();
+        // await _storeDeviceLocationOnLogin();
         await PermissionService.savePermissions(AppStrings.permissionsTrueMap);
 
         await AuthService.saveLoginLogs(

@@ -29,13 +29,9 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
   final TextEditingController _adminName = TextEditingController();
   final TextEditingController _adminEmail = TextEditingController();
   final TextEditingController _password = TextEditingController();
-  final TextEditingController _latitude = TextEditingController();
-  final TextEditingController _longitude = TextEditingController();
-  final TextEditingController _radius = TextEditingController(text: '100');
 
   File? _logo;
   bool _passwordVisible = false;
-  bool _detectingLocation = false;
   @override
   void dispose() {
     _companyName.dispose();
@@ -43,9 +39,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     _adminName.dispose();
     _adminEmail.dispose();
     _password.dispose();
-    _latitude.dispose();
-    _longitude.dispose();
-    _radius.dispose();
     super.dispose();
   }
 
@@ -55,16 +48,10 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     _adminName.clear();
     _adminEmail.clear();
     _password.clear();
-    _latitude.clear();
-    _longitude.clear();
-
-    // Reset default radius
-    _radius.text = '100';
 
     setState(() {
       _logo = null;
       _passwordVisible = false;
-      _detectingLocation = false;
       _currentStep = 0;
     });
 
@@ -76,36 +63,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
       source: ImageSource.gallery,
     );
     if (image != null) setState(() => _logo = File(image.path));
-  }
-
-  Future<void> _detectLocation() async {
-    setState(() => _detectingLocation = true);
-    try {
-      final position = await LocationService.getCurrentPosition();
-      if (position == null) {
-        if (mounted) {
-          FlushBar.show(
-            context,
-            'Location permission denied or service unavailable.',
-            isSuccess: false,
-          );
-        }
-        return;
-      }
-      _latitude.text = position.latitude.toStringAsFixed(6);
-      _longitude.text = position.longitude.toStringAsFixed(6);
-      if (mounted) setState(() {});
-    } catch (e) {
-      if (mounted) {
-        FlushBar.show(
-          context,
-          'Failed to detect location: $e',
-          isSuccess: false,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _detectingLocation = false);
-    }
   }
 
   Future<void> _handleRegister() async {
@@ -127,9 +84,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
           return;
         }
-        final double? lat = double.tryParse(_latitude.text.trim());
-        final double? lng = double.tryParse(_longitude.text.trim());
-        final double? radius = double.tryParse(_radius.text.trim());
 
         var result = await AuthService.registerCompany(
           name: _companyName.text.trim(),
@@ -137,9 +91,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           adminName: _adminName.text.trim(),
           password: _password.text.trim(),
           logo: _logo,
-          companyLat: lat,
-          companyLng: lng,
-          companyRadius: radius,
         );
 
         if (Navigator.canPop(context)) Navigator.pop(context);
@@ -231,10 +182,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                           isEmail: true,
                         ),
                       ] else if (_currentStep == 1) ...[
-                        // Company Location Section
-                        _sectionTitle("Company Location"),
-                        _locationFields(),
-                      ] else if (_currentStep == 2) ...[
                         // Admin Setup Section
                         _sectionTitle("Super Admin Setup"),
                         _customField("Full Name", _adminName, Iconsax.user),
@@ -277,9 +224,8 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     );
   }
 
-
   Widget _buildStepper() {
-    final steps = ["Company", "Location", "Admin"];
+    final steps = ["Company", "Admin"];
 
     return Row(
       children: List.generate(steps.length * 2 - 1, (i) {
@@ -287,7 +233,8 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
         if (i.isOdd) {
           final stepIndex = i ~/ 2;
           final isCompleted = stepIndex < _currentStep;
-          final isActive = stepIndex == _currentStep - 1 || stepIndex == _currentStep;
+          final isActive =
+              stepIndex == _currentStep - 1 || stepIndex == _currentStep;
           return Expanded(
             child: Container(
               height: 2,
@@ -311,9 +258,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isCompleted || isActive
-                    ? Colors.blue
-                    : Colors.white,
+                color: isCompleted || isActive ? Colors.blue : Colors.white,
                 border: Border.all(
                   color: isCompleted || isActive
                       ? Colors.blue
@@ -329,9 +274,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: isActive
-                              ? Colors.white
-                              : Colors.grey.shade400,
+                          color: isActive ? Colors.white : Colors.grey.shade400,
                         ),
                       ),
               ),
@@ -351,127 +294,6 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           ],
         );
       }),
-    );
-  }
-
-
-  Widget _locationFields() {
-    final canDetectLocation = Platform.isAndroid || Platform.isIOS;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _numericField(
-                "Latitude",
-                _latitude,
-                Iconsax.location,
-                min: -90,
-                max: 90,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _numericField(
-                "Longitude",
-                _longitude,
-                Iconsax.location,
-                min: -180,
-                max: 180,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _numericField(
-          "Radius (metres)",
-          _radius,
-          Iconsax.radar,
-          min: 1,
-          positiveOnly: true,
-        ),
-        if (canDetectLocation) ...[
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _detectingLocation ? null : _detectLocation,
-              icon: _detectingLocation
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Iconsax.gps, size: 18),
-              label: Text(
-                _detectingLocation ? "Detecting..." : "Use Current Location",
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
-
-  Widget _numericField(
-    String label,
-    TextEditingController controller,
-    IconData icon, {
-    double? min,
-    double? max,
-    bool positiveOnly = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.grey700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FormFields(
-            controller: controller,
-            prefixIcon: Icon(icon, size: 20),
-            hintText: "Enter $label",
-            keyboardType: const TextInputType.numberWithOptions(
-              signed: true,
-              decimal: true,
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                RegExp(positiveOnly ? r'[0-9.]' : r'[-0-9.]'),
-              ),
-            ],
-            valid: (value) {
-              final raw = value?.trim() ?? '';
-              if (raw.isEmpty) return '$label is required';
-              final parsed = double.tryParse(raw);
-              if (parsed == null) return 'Invalid $label';
-              if (positiveOnly && parsed <= 0) return 'Must be > 0';
-              if (min != null && parsed < min) {
-                return '$label must be >= $min';
-              }
-              if (max != null && parsed > max) {
-                return '$label must be <= $max';
-              }
-              return null;
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -610,7 +432,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           const SizedBox(width: 12),
         ],
         Expanded(
-          child: _currentStep < 2
+          child: _currentStep < 1
               ? Container(
                   height: 45,
                   decoration: BoxDecoration(

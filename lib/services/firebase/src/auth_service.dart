@@ -428,10 +428,13 @@ class AuthService {
           for (var i in adminQuery.docs) {
             var data = i.data();
             if (data['email'] == email.trim().toLowerCase()) {
+              final nameValue = data['name'];
               return {
                 'companyId': company.id,
                 'adminId': i.id,
-                'name': data['name'].toString().decrypt,
+                'name': (nameValue != null && nameValue is String) 
+                    ? nameValue.decrypt 
+                    : '',
                 'email': email,
               };
             }
@@ -448,10 +451,13 @@ class AuthService {
             var data = i.data();
             String decryptedEmail = (data['email'] ?? '').toString().decrypt;
             if (decryptedEmail.trim().toLowerCase() == email.trim().toLowerCase()) {
+              final nameValue = data['name'];
               return {
                 'companyId': company.id,
                 'employeeId': i.id,
-                'name': (data['name'] ?? '').toString().decrypt,
+                'name': (nameValue != null && nameValue is String) 
+                    ? nameValue.decrypt 
+                    : '',
                 'email': email,
               };
             }
@@ -462,7 +468,7 @@ class AuthService {
       return null;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      throw e.toString();
+      return null;
     }
   }
 
