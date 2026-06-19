@@ -45,6 +45,9 @@ enum Collections {
   employeeStatuses,
   leaveRequests,
   permissionRequests,
+  customerTickets,
+  ticketComments,
+  ticketHistory,
 }
 
 enum StorageFolder {
@@ -58,6 +61,106 @@ enum StorageFolder {
   adminProfile,
   taskAttachments,
   feedAttachments,
+  ticketAttachments,
+}
+
+enum TicketCategory {
+  bugReport,
+  technicalSupport,
+  changeRequest,
+  enhancementRequest,
+  applicationIssue,
+  serverIssue,
+  databaseIssue,
+  networkIssue,
+}
+
+extension TicketCategoryX on TicketCategory {
+  String get label {
+    switch (this) {
+      case TicketCategory.bugReport:
+        return 'Bug Report';
+      case TicketCategory.technicalSupport:
+        return 'Technical Support';
+      case TicketCategory.changeRequest:
+        return 'Change Request';
+      case TicketCategory.enhancementRequest:
+        return 'Enhancement Request';
+      case TicketCategory.applicationIssue:
+        return 'Application Issue';
+      case TicketCategory.serverIssue:
+        return 'Server Issue';
+      case TicketCategory.databaseIssue:
+        return 'Database Issue';
+      case TicketCategory.networkIssue:
+        return 'Network Issue';
+    }
+  }
+}
+
+enum TicketStatus {
+  open,
+  assigned,
+  inProgress,
+  onHold,
+  pendingCustomerResponse,
+  resolved,
+  closed,
+}
+
+extension TicketStatusX on TicketStatus {
+  String get label {
+    switch (this) {
+      case TicketStatus.open:
+        return 'Open';
+      case TicketStatus.assigned:
+        return 'Assigned';
+      case TicketStatus.inProgress:
+        return 'In Progress';
+      case TicketStatus.onHold:
+        return 'On Hold';
+      case TicketStatus.pendingCustomerResponse:
+        return 'Pending Customer Response';
+      case TicketStatus.resolved:
+        return 'Resolved';
+      case TicketStatus.closed:
+        return 'Closed';
+    }
+  }
+}
+
+enum TicketPriority { low, medium, high, urgent }
+
+extension TicketPriorityX on TicketPriority {
+  String get label {
+    switch (this) {
+      case TicketPriority.low:
+        return 'Low';
+      case TicketPriority.medium:
+        return 'Medium';
+      case TicketPriority.high:
+        return 'High';
+      case TicketPriority.urgent:
+        return 'Urgent';
+    }
+  }
+}
+
+enum TicketModeOfContact { whatsApp, mail, phone, visit }
+
+extension TicketModeOfContactX on TicketModeOfContact {
+  String get label {
+    switch (this) {
+      case TicketModeOfContact.whatsApp:
+        return 'WhatsApp';
+      case TicketModeOfContact.mail:
+        return 'Mail';
+      case TicketModeOfContact.phone:
+        return 'Phone';
+      case TicketModeOfContact.visit:
+        return 'Visit';
+    }
+  }
 }
 
 enum LeadSource { email, google, facebook, phone, directVisit, other }

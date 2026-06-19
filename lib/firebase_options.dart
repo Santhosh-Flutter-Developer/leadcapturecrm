@@ -83,5 +83,4 @@ class DefaultFirebaseOptions {
     authDomain: 'leadcapture-79a43.firebaseapp.com',
     storageBucket: 'leadcapture-79a43.firebasestorage.app',
   );
-
 }

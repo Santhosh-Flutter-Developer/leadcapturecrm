@@ -245,6 +245,14 @@ class MenuService {
         route: '/tasks',
         requiredPermissions: ['Tasks'],
       ),
+      // Customer Tickets
+      MenuItem(
+        id: 'tickets',
+        title: 'Tickets',
+        icon: Iconsax.ticket,
+        route: '/tickets',
+        requiredPermissions: ['Tickets'],
+      ),
 
       // Settings
       MenuItem(
@@ -411,6 +419,7 @@ class MenuService {
       'Calendar',
       'Projects',
       'Tasks',
+      'Tickets',
       'Downloads',
       'Developer Area',
     ];

@@ -36,3 +36,4 @@ export 'src/upcoming_deadline_item_model.dart';
 export 'src/company_model.dart';
 export 'src/holiday_model.dart';
 export 'src/permission_request_model.dart';
+export 'src/customer_ticket_model.dart';

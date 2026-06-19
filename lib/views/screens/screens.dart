@@ -18,4 +18,5 @@ export 'backup/backup.dart';
 export 'calendar/calendar.dart';
 export 'holidays/holidays.dart';
 export 'salary_ledger/salary_ledger.dart';
+export 'tickets/tickets.dart';
 
