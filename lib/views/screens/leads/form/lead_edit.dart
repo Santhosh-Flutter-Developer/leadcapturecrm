@@ -288,7 +288,7 @@ class _LeadEditState extends State<LeadEdit> {
               var files = await FilePick.pickFiles(context);
               if (files != null) {
                 if (files.isNotEmpty) {
-                  _selectedAttachments.addAll(files);
+                  _selectedAttachments.addAll(files as Iterable<File>);
                   setState(() {});
                 }
               }

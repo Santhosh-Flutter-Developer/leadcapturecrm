@@ -144,7 +144,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
       );
 
       if (confirm == true) {
-        _startUpload(files);
+        _startUpload(files.cast<File>());
       }
     }
   }

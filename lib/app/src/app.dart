@@ -1,12 +1,27 @@
-import 'dart:io';
+// ─────────────────────────────────────────────────────────────────────────────
+// app.dart
+// CHANGED:
+//   • Removed `import 'dart:io'`  (crashes on web)
+//   • Removed `import 'package:flutter_window_close/flutter_window_close.dart'`
+//   • Added conditional import for setupWindowClose() via stub / native files
+//   • Replaced `Platform.isWindows` with `kIsWindows` (from platform.dart)
+//   • Web now also gets PopScope (back-button guard), just like mobile
+// ─────────────────────────────────────────────────────────────────────────────
+import 'dart:io' show exit; // `exit()` is still needed on Windows — safe
+                            // because it is only called inside !kIsWeb branch.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_window_close/flutter_window_close.dart';
 import 'package:leadcapture/views/components/src/show_dialog.dart';
 import 'package:provider/provider.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 import '/theme/theme.dart';
 import '/app/app.dart';
+
+// Conditional import: on web the stub is used (does nothing).
+// On native the real flutter_window_close wrapper is used.
+import '/utils/src/window_close_stub.dart'
+    if (dart.library.io) '/utils/src/window_close_native.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> messengerKey =
@@ -26,8 +41,10 @@ class _AppState extends State<App> {
   void initState() {
     super.initState();
 
-    if (Platform.isWindows) {
-      FlutterWindowClose.setWindowShouldCloseHandler(() async {
+    // Register Windows close handler only on native Windows.
+    // The setupWindowClose() call is a no-op on web / other platforms.
+    if (!kIsWeb && kIsWindows) {
+      setupWindowClose(() async {
         final ctx = navigatorKey.currentContext;
         if (ctx == null) return true;
 
@@ -56,8 +73,10 @@ class _AppState extends State<App> {
         builder: (context, authProvider, themeProvider, child) {
           Widget home = authProvider.homeWidget ?? const Splash();
 
-          if (Platform.isWindows) {
-          } else {
+          // On Windows native: no PopScope (window_close handles it).
+          // On web AND mobile: wrap with PopScope for back-button / browser
+          // back navigation guard.
+          if (!kIsWindows) {
             home = PopScope(
               canPop: false,
               onPopInvokedWithResult: (didPop, result) async {

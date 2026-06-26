@@ -1,121 +1,96 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:leadcapture/models/src/download_model.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io';
 import '/services/services.dart' show ErrorService, Spdb;
 import '/theme/theme.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
 
+// Conditional import: on web → dart:html blob download.
+//                    on native → dart:io filesystem save.
+import 'download_io.dart'
+    if (dart.library.html) 'download_web.dart' show saveFileToDownloads, runNativeUrlDownload;
+
 class Download {
+  // ── URL download ──────────────────────────────────────────────────────────
   static Future<void> downloadFromUrl(
     BuildContext context,
     String url,
     String? name,
   ) async {
-    final dio = Dio();
-    int progress = 0;
-
-    var directory = await getApplicationDocumentsDirectory();
-    if (Platform.isWindows) {
-      directory = (await getDownloadsDirectory())!;
+    if (kIsWeb) {
+      await _webDownloadFromUrl(context, url, name);
+    } else {
+      await _nativeDownloadFromUrl(context, url, name);
     }
+  }
 
+  // Web: fetch via Dio bytes + trigger browser download
+  static Future<void> _webDownloadFromUrl(
+    BuildContext context,
+    String url,
+    String? name,
+  ) async {
     final String fileName = name != null && name.isNotEmpty
         ? path.basename(name)
         : path.basename(url);
-    final String savePath = path.join(directory.path, fileName);
-    OverlayState overlayState = Overlay.of(context);
-    OverlayEntry overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: 80,
-        left: 0,
-        right: 0,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: _DownloadProgressIndicator(progress: progress),
-        ),
-      ),
-    );
-
-    // Show overlay progress
-    overlayState.insert(overlayEntry);
-
     try {
-      await dio.download(
+      final response = await Dio().get<List<int>>(
         url,
-        savePath,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            progress = (received / total * 100).toInt();
-            overlayEntry.markNeedsBuild();
-          }
-        },
+        options: Options(responseType: ResponseType.bytes),
       );
-
-      final fileSize = await File(savePath).length();
-
-      await FirebaseFirestore.instance
-          .collection('download_history')
-          .add(
+      if (response.data != null) {
+        final bytes = Uint8List.fromList(response.data!);
+        await saveFileToDownloads(bytes, fileName: fileName);
+      }
+      await FirebaseFirestore.instance.collection('download_history').add(
             DownloadHistoryModel(
               fileName: fileName,
-              filePath: savePath,
+              filePath: url,
               url: url,
-              fileSize: fileSize,
+              fileSize: response.data?.length ?? 0,
               downloadedAt: DateTime.now(),
               isSuccess: true,
               userId: await Spdb.getUid() ?? '',
             ).toMap(),
           );
-      overlayEntry.remove();
-      FlushBar.show(context, "Download Completed", isSuccess: true);
-
-      openfile(savePath, context);
+      if (context.mounted) {
+        FlushBar.show(context, "Download Completed", isSuccess: true);
+      }
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
-      await FirebaseFirestore.instance
-          .collection('download_history')
-          .add(
-            DownloadHistoryModel(
-              fileName: fileName,
-              filePath: '',
-              url: url,
-              fileSize: 0,
-              downloadedAt: DateTime.now(),
-              isSuccess: false,
-              userId: await Spdb.getUid() ?? '',
-            ).toMap(),
-          );
-
-      overlayEntry.remove();
-      FlushBar.show(
-        context,
-        "Download Failed",
-        isSuccess: false,
-        error: e,
-        stackTrace: st,
-      );
+      if (context.mounted) {
+        FlushBar.show(context, "Download Failed",
+            isSuccess: false, error: e, stackTrace: st);
+      }
     }
   }
 
+  // Native: Dio HTTP download → save to filesystem → open
+  static Future<void> _nativeDownloadFromUrl(
+    BuildContext context,
+    String url,
+    String? name,
+  ) async {
+    await _NativeUrlDownloader.run(context, url, name);
+  }
+
+  // ── Asset download ────────────────────────────────────────────────────────
   static Future<void> downloadFromAsset(
     BuildContext context,
     String assetPath,
     String fileName,
   ) async {
     int progress = 0;
-
-    OverlayState overlayState = Overlay.of(context);
-
-    OverlayEntry overlayEntry = OverlayEntry(
+    final overlayState = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         bottom: 80,
         left: 0,
@@ -126,37 +101,29 @@ class Download {
         ),
       ),
     );
-
     overlayState.insert(overlayEntry);
 
     try {
-      // Load asset bytes
       final ByteData data = await rootBundle.load(assetPath);
-
       progress = 50;
       overlayEntry.markNeedsBuild();
 
       final Uint8List bytes = data.buffer.asUint8List();
-
-      // Save file
-      final String savePath = await saveFileToDownloads(
-        bytes,
-        fileName: fileName,
-      );
+      // saveFileToDownloads is resolved by the conditional import above:
+      //   web    → dart:html blob download (returns fileName as pseudo-path)
+      //   native → writes to filesystem (returns real file path)
+      final String savePath =
+          await saveFileToDownloads(bytes, fileName: fileName);
 
       progress = 100;
       overlayEntry.markNeedsBuild();
 
-      final fileSize = await File(savePath).length();
-
-      await FirebaseFirestore.instance
-          .collection('download_history')
-          .add(
+      await FirebaseFirestore.instance.collection('download_history').add(
             DownloadHistoryModel(
               fileName: fileName,
               filePath: savePath,
               url: assetPath,
-              fileSize: fileSize,
+              fileSize: bytes.length,
               downloadedAt: DateTime.now(),
               isSuccess: true,
               userId: await Spdb.getUid() ?? '',
@@ -164,28 +131,24 @@ class Download {
           );
 
       overlayEntry.remove();
-
-      FlushBar.show(context, "Download Completed", isSuccess: true);
-
-      openfile(savePath, context);
+      if (context.mounted) {
+        FlushBar.show(context, "Download Completed", isSuccess: true);
+        // On native, open the saved file; on web the browser already downloaded it.
+        if (!kIsWeb) openfile(savePath, context);
+      }
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
-
       await ErrorService.recordError(e, st);
-
       overlayEntry.remove();
-
-      FlushBar.show(
-        context,
-        "Download Failed",
-        isSuccess: false,
-        error: e,
-        stackTrace: st,
-      );
+      if (context.mounted) {
+        FlushBar.show(context, "Download Failed",
+            isSuccess: false, error: e, stackTrace: st);
+      }
     }
   }
 }
 
+// ─── Progress indicator widget (unchanged) ────────────────────────────────────
 class _DownloadProgressIndicator extends StatelessWidget {
   final int progress;
   const _DownloadProgressIndicator({required this.progress});
@@ -207,9 +170,10 @@ class _DownloadProgressIndicator extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               'Downloading... $progress%',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.white),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.white),
             ),
           ],
         ),
@@ -218,52 +182,16 @@ class _DownloadProgressIndicator extends StatelessWidget {
   }
 }
 
-Future<String> saveFileToDownloads(Uint8List bytes, {String? fileName}) async {
-  Directory? dir;
-
-  if (Platform.isAndroid) {
-    // There is no true "Downloads" via path_provider on Android.
-    // This will create/use a Download folder inside external storage for your app.
-    final baseDir =
-        await getExternalStorageDirectory(); // e.g. /storage/emulated/0/Android/data/your.app/files
-    if (baseDir == null) {
-      throw Exception('Could not get external storage directory.');
-    }
-    dir = Directory('${baseDir.path}/Download');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-  } else if (Platform.isIOS) {
-    // iOS doesn't have a public Downloads folder.
-    // Best is app's Documents directory (visible in Files app under your app).
-    dir = await getApplicationDocumentsDirectory(); // e.g. ./Documents
-  } else if (Platform.isWindows) {
-    // On desktop, path_provider has getDownloadsDirectory()
-    dir = await getDownloadsDirectory();
-    dir ??= await getApplicationDocumentsDirectory();
-  } else if (Platform.isMacOS || Platform.isLinux) {
-    // On Unix systems, Downloads is usually under HOME
-    final downloads = await getDownloadsDirectory();
-    if (downloads != null) {
-      dir = downloads;
-    } else {
-      final home = Platform.environment['HOME'];
-      if (home != null) {
-        dir = Directory('$home/Downloads');
-      } else {
-        dir = await getApplicationDocumentsDirectory();
-      }
-    }
-  } else {
-    // Fallback for other platforms (Fuchsia, etc.)
-    dir = await getApplicationDocumentsDirectory();
+// ─── Native URL downloader (private — only instantiated under !kIsWeb) ────────
+// Kept as a private class so dart:io imports stay in download_io.dart only.
+// This class itself does NOT import dart:io — it delegates to download_io.dart.
+class _NativeUrlDownloader {
+  static Future<void> run(
+      BuildContext context, String url, String? name) async {
+    await runNativeUrlDownload(context, url, name);
   }
-
-  final safeFileName = fileName == null || fileName.isEmpty
-      ? Uuid().v4()
-      : fileName;
-  final file = File('${dir.path}/$safeFileName');
-
-  await file.writeAsBytes(bytes, flush: true);
-  return file.path;
 }
+
+// Forward declaration resolved by the conditional import at the top of this file.
+// download_io.dart   exports `_runNativeUrlDownload` for native.
+// download_web.dart  exports a no-op for web (never called due to kIsWeb check).

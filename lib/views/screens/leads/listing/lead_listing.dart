@@ -8,7 +8,11 @@ import 'package:collection/collection.dart';
 import '/services/services.dart';
 import '/models/models.dart';
 import '/views/views.dart';
+import 'package:flutter/foundation.dart';
 import '/utils/utils.dart';
+import '/utils/src/download_io.dart'
+    if (dart.library.html) '/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import '/theme/theme.dart';
 
 const String _pageTitle = "Leads";
@@ -1091,7 +1095,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                         fileName:
                             'Leads_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx',
                       );
-                      openfile(filePath, context);
+                      if (!kIsWeb) openfile(filePath, context);
                     } catch (e) {
                       FlushBar.show(context, e.toString(), isSuccess: false);
                     }

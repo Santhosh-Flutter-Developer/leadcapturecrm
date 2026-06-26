@@ -1,5 +1,9 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File; // used in non-web branches only
+import 'package:flutter/foundation.dart';
+import 'package:leadcapture/utils/src/download_io.dart'
+    if (dart.library.html) 'package:leadcapture/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import 'package:any_link_preview/any_link_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

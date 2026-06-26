@@ -1,40 +1,42 @@
-import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+// audio_recorder.dart
+// CHANGED:
+//   • On web: MethodChannel 'com.srisoftwarez.audio_recorder' does not exist.
+//     Replaced with conditional import that uses dart:html MediaRecorder API.
+//   • permission_handler also does not work on web — replaced with browser
+//     getUserMedia permission check on web.
+//   • On native: all existing MethodChannel / permission_handler code is kept.
+// ─────────────────────────────────────────────────────────────────────────────
+import 'package:flutter/foundation.dart';
 import '/services/services.dart';
 
-class AudioRecorder {
-  static const _channel = MethodChannel('com.srisoftwarez.audio_recorder');
+import 'audio_recorder_io.dart'
+    if (dart.library.html) 'audio_recorder_web.dart';
 
+class AudioRecorder {
+  /// Requests microphone permission.
+  /// On web: uses browser getUserMedia prompt.
+  /// On native: uses permission_handler.
   static Future<bool> requestMicPermission() async {
-    try {
-      var status = await Permission.microphone.status;
-      if (!status.isGranted) {
-        status = await Permission.microphone.request();
-      }
-      return status.isGranted;
-    } catch (e, st) {
-      await ErrorService.recordError(e, st);
-      return false;
-    }
+    return requestMicPermissionImpl();
   }
 
+  /// Starts audio recording.
   static Future<void> startRecording() async {
     try {
-      if (await requestMicPermission()) {
-        await _channel.invokeMethod('startRecording');
-      }
+      await startRecordingImpl();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
     }
   }
 
+  /// Stops recording and returns a path (native) or blob URL (web).
   static Future<String?> stopRecording() async {
     try {
-      final String? path = await _channel.invokeMethod('stopRecording');
-      return path;
+      return await stopRecordingImpl();
     } catch (e, st) {
       await ErrorService.recordError(e, st);
+      return null;
     }
-    return null;
   }
 }

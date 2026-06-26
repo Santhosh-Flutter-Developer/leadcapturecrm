@@ -1,54 +1,57 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+
+import 'file_picker_io.dart'
+    if (dart.library.html) 'file_picker_web.dart' show readBytesFromPath;
+
+export 'package:file_picker/file_picker.dart' show PlatformFile, FileType;
 
 class FilePick {
-  static List<File>? selectedFile;
-
-  static Future<List<File>?> pickFiles(context) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+  /// Picks multiple files. Returns a list of [PlatformFile].
+  /// On native: use pf.path → File(pf.path!)
+  /// On web:    use pf.bytes directly.
+  static Future<List<PlatformFile>?> pickFiles(context) async {
+    final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
+      withData: kIsWeb,
     );
-
-    if (result != null) {
-      List<File> files = result.paths.map((path) => File(path!)).toList();
-      return files;
-    } else {
-      return null;
-    }
+    return result?.files;
   }
 
-  static Future<File?> pickFile(
+  /// Picks a single file.
+  static Future<PlatformFile?> pickFile(
     context, {
     List<String>? allowedExtensions,
   }) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       allowedExtensions: allowedExtensions,
       type: allowedExtensions != null ? FileType.custom : FileType.any,
+      withData: kIsWeb,
     );
-
-    if (result != null) {
-      List<File> files = result.paths.map((path) => File(path!)).toList();
-      return files.first;
-    } else {
-      return null;
-    }
+    return result?.files.firstOrNull;
   }
 
-  static Future<List<File>?> pickFileWithExtensions(
+  /// Picks multiple files with extension filter.
+  static Future<List<PlatformFile>?> pickFileWithExtensions(
     context, {
     List<String>? allowedExtensions,
   }) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       allowedExtensions: allowedExtensions,
       type: allowedExtensions != null ? FileType.custom : FileType.any,
       allowMultiple: true,
+      withData: kIsWeb,
     );
-
-    if (result != null) {
-      List<File> files = result.paths.map((path) => File(path!)).toList();
-      return files;
-    } else {
-      return null;
-    }
+    return result?.files;
   }
+}
+
+/// Returns bytes for a [PlatformFile] on both web and native.
+Future<Uint8List> platformFileToBytes(PlatformFile pf) async {
+  if (kIsWeb) {
+    assert(pf.bytes != null, 'bytes is null — withData was not set to true');
+    return pf.bytes!;
+  }
+  return readBytesFromPath(pf.path!);
 }

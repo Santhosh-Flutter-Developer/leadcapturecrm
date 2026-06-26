@@ -8,7 +8,11 @@ import '/views/views.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
+import 'package:flutter/foundation.dart';
 import '/utils/utils.dart';
+import '/utils/src/download_io.dart'
+    if (dart.library.html) '/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import 'bloc/client_bloc.dart';
 
 class ClientsListing extends StatelessWidget {
@@ -450,8 +454,8 @@ class _ClientListingViewState extends State<ClientListingView> {
                           fileName: '$pageTitle List.xlsx',
                         );
 
-                        // Open file
-                        openfile(filePath, context);
+                        // Open file (native only — web already triggered download above)
+                        if (!kIsWeb) openfile(filePath, context);
                       } catch (e) {
                         FlushBar.show(context, e.toString(), isSuccess: false);
                       }

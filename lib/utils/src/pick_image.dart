@@ -1,125 +1,85 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:image_picker/image_picker.dart';
 import '/services/services.dart';
 import '/views/views.dart';
+import '/constants/constants.dart';
+
+// Single conditional import provides BOTH rotateXFile() AND nativeUploadFromPath()
+// from the correct platform file. Both files define both functions.
+import 'pick_image_io.dart'
+    if (dart.library.html) 'pick_image_web.dart'
+    show rotateXFile, nativeUploadFromPath;
 
 class PickImage {
   static final ImagePicker _picker = ImagePicker();
 
-  static Future<File?> selectImage(context) async {
+  /// Returns XFile? — works on both web and native.
+  /// Native callers: File(xfile.path)
+  /// Web callers:    xfile.readAsBytes()
+  static Future<XFile?> selectImage(context) async {
+    if (kIsWeb) {
+      return _pickImageGallery();
+    }
     var pickOption = await Sheet.showSheet(
       context,
       widget: const PickOption(),
       size: 0.2,
     );
-    if (pickOption != null) {
-      if (pickOption == 1) {
-        var image = await PickImage.captureImage();
-        if (image != null) {
-          return image;
-        }
-      } else {
-        var image = await PickImage._pickImage();
-        if (image != null) {
-          return image;
-        }
-      }
-    }
-    return null;
+    if (pickOption == null) return null;
+    return pickOption == 1 ? captureImage() : _pickImageGallery();
   }
 
-  static Future<File?> captureImage() async {
+  static Future<XFile?> captureImage() async {
     try {
-      XFile? tmpImage = await _picker.pickImage(source: ImageSource.camera);
-      if (tmpImage != null) {
-        File rotatedImage = await FlutterExifRotation.rotateImage(
-          path: tmpImage.path,
-        );
-        File image = File(rotatedImage.path);
-
-        final originalImageBytes = await image.readAsBytes();
-        // ImageFile input = ImageFile(
-        //   rawBytes: originalImageBytes,
-        //   filePath: image.path, // Pass the file path
-        //   contentType: 'images/png',
-        // );
-
-        // Configuration config = const Configuration(
-        //   outputType: ImageOutputType.webpThenJpg,
-        //   // can only be true for Android and iOS while using ImageOutputType.jpg or ImageOutputType.pngÏ
-        //   useJpgPngNativeCompressor: false,
-        //   // set quality between 0-100
-        //   quality: 40,
-        // );
-        // final param = ImageFileConfiguration(input: input, config: config);
-        // final output = await compressor.compress(param);
-
-        return image.writeAsBytes(originalImageBytes);
-      }
-      return null;
+      final XFile? tmp = await _picker.pickImage(source: ImageSource.camera);
+      if (tmp == null) return null;
+      return rotateXFile(tmp);
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint('${e.toString()}, ${st.toString()}');
       throw e.toString();
     }
   }
 
-  static Future<File?> _pickImage() async {
+  static Future<XFile?> _pickImageGallery() async {
     try {
-      XFile? tmpImage = await _picker.pickImage(source: ImageSource.gallery);
-
-      if (tmpImage != null) {
-        File image = File(tmpImage.path);
-        return image;
-      }
-
-      return null;
+      final XFile? tmp = await _picker.pickImage(source: ImageSource.gallery);
+      if (tmp == null) return null;
+      if (kIsWeb) return tmp;
+      return rotateXFile(tmp);
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint('${e.toString()}, ${st.toString()}');
       throw e.toString();
     }
   }
 
-  static Future<List<File>> pickMultipleImages() async {
+  static Future<List<XFile>> pickMultipleImages() async {
     try {
-      List<XFile>? tmpImages = await _picker.pickMultiImage();
-      if (tmpImages.isNotEmpty) {
-        List<File> images = [];
-        for (var tmpImage in tmpImages) {
-          File rotatedImage = await FlutterExifRotation.rotateImage(
-            path: tmpImage.path,
-          );
-          File image = File(rotatedImage.path);
-
-          final originalImageBytes = await image.readAsBytes();
-          // ImageFile input = ImageFile(
-          //   rawBytes: originalImageBytes,
-          //   filePath: image.path, // Pass the file path
-          //   contentType: 'images/png',
-          // );
-
-          // Configuration config = const Configuration(
-          //   outputType: ImageOutputType.webpThenJpg,
-          //   // can only be true for Android and iOS while using ImageOutputType.jpg or ImageOutputType.pngÏ
-          //   useJpgPngNativeCompressor: false,
-          //   // set quality between 0-100
-          //   quality: 40,
-          // );
-          // final param = ImageFileConfiguration(input: input, config: config);
-          // final output = await compressor.compress(param);
-
-          images.add(await image.writeAsBytes(originalImageBytes));
-        }
-        return images;
+      final List<XFile> tmpImages = await _picker.pickMultiImage();
+      if (tmpImages.isEmpty) return [];
+      if (kIsWeb) return tmpImages;
+      final List<XFile> rotated = [];
+      for (final img in tmpImages) {
+        rotated.add(await rotateXFile(img));
       }
-      return [];
+      return rotated;
     } catch (e, st) {
       await ErrorService.recordError(e, st);
-      debugPrint("${e.toString()}, ${st.toString()}");
+      debugPrint('${e.toString()}, ${st.toString()}');
       throw e.toString();
     }
   }
+}
+
+/// Uploads an XFile to Firebase Storage on both web (bytes) and native (File).
+/// Returns the download URL.
+Future<String> xFileToUploadUrl(XFile xfile, StorageFolder folder) async {
+  if (kIsWeb) {
+    final Uint8List bytes = await xfile.readAsBytes();
+    return StorageService.uploadImageBytes(bytes: bytes, folder: folder);
+  }
+  return nativeUploadFromPath(xfile.path, folder);
 }

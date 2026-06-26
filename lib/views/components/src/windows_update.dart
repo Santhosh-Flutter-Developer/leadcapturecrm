@@ -13,6 +13,7 @@ import '/models/models.dart';
 import '/theme/theme.dart';
 import '/views/views.dart';
 import '/utils/utils.dart';
+import '/utils/src/download_io.dart' show saveFileToDownloads;
 import '/services/services.dart';
 
 class WindowsUpdate extends StatefulWidget {

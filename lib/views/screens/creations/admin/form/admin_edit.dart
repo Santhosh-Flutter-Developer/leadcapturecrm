@@ -293,7 +293,7 @@ class _AdminUpdateState extends State<AdminUpdate> {
                 if (picked != null) {
                   setState(() {
                     _existingProfileUrl = null;
-                    _newProfileImage = picked;
+                    _newProfileImage = picked as File?;
                   });
                 }
               },
@@ -311,7 +311,7 @@ class _AdminUpdateState extends State<AdminUpdate> {
     return GestureDetector(
       onTap: () async {
         final image = await PickImage.selectImage(context);
-        if (image != null) setState(() => _newProfileImage = image);
+        if (image != null) setState(() => _newProfileImage = image as File?);
       },
       child: DottedBorder(
         options: RectDottedBorderOptions(),

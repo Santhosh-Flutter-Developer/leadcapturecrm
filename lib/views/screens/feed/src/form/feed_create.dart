@@ -106,17 +106,17 @@ class _FeedCreateState extends State<FeedCreate> {
 
   // Mock function to simulate picking an image
   void _pickImage() async {
-    List<File> selectedImages = [];
+    List<File>? selectedImages = [];
 
     if (kIsDesktop) {
       selectedImages =
-          await FilePick.pickFileWithExtensions(
+          (await FilePick.pickFileWithExtensions(
             context,
             allowedExtensions: ['jpg', 'png', 'jpeg'],
           ) ??
-          [];
+          []).cast<File>();
     } else {
-      selectedImages = await PickImage.pickMultipleImages();
+      selectedImages = (await PickImage.pickMultipleImages()).cast<File>();
     }
     if (selectedImages.isNotEmpty) {
       _selectedMedia.addAll(selectedImages);
@@ -125,8 +125,8 @@ class _FeedCreateState extends State<FeedCreate> {
   }
 
   void _pickFile() async {
-    List<File> selectedFiles = [];
-    selectedFiles = await FilePick.pickFiles(context) ?? [];
+    List<File>? selectedFiles = [];
+    selectedFiles = (await FilePick.pickFiles(context) ?? []).cast<File>();
     if (selectedFiles.isNotEmpty) {
       _selectedFiles.addAll(selectedFiles);
     }

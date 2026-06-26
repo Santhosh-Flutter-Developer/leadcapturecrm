@@ -152,7 +152,7 @@ class _FaceScanState extends State<FaceScan> {
                       onTap: () async {
                         var file = await PickImage.captureImage();
                         if (file != null) {
-                          _capturedFile = file;
+                          _capturedFile = file as File?;
                           setState(() {});
                         }
                       },

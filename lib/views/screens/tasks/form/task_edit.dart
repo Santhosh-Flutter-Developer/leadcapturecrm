@@ -627,7 +627,7 @@ class _TaskEditState extends State<TaskEdit> {
             onTap: () async {
               var files = await FilePick.pickFiles(context);
               if (files != null) {
-                setState(() => _selectedAttachments.addAll(files));
+                setState(() => _selectedAttachments.addAll(files as Iterable<File>));
               }
             },
             child: Container(

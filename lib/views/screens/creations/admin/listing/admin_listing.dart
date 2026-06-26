@@ -8,7 +8,11 @@ import '/services/services.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/theme/theme.dart';
+import 'package:flutter/foundation.dart';
 import '/utils/utils.dart';
+import '/utils/src/download_io.dart'
+    if (dart.library.html) '/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import '/views/views.dart';
 import 'bloc/admin_bloc.dart';
 
@@ -509,7 +513,7 @@ class _AdminListingViewState extends State<AdminListingView> {
               fileBytes,
               fileName: 'Admin List.xlsx',
             );
-            openfile(filePath, context);
+            if (!kIsWeb) openfile(filePath, context);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.grey600,

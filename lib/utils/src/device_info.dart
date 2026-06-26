@@ -1,10 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// device_info.dart
+// CHANGED:
+//   • Removed top-level `import 'dart:io'`
+//   • Added conditional import so Platform.is* is only used on non-web
+//   • The kIsWeb branch was already present — just needed the import fixed
+// ─────────────────────────────────────────────────────────────────────────────
 import 'dart:convert';
-import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import '/models/models.dart';
 import '/services/services.dart';
 import 'package:http/http.dart' as http;
+
+// Conditionally import dart:io Platform — never loaded on web
+import 'device_info_io.dart'
+    if (dart.library.html) 'device_info_web.dart' show getPlatformDeviceInfo;
 
 class DeviceInfo {
   static final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
@@ -19,66 +29,27 @@ class DeviceInfo {
 
     try {
       if (kIsWeb) {
-        // Web platform
+        // Web platform — no dart:io needed
         final webInfo = await deviceInfoPlugin.webBrowserInfo;
         deviceId = webInfo.vendor ?? 'unknown';
         deviceName = webInfo.userAgent ?? 'unknown';
         brand = webInfo.browserName.name;
         model = 'Web Browser';
         platform = 'Web';
-      } else if (Platform.isAndroid) {
-        // Android
-        final android = await deviceInfoPlugin.androidInfo;
-        deviceId = android.id;
-        deviceName = android.device;
-        brand = android.brand;
-        model = android.model;
-        platform = 'Android';
-        fcmId = await getToken();
-      } else if (Platform.isIOS) {
-        // iOS
-        final ios = await deviceInfoPlugin.iosInfo;
-        deviceId = ios.identifierForVendor ?? 'unknown';
-        deviceName = ios.name;
-        brand = ios.systemName;
-        model = ios.model;
-        platform = 'iOS';
-        fcmId = await getToken();
-      } else if (Platform.isWindows) {
-        // Windows
-        final windows = await deviceInfoPlugin.windowsInfo;
-        deviceId = windows.deviceId;
-        deviceName = windows.computerName;
-        brand = 'Microsoft';
-        model = windows.productName;
-        platform = 'Microsoft';
-      } else if (Platform.isLinux) {
-        // Linux
-        final linux = await deviceInfoPlugin.linuxInfo;
-        deviceId = linux.machineId ?? 'unknown';
-        deviceName = linux.name;
-        brand = linux.prettyName;
-        model = linux.version;
-        platform = 'Linux';
-      } else if (Platform.isMacOS) {
-        // macOS
-        final mac = await deviceInfoPlugin.macOsInfo;
-        deviceId = mac.systemGUID ?? 'unknown';
-        deviceName = mac.computerName;
-        brand = 'Apple';
-        model = mac.model;
-        platform = 'macOS';
+        // No FCM token for web device tracking (handled separately)
       } else {
-        deviceId = 'unknown';
-        deviceName = 'unknown';
-        brand = 'unknown';
-        model = 'unknown';
-        platform = 'unknown';
+        // Native — delegates to platform-specific function in device_info_io.dart
+        final info = await getPlatformDeviceInfo(deviceInfoPlugin);
+        deviceId = info['deviceId'];
+        deviceName = info['deviceName'];
+        brand = info['brand'];
+        model = info['model'];
+        platform = info['platform'];
+        fcmId = info['fcmId'];
       }
     } catch (e, st) {
       debugPrint("${e.toString()}, ${st.toString()}");
       await ErrorService.recordError(e, st);
-      // Handle exceptions gracefully
       deviceId = 'error';
       deviceName = 'error';
       brand = 'error';

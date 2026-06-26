@@ -7,7 +7,11 @@ import '/services/services.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/views/views.dart';
+import 'package:flutter/foundation.dart';
 import '/utils/utils.dart';
+import '/utils/src/download_io.dart'
+    if (dart.library.html) '/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import '/theme/theme.dart';
 import 'bloc/employee_bloc.dart';
 
@@ -791,7 +795,7 @@ class _EmployeeListingViewState extends State<EmployeeListingView> {
                         fileBytes,
                         fileName: '$_pageTitle List.xlsx',
                       );
-                      openfile(filePath, context);
+                      if (!kIsWeb) openfile(filePath, context);
                     } catch (e) {
                       FlushBar.show(context, e.toString(), isSuccess: false);
                     }

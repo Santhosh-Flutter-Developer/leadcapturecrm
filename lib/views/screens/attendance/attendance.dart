@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -15,6 +16,9 @@ import 'package:leadcapture/services/firebase/src/attendance_service.dart';
 import 'package:leadcapture/services/firebase/src/employee_service.dart';
 import 'package:leadcapture/services/firebase/src/worktime_service.dart';
 import 'package:leadcapture/utils/src/download.dart';
+import 'package:leadcapture/utils/src/download_io.dart'
+    if (dart.library.html) 'package:leadcapture/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import 'package:leadcapture/utils/src/open_file.dart';
 import 'package:leadcapture/utils/src/platform.dart';
 import 'package:leadcapture/views/components/src/xlsx_writer.dart';
@@ -292,7 +296,7 @@ class _AttendanceState extends State<Attendance>
             "Attendance_Export_${DateTime.now().millisecondsSinceEpoch}.xlsx",
       );
 
-      openfile(filePath, context);
+      if (!kIsWeb) openfile(filePath, context);
     } catch (e) {
       FlushBar.show(context, e.toString(), isSuccess: false);
     }

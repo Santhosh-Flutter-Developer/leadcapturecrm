@@ -15,6 +15,10 @@ import '/services/services.dart';
 import '/views/views.dart';
 import '/theme/theme.dart';
 import '/constants/constants.dart';
+import 'package:flutter/foundation.dart';
+import '/utils/src/download_io.dart'
+    if (dart.library.html) '/utils/src/download_web.dart'
+    show saveFileToDownloads;
 import 'package:path/path.dart' as path;
 
 class LeadsViewAppColors {
@@ -173,7 +177,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         Navigator.pop(context);
       }
       FlushBar.show(context, 'Notes downloaded successfully', isSuccess: true);
-      openfile(savedPath, context);
+      if(!kIsWeb)openfile(savedPath, context);
     } catch (e, st) {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
@@ -2056,7 +2060,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
       );
 
       if (confirm == true) {
-        _startUpload(files);
+        _startUpload(files.cast<File>());
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
@@ -31,6 +32,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
   final TextEditingController _password = TextEditingController();
 
   File? _logo;
+  Uint8List? _logoBytes;
   bool _passwordVisible = false;
   @override
   void dispose() {
@@ -51,6 +53,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
 
     setState(() {
       _logo = null;
+      _logoBytes = null;
       _passwordVisible = false;
       _currentStep = 0;
     });
@@ -62,7 +65,16 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-    if (image != null) setState(() => _logo = File(image.path));
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        if (!kIsWeb) {
+          _logo = File(image.path);
+        } else {
+          _logoBytes = bytes;
+        }
+      });
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -90,7 +102,8 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           adminEmail: _adminEmail.text.trim(),
           adminName: _adminName.text.trim(),
           password: _password.text.trim(),
-          logo: _logo,
+          logo: kIsWeb?null:_logo,
+          logoBytes: kIsWeb? _logoBytes: null,
         );
 
         if (Navigator.canPop(context)) Navigator.pop(context);
@@ -159,10 +172,10 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
                           child: CircleAvatar(
                             radius: 45,
                             backgroundColor: Colors.grey[100],
-                            backgroundImage: _logo != null
+                            backgroundImage:_logoBytes !=null?MemoryImage(_logoBytes!): (_logo != null
                                 ? FileImage(_logo!)
-                                : null,
-                            child: _logo == null
+                                : null),
+                            child: (_logoBytes==null && _logo == null)
                                 ? const Icon(
                                     Iconsax.camera,
                                     color: Colors.blueAccent,

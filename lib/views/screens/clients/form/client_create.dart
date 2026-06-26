@@ -1,4 +1,8 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import '/utils/src/pick_image.dart' show xFileToUploadUrl;
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
@@ -23,7 +27,8 @@ class _ContactCreateState extends State<ContactCreate> {
   final _email = TextEditingController();
   final _mobile = TextEditingController();
 
-  File? _profileImage;
+  XFile? _profileImage;
+  Uint8List? _profileImageBytes;
   String? _salutation;
   String? _gender;
 
@@ -188,30 +193,19 @@ class _ContactCreateState extends State<ContactCreate> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              _profileImage!,
-              height: 130,
-              width: 130,
-              fit: BoxFit.cover,
-            ),
+            child: kIsWeb
+                ? Image.memory(_profileImageBytes ?? Uint8List(0), height: 130, width: 130, fit: BoxFit.cover)
+                : Image.file(File(_profileImage!.path!), height: 130, width: 130, fit: BoxFit.cover),
           ),
           Positioned(
             top: 4,
             right: 4,
             child: GestureDetector(
               onTap: () async {
-                File? result;
-                if (kIsMobile) {
-                  result = await PickImage.selectImage(context);
-                } else {
-                  result = await FilePick.pickFile(
-                    context,
-                    allowedExtensions: ['jpg', 'jpeg', 'png'],
-                  );
-                }
-
+                final result = await PickImage.selectImage(context);
                 if (result != null) {
                   setState(() => _profileImage = result);
+                  if (kIsWeb) result.readAsBytes().then((b) => setState(() => _profileImageBytes = b));
                 }
               },
               child: Container(
@@ -234,12 +228,10 @@ class _ContactCreateState extends State<ContactCreate> {
 
     return GestureDetector(
       onTap: () async {
-        var result = await FilePick.pickFile(
-          context,
-          allowedExtensions: ['jpg', 'jpeg', 'png'],
-        );
+        final result = await PickImage.selectImage(context);
         if (result != null) {
           setState(() => _profileImage = result);
+          if (kIsWeb) result.readAsBytes().then((b) => setState(() => _profileImageBytes = b));
         }
       },
       child: DottedBorder(
@@ -279,10 +271,7 @@ class _ContactCreateState extends State<ContactCreate> {
 
       final imageUrl = _profileImage == null
           ? null
-          : await StorageService.uploadFile(
-              file: _profileImage!,
-              folder: StorageFolder.clientPhotos,
-            );
+          : await xFileToUploadUrl(_profileImage!, StorageFolder.clientPhotos);
 
       final client = ClientModel(
         salutation: _salutation,
@@ -332,7 +321,8 @@ class _CompanyCreateState extends State<CompanyCreate> {
   final _address = TextEditingController();
   final _note = TextEditingController();
 
-  File? _logo;
+  XFile? _logo;
+  Uint8List? _logoBytes;
 
   @override
   void dispose() {
@@ -517,30 +507,19 @@ class _CompanyCreateState extends State<CompanyCreate> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              _logo!,
-              height: 130,
-              width: 130,
-              fit: BoxFit.cover,
-            ),
+            child: kIsWeb
+                ? Image.memory(_logoBytes ?? Uint8List(0), height: 130, width: 130, fit: BoxFit.cover)
+                : Image.file(File(_logo!.path!), height: 130, width: 130, fit: BoxFit.cover),
           ),
           Positioned(
             top: 4,
             right: 4,
             child: GestureDetector(
               onTap: () async {
-                File? result;
-                if (kIsMobile) {
-                  result = await PickImage.selectImage(context);
-                } else {
-                  result = await FilePick.pickFile(
-                    context,
-                    allowedExtensions: ['jpg', 'jpeg', 'png'],
-                  );
-                }
-
+                final result = await PickImage.selectImage(context);
                 if (result != null) {
                   setState(() => _logo = result);
+                  if (kIsWeb) result.readAsBytes().then((b) => setState(() => _logoBytes = b));
                 }
               },
               child: Container(
@@ -563,12 +542,10 @@ class _CompanyCreateState extends State<CompanyCreate> {
 
     return GestureDetector(
       onTap: () async {
-        var result = await FilePick.pickFile(
-          context,
-          allowedExtensions: ['jpg', 'jpeg', 'png'],
-        );
+        final result = await PickImage.selectImage(context);
         if (result != null) {
           setState(() => _logo = result);
+          if (kIsWeb) result.readAsBytes().then((b) => setState(() => _logoBytes = b));
         }
       },
       child: DottedBorder(
@@ -608,10 +585,7 @@ class _CompanyCreateState extends State<CompanyCreate> {
 
       final logoUrl = _logo == null
           ? null
-          : await StorageService.uploadFile(
-              file: _logo!,
-              folder: StorageFolder.clientCompanyLogos,
-            );
+          : await xFileToUploadUrl(_logo!, StorageFolder.clientCompanyLogos);
 
       final company = ClientModel(
         companyName: _companyName.text.trim(),

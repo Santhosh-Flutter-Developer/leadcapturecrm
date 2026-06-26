@@ -1,4 +1,8 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import '/utils/src/pick_image.dart' show xFileToUploadUrl;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +36,8 @@ class _ContactUpdateState extends State<ContactUpdate> {
   bool _loginAllowed = true;
   bool _receiveEmailNotifications = true;
 
-  File? _profileImage;
+  XFile? _profileImage;
+  Uint8List? _profileImageBytes;
   String? _profileImageUrl;
   bool _oldImageRemoved = false;
 
@@ -186,10 +191,12 @@ class _ContactUpdateState extends State<ContactUpdate> {
   Widget _buildProfileImage() {
     return ImagePickerWidget(
       image: _profileImage,
+      imageBytes: _profileImageBytes,
       networkImage: _profileImageUrl,
       label: "Upload Profile",
       onChanged: (file) {
         setState(() => _profileImage = file);
+        if (kIsWeb) file.readAsBytes().then((b) => setState(() => _profileImageBytes = b));
       },
       onRemove: () {
         _profileImage = null;
@@ -207,10 +214,7 @@ class _ContactUpdateState extends State<ContactUpdate> {
 
     String? imageUrl = _profileImageUrl;
     if (_profileImage != null) {
-      imageUrl = await StorageService.uploadFile(
-        file: _profileImage!,
-        folder: StorageFolder.clientPhotos,
-      );
+      imageUrl = await xFileToUploadUrl(_profileImage!, StorageFolder.clientPhotos);
     }
 
     if (_oldImageRemoved) {
@@ -274,7 +278,8 @@ class _CompanyUpdateState extends State<CompanyUpdate> {
   final _address = TextEditingController();
   final _note = TextEditingController();
 
-  File? _logo;
+  XFile? _logo;
+  Uint8List? _logoBytes;
   String? _logoUrl;
   bool _oldLogoRemoved = false;
 
@@ -412,10 +417,12 @@ class _CompanyUpdateState extends State<CompanyUpdate> {
   Widget _buildLogo() {
     return ImagePickerWidget(
       image: _logo,
+      imageBytes: _logoBytes,
       networkImage: _logoUrl,
       label: "Upload Logo",
       onChanged: (file) {
         setState(() => _logo = file);
+        if (kIsWeb) file.readAsBytes().then((b) => setState(() => _logoBytes = b));
       },
       onRemove: () {
         _logo = null;
@@ -433,10 +440,7 @@ class _CompanyUpdateState extends State<CompanyUpdate> {
 
     String? logoUrl = _logoUrl;
     if (_logo != null) {
-      logoUrl = await StorageService.uploadFile(
-        file: _logo!,
-        folder: StorageFolder.clientCompanyLogos,
-      );
+      logoUrl = await xFileToUploadUrl(_logo!, StorageFolder.clientCompanyLogos);
     }
 
     if (_oldLogoRemoved) {
@@ -480,15 +484,17 @@ class _CompanyUpdateState extends State<CompanyUpdate> {
 }
 
 class ImagePickerWidget extends StatelessWidget {
-  final File? image;
+  final XFile? image;
+  final Uint8List? imageBytes;
   final String? networkImage;
   final String label;
   final VoidCallback onRemove;
-  final Function(File file) onChanged;
+  final Function(XFile file) onChanged;
 
   const ImagePickerWidget({
     super.key,
     required this.image,
+    this.imageBytes,
     required this.networkImage,
     required this.label,
     required this.onRemove,
@@ -522,12 +528,9 @@ class ImagePickerWidget extends StatelessWidget {
                     width: 140,
                     fit: BoxFit.cover,
                   )
-                : Image.file(
-                    image!,
-                    height: 140,
-                    width: 140,
-                    fit: BoxFit.cover,
-                  ),
+                : (kIsWeb
+                    ? Image.memory(imageBytes ?? Uint8List(0), height: 140, width: 140, fit: BoxFit.cover)
+                    : Image.file(File(image!.path!), height: 140, width: 140, fit: BoxFit.cover)),
           ),
           Positioned(
             top: 4,
@@ -554,16 +557,8 @@ class ImagePickerWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        File? result;
-        if (kIsMobile) {
-          result = await PickImage.selectImage(context);
-        } else {
-          result = await FilePick.pickFile(
-            context,
-            allowedExtensions: ['jpg', 'jpeg', 'png'],
-          );
-        }
-        onChanged(result!);
+        final result = await PickImage.selectImage(context);
+        if (result != null) onChanged(result);
       },
       child: DottedBorder(
         child: Container(

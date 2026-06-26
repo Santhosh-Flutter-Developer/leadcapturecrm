@@ -10,7 +10,7 @@ class ChatInputBar extends StatefulWidget {
 
 class _ChatInputBarState extends State<ChatInputBar> {
   final TextEditingController _controller = TextEditingController();
-  final List<File> _pickedFiles = [];
+  final List<PlatformFile> _pickedFiles = [];
   bool _showMentionList = false;
   List<MentionModel> _allUsers = [];
   List<MentionModel> _filteredUsers = [];
@@ -50,6 +50,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     final files = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
+      withData: kIsWeb,
       allowedExtensions: [
         'png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'tiff', // images
         'mp4', 'mov', 'avi', 'mkv', 'webm', // videos
@@ -60,7 +61,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
     if (files != null && files.files.isNotEmpty) {
       setState(() {
-        _pickedFiles.addAll(files.files.map((f) => File(f.path!)));
+        _pickedFiles.addAll(files.files);
       });
     }
   }
@@ -216,18 +217,27 @@ class _ChatInputBarState extends State<ChatInputBar> {
     }
   }
 
-  Future<List<FileModel>> _uploadFiles(List<File> files) async {
+  Future<List<FileModel>> _uploadFiles(List<PlatformFile> files) async {
     List<FileModel> uploadedFiles = [];
 
-    for (final file in files) {
-      final fileName = file.path.split('/').last;
+    for (final pf in files) {
+      final fileName = pf.name;
       final ext = fileName.split('.').last.toLowerCase();
-      final size = await file.length();
+      final size = pf.size;
 
-      final url = await StorageService.uploadFile(
-        file: file,
-        folder: StorageFolder.chats,
-      );
+      final String url;
+      if (kIsWeb) {
+        url = await StorageService.uploadBytes(
+          bytes: pf.bytes!,
+          fileName: fileName,
+          folder: StorageFolder.chats,
+        );
+      } else {
+        url = await StorageService.uploadFile(
+          file: File(pf.path!),
+          folder: StorageFolder.chats,
+        );
+      }
 
       uploadedFiles.add(
         FileModel(
@@ -271,7 +281,16 @@ class _ChatInputBarState extends State<ChatInputBar> {
     messageProvider.stopRecording();
     var output = await AudioRecorder.stopRecording();
     if (output != null && output.isNotEmpty) {
-      _pickedFiles.add(File(output));
+      // Audio recorder returns a file path (native) or blob URL (web)
+      // Wrap as PlatformFile so _uploadFiles handles it uniformly
+      if (!kIsWeb) {
+        _pickedFiles.add(PlatformFile(
+          name: 'recording_${DateTime.now().millisecondsSinceEpoch}.m4a',
+          size: 0,
+          path: output,
+        ));
+      }
+      // Web blob URL audio upload not supported yet — skip silently
     }
     _stopTimer();
     setState(() {});
@@ -488,7 +507,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
     if (_pickedFiles.isEmpty && message.isEmpty) return;
 
     // Store local copies BEFORE clearing UI
-    final pickedFiles = List<File>.from(_pickedFiles);
+    final pickedFiles = List<PlatformFile>.from(_pickedFiles);
 
     final updatedMentions = widget.chat.isGroupChat
         ? _recalculateMentions(message)
@@ -552,11 +571,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: List.generate(_pickedFiles.length, (index) {
-              final file = _pickedFiles[index];
-              final ext = getExt(file.path);
+              final pf = _pickedFiles[index];
+              final ext = pf.name.split('.').last.toLowerCase();
               return Stack(
                 children: [
-                  _buildFilePreview(file, ext),
+                  _buildFilePreview(pf, ext),
                   Positioned(
                     top: 2,
                     right: 2,
@@ -584,17 +603,23 @@ class _ChatInputBarState extends State<ChatInputBar> {
     );
   }
 
-  Widget _buildFilePreview(File file, String ext) {
+  Widget _buildFilePreview(PlatformFile pf, String ext) {
     const size = 100.0;
 
     if (["jpg", "jpeg", "png", "gif", "webp"].contains(ext)) {
+      ImageProvider imageProvider;
+      if (kIsWeb && pf.bytes != null) {
+        imageProvider = MemoryImage(pf.bytes!);
+      } else {
+        imageProvider = FileImage(File(pf.path!));
+      }
       return Container(
         width: size,
         height: size,
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          image: DecorationImage(image: FileImage(file), fit: BoxFit.cover),
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
         ),
       );
     }

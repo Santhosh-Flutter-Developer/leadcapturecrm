@@ -123,26 +123,26 @@ class _FeedEditState extends State<FeedEdit> {
   }
 
   void _pickImage() async {
-    List<File> selectedImages = [];
+    List<File>? selectedImages = [];
     if (kIsDesktop) {
       selectedImages =
-          await FilePick.pickFileWithExtensions(
+          (await FilePick.pickFileWithExtensions(
             context,
             allowedExtensions: ['jpg', 'png', 'jpeg'],
           ) ??
-          [];
+          []).cast<File>();
     } else {
-      selectedImages = await PickImage.pickMultipleImages();
+      selectedImages = (await PickImage.pickMultipleImages()).cast<File>();
     }
     if (selectedImages.isNotEmpty) {
       setState(() {
-        _newMediaFiles.addAll(selectedImages);
+        _newMediaFiles.addAll(selectedImages!);
       });
     }
   }
 
   void _pickFile() async {
-    List<File> selectedFiles = await FilePick.pickFiles(context) ?? [];
+    List<File>? selectedFiles = (await FilePick.pickFiles(context) ?? []).cast<File>();
     if (selectedFiles.isNotEmpty) {
       setState(() {
         _newDocumentFiles.addAll(selectedFiles);

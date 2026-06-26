@@ -138,6 +138,7 @@ class AuthService {
     required String adminName,
     required String password,
     File? logo,
+    Uint8List? logoBytes,
     double? companyLat,
     double? companyLng,
     double? companyRadius,
@@ -149,7 +150,15 @@ class AuthService {
 
       // 2. Upload logo
       String? logoUrl;
-      if (logo != null) {
+       if (kIsWeb && logoBytes != null) {
+      // Web: upload bytes
+      logoUrl = await StorageService.uploadImageBytes(
+        bytes: logoBytes,
+        folder: StorageFolder.companyLogo,
+        collectionId: companyId,
+      );
+    } 
+      else if (logo != null) {
         logoUrl = await StorageService.uploadImage(
           file: logo,
           folder: StorageFolder.companyLogo,

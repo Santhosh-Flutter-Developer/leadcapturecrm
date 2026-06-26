@@ -1,4 +1,14 @@
-import 'dart:io';
+// ─────────────────────────────────────────────────────────────────────────────
+// auth_provider.dart
+// CHANGED:
+//   • Removed `import 'dart:io'`
+//   • Replaced `Platform.isWindows / Platform.isAndroid` with
+//     `kIsWindows / kIsMobile / kIsWeb` from platform.dart
+//   • On web: no runtime check, no update screen — goes straight to
+//     RouteScreen (desktop layout) or Login.
+//   • Web is treated like desktop for the home widget (sidebar layout).
+// ─────────────────────────────────────────────────────────────────────────────
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '/services/services.dart';
@@ -20,7 +30,8 @@ class AuthProvider with ChangeNotifier {
     bool isUpdateNeed = VersionService.version?.isUpdateNeed ?? false;
 
     if (!isUpdateNeed) {
-      if (Platform.isWindows) {
+      // Windows runtime check — only on native Windows, never on web
+      if (!kIsWeb && kIsWindows) {
         var isInstalled = await runtimeInstalled();
         if (!isInstalled) {
           _homeWidget = const RuntimeInstall();
@@ -32,7 +43,8 @@ class AuthProvider with ChangeNotifier {
 
       if (isLogin) {
         var isAdmin = await Spdb.isAdminLoggedIn();
-        if (kIsDesktop) {
+        // Web gets the same sidebar (desktop) layout as native desktop
+        if (kIsDesktop || kIsWeb) {
           _homeWidget = RouteScreen();
         } else {
           _homeWidget = MainScreen(isAdmin: isAdmin);
@@ -41,11 +53,17 @@ class AuthProvider with ChangeNotifier {
         _homeWidget = const Login();
       }
     } else {
-      if (Platform.isWindows) {
-        _homeWidget = WindowsUpdate();
-      } else if(Platform.isAndroid) {
-        _homeWidget = AndroidUpdate();
+      // Update screens — only relevant on native platforms
+      if (!kIsWeb) {
+        if (kIsWindows) {
+          _homeWidget = WindowsUpdate();
+        } else if (kIsMobile) {
+          // Android update screen (already guarded in the original)
+          _homeWidget = AndroidUpdate();
+        }
+        // For other native platforms (macOS, Linux) fall through to Login
       }
+      // On web: version update is handled server-side; skip update screen
     }
 
     _isLoggedIn = true;

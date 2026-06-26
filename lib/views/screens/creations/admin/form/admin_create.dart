@@ -275,7 +275,7 @@ class _AdminCreateState extends State<AdminCreate> {
             child: GestureDetector(
               onTap: () async {
                 final result = await PickImage.selectImage(context);
-                if (result != null) setState(() => _profileImage = result);
+                if (result != null) setState(() => _profileImage = result as File?);
               },
               child: Container(
                 decoration: const BoxDecoration(
@@ -298,7 +298,7 @@ class _AdminCreateState extends State<AdminCreate> {
     return GestureDetector(
       onTap: () async {
         final result = await PickImage.selectImage(context);
-        if (result != null) setState(() => _profileImage = result);
+        if (result != null) setState(() => _profileImage = result as File?);
       },
       child: DottedBorder(
         options: RectDottedBorderOptions(),
