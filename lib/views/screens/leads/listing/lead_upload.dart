@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -41,6 +40,7 @@ class _LeadUploadState extends State<LeadUpload> {
         type: FileType.custom,
         allowedExtensions: ['csv', 'xlsx'],
         allowMultiple: false,
+        withData: true,
       );
 
       if (result == null) {
@@ -50,10 +50,9 @@ class _LeadUploadState extends State<LeadUpload> {
 
       final file = result.files.first;
       final ext = file.extension?.toLowerCase();
-      final path = file.path;
-      if (path == null) throw Exception('Platform returned no file path.');
+      final bytes = file.bytes;
+      if (bytes == null) throw Exception('Could not read file bytes.');
 
-      final bytes = await File(path).readAsBytes();
       List<List<String>> rows = [];
 
       if (ext == 'csv') {

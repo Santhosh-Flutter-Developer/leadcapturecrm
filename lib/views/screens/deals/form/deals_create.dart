@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
 import '/models/models.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
@@ -40,7 +38,7 @@ class _DealCreateState extends State<DealCreate> {
   final TextEditingController _companyAddressController =
       TextEditingController();
   final TextEditingController _companyZipController = TextEditingController();
-    final TextEditingController _clientName = TextEditingController();
+  final TextEditingController _clientName = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _mobile = TextEditingController();
   final TextEditingController _salutation = TextEditingController();
@@ -57,7 +55,7 @@ class _DealCreateState extends State<DealCreate> {
   StateModel? _stateModel;
   CityModel? _cityModel;
 
-  final List<File> _selectedAttachments = [];
+  final List<PlatformFile> _selectedAttachments = [];
 
   @override
   void initState() {
@@ -77,7 +75,7 @@ class _DealCreateState extends State<DealCreate> {
       _companyMobileController.text = deal.companyMobile ?? '';
       _companyAddressController.text = deal.companyAddress ?? '';
       _companyZipController.text = deal.companyZipCode ?? '';
-       _clientName.text = deal.clientName ?? '';
+      _clientName.text = deal.clientName ?? '';
       _email.text = deal.clientEmail ?? '';
       _mobile.text = deal.clientMobile ?? '';
       _gender.text = deal.clientGender ?? '';
@@ -122,7 +120,7 @@ class _DealCreateState extends State<DealCreate> {
     _companyCityController.dispose();
     _companyAddressController.dispose();
     _companyZipController.dispose();
-     _clientName.dispose();
+    _clientName.dispose();
     _email.dispose();
     _mobile.dispose();
     _gender.dispose();
@@ -176,7 +174,7 @@ class _DealCreateState extends State<DealCreate> {
                               ),
                               expandable: true,
                             ),
-                             const SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             _buildSectionCard(
                               "Contact Details",
                               LayoutBuilder(
@@ -295,7 +293,6 @@ class _DealCreateState extends State<DealCreate> {
     );
   }
 
-
   Widget _buildContactDetails(BoxConstraints constraints, int gridCounts) {
     final double currentWidth = constraints.maxWidth;
     const double spacing = 16.0;
@@ -322,18 +319,18 @@ class _DealCreateState extends State<DealCreate> {
         SizedBox(
           width: itemWidth,
           child: FormFields(
-                    label: "Name",
-                    controller: _clientName,
-                    isRequired: true,
-                  ),
+            label: "Name",
+            controller: _clientName,
+            isRequired: true,
+          ),
         ),
         SizedBox(
           width: itemWidth,
           child: FormFields(
-                    label: "Email",
-                    controller: _email,
-                    isRequired: true,
-                  ),
+            label: "Email",
+            controller: _email,
+            isRequired: true,
+          ),
         ),
         SizedBox(
           width: itemWidth,
@@ -342,13 +339,13 @@ class _DealCreateState extends State<DealCreate> {
         SizedBox(
           width: itemWidth,
           child: FormDropdownSearch(
-                    label: "Gender",
-                    key: ValueKey(_gender.text),
-                    initialItem: _gender.text,
-                    items: const ["Male", "Female", "Other"],
-                    onChanged: (v) => _gender.text = v,
-                  ),
-        )
+            label: "Gender",
+            key: ValueKey(_gender.text),
+            initialItem: _gender.text,
+            items: const ["Male", "Female", "Other"],
+            onChanged: (v) => _gender.text = v,
+          ),
+        ),
       ],
     );
   }
@@ -490,7 +487,7 @@ class _DealCreateState extends State<DealCreate> {
             onTap: () async {
               var files = await FilePick.pickFiles(context);
               if (files != null && files.isNotEmpty) {
-                _selectedAttachments.addAll(files as Iterable<File>);
+                _selectedAttachments.addAll(files);
                 setState(() {});
               }
             },
@@ -502,7 +499,7 @@ class _DealCreateState extends State<DealCreate> {
           children: _selectedAttachments.map((file) {
             return Chip(
               label: Text(
-                path.basename(file.path),
+                file.name,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               onDeleted: () {
@@ -576,20 +573,27 @@ class _DealCreateState extends State<DealCreate> {
         List<FileModel> attachments = [];
 
         if (_selectedAttachments.isNotEmpty) {
-          List<String> urls = await StorageService.uploadFilesInBatch(
-            files: _selectedAttachments,
+          final fileDataList = await Future.wait(
+            _selectedAttachments.map((pf) async {
+              final bytes = await platformFileToBytes(pf);
+              return (bytes: bytes, fileName: pf.name);
+            }),
+          );
+          List<String> urls = await StorageService.uploadBytesInBatch(
+            files: fileDataList,
             folder: StorageFolder.dealAttachments,
           );
 
           for (var i = 0; i < _selectedAttachments.length; i++) {
-            var file = _selectedAttachments[i];
-            var mimeType = lookupMimeType(file.path) ?? '';
+            final pf = _selectedAttachments[i];
+            final ext = pf.extension ?? '';
+            final mimeType = lookupMimeType(pf.name) ?? '';
 
             attachments.add(
               FileModel(
-                name: path.basename(file.path),
-                extension: path.extension(file.path).replaceAll('.', ''),
-                size: file.lengthSync(),
+                name: pf.name,
+                extension: ext,
+                size: pf.size,
                 url: urls[i],
                 mimeType: mimeType,
               ),
@@ -638,7 +642,7 @@ class _DealCreateState extends State<DealCreate> {
           clientEmail: _email.text.trim(),
           clientGender: _gender.text.trim(),
           clientMobile: _mobile.text.trim(),
-          salutation: _salutation.text.trim(), 
+          salutation: _salutation.text.trim(),
           companyCountry: _regionModel,
           companyState: _stateModel,
           companyCity: _cityModel,

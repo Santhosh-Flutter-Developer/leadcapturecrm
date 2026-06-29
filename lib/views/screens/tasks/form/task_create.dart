@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -42,7 +40,7 @@ class _TaskCreateState extends State<TaskCreate> {
   String? _selectedSubTaskOf;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final List<File> _selectedAttachments = [];
+  final List<PlatformFile> _selectedAttachments = [];
   DateTime? _selectedDeadLine;
   DateTime? _selectedReminder;
   bool _deadlineRequired = true;
@@ -284,7 +282,11 @@ class _TaskCreateState extends State<TaskCreate> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                icon,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -308,15 +310,24 @@ class _TaskCreateState extends State<TaskCreate> {
       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: 'Enter Task Title...',
-        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        hintStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         border: UnderlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
         ),
       ),
       validator: (v) => Validation.commonValidation(
@@ -333,7 +344,9 @@ class _TaskCreateState extends State<TaskCreate> {
       maxLines: 5,
       decoration: InputDecoration(
         hintText: 'Describe the requirements and objectives...',
-        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        fillColor: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -361,7 +374,9 @@ class _TaskCreateState extends State<TaskCreate> {
               Icon(
                 Icons.priority_high,
                 size: 16,
-                color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _highPriority
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
               Text(
@@ -369,7 +384,9 @@ class _TaskCreateState extends State<TaskCreate> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _highPriority ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _highPriority
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -530,8 +547,8 @@ class _TaskCreateState extends State<TaskCreate> {
           InkWell(
             onTap: () async {
               var files = await FilePick.pickFiles(context);
-              if (files != null) {
-                setState(() => _selectedAttachments.addAll(files as Iterable<File>));
+              if (files != null && files.isNotEmpty) {
+                setState(() => _selectedAttachments.addAll(files));
               }
             },
             child: Container(
@@ -539,15 +556,23 @@ class _TaskCreateState extends State<TaskCreate> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.3),
                   style: BorderStyle.none,
                 ),
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  Icon(Iconsax.cloud_plus, color: Theme.of(context).colorScheme.primary, size: 32),
+                  Icon(
+                    Iconsax.cloud_plus,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 32,
+                  ),
                   const SizedBox(height: 8),
                   const Text("Click to upload or drag and drop"),
                   Text(
@@ -568,7 +593,7 @@ class _TaskCreateState extends State<TaskCreate> {
                     (file) => Chip(
                       avatar: const Icon(Iconsax.document, size: 16),
                       label: Text(
-                        path.basename(file.path),
+                        file.name,
                         style: const TextStyle(fontSize: 12),
                       ),
                       onDeleted: () =>
@@ -632,19 +657,27 @@ class _TaskCreateState extends State<TaskCreate> {
         List<FileModel> attachments = [];
 
         if (_selectedAttachments.isNotEmpty) {
-          List<String> urls = await StorageService.uploadFilesInBatch(
-            files: _selectedAttachments,
+          final fileDataList = await Future.wait(
+            _selectedAttachments.map((pf) async {
+              final bytes = await platformFileToBytes(pf);
+              return (bytes: bytes, fileName: pf.name);
+            }),
+          );
+          List<String> urls = await StorageService.uploadBytesInBatch(
+            files: fileDataList,
             folder: StorageFolder.taskAttachments,
           );
           for (var i = 0; i < _selectedAttachments.length; i++) {
-            var file = _selectedAttachments[i];
+            final pf = _selectedAttachments[i];
+            final ext = pf.extension ?? '';
+            final mimeType = lookupMimeType(pf.name) ?? '';
             attachments.add(
               FileModel(
-                name: path.basename(file.path),
-                extension: path.extension(file.path).replaceAll('.', ''),
-                size: file.lengthSync(),
+                name: pf.name,
+                extension: ext,
+                size: pf.size,
                 url: urls[i],
-                mimeType: lookupMimeType(file.path) ?? '',
+                mimeType: mimeType,
               ),
             );
           }

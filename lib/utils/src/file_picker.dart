@@ -14,7 +14,7 @@ class FilePick {
   static Future<List<PlatformFile>?> pickFiles(context) async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      withData: kIsWeb,
+      withData: true,
     );
     return result?.files;
   }
@@ -27,7 +27,7 @@ class FilePick {
     final result = await FilePicker.platform.pickFiles(
       allowedExtensions: allowedExtensions,
       type: allowedExtensions != null ? FileType.custom : FileType.any,
-      withData: kIsWeb,
+      withData: true,
     );
     return result?.files.firstOrNull;
   }
@@ -41,7 +41,7 @@ class FilePick {
       allowedExtensions: allowedExtensions,
       type: allowedExtensions != null ? FileType.custom : FileType.any,
       allowMultiple: true,
-      withData: kIsWeb,
+      withData: true,
     );
     return result?.files;
   }

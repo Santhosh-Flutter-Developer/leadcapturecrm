@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
 import '/models/models.dart';
 import '/utils/utils.dart';
 import '/constants/constants.dart';
@@ -69,7 +67,7 @@ class _LeadCreateState extends State<LeadCreate> {
   StateModel? _stateModel;
   CityModel? _cityModel;
 
-  final List<File> _selectedAttachments = [];
+  final List<PlatformFile> _selectedAttachments = [];
 
   @override
   void initState() {
@@ -233,11 +231,9 @@ class _LeadCreateState extends State<LeadCreate> {
             readOnly: true,
             onTap: () async {
               var files = await FilePick.pickFiles(context);
-              if (files != null) {
-                if (files.isNotEmpty) {
-                  _selectedAttachments.addAll(files as Iterable<File>);
-                  setState(() {});
-                }
+              if (files != null && files.isNotEmpty) {
+                _selectedAttachments.addAll(files);
+                setState(() {});
               }
             },
           ),
@@ -250,7 +246,7 @@ class _LeadCreateState extends State<LeadCreate> {
           children: _selectedAttachments.map((file) {
             return Chip(
               label: Text(
-                path.basename(file.path),
+                file.name,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               onDeleted: () {
@@ -809,20 +805,28 @@ class _LeadCreateState extends State<LeadCreate> {
         List<FileModel> attachments = [];
 
         if (_selectedAttachments.isNotEmpty) {
-          List<String> urls = await StorageService.uploadFilesInBatch(
-            files: _selectedAttachments,
+          final fileDataList = await Future.wait(
+            _selectedAttachments.map((pf) async {
+              final bytes = await platformFileToBytes(pf);
+              return (bytes: bytes, fileName: pf.name);
+            }),
+          );
+
+          List<String> urls = await StorageService.uploadBytesInBatch(
+            files: fileDataList,
             folder: StorageFolder.leadAttachments,
           );
 
           for (var i = 0; i < _selectedAttachments.length; i++) {
-            var file = _selectedAttachments[i];
-            var mimeType = lookupMimeType(file.path) ?? '';
+            final pf = _selectedAttachments[i];
+            final ext = pf.extension ?? '';
+            final mimeType = lookupMimeType(pf.name) ?? '';
 
             attachments.add(
               FileModel(
-                name: path.basename(file.path),
-                extension: path.extension(file.path).replaceAll('.', ''),
-                size: file.lengthSync(),
+                name: pf.name,
+                extension: ext,
+                size: pf.size,
                 url: urls[i],
                 mimeType: mimeType,
               ),
