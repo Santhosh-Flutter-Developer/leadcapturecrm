@@ -166,6 +166,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
         return const ProjectsListing();
       case 'Tasks':
         return const TasksListing();
+      case 'Tickets':
+        return const TicketsListing();  
       case 'Chats':
         return ChatListing(currentUserUid: _currentUserUid);
       case 'Calendar':

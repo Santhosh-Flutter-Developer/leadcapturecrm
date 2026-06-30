@@ -245,6 +245,14 @@ class MenuService {
         route: '/tasks',
         requiredPermissions: ['Tasks'],
       ),
+      // Customer Tickets
+      MenuItem(
+        id: 'tickets',
+        title: 'Tickets',
+        icon: Iconsax.ticket,
+        route: '/tickets',
+        requiredPermissions: ['Tickets'],
+      ),
 
       // Settings
       MenuItem(
@@ -275,13 +283,13 @@ class MenuService {
             route: '/activity-logs',
             isAdminOnly: true,
           ),
-          MenuItem(
-            id: 'backup',
-            title: 'Backup',
-            icon: Iconsax.cloud,
-            route: '/backup',
-            isAdminOnly: true,
-          ),
+          // MenuItem(
+          //   id: 'backup',
+          //   title: 'Backup',
+          //   icon: Iconsax.cloud,
+          //   route: '/backup',
+          //   isAdminOnly: true,
+          // ),
         ],
       ),
 
@@ -411,6 +419,7 @@ class MenuService {
       'Calendar',
       'Projects',
       'Tasks',
+      'Tickets',
       'Downloads',
       'Developer Area',
     ];

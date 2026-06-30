@@ -357,6 +357,9 @@ class _MobileMenuState extends State<MobileMenu> {
       case 'tasks':
         Navigate.route(context, const TasksListing());
         break;
+      case 'tickets':
+        Navigate.route(context, const TicketsListing());
+        break;  
       case 'login_logs':
         Navigate.route(context, LoginLogsListing(showAppbar: true));
         break;
