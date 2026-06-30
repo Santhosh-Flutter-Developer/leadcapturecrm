@@ -1,7 +1,9 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:iconsax/iconsax.dart';
@@ -26,7 +28,8 @@ class _ProfileState extends State<Profile> {
   bool isAdmin = false;
   bool isLoading = true;
   String? editingField;
-  File? _selectedFile;
+  XFile? _selectedFile;
+  Uint8List? _selectedFileBytes;
   final Map<String, TextEditingController> controllers = {};
 
   @override
@@ -108,9 +111,22 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _changeProfileImage() async {
-    File? imageFile;
+    XFile? imageFile;
 
-    if (kIsWindows) {
+    if (kIsWeb) {
+      // Web: file_picker gives bytes, wrap as XFile (works directly with
+      // XFile.readAsBytes() for both display and upload — no dart:io File).
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+        dialogTitle: 'Select a profile photo',
+      );
+      if (result == null || result.files.isEmpty) return;
+      final pf = result.files.single;
+      if (pf.bytes == null) return;
+      imageFile = XFile.fromData(pf.bytes!, name: pf.name);
+    } else if (kIsWindows) {
       // Windows: file picker only
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
@@ -120,7 +136,7 @@ class _ProfileState extends State<Profile> {
       if (result == null || result.files.isEmpty) return;
       final pickedPath = result.files.single.path;
       if (pickedPath == null) return;
-      imageFile = File(pickedPath);
+      imageFile = XFile(pickedPath);
     } else {
       // Mobile: bottom sheet → camera or gallery
       final source = await showModalBottomSheet<ImageSource>(
@@ -171,21 +187,25 @@ class _ProfileState extends State<Profile> {
         final rotated = await FlutterExifRotation.rotateImage(
           path: pickedImage.path,
         );
-        imageFile = rotated;
+        imageFile = XFile(rotated.path);
       } else {
-        imageFile = File(pickedImage.path);
+        imageFile = pickedImage;
       }
     }
 
     FlushBar.show(context, "Uploading profile picture...");
-    setState(() => _selectedFile = imageFile);
+    final bytes = await imageFile.readAsBytes();
+    setState(() {
+      _selectedFile = imageFile;
+      _selectedFileBytes = bytes;
+    });
 
     try {
       String downloadUrl;
       if (isAdmin) {
-        downloadUrl = await StorageService.uploadFile(
-          file: imageFile,
-          folder: StorageFolder.adminProfile,
+        downloadUrl = await xFileToUploadUrl(
+          imageFile,
+          StorageFolder.adminProfile,
         );
         final updatedAdmin = admin!.copyWith(profileImageUrl: downloadUrl);
         await AdminService.updateAdmin(
@@ -202,7 +222,11 @@ class _ProfileState extends State<Profile> {
         final storageRef = FirebaseStorage.instance.ref().child(
           "profile_images/profile_$uid.jpg",
         );
-        await storageRef.putFile(imageFile);
+        if (kIsWeb) {
+          await storageRef.putData(await imageFile.readAsBytes());
+        } else {
+          await storageRef.putFile(File(imageFile.path));
+        }
         downloadUrl = await storageRef.getDownloadURL();
         final updatedEmployee = employee!.copyWith(
           profileImageUrl: downloadUrl,
@@ -307,6 +331,7 @@ class _ProfileState extends State<Profile> {
         setState(() {
           employee = updated;
           _selectedFile = null;
+          _selectedFileBytes = null;
         });
       } else {
         await AdminService.deleteAdminProfileImage(uid: admin!.uid!);
@@ -425,8 +450,8 @@ class _ProfileState extends State<Profile> {
     final image = isAdmin ? admin?.profileImageUrl : employee?.profileImageUrl;
 
     // Use locally captured file if available (shows immediately after capture)
-    final ImageProvider? localImageProvider = _selectedFile != null
-        ? FileImage(_selectedFile!)
+    final ImageProvider? localImageProvider = _selectedFileBytes != null
+        ? MemoryImage(_selectedFileBytes!)
         : null;
     final ImageProvider? networkImageProvider =
         (image != null && image.isNotEmpty) ? NetworkImage(image) : null;

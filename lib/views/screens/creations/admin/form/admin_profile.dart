@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
@@ -85,13 +83,12 @@ class _AdminProfileState extends State<AdminProfile> {
     );
 
     if (pickedImage == null) return;
-    File imageFile = File(pickedImage.path);
     FlushBar.show(context, "Uploading profile picture...");
 
     try {
-      String downloadUrl = await StorageService.uploadFile(
-        file: imageFile,
-        folder: StorageFolder.adminProfile,
+      String downloadUrl = await xFileToUploadUrl(
+        pickedImage,
+        StorageFolder.adminProfile,
       );
 
       final updatedAdmin = _admin.copyWith(profileImageUrl: downloadUrl);
