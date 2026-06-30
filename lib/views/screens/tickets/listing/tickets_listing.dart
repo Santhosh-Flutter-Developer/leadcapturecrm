@@ -33,9 +33,10 @@ class TicketListView extends StatelessWidget {
       create: (_) => PaginatedDataController<CustomerTicketModel>(
         initialSortColumnIndex: 1,
         filterLogic: (ticket, query) {
-          final q = query.toLowerCase();
+         final q = query.toLowerCase();
           return ticket.ticketTitle.toLowerCase().contains(q) ||
-              ticket.clientName.toLowerCase().contains(q);
+              ticket.clientName.toLowerCase().contains(q) ||
+              ticket.ticketNumber?.toString().contains(q) == true;
         },
         sortLogic: (a, b, col, asc) {
           int compare;
