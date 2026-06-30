@@ -337,7 +337,7 @@ class _ChatListPanelState extends State<ChatListPanel> {
                   ),
                 ),
 
-                if (kIsDesktop) ...[
+                if (kIsDesktop||kIsWeb) ...[
                   const SizedBox(width: 8),
                   Material(
                     color: Theme.of(context).colorScheme.surface,
