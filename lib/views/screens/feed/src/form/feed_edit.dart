@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
@@ -21,8 +19,8 @@ class _FeedEditState extends State<FeedEdit> {
   final ScrollController _scrollController = ScrollController();
 
   // New Media/Files (Selected from device)
-  final List<File> _newMediaFiles = [];
-  final List<File> _newDocumentFiles = [];
+  final List<PlatformFile> _newMediaFiles = [];
+  final List<PlatformFile> _newDocumentFiles = [];
 
   // Existing Media/Files (Loaded from FeedModel)
   List<FileModel> _existingMedia = [];
@@ -123,30 +121,19 @@ class _FeedEditState extends State<FeedEdit> {
   }
 
   void _pickImage() async {
-    List<File>? selectedImages = [];
-    if (kIsDesktop) {
-      selectedImages =
-          (await FilePick.pickFileWithExtensions(
-            context,
-            allowedExtensions: ['jpg', 'png', 'jpeg'],
-          ) ??
-          []).cast<File>();
-    } else {
-      selectedImages = (await PickImage.pickMultipleImages()).cast<File>();
-    }
-    if (selectedImages.isNotEmpty) {
-      setState(() {
-        _newMediaFiles.addAll(selectedImages!);
-      });
+    final selectedImages = await FilePick.pickFileWithExtensions(
+      context,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    );
+    if (selectedImages != null && selectedImages.isNotEmpty) {
+      setState(() => _newMediaFiles.addAll(selectedImages));
     }
   }
 
   void _pickFile() async {
-    List<File>? selectedFiles = (await FilePick.pickFiles(context) ?? []).cast<File>();
-    if (selectedFiles.isNotEmpty) {
-      setState(() {
-        _newDocumentFiles.addAll(selectedFiles);
-      });
+    final selectedFiles = await FilePick.pickFiles(context);
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      setState(() => _newDocumentFiles.addAll(selectedFiles));
     }
   }
 
@@ -208,17 +195,19 @@ class _FeedEditState extends State<FeedEdit> {
 
       if (_newMediaFiles.isNotEmpty) {
         for (var file in _newMediaFiles) {
-          var mimeType = lookupMimeType(file.path) ?? '';
-          String url = await StorageService.uploadFile(
-            file: file,
+          var mimeType = lookupMimeType(file.name) ?? '';
+          var bytes = await platformFileToBytes(file);
+          String url = await StorageService.uploadBytes(
+            bytes: bytes,
+            fileName: file.name,
             folder: StorageFolder.feedAttachments,
           );
 
           finalMedia.add(
             FileModel(
-              name: path.basename(file.path),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              size: file.lengthSync(),
+              name: file.name,
+              extension: file.extension ?? '',
+              size: bytes.length,
               url: url,
               mimeType: mimeType,
             ),
@@ -231,17 +220,19 @@ class _FeedEditState extends State<FeedEdit> {
 
       if (_newDocumentFiles.isNotEmpty) {
         for (var file in _newDocumentFiles) {
-          var mimeType = lookupMimeType(file.path) ?? '';
-          String url = await StorageService.uploadFile(
-            file: file,
+          var mimeType = lookupMimeType(file.name) ?? '';
+          var bytes = await platformFileToBytes(file);
+          String url = await StorageService.uploadBytes(
+            bytes: bytes,
+            fileName: file.name,
             folder: StorageFolder.feedAttachments,
           );
 
           finalAttachments.add(
             FileModel(
-              name: path.basename(file.path),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              size: file.lengthSync(),
+              name: file.name,
+              extension: file.extension ?? '',
+              size: bytes.length,
               url: url,
               mimeType: mimeType,
             ),
@@ -434,7 +425,7 @@ class _FeedEditState extends State<FeedEdit> {
                                 // New Media (File)
                                 ..._newMediaFiles.map(
                                   (file) => _buildMediaPreview(
-                                    imageProvider: FileImage(file),
+                                    imageProvider: MemoryImage(file.bytes!),
                                     onRemove: () {
                                       setState(() {
                                         _newMediaFiles.remove(file);
@@ -462,7 +453,7 @@ class _FeedEditState extends State<FeedEdit> {
                         if (_newDocumentFiles.isNotEmpty)
                           ..._newDocumentFiles.map(
                             (file) => _buildFileRow(
-                              name: path.basename(file.path),
+                              name: file.name,
                               onRemove: () {
                                 setState(() {
                                   _newDocumentFiles.remove(file);

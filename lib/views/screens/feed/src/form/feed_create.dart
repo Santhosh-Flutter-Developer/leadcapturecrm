@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart' as path;
 import '/constants/constants.dart';
 import '/services/services.dart';
 import '/utils/utils.dart';
@@ -20,8 +18,8 @@ class _FeedCreateState extends State<FeedCreate> {
   final ScrollController _scrollController = ScrollController();
 
   // Media & Attachments State
-  final List<File> _selectedMedia = []; // Mock list of file paths/URLs
-  final List<File> _selectedFiles = []; // Mock list of file names
+  final List<PlatformFile> _selectedMedia = [];
+  final List<PlatformFile> _selectedFiles = [];
 
   // Poll State
   bool _isPollActive = false;
@@ -104,33 +102,22 @@ class _FeedCreateState extends State<FeedCreate> {
     }
   }
 
-  // Mock function to simulate picking an image
+  // Pick one or more images (works on web, desktop, and mobile)
   void _pickImage() async {
-    List<File>? selectedImages = [];
-
-    if (kIsDesktop) {
-      selectedImages =
-          (await FilePick.pickFileWithExtensions(
-            context,
-            allowedExtensions: ['jpg', 'png', 'jpeg'],
-          ) ??
-          []).cast<File>();
-    } else {
-      selectedImages = (await PickImage.pickMultipleImages()).cast<File>();
+    final selectedImages = await FilePick.pickFileWithExtensions(
+      context,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    );
+    if (selectedImages != null && selectedImages.isNotEmpty) {
+      setState(() => _selectedMedia.addAll(selectedImages));
     }
-    if (selectedImages.isNotEmpty) {
-      _selectedMedia.addAll(selectedImages);
-    }
-    setState(() {});
   }
 
   void _pickFile() async {
-    List<File>? selectedFiles = [];
-    selectedFiles = (await FilePick.pickFiles(context) ?? []).cast<File>();
-    if (selectedFiles.isNotEmpty) {
-      _selectedFiles.addAll(selectedFiles);
+    final selectedFiles = await FilePick.pickFiles(context);
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      setState(() => _selectedFiles.addAll(selectedFiles));
     }
-    setState(() {});
   }
 
   void _handleSubmit() async {
@@ -171,15 +158,17 @@ class _FeedCreateState extends State<FeedCreate> {
       if (_selectedMedia.isNotEmpty) {
         for (var i = 0; i < _selectedMedia.length; i++) {
           var file = _selectedMedia[i];
-          var mimeType = lookupMimeType(file.path) ?? '';
+          var mimeType = lookupMimeType(file.name) ?? '';
+          var bytes = await platformFileToBytes(file);
 
           mediaImages.add(
             FileModel(
-              name: path.basename(file.path),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              size: file.lengthSync(),
-              url: await StorageService.uploadFile(
-                file: _selectedMedia[i],
+              name: file.name,
+              extension: file.extension ?? '',
+              size: bytes.length,
+              url: await StorageService.uploadBytes(
+                bytes: bytes,
+                fileName: file.name,
                 folder: StorageFolder.feedAttachments,
               ),
               mimeType: mimeType,
@@ -193,15 +182,17 @@ class _FeedCreateState extends State<FeedCreate> {
       if (_selectedFiles.isNotEmpty) {
         for (var i = 0; i < _selectedFiles.length; i++) {
           var file = _selectedFiles[i];
-          var mimeType = lookupMimeType(file.path) ?? '';
+          var mimeType = lookupMimeType(file.name) ?? '';
+          var bytes = await platformFileToBytes(file);
 
           fileUrls.add(
             FileModel(
-              name: path.basename(file.path),
-              extension: path.extension(file.path).replaceAll('.', ''),
-              size: file.lengthSync(),
-              url: await StorageService.uploadFile(
-                file: _selectedFiles[i],
+              name: file.name,
+              extension: file.extension ?? '',
+              size: bytes.length,
+              url: await StorageService.uploadBytes(
+                bytes: bytes,
+                fileName: file.name,
                 folder: StorageFolder.feedAttachments,
               ),
               mimeType: mimeType,
@@ -388,8 +379,8 @@ class _FeedCreateState extends State<FeedCreate> {
                                         color: Theme.of(context).dividerColor,
                                         borderRadius: BorderRadius.circular(12),
                                         image: DecorationImage(
-                                          image: FileImage(
-                                            _selectedMedia[index],
+                                          image: MemoryImage(
+                                            _selectedMedia[index].bytes!,
                                           ),
                                           fit: BoxFit.cover,
                                         ),
@@ -454,7 +445,7 @@ class _FeedCreateState extends State<FeedCreate> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      path.basename(file.path),
+                                      file.name,
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
