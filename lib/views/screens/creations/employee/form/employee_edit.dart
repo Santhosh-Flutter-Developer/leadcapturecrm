@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:shimmer/shimmer.dart';
@@ -58,7 +59,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
   String? _employeeType;
   String _outsideOffice = 'No';
 
-  File? _selectedProfileImage;
+  XFile? _selectedProfileImage;
+  Uint8List? _selectedProfileImageBytes;
   String? _profileImageUrl;
   bool _oldProfileImageRemoved = false;
 
@@ -311,92 +313,51 @@ class _EmployeeEditState extends State<EmployeeEdit> {
     }
   }
 
+  /// Gallery-only image picker that works on web, mobile and Windows.
+  /// Uses XFile + bytes throughout (no dart:io File) so it never breaks on
+  /// web, where XFile paths are blob: URLs rather than real file paths.
   Future<void> pickImage() async {
-    // On Windows: use file picker only
-    if (kIsWindows) {
-      await _pickImageFromFile();
-      return;
-    }
-
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take Photo'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
     try {
-      final xFile = await ImagePicker().pickImage(
-        source: source,
-        imageQuality: 85,
-        maxWidth: 512,
-      );
-      if (xFile == null) return;
-      final rotated = await FlutterExifRotation.rotateImage(path: xFile.path);
+      XFile? imageFile;
 
-      if (mounted) {
-        setState(() {
-          _selectedProfileImage = rotated;
-          _markProfileImageReplaced();
-        });
+      if (kIsWindows) {
+        // Windows: image_picker has no gallery implementation, use file_picker.
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          dialogTitle: 'Select a profile photo',
+        );
+        if (result == null || result.files.isEmpty) return;
+        final pickedPath = result.files.single.path;
+        if (pickedPath == null) return;
+        imageFile = XFile(pickedPath);
+      } else if (kIsWeb) {
+        // Web: image_picker's gallery source works fine on web.
+        imageFile = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+        );
+        if (imageFile == null) return;
+      } else {
+        // Mobile/native desktop: gallery only, with EXIF rotation.
+        final picked = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+          maxWidth: 512,
+        );
+        if (picked == null) return;
+        final rotated = await FlutterExifRotation.rotateImage(
+          path: picked.path,
+        );
+        imageFile = XFile(rotated.path);
       }
-    } catch (e, st) {
-      await ErrorService.recordError(e, st);
-      if (mounted) {
-        FlushBar.show(context, 'Failed to pick image: $e', isSuccess: false);
-      }
-    }
-  }
 
-  /// Windows-only: Pick an image file.
-  Future<void> _pickImageFromFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-        dialogTitle: 'Select a profile photo',
-      );
-
-      if (result == null || result.files.isEmpty) return;
-
-      final pickedPath = result.files.single.path;
-      if (pickedPath == null) return;
-
-      final imageFile = File(pickedPath);
+      final bytes = await imageFile.readAsBytes();
 
       if (mounted) {
         setState(() {
           _selectedProfileImage = imageFile;
+          _selectedProfileImageBytes = bytes;
           _markProfileImageReplaced();
         });
       }
@@ -434,8 +395,8 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                           width: 130,
                           fit: BoxFit.cover,
                         )
-                      : Image.file(
-                          _selectedProfileImage!,
+                      : Image.memory(
+                          _selectedProfileImageBytes!,
                           height: 130,
                           width: 130,
                           fit: BoxFit.cover,
@@ -447,6 +408,7 @@ class _EmployeeEditState extends State<EmployeeEdit> {
                   child: GestureDetector(
                     onTap: () {
                       _selectedProfileImage = null;
+                      _selectedProfileImageBytes = null;
                       if (_profileImageUrl != null) {
                         _profileImageUrl = null;
                         _oldProfileImageRemoved = true;
@@ -1031,9 +993,9 @@ class _EmployeeEditState extends State<EmployeeEdit> {
           String? profileImageUrl;
 
           if (_selectedProfileImage != null) {
-            profileImageUrl = await StorageService.uploadFile(
-              file: _selectedProfileImage!,
-              folder: StorageFolder.adminProfile,
+            profileImageUrl = await xFileToUploadUrl(
+              _selectedProfileImage!,
+              StorageFolder.adminProfile,
             );
           }
 
@@ -1089,9 +1051,9 @@ class _EmployeeEditState extends State<EmployeeEdit> {
           // - Use null if the image was explicitly removed
           String? profileImageUrl;
           if (_selectedProfileImage != null) {
-            profileImageUrl = await StorageService.uploadFile(
-              file: _selectedProfileImage!,
-              folder: StorageFolder.userPhotos,
+            profileImageUrl = await xFileToUploadUrl(
+              _selectedProfileImage!,
+              StorageFolder.userPhotos,
             );
           } else if (!_oldProfileImageRemoved) {
             profileImageUrl = _profileImageUrl;

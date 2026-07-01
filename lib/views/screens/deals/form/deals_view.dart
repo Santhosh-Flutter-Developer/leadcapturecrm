@@ -468,6 +468,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -486,7 +487,7 @@ class _DealsViewState extends State<DealsView> with TickerProviderStateMixin {
         actions: [
           if (_isAdmin || _deal.createdBy.uid == _currentUid) ...[
             _appBarButton(Iconsax.edit, "Edit", () async {
-              if (kIsMobile) {
+              if (kIsMobile || width < 1000) {
                 await Sheet.showSheet(
                   context,
                   widget: DealEdit(uid: _deal.uid ?? ''),

@@ -134,7 +134,7 @@ class _DealsListingViewState extends State<DealsListingView> {
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<DealModel>>();
     final controllerWatch = context.watch<PaginatedDataController<DealModel>>();
-
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: widget.showAppBar && kIsMobile
           ? AppBar(title: Text(_pageTitle))
@@ -164,7 +164,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                 child: ListView(
                   padding: const EdgeInsets.all(24.0),
                   children: [
-                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    _buildFilterRow(onSearchChanged: controllerRead.setSearch, width: width),
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
@@ -322,7 +322,7 @@ class _DealsListingViewState extends State<DealsListingView> {
     );
   }
 
-  Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+  Widget _buildFilterRow({required ValueChanged<String> onSearchChanged, required double width}) {
     if (!Hive.isBoxOpen('dealStatus') || !Hive.isBoxOpen('employees')) {
       return _buildSearchField(onSearchChanged);
     }
@@ -433,7 +433,7 @@ class _DealsListingViewState extends State<DealsListingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// Search + Reset
-          kIsMobile
+          kIsMobile || width < 1000
               ? Column(
                   children: [
                     _buildSearchField(onSearchChanged),
@@ -465,7 +465,7 @@ class _DealsListingViewState extends State<DealsListingView> {
           if (!kIsMobile) const SizedBox(height: 16),
 
           /// Filters
-          kIsMobile
+          kIsMobile || width < 1000
               ? Wrap(spacing: 10, runSpacing: 10, children: filters)
               : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -776,6 +776,7 @@ class _DealsListingViewState extends State<DealsListingView> {
   }
 
   Widget _buildActionRow(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return LayoutBuilder(
       builder: (context, constraints) {
         // final bool isMobile = constraints.maxWidth < 600;
@@ -786,7 +787,7 @@ class _DealsListingViewState extends State<DealsListingView> {
             if (permissions?.canCreate ?? false) ...[
               ElevatedButton.icon(
                 onPressed: () {
-                  if (kIsMobile) {
+                  if (kIsMobile || width < 1000) {
                     Sheet.showSheet(context, widget: const DealCreate());
                   } else {
                     GeneralDialog.showRTLSheet(context, const DealCreate());
@@ -973,7 +974,7 @@ class _DealsListingViewState extends State<DealsListingView> {
           ),
         );
 
-        if (kIsMobile) {
+        if (kIsMobile || width < 1000) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1001,6 +1002,7 @@ class _DealsListingViewState extends State<DealsListingView> {
     PaginatedDataController<DealModel> controllerWatch,
     PaginatedDataController<DealModel> controllerRead,
   ) {
+    final width = MediaQuery.of(context).size.width;
     bool isSelected = controllerWatch.selectedIds.contains(deal.uid);
 
     /// Open Deal View
@@ -1010,7 +1012,7 @@ class _DealsListingViewState extends State<DealsListingView> {
         child: DealsView(deal: deal),
       );
 
-      if (kIsMobile) {
+      if (kIsMobile || width < 1000) {
         Sheet.showSheet(context, widget: view);
       } else {
         GeneralDialog.showRTLSheet(context, view);
@@ -1111,7 +1113,7 @@ class _DealsListingViewState extends State<DealsListingView> {
                   color: AppColors.info,
                   splashRadius: 20,
                   onPressed: () {
-                    if (kIsMobile) {
+                    if (kIsMobile || width < 1000 ) {
                       Sheet.showSheet(
                         context,
                         widget: DealEdit(uid: deal.uid ?? ''),

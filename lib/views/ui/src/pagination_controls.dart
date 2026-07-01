@@ -11,6 +11,7 @@ class PaginationControls<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     // Listen to the controller to rebuild when pagination state changes
     final controller = context.watch<PaginatedDataController<T>>();
 
@@ -108,7 +109,7 @@ class PaginationControls<T> extends StatelessWidget {
           ],
         );
 
-        return kIsMobile
+        return kIsMobile || width < 1000
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
