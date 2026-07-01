@@ -508,7 +508,7 @@ class _CompanyRegistrationState extends State<CompanyRegistration> {
           ),
         ),
         child: const Text(
-          "Create Account",
+          "Create Account",textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),

@@ -33,7 +33,7 @@ class _AdminProfileState extends State<AdminProfile> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _openEdit() async {
+  Future<void> _openEdit({required double width}) async {
     final uid = _admin.uid;
     if (uid == null || uid.isEmpty) {
       FlushBar.show(
@@ -44,7 +44,7 @@ class _AdminProfileState extends State<AdminProfile> {
       return;
     }
 
-    final result = kIsMobile
+    final result = kIsMobile || width < 1000
         ? await Sheet.showSheet(
             context,
             widget: AdminUpdate(id: uid, admin: _admin),
@@ -237,6 +237,7 @@ class _AdminProfileState extends State<AdminProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return FutureBuilder<bool>(
       future: _canEditAdmin(),
       builder: (context, snapshot) {
@@ -265,7 +266,9 @@ class _AdminProfileState extends State<AdminProfile> {
             ),
             actions: [
               IconButton(
-                onPressed: canEdit ? _openEdit : null,
+                onPressed: canEdit ?(){
+                   _openEdit(width: width);
+                } : null,
                 tooltip: canEdit ? 'Edit Admin' : 'No edit permission',
                 icon: Icon(
                   Iconsax.edit,

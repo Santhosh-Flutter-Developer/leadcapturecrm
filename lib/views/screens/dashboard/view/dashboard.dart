@@ -57,6 +57,7 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<DashboardBloc, DashboardState>(
@@ -87,7 +88,7 @@ class _DashboardState extends State<Dashboard> {
                     const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        if (kIsMobile) {
+                        if (kIsMobile || width < 1000) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
