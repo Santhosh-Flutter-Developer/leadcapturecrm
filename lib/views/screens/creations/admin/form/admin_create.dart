@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -24,7 +25,7 @@ class _AdminCreateState extends State<AdminCreate> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
 
-  File? _profileImage;
+  XFile? _profileImage;
 
   bool _passwordVisible = false;
 
@@ -262,11 +263,25 @@ class _AdminCreateState extends State<AdminCreate> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              _profileImage!,
+            child: SizedBox(
               height: 140,
               width: 140,
-              fit: BoxFit.cover,
+              child: FutureBuilder<Uint8List>(
+                future: _profileImage!.readAsBytes(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  return Image.memory(
+                    snapshot.data!,
+                    height: 140,
+                    width: 140,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
             ),
           ),
           Positioned(
@@ -275,7 +290,7 @@ class _AdminCreateState extends State<AdminCreate> {
             child: GestureDetector(
               onTap: () async {
                 final result = await PickImage.selectImage(context);
-                if (result != null) setState(() => _profileImage = result as File?);
+                if (result != null) setState(() => _profileImage = result);
               },
               child: Container(
                 decoration: const BoxDecoration(
@@ -298,7 +313,7 @@ class _AdminCreateState extends State<AdminCreate> {
     return GestureDetector(
       onTap: () async {
         final result = await PickImage.selectImage(context);
-        if (result != null) setState(() => _profileImage = result as File?);
+        if (result != null) setState(() => _profileImage = result);
       },
       child: DottedBorder(
         options: RectDottedBorderOptions(),
@@ -337,9 +352,9 @@ class _AdminCreateState extends State<AdminCreate> {
 
       String? profileUrl;
       if (_profileImage != null) {
-        profileUrl = await StorageService.uploadFile(
-          file: _profileImage!,
-          folder: StorageFolder.adminProfile,
+        profileUrl = await xFileToUploadUrl(
+          _profileImage!,
+          StorageFolder.adminProfile,
         );
       }
 

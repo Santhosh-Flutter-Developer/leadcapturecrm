@@ -150,6 +150,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<LeadModel>>();
     final controllerWatch = context.watch<PaginatedDataController<LeadModel>>();
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: widget.showAppBar && kIsMobile
           ? AppBar(title: Text(_pageTitle))
@@ -179,7 +180,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(24.0),
                   children: [
-                    _buildFilterRow(onSearchChanged: controllerRead.setSearch),
+                    _buildFilterRow(
+                      onSearchChanged: controllerRead.setSearch,
+                      width: width,
+                    ),
                     const SizedBox(height: 10),
                     _buildActionRow(context),
                     const SizedBox(height: 20),
@@ -440,7 +444,10 @@ class _LeadsListingViewState extends State<LeadsListingView> {
     );
   }
 
-  Widget _buildFilterRow({required ValueChanged<String> onSearchChanged}) {
+  Widget _buildFilterRow({
+    required ValueChanged<String> onSearchChanged,
+    required double width,
+  }) {
     if (!Hive.isBoxOpen('leadStatus') ||
         !Hive.isBoxOpen('leadCategory') ||
         !Hive.isBoxOpen('employees')) {
@@ -585,7 +592,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// Search
-          kIsMobile
+          kIsMobile || width < 1000
               ? Column(
                   children: [
                     _buildSearchField(onSearchChanged),
@@ -616,7 +623,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                 ),
 
           /// Filters
-          kIsMobile
+          kIsMobile || width < 1000
               ? Wrap(spacing: 10, runSpacing: 10, children: filters)
               : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -938,6 +945,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   }
 
   Widget _buildActionRow(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return LayoutBuilder(
       builder: (context, constraints) {
         final List<Widget> actionButtons = [];
@@ -947,7 +955,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           actionButtons.add(
             ElevatedButton.icon(
               onPressed: () async {
-                final result = kIsMobile
+                final result = kIsMobile || width < 1000
                     ? await Sheet.showSheet(context, widget: const LeadCreate())
                     : await GeneralDialog.showRTLSheet(
                         context,
@@ -987,7 +995,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
           actionButtons.add(
             ElevatedButton.icon(
               onPressed: () {
-                if (kIsMobile) {
+                if (kIsMobile || width < 1000) {
                   Sheet.showSheet(context, widget: const LeadUpload());
                 } else {
                   GeneralDialog.showRTLSheet(context, const LeadUpload());
@@ -1208,7 +1216,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
         );
 
         // 3. Layout the components
-        if (kIsMobile) {
+        if (kIsMobile || width < 1000) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1252,10 +1260,11 @@ class _LeadsListingViewState extends State<LeadsListingView> {
   ) {
     bool isSelected = controllerWatch.selectedIds.contains(lead.uid);
     var leadCategory = CacheService.leadCategoryByUid(lead.leadCategory);
+    final width = MediaQuery.of(context).size.width;
 
     /// Open Lead View
     void openLead(BuildContext context, LeadModel lead) async {
-      final result = kIsMobile
+      final result = kIsMobile || width < 1000
           ? await Sheet.showSheet(context, widget: LeadsViewPage(lead: lead))
           : await GeneralDialog.showRTLSheet(
               context,
@@ -1373,7 +1382,7 @@ class _LeadsListingViewState extends State<LeadsListingView> {
                   color: Theme.of(context).colorScheme.primary,
                   splashRadius: 20,
                   onPressed: () {
-                    if (kIsMobile) {
+                    if (kIsMobile || width < 1000) {
                       Sheet.showSheet(
                         context,
                         widget: LeadEdit(uid: lead.uid ?? ''),

@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 import '/constants/constants.dart';
 import '/models/models.dart';
 import '/services/services.dart';
@@ -26,7 +27,7 @@ class _AdminUpdateState extends State<AdminUpdate> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
 
-  File? _newProfileImage;
+  XFile? _newProfileImage;
   String? _existingProfileUrl;
 
   bool _passwordVisible = false;
@@ -236,11 +237,25 @@ class _AdminUpdateState extends State<AdminUpdate> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              _newProfileImage!,
+            child: SizedBox(
               height: 140,
               width: 140,
-              fit: BoxFit.cover,
+              child: FutureBuilder<Uint8List>(
+                future: _newProfileImage!.readAsBytes(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  return Image.memory(
+                    snapshot.data!,
+                    height: 140,
+                    width: 140,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
             ),
           ),
           Positioned(
@@ -293,7 +308,7 @@ class _AdminUpdateState extends State<AdminUpdate> {
                 if (picked != null) {
                   setState(() {
                     _existingProfileUrl = null;
-                    _newProfileImage = picked as File?;
+                    _newProfileImage = picked;
                   });
                 }
               },
@@ -311,7 +326,7 @@ class _AdminUpdateState extends State<AdminUpdate> {
     return GestureDetector(
       onTap: () async {
         final image = await PickImage.selectImage(context);
-        if (image != null) setState(() => _newProfileImage = image as File?);
+        if (image != null) setState(() => _newProfileImage = image);
       },
       child: DottedBorder(
         options: RectDottedBorderOptions(),
@@ -354,9 +369,9 @@ class _AdminUpdateState extends State<AdminUpdate> {
       String? newImageUrl = _existingProfileUrl;
 
       if (_newProfileImage != null) {
-        newImageUrl = await StorageService.uploadFile(
-          file: _newProfileImage!,
-          folder: StorageFolder.adminProfile,
+        newImageUrl = await xFileToUploadUrl(
+          _newProfileImage!,
+          StorageFolder.adminProfile,
         );
       }
 

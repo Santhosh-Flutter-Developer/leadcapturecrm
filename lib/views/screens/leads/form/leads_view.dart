@@ -303,6 +303,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -321,7 +322,7 @@ class _LeadsViewState extends State<LeadsView> with TickerProviderStateMixin {
         actions: [
           if (_isAdmin || _lead.createdBy.uid == _currentUid) ...[
             _appBarButton(Iconsax.edit, "Edit", () async {
-              if (kIsMobile) {
+              if (kIsMobile || width < 1000) {
                 await Sheet.showSheet(
                   context,
                   widget: LeadEdit(uid: _lead.uid ?? ''),
