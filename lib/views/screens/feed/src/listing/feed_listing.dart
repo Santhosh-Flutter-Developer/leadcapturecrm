@@ -65,7 +65,7 @@ class _FeedListingState extends State<FeedListing> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: kIsMobile
+      appBar: kIsMobile || screenWidth < 1000
           ? AppBar(
               leading: Back(color: Theme.of(context).colorScheme.onSurface),
               backgroundColor: Theme.of(context).colorScheme.surface,
@@ -103,7 +103,7 @@ class _FeedListingState extends State<FeedListing> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 4,
         onPressed: () async {
-          if (kIsMobile) {
+          if (kIsMobile || screenWidth < 1000) {
             final result = await Sheet.showSheet(
               context,
               widget: const FeedCreate(),
@@ -300,6 +300,7 @@ class FeedCardState extends State<FeedCard> {
   }
 
   Future<void> _openPostPreview({int initialImageIndex = 0}) async {
+    final width = MediaQuery.of(context).size.width;
     final imageCount = widget.feed.mediaImages.length;
     final startIndex = imageCount == 0
         ? 0
@@ -794,7 +795,7 @@ class FeedCardState extends State<FeedCard> {
                                             OutlinedButton(
                                               onPressed: () {
                                                 Navigator.pop(dialogContext);
-                                                _openPostEdit();
+                                                _openPostEdit(width: width);
                                               },
                                               child: const Text('Manage Poll'),
                                             ),
@@ -1359,8 +1360,8 @@ class FeedCardState extends State<FeedCard> {
     return result ?? false;
   }
 
-  Future<void> _openPostEdit() async {
-    if (kIsMobile) {
+  Future<void> _openPostEdit({required double width}) async {
+    if (kIsMobile || width < 1000) {
       final result = await Sheet.showSheet(
         context,
         widget: FeedEdit(uid: widget.feed.uid ?? ''),
@@ -1464,6 +1465,7 @@ class FeedCardState extends State<FeedCard> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -1531,7 +1533,7 @@ class FeedCardState extends State<FeedCard> {
                     ),
                     onSelected: (value) async {
                       if (value == 'edit') {
-                        await _openPostEdit();
+                        await _openPostEdit(width: width);
                         return;
                       }
 
