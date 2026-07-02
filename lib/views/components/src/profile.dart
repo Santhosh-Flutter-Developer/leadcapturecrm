@@ -70,10 +70,10 @@ class _ProfileState extends State<Profile> {
     setState(() => isLoading = false);
   }
 
-  Future<void> _editAdminProfile() async {
+  Future<void> _editAdminProfile({required double width}) async {
     if (admin == null || admin!.uid == null || admin!.uid!.isEmpty) return;
 
-    final result = kIsMobile
+    final result = kIsMobile || width < 1000
         ? await Sheet.showSheet(
             context,
             widget: AdminUpdate(id: admin!.uid!, admin: admin!),
@@ -347,6 +347,7 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -372,7 +373,7 @@ class _ProfileState extends State<Profile> {
           if (isAdmin)
             IconButton(
               tooltip: 'Edit Profile',
-              onPressed: _editAdminProfile,
+              onPressed: () => _editAdminProfile(width: width),
               icon: Icon(
                 Iconsax.edit,
                 color: Theme.of(context).colorScheme.onSurface,

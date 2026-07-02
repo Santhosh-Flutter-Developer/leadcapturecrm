@@ -80,13 +80,14 @@ class _DesignationListingViewState extends State<DesignationListingView> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     final controllerRead = context
         .read<PaginatedDataController<DesignationModel>>();
     final controllerWatch = context
         .watch<PaginatedDataController<DesignationModel>>();
 
     return Scaffold(
-      appBar: kIsMobile
+      appBar: kIsMobile || width < 1000
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
       body: BlocListener<DesignationBloc, DesignationState>(
@@ -313,6 +314,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
   }
 
   Widget _buildActionRow(context) {
+    final width = MediaQuery.of(context).size.width;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -321,7 +323,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
             (permissions?.canCreate ?? false)
                 ? ElevatedButton.icon(
                     onPressed: () async {
-                      if (kIsMobile) {
+                      if (kIsMobile || width < 1000) {
                         Sheet.showSheet(
                           context,
                           widget: const DesignationCreate(),
@@ -481,6 +483,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
     PaginatedDataController<DesignationModel> controllerWatch,
     PaginatedDataController<DesignationModel> controllerRead,
   ) {
+    final width = MediaQuery.of(context).size.width;
     bool isSelected = controllerWatch.selectedIds.contains(designation.uid);
     return DataRow(
       selected: isSelected,
@@ -522,7 +525,7 @@ class _DesignationListingViewState extends State<DesignationListingView> {
                   ? IconButton(
                       icon: const Icon(Iconsax.edit),
                       onPressed: () {
-                        if (kIsMobile) {
+                        if (kIsMobile || width < 1000) {
                           Sheet.showSheet(
                             context,
                             widget: DesignationEdit(uid: designation.uid ?? ''),

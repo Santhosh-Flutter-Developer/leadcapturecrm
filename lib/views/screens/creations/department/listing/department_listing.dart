@@ -80,13 +80,14 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     final controllerRead = context
         .read<PaginatedDataController<DepartmentModel>>();
     final controllerWatch = context
         .watch<PaginatedDataController<DepartmentModel>>();
 
     return Scaffold(
-      appBar: kIsMobile
+      appBar: kIsMobile || width < 1000
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
       body: BlocListener<DepartmentBloc, DepartmentState>(
@@ -281,6 +282,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
   }
 
   Widget _buildActionRow(context) {
+    final width = MediaQuery.of(context).size.width;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -289,7 +291,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
             (permissions?.canCreate ?? false)
                 ? ElevatedButton.icon(
                     onPressed: () {
-                      if (kIsMobile) {
+                      if (kIsMobile || width < 1000) {
                         Sheet.showSheet(
                           context,
                           widget: const DepartmentCreate(),
@@ -458,6 +460,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
     PaginatedDataController<DepartmentModel> controllerWatch,
     PaginatedDataController<DepartmentModel> controllerRead,
   ) {
+    final width = MediaQuery.of(context).size.width;
     bool isSelected = controllerWatch.selectedIds.contains(department.uid);
     return DataRow(
       selected: isSelected,
@@ -490,7 +493,7 @@ class _DepartmentListingViewState extends State<DepartmentListingView> {
                   ? IconButton(
                       icon: const Icon(Iconsax.edit),
                       onPressed: () {
-                        if (kIsMobile) {
+                        if (kIsMobile || width < 1000) {
                           Sheet.showSheet(
                             context,
                             widget: DepartmentEdit(uid: department.uid ?? ''),

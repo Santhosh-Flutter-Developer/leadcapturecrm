@@ -82,9 +82,10 @@ class _RolesListingViewState extends State<RolesListingView> {
   Widget build(BuildContext context) {
     final controllerRead = context.read<PaginatedDataController<RoleModel>>();
     final controllerWatch = context.watch<PaginatedDataController<RoleModel>>();
-
+    final width = MediaQuery.of(context).size.width;
+    
     return Scaffold(
-      appBar: kIsMobile
+      appBar: kIsMobile || width < 1000
           ? AppBar(leading: Back(), title: Text(_pageTitle))
           : null,
       body: BlocListener<RolesBloc, RolesState>(
@@ -310,6 +311,7 @@ class _RolesListingViewState extends State<RolesListingView> {
   }
 
   Widget _buildActionRow(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -319,7 +321,7 @@ class _RolesListingViewState extends State<RolesListingView> {
             (permissions?.canCreate ?? false)
                 ? ElevatedButton.icon(
                     onPressed: () {
-                      if (kIsMobile) {
+                      if (kIsMobile || width < 1000) {
                         Sheet.showSheet(context, widget: const RoleCreate());
                       } else {
                         GeneralDialog.showRTLSheet(context, const RoleCreate());
@@ -471,6 +473,7 @@ class _RolesListingViewState extends State<RolesListingView> {
     PaginatedDataController<RoleModel> controllerWatch,
     PaginatedDataController<RoleModel> controllerRead,
   ) {
+    final width = MediaQuery.of(context).size.width;
     final isSuperAdmin = role.isSuperAdmin;
     bool isSelected = controllerWatch.selectedIds.contains(role.uid);
     return DataRow(
@@ -514,7 +517,7 @@ class _RolesListingViewState extends State<RolesListingView> {
                         ? IconButton(
                             icon: const Icon(Iconsax.edit),
                             onPressed: () {
-                              if (kIsMobile) {
+                              if (kIsMobile || width < 1000) {
                                 Sheet.showSheet(
                                   context,
                                   widget: RoleEdit(uid: role.uid ?? ''),
